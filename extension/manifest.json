@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Vibe Annotations - Visual Feedback for AI Coding Agents",
-  "version": "1.5.0",
-  "description": "Visual annotations for localhost dev projects. Send feedback to AI coding agents like Claude & Cursor via MCP.",
-  "author": "Raphael Regnier - Spellbind Creative Studio",
+  "name": "Logbook Waypoint - Visual Feedback for AI Coding Agents",
+  "version": "0.1.0",
+  "description": "Place visual waypoints on local interfaces and route them to coding agents through MCP.",
+  "author": "Leonardo Reis Dias - Logbook for Devs",
   "permissions": [
     "activeTab",
     "storage",
@@ -34,7 +34,7 @@
     "128": "assets/icons/icon128.png"
   },
   "action": {
-    "default_title": "Vibe Annotations",
+    "default_title": "Logbook Waypoint",
     "default_popup": "popup.html"
   },
   "content_scripts": [

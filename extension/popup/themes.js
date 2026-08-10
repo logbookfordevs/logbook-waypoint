@@ -1,4 +1,4 @@
-// Theme system for Vibe Annotations Extension
+// Theme system for Logbook Waypoint Extension
 
 class ThemeManager {
   constructor() {

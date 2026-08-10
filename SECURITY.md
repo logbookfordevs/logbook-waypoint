@@ -11,7 +11,7 @@ We release patches for security vulnerabilities. Which versions are eligible for
 
 ## Reporting a Vulnerability
 
-We take the security of Vibe Annotations seriously. If you have discovered a security vulnerability in our project, we appreciate your help in disclosing it to us in a responsible manner.
+We take the security of Logbook Waypoint seriously. If you have discovered a security vulnerability in our project, we appreciate your help in disclosing it to us in a responsible manner.
 
 ### Reporting Process
 
@@ -49,11 +49,11 @@ When we receive a security bug report, we will:
 
 ## Security Best Practices
 
-When using Vibe Annotations:
+When using Logbook Waypoint:
 
 1. **Keep Updated**: Always use the latest version of both the Chrome extension and the server
 2. **Local Only**: The system is designed for localhost development only - never expose the server to the internet
 3. **Data Privacy**: Annotations are stored locally and never sent to external servers
 4. **Extension Permissions**: The extension only requests necessary permissions for localhost domains
 
-Thank you for helping keep Vibe Annotations and our users safe!
+Thank you for helping keep Logbook Waypoint and our users safe!

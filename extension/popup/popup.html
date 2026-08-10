@@ -9,9 +9,9 @@
     <header class="header">
       <div class="header-content">
         <div class="logo-and-title">
-          <img src="../assets/icons/icon128.png" alt="Vibe Annotations" class="header-logo">
+          <img src="../assets/icons/icon128.png" alt="Logbook Waypoint" class="header-logo">
           <div class="title-section">
-            <h1 class="title">Vibe Annotations</h1>
+            <h1 class="title">Logbook Waypoint</h1>
             <p class="subtitle" id="current-route"></p>
           </div>
         </div>
@@ -47,11 +47,11 @@
       <div id="welcome-screen" class="welcome-screen" style="display: none;">
         <div class="welcome-content">
           <div class="welcome-logo">
-            <img src="../assets/icons/icon128.png" alt="Vibe Annotations" width="48" height="48">
+            <img src="../assets/icons/icon128.png" alt="Logbook Waypoint" width="48" height="48">
           </div>
-          <h2 class="welcome-title">Welcome to Vibe Annotations!</h2>
+          <h2 class="welcome-title">Welcome to Logbook Waypoint!</h2>
           <p class="welcome-description">
-            Vibe Annotations gives your AI coding agent superpowers, allowing it to bulk-treat all your visual annotations across different pages, while minding responsiveness.
+            Logbook Waypoint gives your AI coding agent superpowers, allowing it to bulk-treat all your visual annotations across different pages, while minding responsiveness.
           </p>
           <button id="get-started-btn" class="primary-btn get-started-btn">
             Get started (1min)
@@ -75,16 +75,16 @@
               
               <h3>1. Download and install the npm server globally by running:</h3>
               <div class="command-code">
-                <code>npm install -g vibe-annotations-server</code>
-                <button class="copy-btn" data-command="npm install -g vibe-annotations-server" title="Copy command">
+                <code>npm install -g logbook-waypoint-server</code>
+                <button class="copy-btn" data-command="npm install -g logbook-waypoint-server" title="Copy command">
                   <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                 </button>
               </div>
               
               <h3>2. Start the server on your local machine:</h3>
               <div class="command-code">
-                <code>vibe-annotations-server start --daemon</code>
-                <button class="copy-btn" data-command="vibe-annotations-server start --daemon" title="Copy command">
+                <code>logbook-waypoint-server start --daemon</code>
+                <button class="copy-btn" data-command="logbook-waypoint-server start --daemon" title="Copy command">
                   <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                 </button>
               </div>
@@ -106,20 +106,20 @@
                 <div class="tab-content active" data-agent="claude">
                   <p>Go to your project directory and run (recommended):</p>
                   <div class="command-code">
-                    <code>claude mcp add --transport http vibe-annotations http://127.0.0.1:3846/mcp</code>
-                    <button class="copy-btn" data-command="claude mcp add --transport http vibe-annotations http://127.0.0.1:3846/mcp" title="Copy command">
+                    <code>claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp</code>
+                    <button class="copy-btn" data-command="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp" title="Copy command">
                       <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                     </button>
                   </div>
                   
                   <p>Alternative (if experiencing connection issues):</p>
                   <div class="command-code">
-                    <code>claude mcp add --transport sse vibe-annotations http://127.0.0.1:3846/sse</code>
-                    <button class="copy-btn" data-command="claude mcp add --transport sse vibe-annotations http://127.0.0.1:3846/sse" title="Copy command">
+                    <code>claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse</code>
+                    <button class="copy-btn" data-command="claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse" title="Copy command">
                       <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                     </button>
                   </div>
-                  <p>To verify your installation, run <code>/mcp</code> inside of Claude Code and you should see the vibe-annotations MCP server connected.</p>
+                  <p>To verify your installation, run <code>/mcp</code> inside of Claude Code and you should see the logbook-waypoint MCP server connected.</p>
                 </div>
                 
                 <!-- Cursor Tab -->
@@ -133,12 +133,12 @@
                   <div class="command-code">
                     <code>{
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "url": "http://127.0.0.1:3846/mcp"
     }
   }
 }</code>
-                    <button class="copy-btn" data-command='{"mcpServers":{"vibe-annotations":{"url":"http://127.0.0.1:3846/mcp"}}}' title="Copy configuration">
+                    <button class="copy-btn" data-command='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}' title="Copy configuration">
                       <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                     </button>
                   </div>
@@ -155,12 +155,12 @@
                   <div class="command-code">
                     <code>{
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "serverUrl": "http://127.0.0.1:3846/mcp"
     }
   }
 }</code>
-                    <button class="copy-btn" data-command='{"mcpServers":{"vibe-annotations":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}' title="Copy configuration">
+                    <button class="copy-btn" data-command='{"mcpServers":{"logbook-waypoint":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}' title="Copy configuration">
                       <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                     </button>
                   </div>
@@ -179,12 +179,12 @@
                   <div class="command-code">
                     <code>{
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "url": "http://127.0.0.1:3846/mcp"
     }
   }
 }</code>
-                    <button class="copy-btn" data-command='{"mcpServers":{"vibe-annotations":{"url":"http://127.0.0.1:3846/mcp"}}}' title="Copy configuration">
+                    <button class="copy-btn" data-command='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}' title="Copy configuration">
                       <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                     </button>
                   </div>
@@ -193,17 +193,17 @@
                 
                 <!-- Other Editors Tab -->
                 <div class="tab-content" data-agent="other">
-                  <p>Other code editors and tools that support MCP can connect to the Vibe Annotations server using either HTTP or SSE transport.</p>
+                  <p>Other code editors and tools that support MCP can connect to the Logbook Waypoint server using either HTTP or SSE transport.</p>
                   <p><strong>Recommended (HTTP transport):</strong></p>
                   <div class="command-code">
                     <code>{
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "url": "http://127.0.0.1:3846/mcp"
     }
   }
 }</code>
-                    <button class="copy-btn" data-command='{"mcpServers":{"vibe-annotations":{"url":"http://127.0.0.1:3846/mcp"}}}' title="Copy configuration">
+                    <button class="copy-btn" data-command='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}' title="Copy configuration">
                       <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                     </button>
                   </div>
@@ -212,12 +212,12 @@
                   <div class="command-code">
                     <code>{
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "url": "http://127.0.0.1:3846/sse"
     }
   }
 }</code>
-                    <button class="copy-btn" data-command='{"mcpServers":{"vibe-annotations":{"url":"http://127.0.0.1:3846/sse"}}}' title="Copy configuration">
+                    <button class="copy-btn" data-command='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/sse"}}}' title="Copy configuration">
                       <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                     </button>
                   </div>
@@ -229,14 +229,14 @@
               <p>To annotate local HTML files (file:// URLs) instead of localhost, you need to grant permission:</p>
               <ol style="margin-left: 20px; line-height: 1.8;">
                 <li>Go to <code>chrome://extensions/</code></li>
-                <li>Find "Vibe Annotations" and click "Details"</li>
+                <li>Find "Logbook Waypoint" and click "Details"</li>
                 <li>Enable "Allow access to file URLs"</li>
                 <li>Refresh your local HTML file</li>
               </ol>
               <p style="font-size: 12px; color: var(--theme-text-secondary); margin-top: 8px;">Note: This is only needed for local files, not for localhost development servers.</p>
               
               <h2>How it works</h2>
-              <p>Vibe Annotations works on local development environments: localhost, 127.0.0.1, 0.0.0.0, *.local, *.test, *.localhost, and local HTML files.</p>
+              <p>Logbook Waypoint works on local development environments: localhost, 127.0.0.1, 0.0.0.0, *.local, *.test, *.localhost, and local HTML files.</p>
               
               <h3>1. Click "Start annotating"</h3>
               <p>You will enter an inspection mode to drop annotations, super fast! To exit, press Esc or reopen the popup and click "Stop annotating".</p>
@@ -259,8 +259,8 @@
               
               <h3>1. Server commands</h3>
               <div class="command-code">
-                <code>vibe-annotations-server --help</code>
-                <button class="copy-btn" data-command="vibe-annotations-server --help" title="Copy command">
+                <code>logbook-waypoint-server --help</code>
+                <button class="copy-btn" data-command="logbook-waypoint-server --help" title="Copy command">
                   <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                 </button>
               </div>
@@ -268,7 +268,7 @@
               <h3>2. Reconnect MCP</h3>
               <p>Your AI coding agent loads the MCPs only once upon start. If you restart your MCP server, you will have to kill and restart your AI coding agent session(s).</p>
               
-              <h3>3. Clean uninstallation of Vibe Annotations</h3>
+              <h3>3. Clean uninstallation of Logbook Waypoint</h3>
               <p>First remove the MCP server from your AI coding agent (command varies by agent):</p>
               
               <!-- Uninstall Commands for Different Agents -->
@@ -282,38 +282,38 @@
                 
                 <div class="tab-content active" data-agent="claude-uninstall">
                   <div class="command-code">
-                    <code>claude mcp remove vibe-annotations</code>
-                    <button class="copy-btn" data-command="claude mcp remove vibe-annotations" title="Copy command">
+                    <code>claude mcp remove logbook-waypoint</code>
+                    <button class="copy-btn" data-command="claude mcp remove logbook-waypoint" title="Copy command">
                       <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                     </button>
                   </div>
                 </div>
                 
                 <div class="tab-content" data-agent="cursor-uninstall">
-                  <p>Go to Cursor → Settings → Cursor Settings → Tools & Integrations tab and remove the vibe-annotations server from your configuration.</p>
+                  <p>Go to Cursor → Settings → Cursor Settings → Tools & Integrations tab and remove the logbook-waypoint server from your configuration.</p>
                 </div>
                 
                 <div class="tab-content" data-agent="windsurf-uninstall">
-                  <p>Go to Windsurf → Settings → Advanced Settings → Cascade section and remove the vibe-annotations server from your MCP configuration.</p>
+                  <p>Go to Windsurf → Settings → Advanced Settings → Cascade section and remove the logbook-waypoint server from your MCP configuration.</p>
                 </div>
                 
                 <div class="tab-content" data-agent="other-uninstall">
-                  <p>Remove the vibe-annotations server from your editor's MCP configuration settings.</p>
+                  <p>Remove the logbook-waypoint server from your editor's MCP configuration settings.</p>
                 </div>
               </div>
               
               <p>Then uninstall the npm server globally:</p>
               <div class="command-code">
-                <code>npm uninstall -g vibe-annotations-server</code>
-                <button class="copy-btn" data-command="npm uninstall -g vibe-annotations-server" title="Copy command">
+                <code>npm uninstall -g logbook-waypoint-server</code>
+                <button class="copy-btn" data-command="npm uninstall -g logbook-waypoint-server" title="Copy command">
                   <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                 </button>
               </div>
               
               <p>Remove the data file:</p>
               <div class="command-code">
-                <code>rm -rf ~/.vibe-annotations</code>
-                <button class="copy-btn" data-command="rm -rf ~/.vibe-annotations" title="Copy command">
+                <code>rm -rf ~/.logbook-waypoint</code>
+                <button class="copy-btn" data-command="rm -rf ~/.logbook-waypoint" title="Copy command">
                   <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
                 </button>
               </div>
@@ -370,13 +370,13 @@
                 <li>
                   <strong>Install the server globally:</strong>
                   <div class="code-block">
-                    <code>npm install -g vibe-annotations-server</code>
+                    <code>npm install -g logbook-waypoint-server</code>
                   </div>
                 </li>
                 <li>
                   <strong>Start the server:</strong>
                   <div class="code-block">
-                    <code>vibe-annotations-server start</code>
+                    <code>logbook-waypoint-server start</code>
                   </div>
                   <p class="instruction-note">The server will run in the background globally</p>
                 </li>
@@ -385,7 +385,7 @@
                   <div class="code-block">
                     <code>cd /path/to/your/project</code>
                   </div>
-                  <p class="instruction-note">Go to the project where you want to use Vibe Annotations</p>
+                  <p class="instruction-note">Go to the project where you want to use Logbook Waypoint</p>
                 </li>
                 <li>
                   <strong>Connect your AI coding agent to the server:</strong>
@@ -404,19 +404,19 @@
                 <div class="management-item">
                   <strong>To stop the server:</strong>
                   <div class="code-block">
-                    <code>vibe-annotations-server stop</code>
+                    <code>logbook-waypoint-server stop</code>
                   </div>
                 </div>
                 <div class="management-item">
                   <strong>To restart the server:</strong>
                   <div class="code-block">
-                    <code>vibe-annotations-server restart</code>
+                    <code>logbook-waypoint-server restart</code>
                   </div>
                 </div>
                 <div class="management-item">
                   <strong>To check if server is running:</strong>
                   <div class="code-block">
-                    <code>vibe-annotations-server status</code>
+                    <code>logbook-waypoint-server status</code>
                   </div>
                 </div>
               </div>

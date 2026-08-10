@@ -15,7 +15,7 @@
       const id = '__vibe_' + (++reqId) + '_' + Date.now();
       const timer = setTimeout(() => {
         document.removeEventListener('vibe-bridge:response', handler);
-        reject(new Error('Vibe Annotations: request timed out'));
+        reject(new Error('Logbook Waypoint: request timed out'));
       }, TIMEOUT);
 
       function handler(e) {
@@ -40,7 +40,7 @@
      */
     help() {
       return {
-        overview: 'Vibe Annotations API — record visual design changes as annotations. A coding agent will later read these annotations and implement them in source code. You handle the visual preview, the coding agent handles the source files.',
+        overview: 'Logbook Waypoint API — record visual design changes as annotations. A coding agent will later read these annotations and implement them in source code. You handle the visual preview, the coding agent handles the source files.',
         workflow: {
           step1: 'Call getAnnotations() first to see what already exists — avoid duplicates.',
           step2: 'Assess the requested changes — split them into global styling vs component-level edits vs structural changes.',

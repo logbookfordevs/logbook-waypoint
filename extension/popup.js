@@ -20,7 +20,7 @@
 
       updateBanner.classList.remove('hidden');
       updateText.textContent = `Version ${updateInfo.currentVersion} installed`;
-      const releaseUrl = updateInfo.releaseUrl || 'https://github.com/RaphaelRegnier/vibe-annotations/releases';
+      const releaseUrl = updateInfo.releaseUrl || 'https://github.com/logbookfordevs/logbook-waypoint/releases';
       updateLink.href = releaseUrl;
 
       async function dismissBanner() {
@@ -171,7 +171,7 @@
 
   function setToggleState(visible) {
     overlayVisible = visible;
-    mainBtn.textContent = visible ? 'Close Vibe Annotations' : 'Open Vibe Annotations';
+    mainBtn.textContent = visible ? 'Close Logbook Waypoint' : 'Open Logbook Waypoint';
   }
 
   function isLocalhostUrl(url) {

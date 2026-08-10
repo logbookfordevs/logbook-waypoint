@@ -1,4 +1,4 @@
-// Vibe Annotations Popup JavaScript
+// Logbook Waypoint Popup JavaScript
 
 class AnnotationsPopup {
   constructor() {
@@ -390,7 +390,7 @@ class AnnotationsPopup {
       
       // Check if it's a localhost or local file URL
       if (!this.isLocalhostUrl(tab.url)) {
-        alert('Vibe Annotations only works on local development URLs (.local, .test, .localhost, localhost) and local HTML files for security reasons.');
+        alert('Logbook Waypoint only works on local development URLs (.local, .test, .localhost, localhost) and local HTML files for security reasons.');
         return;
       }
 
@@ -408,7 +408,7 @@ class AnnotationsPopup {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (error.message.includes('receiving end does not exist')) {
         if (tab.url.startsWith('file://')) {
-          alert('File access required: Please go to chrome://extensions/, find "Vibe Annotations", and enable "Allow access to file URLs". Then refresh this page.');
+          alert('File access required: Please go to chrome://extensions/, find "Logbook Waypoint", and enable "Allow access to file URLs". Then refresh this page.');
         } else {
           alert('Content script not ready. Please refresh the page and try again.');
         }
@@ -1020,9 +1020,9 @@ class AnnotationsPopup {
     if (copyAllBtn) {
       copyAllBtn.addEventListener('click', async () => {
         const commands = [
-          'npm install -g vibe-annotations-server',
-          'vibe-annotations-server start',
-          'claude mcp add --transport http vibe-annotations http://127.0.0.1:3846/mcp'
+          'npm install -g logbook-waypoint-server',
+          'logbook-waypoint-server start',
+          'claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp'
         ];
         const allCommands = commands.join('\n');
         try {
@@ -1116,14 +1116,14 @@ class AnnotationsPopup {
     if (viewLogsBtn) {
       viewLogsBtn.addEventListener('click', () => {
         // For now, just show an alert with instructions
-        alert('To view server logs, run:\nvibe-annotations-server logs\n\nOr check your terminal where you started the server.');
+        alert('To view server logs, run:\nlogbook-waypoint-server logs\n\nOr check your terminal where you started the server.');
       });
     }
 
     if (restartServerBtn) {
       restartServerBtn.addEventListener('click', () => {
         // For now, just show an alert with instructions
-        alert('To restart the server, run:\nvibe-annotations-server restart\n\nThen click "Check Again" to verify.');
+        alert('To restart the server, run:\nlogbook-waypoint-server restart\n\nThen click "Check Again" to verify.');
       });
     }
   }

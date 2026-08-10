@@ -1,4 +1,4 @@
-// Vibe Annotations V2 — Entry Point
+// Logbook Waypoint V2 — Entry Point
 // Orchestrates all modules loaded via manifest.json content_scripts
 // Modules are loaded in order and share execution context (no build step)
 console.log('[Vibe] content.js loaded');

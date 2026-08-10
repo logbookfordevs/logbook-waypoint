@@ -1,11 +1,11 @@
-# vibe-annotations-server
+# logbook-waypoint-server
 
-Global MCP server for Vibe Annotations browser extension.
+Global MCP server for Logbook Waypoint browser extension.
 
 ## Installation
 
 ```bash
-npm install -g vibe-annotations-server
+npm install -g logbook-waypoint-server
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm install -g vibe-annotations-server
 ### Start the server
 
 ```bash
-vibe-annotations-server start
+logbook-waypoint-server start
 ```
 
 The server will run in the background on port 3846.
@@ -21,27 +21,27 @@ The server will run in the background on port 3846.
 ### Stop the server
 
 ```bash
-vibe-annotations-server stop
+logbook-waypoint-server stop
 ```
 
 ### Check server status
 
 ```bash
-vibe-annotations-server status
+logbook-waypoint-server status
 ```
 
 ### Restart the server
 
 ```bash
-vibe-annotations-server restart
+logbook-waypoint-server restart
 ```
 
 ### View logs
 
 ```bash
-vibe-annotations-server logs
+logbook-waypoint-server logs
 # or follow logs
-vibe-annotations-server logs -f
+logbook-waypoint-server logs -f
 ```
 
 ## AI Coding Agent Integration
@@ -54,10 +54,10 @@ In your project directory, run:
 
 ```bash
 # Recommended (HTTP transport - more stable)
-claude mcp add --transport http vibe-annotations http://127.0.0.1:3846/mcp
+claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp
 
 # Alternative (SSE transport - for compatibility)
-claude mcp add --transport sse vibe-annotations http://127.0.0.1:3846/sse
+claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse
 ```
 
 ### Cursor
@@ -70,7 +70,7 @@ claude mcp add --transport sse vibe-annotations http://127.0.0.1:3846/sse
 ```json
 {
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "url": "http://127.0.0.1:3846/mcp"
     }
   }
@@ -87,7 +87,7 @@ claude mcp add --transport sse vibe-annotations http://127.0.0.1:3846/sse
 ```json
 {
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "serverUrl": "http://127.0.0.1:3846/mcp"
     }
   }
@@ -105,7 +105,7 @@ claude mcp add --transport sse vibe-annotations http://127.0.0.1:3846/sse
 ```json
 {
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "type": "sse",
       "url": "http://127.0.0.1:3846/mcp"
     }
@@ -117,19 +117,19 @@ claude mcp add --transport sse vibe-annotations http://127.0.0.1:3846/sse
 
 ### Other Editors
 
-Other code editors and tools that support SSE (Server-Sent Events) can also connect to the Vibe Annotations MCP server. If you're using a different editor or tool, check its documentation to confirm it supports SSE-based communication. If it does, you can manually add the server using this configuration:
+Other code editors and tools that support SSE (Server-Sent Events) can also connect to the Logbook Waypoint MCP server. If you're using a different editor or tool, check its documentation to confirm it supports SSE-based communication. If it does, you can manually add the server using this configuration:
 
 ```json
 {
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "url": "http://127.0.0.1:3846/mcp"
     }
   }
 }
 ```
 
-**Note:** The Vibe Annotations MCP server supports both HTTP and SSE transports. HTTP transport is recommended for better stability. Use the URL: `http://127.0.0.1:3846/mcp` (HTTP) or `http://127.0.0.1:3846/sse` (SSE).
+**Note:** The Logbook Waypoint MCP server supports both HTTP and SSE transports. HTTP transport is recommended for better stability. Use the URL: `http://127.0.0.1:3846/mcp` (HTTP) or `http://127.0.0.1:3846/sse` (SSE).
 
 ## Architecture
 
@@ -138,14 +138,14 @@ The server provides:
 - **HTTP API** (`/api/annotations`): For Chrome extension communication
 - **Health Check** (`/health`): For status monitoring
 
-Data is stored in `~/.vibe-annotations/annotations.json`.
+Data is stored in `~/.logbook-waypoint/annotations.json`.
 
 ## Development
 
 ```bash
 # Clone the repository
 git clone <repo-url>
-cd vibe-annotations-server
+cd logbook-waypoint-server
 
 # Install dependencies
 npm install

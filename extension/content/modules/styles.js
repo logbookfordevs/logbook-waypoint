@@ -1,4 +1,4 @@
-// All Vibe Annotations V2 CSS as a JS constant
+// All Logbook Waypoint V2 CSS as a JS constant
 // Loaded synchronously into the shadow root — no async fetch needed
 
 var VIBE_STYLES = `

@@ -20,7 +20,7 @@ const execAsync = promisify(exec);
 const program = new Command();
 
 // Configuration paths
-const CONFIG_DIR = join(homedir(), '.vibe-annotations');
+const CONFIG_DIR = join(homedir(), '.logbook-waypoint');
 const PID_FILE = join(CONFIG_DIR, 'server.pid');
 const LOG_FILE = join(CONFIG_DIR, 'server.log');
 const PORT = 3846;
@@ -61,13 +61,13 @@ async function checkPort() {
 
 // Commands
 program
-  .name('vibe-annotations-server')
-  .description('Global MCP server for Vibe Annotations browser extension')
+  .name('logbook-waypoint-server')
+  .description('Global MCP server for Logbook Waypoint browser extension')
   .version(packageJson.version);
 
 program
   .command('start')
-  .description('Start the Vibe Annotations server')
+  .description('Start the Logbook Waypoint server')
   .option('-d, --daemon', 'Run as daemon (background process)')
   .action(async (options) => {
     if (isServerRunning()) {
@@ -77,7 +77,7 @@ program
       return;
     }
 
-    console.log(chalk.blue('Starting Vibe Annotations server...'));
+    console.log(chalk.blue('Starting Logbook Waypoint server...'));
 
     const serverPath = join(dirname(__dirname), 'lib', 'server.js');
     
@@ -99,7 +99,7 @@ program
       let attempts = 0;
       while (attempts < 10) {
         if (await checkPort()) {
-          console.log(chalk.green('✅ Vibe Annotations server running on http://127.0.0.1:3846/sse'));
+          console.log(chalk.green('✅ Logbook Waypoint server running on http://127.0.0.1:3846/sse'));
           console.log(chalk.gray(`   PID: ${child.pid}`));
           console.log(chalk.gray(`   Logs: ${LOG_FILE}`));
           break;
@@ -131,7 +131,7 @@ program
 
 program
   .command('stop')
-  .description('Stop the Vibe Annotations server')
+  .description('Stop the Logbook Waypoint server')
   .action(() => {
     if (!isServerRunning()) {
       console.log(chalk.yellow('Server is not running'));
@@ -154,7 +154,7 @@ program
 
 program
   .command('restart')
-  .description('Restart the Vibe Annotations server')
+  .description('Restart the Logbook Waypoint server')
   .action(async () => {
     console.log(chalk.blue('Restarting server...'));
     
@@ -193,7 +193,7 @@ program
       console.log(chalk.gray(`   URL: http://127.0.0.1:${PORT}/sse`));
     } else if (running && !portAvailable) {
       console.log(chalk.yellow('⚠️  Server process exists but is not responding'));
-      console.log(chalk.gray('   Try running: vibe-annotations-server restart'));
+      console.log(chalk.gray('   Try running: logbook-waypoint-server restart'));
     } else {
       console.log(chalk.gray('○ Server is not running'));
     }

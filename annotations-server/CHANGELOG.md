@@ -1,6 +1,6 @@
-# Changelog - Vibe Annotations Server
+# Changelog - Logbook Waypoint Server
 
-All notable changes to the vibe-annotations-server package will be documented in this file.
+All notable changes to the logbook-waypoint-server package will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-08-03
 
 ### Added
-- Initial release of vibe-annotations-server
+- Initial release of vibe-annotations-server (MIT foundation)
 - HTTP API for Chrome extension communication
 - MCP tool implementations (read_annotations, delete_annotation, get_project_context)
 - SSE endpoint for AI coding agent integration

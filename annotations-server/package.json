@@ -1,11 +1,11 @@
 {
-  "name": "vibe-annotations-server",
-  "version": "0.1.8",
-  "description": "Global MCP server for Vibe Annotations browser extension",
+  "name": "logbook-waypoint-server",
+  "version": "0.1.0",
+  "description": "Global MCP server for Logbook Waypoint browser extension",
   "main": "lib/server.js",
   "type": "module",
   "bin": {
-    "vibe-annotations-server": "./bin/cli.js"
+    "logbook-waypoint-server": "./bin/cli.js"
   },
   "files": [
     "bin/",
@@ -20,7 +20,8 @@
   },
   "keywords": [
     "mcp",
-    "vibe",
+    "logbook",
+    "waypoint",
     "annotations",
     "sse",
     "http",
@@ -28,7 +29,7 @@
     "localhost",
     "development"
   ],
-  "author": "Raphaël Régnier",
+  "author": "Leonardo Reis Dias",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
@@ -43,12 +44,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RaphaelRegnier/vibe-annotations.git",
+    "url": "git+https://github.com/logbookfordevs/logbook-waypoint.git",
     "directory": "annotations-server"
   },
-  "homepage": "https://github.com/RaphaelRegnier/vibe-annotations#readme",
+  "homepage": "https://github.com/logbookfordevs/logbook-waypoint#readme",
   "bugs": {
-    "url": "https://github.com/RaphaelRegnier/vibe-annotations/issues"
+    "url": "https://github.com/logbookfordevs/logbook-waypoint/issues"
   },
   "publishConfig": {
     "access": "public"

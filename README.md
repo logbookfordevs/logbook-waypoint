@@ -1,285 +1,110 @@
-# Vibe Annotations
+# Logbook Waypoint
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Chrome Web Store](https://img.shields.io/badge/Chrome-Extension-green)](https://chrome.google.com/webstore)
-[![Server Package](https://img.shields.io/badge/Server-NPM-blue)](https://www.npmjs.com/package/vibe-annotations-server)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-b9502f.svg)](LICENSE)
+[![Status: Early Development](https://img.shields.io/badge/status-early_development-18221f.svg)](https://github.com/logbookfordevs/logbook-waypoint)
 
-🌐 Website: https://www.vibe-annotations.com/
+**Pin the point. Chart the change.**
 
-AI-powered development annotations for local development projects. Drop comments on your local development apps and let your AI coding agent implement the fixes automatically.
+Logbook Waypoint is a local-first visual feedback tool for developers and coding agents. Place waypoints directly on a development interface, preserve the surrounding element context, and let an MCP-compatible agent read and resolve the resulting log.
 
-https://github.com/user-attachments/assets/4c134852-090b-4974-85e5-be77a95636f9
+> [!IMPORTANT]
+> Logbook Waypoint is at the beginning of its independent development. The npm package and browser extension are not published yet. Use the development setup below.
 
-## How it Works
+## Current foundation
 
-![Start Annotating](docs/images/start-annotating.jpg)
-*1. Open your localhost app and click "Annotate" in the floating toolbar*
+The initial MIT foundation already provides:
 
-![New Annotation](docs/images/new-annotation.jpg)
-*2. Click any element — a popover appears to leave your feedback*
+- Visual annotations on localhost and local development domains
+- Multi-page annotation capture
+- Local browser and server persistence
+- Optional screenshots and element context
+- An MCP server over HTTP and SSE
+- Tools for reading, deleting, grouping, and inspecting annotations
+- A Chrome-compatible unpacked extension
 
-![Copy to Clipboard](docs/images/copy-clipboard.jpg)
-*3. Your AI agent fetches annotations automatically via MCP, or you can copy them to clipboard with full element context*
-
-![Settings](docs/images/settings-opened.jpg)
-*4. Settings: MCP server status, clear-after-copy, screenshots, theme toggle*
-
-![Done](docs/images/done.jpg)
-*5. AI agent implements fixes and deletes annotations via MCP — all from your browser*
-
-## Features
-
-- 🏠 **Local development focused**: Works on localhost, .local, .test, .localhost domains
-- 📑 **Multi-page annotations**: Create feedback across multiple routes in your app, then bulk-process all annotations at once for efficient fixes
-- 🤖 **AI-powered**: Integrates with AI coding agents via MCP
-- ⚡ **Instant feedback**: Click, comment, bulk-fix
-- 👨‍💻 **Developer-friendly**: Built for modern web development
+The next route adds Logbook-native waypoints, a clearer work queue, watch mode, variants, and Impeccable workflows without importing post-MIT Vibe Annotations code.
 
 ## Architecture
 
-Vibe Annotations uses a two-piece architecture:
+Logbook Waypoint currently has two parts:
 
-1. **Browser Extension** (`/extension`): UI, setup guidance, annotation management
-2. **NPM Package** (`vibe-annotations-server`): MCP server, local HTTP API, data storage
+1. **Browser extension** (`extension/`) — captures and manages visual waypoints.
+2. **Local MCP server** (`annotations-server/`) — persists entries and exposes them to coding agents on `127.0.0.1:3846`.
 
-## Quick Start
+Some internal `vibe_*` identifiers remain intentionally unchanged in this first checkpoint. They are implementation details inherited from the MIT foundation and will be migrated only with tests around the browser/server protocol.
 
-### 1. Install the Browser Extension
+## Development setup
 
-**From Chrome Web Store:**
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/gkofobaeeepjopdpahbicefmljcmpeof)
+### Local server
 
-**For Development:**
-Go to your chromium browser extension page, and click "Load unpacked" then select /extension directory.
-
-### 2. Install the Global Server
 ```bash
-npm install -g vibe-annotations-server
+cd annotations-server
+npm install
+npm run start
 ```
 
-### 3. Start the Server
-```bash
-vibe-annotations-server start
+### Browser extension
+
+1. Open `chrome://extensions` in a Chromium browser.
+2. Enable **Developer mode**.
+3. Choose **Load unpacked**.
+4. Select this repository's `extension/` directory.
+
+### MCP connection
+
+Use the HTTP endpoint when your coding agent supports streamable HTTP:
+
+```text
+http://127.0.0.1:3846/mcp
 ```
 
-### 4. Connect Your AI Coding Agent
-Choose your AI coding agent and follow the setup:
+For Codex:
 
-#### Claude Code
-In your project directory:
-```bash
-# Recommended (HTTP transport - more stable)
-claude mcp add --transport http vibe-annotations http://127.0.0.1:3846/mcp
-
-# Alternative (SSE transport - for compatibility)
-claude mcp add --transport sse vibe-annotations http://127.0.0.1:3846/sse
-```
-
-#### Cursor
-1. Open Cursor → Settings → Cursor Settings
-2. Go to the Tools & Integrations tab
-3. Click + Add new global MCP server
-4. Add this configuration:
-```json
-{
-  "mcpServers": {
-    "vibe-annotations": {
-      "url": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
-
-**Alternative (SSE transport):**
-```json
-{
-  "mcpServers": {
-    "vibe-annotations": {
-      "url": "http://127.0.0.1:3846/sse"
-    }
-  }
-}
-```
-
-#### Windsurf
-1. Navigate to Windsurf → Settings → Advanced Settings
-2. Scroll down to the Cascade section
-3. Add this configuration:
-```json
-{
-  "mcpServers": {
-    "vibe-annotations": {
-      "serverUrl": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
-
-**Alternative (SSE transport):**
-```json
-{
-  "mcpServers": {
-    "vibe-annotations": {
-      "serverUrl": "http://127.0.0.1:3846/sse"
-    }
-  }
-}
-```
-
-#### Codex
-Add to `~/.codex/config.toml`:
 ```toml
-[mcp_servers.vibe-annotations]
+[mcp_servers.logbook-waypoint]
 url = "http://127.0.0.1:3846/mcp"
 ```
 
-#### OpenClaw
-Add to `~/.openclaw/openclaw.json`:
+For JSON-based MCP clients:
+
 ```json
 {
   "mcpServers": {
-    "vibe-annotations": {
+    "logbook-waypoint": {
       "url": "http://127.0.0.1:3846/mcp"
     }
   }
 }
 ```
 
-#### VS Code
-Install an AI extension that supports MCP, then add this configuration to your MCP settings:
-```json
-{
-  "mcpServers": {
-    "vibe-annotations": {
-      "url": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
+The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
-### 5. Start Using Annotations
-- Open the extension popup for detailed setup instructions
-- Start annotating your local development projects!
-- Use your AI coding agent to automatically implement fixes
+## Project lineage
 
-### 6. (Optional) Enable Local File Support
+Logbook Waypoint begins from Vibe Annotations commit [`8864e12`](https://github.com/RaphaelRegnier/vibe-annotations/commit/8864e12cfb28c6825ef6ccf996d291fc2b0ebcd4), the final repository commit distributed under the MIT License before its upstream license change.
 
-To annotate local HTML files (file:// URLs) instead of localhost:
+The original MIT copyright and permission notice are preserved in [LICENSE](LICENSE). Additional lineage details are recorded in [NOTICE.md](NOTICE.md).
 
-1. Go to `chrome://extensions/`
-2. Find "Vibe Annotations" and click "Details"
-3. Enable "Allow access to file URLs"
-4. Refresh your local HTML file
-
-**Note:** This is only needed for local files. Localhost development servers work without this step.
-
-## User Experience Flow
-
-1. **Extension Installation**: Install from Chrome Web Store
-2. **Setup Instructions**: Extension popup guides through terminal setup
-3. **Server Detection**: Extension automatically detects running server
-4. **Daily Usage**: Create annotations → Use your AI coding agent → Fixes implemented
-
-## Server Management
-
-```bash
-# Check server status
-vibe-annotations-server status
-
-# Stop server
-vibe-annotations-server stop
-
-# Restart server
-vibe-annotations-server restart
-```
-
-## Uninstallation
-
-To completely remove Vibe Annotations from your system:
-
-### 1. Remove MCP Server from Your AI Coding Agent
-
-#### Claude Code
-```bash
-claude mcp remove vibe-annotations
-```
-
-#### Cursor
-Go to Cursor → Settings → Cursor Settings → Tools & Integrations tab and remove the vibe-annotations server configuration.
-
-#### Windsurf
-Go to Windsurf → Settings → Advanced Settings → Cascade section and remove the vibe-annotations server from your MCP configuration.
-
-#### Other Editors
-Remove the vibe-annotations server from your editor's MCP configuration settings.
-
-### 2. Uninstall the Global Server
-```bash
-npm uninstall -g vibe-annotations-server
-```
-
-### 3. Remove Data Files
-```bash
-rm -rf ~/.vibe-annotations
-```
-
-### 4. Remove Browser Extension
-Go to Chrome Extensions (`chrome://extensions/`) and remove the Vibe Annotations extension.
-
-## Development
-
-### Local Server Development (Advanced)
-
-If you're developing Vibe Annotations or prefer to run the server locally instead of the global installation:
-
-```bash
-# Clone the repository
-git clone https://github.com/RaphaelRegnier/vibe-annotations.git
-cd vibe-annotations/annotations-server
-
-# Install dependencies
-npm install
-
-# Run the server locally
-npm run start
-# or for development with auto-restart:
-npm run dev
-```
-
-**Note**: Running locally ties the server to this specific directory. Most users should use the global installation method shown above.
-
-### Extension Development
-
-See `/extension` directory for browser extension development. Load the extension in Chrome as unpacked extension.
-
-## Documentation
-
-- **[Update System](docs/UPDATE_SYSTEM.md)** - Comprehensive guide to extension and server update notifications
-- **[Development Guide](docs/DEVELOPMENT.md)** - Development setup and guidelines
-
-## Troubleshooting
-
-Having issues? Check our [GitHub Issues](https://github.com/RaphaelRegnier/vibe-annotations/issues) or create a new one.
-
-### Common Issues
-
-- **Server not detected**: Make sure the server is running with `vibe-annotations-server status`
-- **Extension not working**: Check that you're on a local development URL (localhost, 127.0.0.1, 0.0.0.0, *.local, *.test, *.localhost)
-- **MCP connection failed**: Verify your AI coding agent configuration matches the examples above
-- **SSE connection drops/timeouts**: If experiencing "TypeError: terminated" or frequent disconnections, switch to HTTP transport (replace `/sse` with `/mcp` in your configuration)
+Logbook Waypoint is an independent project and is not affiliated with or endorsed by Raphael Regnier or Spellbind Creative Studio. “Vibe Annotations” and its original visual identity belong to their respective owner.
 
 ## Contributing
 
-We love contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+The project is intentionally early. Before proposing a large change, open an issue describing the problem, rationale, and smallest useful solution. See [CONTRIBUTING.md](CONTRIBUTING.md) for the inherited development notes that are being revised alongside the codebase.
 
-### Contributors
+## Support the voyage
 
-Thanks to everyone who has contributed to making Vibe Annotations better!
+If Logbook Waypoint helps your workflow, you can support Logbook for Devs:
 
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+- [Buy me a coffee — 5](https://ko-fi.com/logbookfordevs?amount=5)
+- [Buy me lunch — 15](https://ko-fi.com/logbookfordevs?amount=15)
+- [Buy me dinner — 30](https://ko-fi.com/logbookfordevs?amount=30)
+- [Choose an amount on Ko-fi](https://ko-fi.com/logbookfordevs)
+- [Support on Buy Me a Coffee](https://buymeacoffee.com/logbookfordevs)
 
-## License
+## License and attribution
 
-MIT - see [LICENSE](LICENSE) for details
+MIT — see [LICENSE](LICENSE).
+
+A tool from the [Logbook for Devs](https://logbookfordevs.com/)
+
+Charting the technical seas, one commit at a time.

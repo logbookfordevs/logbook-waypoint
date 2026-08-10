@@ -1,6 +1,6 @@
 # Update Notification System
 
-This document describes the comprehensive update notification system implemented in Vibe Annotations to keep users informed about extension and server updates.
+This document describes the comprehensive update notification system implemented in Logbook Waypoint to keep users informed about extension and server updates.
 
 ## Overview
 
@@ -64,7 +64,7 @@ Real changelog data is stored in the background script:
 getChangelogForVersion(version) {
   const changelogs = {
     '1.0.0': [
-      'Initial release of Vibe Annotations',
+      'Initial release of Vibe Annotations (MIT foundation)',
       'Visual annotation system for localhost development',
       'MCP integration for AI coding agents',
       'Light/dark theme support with system preference detection'
@@ -87,7 +87,7 @@ The server automatically checks NPM registry for newer versions on startup.
 async checkForUpdates() {
   // Check NPM registry for latest version
   const response = await fetch(
-    'https://registry.npmjs.org/vibe-annotations-server/latest'
+    'https://registry.npmjs.org/logbook-waypoint-server/latest'
   );
   
   // Compare versions and notify if newer available
@@ -95,7 +95,7 @@ async checkForUpdates() {
     console.log(chalk.yellow(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  Update available: ${currentVersion} → ${latestVersion}        ║
-║  Run: npm update -g vibe-annotations-server                    ║
+║  Run: npm update -g logbook-waypoint-server                    ║
 ╚════════════════════════════════════════════════════════════════╝
     `));
   }
@@ -104,7 +104,7 @@ async checkForUpdates() {
 
 ### Update Check Features
 
-- **24-Hour Cache** - Prevents spamming NPM registry (stored in `~/.vibe-annotations/.update-check`)
+- **24-Hour Cache** - Prevents spamming NPM registry (stored in `~/.logbook-waypoint/.update-check`)
 - **Beautiful Console Notifications** - Formatted update messages with exact commands
 - **Graceful Failure** - Handles API errors and missing releases without disrupting service
 - **Version Comparison** - Semantic version comparison to determine if update needed
@@ -113,7 +113,7 @@ async checkForUpdates() {
 
 The system calls the NPM Registry API:
 ```
-GET https://registry.npmjs.org/vibe-annotations-server/latest
+GET https://registry.npmjs.org/logbook-waypoint-server/latest
 ```
 
 **Response handling**:
@@ -127,7 +127,7 @@ When an update is available, users get a simple update command:
 
 ```bash
 # Update to latest version
-npm update -g vibe-annotations-server
+npm update -g logbook-waypoint-server
 ```
 
 ## Version Compatibility System
@@ -229,8 +229,8 @@ Update notifications can be configured in the extension:
 
 **Update Check Settings**:
 - Cache duration: 24 hours (86400000 ms)
-- Cache file: `~/.vibe-annotations/.update-check`
-- NPM Registry endpoint: `https://registry.npmjs.org/vibe-annotations-server/latest`
+- Cache file: `~/.logbook-waypoint/.update-check`
+- NPM Registry endpoint: `https://registry.npmjs.org/logbook-waypoint-server/latest`
 
 ## Development Guidelines
 
@@ -264,7 +264,7 @@ chrome.storage.local.set({
 **Server Testing**:
 ```bash
 # Remove cache to force check
-rm ~/.vibe-annotations/.update-check
+rm ~/.logbook-waypoint/.update-check
 
 # Start server to see update check
 npm run dev
@@ -316,10 +316,10 @@ Follow [Semantic Versioning](https://semver.org/):
 **Update check not working**:
 ```bash
 # Check cache file exists
-ls -la ~/.vibe-annotations/.update-check
+ls -la ~/.logbook-waypoint/.update-check
 
 # Check NPM Registry manually  
-curl https://registry.npmjs.org/vibe-annotations-server/latest
+curl https://registry.npmjs.org/logbook-waypoint-server/latest
 ```
 
 **Extension badge not clearing**:

@@ -1,10 +1,10 @@
-# Contributing to Vibe Annotations
+# Contributing to Logbook Waypoint
 
-First off, thank you for considering contributing to Vibe Annotations! It's people like you that make Vibe Annotations such a great tool.
+First off, thank you for considering contributing to Logbook Waypoint! It's people like you that make Logbook Waypoint such a great tool.
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by the [Vibe Annotations Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+This project and everyone participating in it is governed by the [Logbook Waypoint Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ## How Can I Contribute?
 
@@ -50,7 +50,7 @@ Unsure where to begin contributing? You can start by looking through these issue
 ### Project Structure
 
 ```
-vibe-annotations/
+logbook-waypoint/
 ├── extension/          # Chrome extension source code
 ├── annotations-server/ # MCP server (npm package)
 ├── docs/              # Documentation
@@ -98,7 +98,7 @@ The Chrome extension is published to the Chrome Web Store by maintainers only.
 ### Server Publishing
 
 The server is published as an npm package from the separate repository:
-https://github.com/RaphaelRegnier/vibe-annotations-server
+https://github.com/logbookfordevs/logbook-waypoint
 
 ## Questions?
 

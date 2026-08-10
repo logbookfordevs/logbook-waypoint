@@ -8,7 +8,7 @@ var VibeShadowHost = (() => {
     if (hostEl) return shadowRoot;
 
     hostEl = document.createElement('div');
-    hostEl.id = 'vibe-annotations-root';
+    hostEl.id = 'logbook-waypoint-root';
     hostEl.style.cssText = `
       position: fixed !important;
       top: 0 !important;

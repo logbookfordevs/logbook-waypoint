@@ -1,11 +1,7 @@
-name: Publish NPM Package
+name: Publish Logbook Waypoint server
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'annotations-server/**'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -43,8 +39,8 @@ jobs:
       run: |
         cd annotations-server
         
-        # Get latest published version from NPM
-        LATEST_NPM_VERSION=$(npm view vibe-annotations-server version 2>/dev/null || echo "0.1.0")
+        # Get latest published version from NPM.
+        LATEST_NPM_VERSION=$(npm view logbook-waypoint-server version 2>/dev/null || echo "0.1.0")
         echo "Latest NPM version: $LATEST_NPM_VERSION"
         
         # Set the package.json to the latest NPM version, then bump

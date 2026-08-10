@@ -1,4 +1,4 @@
-// Vibe Annotations Background Service Worker
+// Logbook Waypoint Background Service Worker
 
 class VibeAnnotationsBackground {
   constructor() {
@@ -75,7 +75,7 @@ class VibeAnnotationsBackground {
           currentVersion,
           timestamp: Date.now(),
           changelog: this.getChangelogForVersion(currentVersion),
-          releaseUrl: `https://github.com/RaphaelRegnier/vibe-annotations/releases/tag/v${currentVersion}`
+          releaseUrl: `https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v${currentVersion}`
         }
       });
       
@@ -591,7 +591,7 @@ class VibeAnnotationsBackground {
         
         await chrome.action.setTitle({
           tabId: tabId,
-          title: `Vibe Annotations - ${pendingCount} pending annotation${pendingCount === 1 ? '' : 's'}`
+          title: `Logbook Waypoint - ${pendingCount} pending annotation${pendingCount === 1 ? '' : 's'}`
         });
       } else {
         await this.clearBadge(tabId);
@@ -625,7 +625,7 @@ class VibeAnnotationsBackground {
         
         await chrome.action.setTitle({
           tabId: tabId,
-          title: `Vibe Annotations - ${pendingCount} pending annotation${pendingCount === 1 ? '' : 's'}`
+          title: `Logbook Waypoint - ${pendingCount} pending annotation${pendingCount === 1 ? '' : 's'}`
         });
       } else {
         await this.clearBadge(tabId);
@@ -640,7 +640,7 @@ class VibeAnnotationsBackground {
       await chrome.action.setBadgeText({ tabId: tabId, text: '' });
       await chrome.action.setTitle({ 
         tabId: tabId, 
-        title: 'Vibe Annotations' 
+        title: 'Logbook Waypoint'
       });
     } catch (error) {
       console.error('Error clearing badge:', error);
@@ -1098,7 +1098,7 @@ class VibeAnnotationsBackground {
     // Real changelog mapping for actual versions
     const changelogs = {
       '1.0.0': [
-        'Initial release of Vibe Annotations',
+        'Initial release of Vibe Annotations (MIT foundation)',
         'Visual annotation system for localhost development',
         'MCP integration for AI coding agents',
         'Light/dark theme support with system preference detection'

@@ -25,7 +25,7 @@ const packageJson = JSON.parse(readFileSync(path.join(__dirname, '../package.jso
 
 // Configuration
 const PORT = 3846;
-const DATA_DIR = path.join(process.env.HOME || process.env.USERPROFILE, '.vibe-annotations');
+const DATA_DIR = path.join(process.env.HOME || process.env.USERPROFILE, '.logbook-waypoint');
 const DATA_FILE = path.join(DATA_DIR, 'annotations.json');
 
 class LocalAnnotationsServer {
@@ -33,7 +33,7 @@ class LocalAnnotationsServer {
     this.app = express();
     this.mcpServer = new Server(
       {
-        name: 'claude-annotations',
+        name: 'logbook-waypoint',
         version: '0.1.0',
       },
       {
@@ -74,7 +74,7 @@ class LocalAnnotationsServer {
       res.json({ 
         status: 'ok', 
         version: packageJson.version,
-        minExtensionVersion: '1.0.0', // Minimum compatible extension version
+        minExtensionVersion: '0.1.0',
         timestamp: new Date().toISOString() 
       });
     });
@@ -342,7 +342,7 @@ class LocalAnnotationsServer {
   createMCPServer() {
     const server = new Server(
       {
-        name: 'claude-annotations',
+        name: 'logbook-waypoint',
         version: '0.1.0',
       },
       {
@@ -1146,9 +1146,9 @@ class LocalAnnotationsServer {
       if (Date.now() - lastCheck < 86400000) return;
       
       // Fetch latest version from NPM registry
-      const response = await fetch('https://registry.npmjs.org/vibe-annotations-server/latest', {
+      const response = await fetch('https://registry.npmjs.org/logbook-waypoint-server/latest', {
         headers: {
-          'User-Agent': 'vibe-annotations-server'
+          'User-Agent': 'logbook-waypoint-server'
         }
       });
       
@@ -1186,7 +1186,7 @@ class LocalAnnotationsServer {
         console.log(chalk.yellow(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  Update available: ${packageJson.version} → ${latestVersion}                          ║
-║  Run: npm update -g vibe-annotations-server                    ║
+║  Run: npm update -g logbook-waypoint-server                    ║
 ╚════════════════════════════════════════════════════════════════╝
         `));
       }
@@ -1209,7 +1209,7 @@ class LocalAnnotationsServer {
     this.checkForUpdates().catch(() => {});
     
     this.server = this.app.listen(PORT, () => {
-      console.log(`Vibe Annotations server running on http://127.0.0.1:${PORT}`);
+      console.log(`Logbook Waypoint server running on http://127.0.0.1:${PORT}`);
       console.log(`SSE Endpoint: http://127.0.0.1:${PORT}/sse`);
       console.log(`HTTP API: http://127.0.0.1:${PORT}/api/annotations`);
       console.log(`MCP Endpoint: http://127.0.0.1:${PORT}/mcp`);

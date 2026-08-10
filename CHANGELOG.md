@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Vibe Annotations extension will be documented in this file.
+All notable changes to the Logbook Waypoint extension will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-08-04
 
 ### Added
-- Initial release of Vibe Annotations Chrome extension
+- Initial release of Vibe Annotations Chrome extension (MIT foundation)
 - Visual annotation system for localhost development
 - MCP integration for AI coding agents
 - Light/dark theme support with system preference detection

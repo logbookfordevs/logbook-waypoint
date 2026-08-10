@@ -220,7 +220,7 @@ var VibeToolbar = (() => {
       <div class="vibe-settings-header">
         <div>
           <span class="vibe-settings-title">${escapeHTML(route)}</span>
-          <a href="https://github.com/RaphaelRegnier/vibe-annotations/releases/tag/v${escapeHTML(version)}" target="_blank" rel="noopener" class="vibe-settings-version">v${escapeHTML(version)}</a>
+          <a href="https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v${escapeHTML(version)}" target="_blank" rel="noopener" class="vibe-settings-version">v${escapeHTML(version)}</a>
         </div>
         <div class="vibe-settings-header-right">
           <button class="vibe-theme-btn" title="${capitalize(currentTheme)} theme">
@@ -291,7 +291,7 @@ var VibeToolbar = (() => {
         <div class="vibe-settings-separator"></div>
         <button class="vibe-settings-link vibe-close-overlay" type="button">
           ${ICONS.power}
-          <span>Close Vibe Annotations</span>
+          <span>Close Logbook Waypoint</span>
         </button>
       </div>
     `;
@@ -459,11 +459,11 @@ var VibeToolbar = (() => {
         <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <div class="vibe-settings-separator"></div>
-      <a href="https://github.com/RaphaelRegnier/vibe-annotations" target="_blank" rel="noopener" class="vibe-settings-link">
+      <a href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noopener" class="vibe-settings-link">
         ${ICONS.github}
-        <span>Contribute to Vibe Annotations</span>
+        <span>Contribute to Logbook Waypoint</span>
       </a>
-      <a href="https://github.com/RaphaelRegnier/vibe-annotations/releases/tag/v${escapeHTML(version)}" target="_blank" rel="noopener" class="vibe-settings-link">
+      <a href="https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v${escapeHTML(version)}" target="_blank" rel="noopener" class="vibe-settings-link">
         ${ICONS.newspaper}
         <span>Release notes</span>
       </a>
@@ -512,12 +512,12 @@ var VibeToolbar = (() => {
         <div class="vibe-guide-section">
           <div class="vibe-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--v-text-secondary);">(optional)</span></div>
           <p class="vibe-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
-          <div class="vibe-guide-cmd" data-cmd="npm install -g vibe-annotations-server">
-            <code>npm install -g vibe-annotations-server</code>
+          <div class="vibe-guide-cmd" data-cmd="npm install -g logbook-waypoint-server">
+            <code>npm install -g logbook-waypoint-server</code>
             <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <div class="vibe-guide-cmd" data-cmd="vibe-annotations-server start">
-            <code>vibe-annotations-server start</code>
+          <div class="vibe-guide-cmd" data-cmd="logbook-waypoint-server start">
+            <code>logbook-waypoint-server start</code>
             <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
           <p class="vibe-guide-text" style="margin-top:8px;">Then connect your agent:</p>
@@ -529,36 +529,36 @@ var VibeToolbar = (() => {
             <button class="vibe-guide-tab" data-tab="openclaw">OpenClaw</button>
           </div>
           <div class="vibe-guide-panel active" data-panel="claude">
-            <div class="vibe-guide-cmd" data-cmd="claude mcp add --transport http vibe-annotations http://127.0.0.1:3846/mcp">
-              <code>claude mcp add --transport http vibe-annotations http://127.0.0.1:3846/mcp</code>
+            <div class="vibe-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
+              <code>claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
           <div class="vibe-guide-panel" data-panel="cursor">
             <p class="vibe-guide-text">Add to <strong>.cursor/mcp.json</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"vibe-annotations":{"url":"http://127.0.0.1:3846/mcp"}}}'>
-              <code>{"mcpServers":{"vibe-annotations":{"url":"http://127.0.0.1:3846/mcp"}}}</code>
+            <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}'>
+              <code>{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
           <div class="vibe-guide-panel" data-panel="windsurf">
             <p class="vibe-guide-text">Add to Windsurf MCP settings:</p>
-            <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"vibe-annotations":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}'>
-              <code>{"mcpServers":{"vibe-annotations":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}</code>
+            <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}'>
+              <code>{"mcpServers":{"logbook-waypoint":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
           <div class="vibe-guide-panel" data-panel="codex">
             <p class="vibe-guide-text">Add to <strong>~/.codex/config.toml</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd="[mcp_servers.vibe-annotations]&#10;url = &quot;http://127.0.0.1:3846/mcp&quot;">
-              <code>[mcp_servers.vibe-annotations] url = "..."</code>
+            <div class="vibe-guide-cmd" data-cmd="[mcp_servers.logbook-waypoint]&#10;url = &quot;http://127.0.0.1:3846/mcp&quot;">
+              <code>[mcp_servers.logbook-waypoint] url = "..."</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
           <div class="vibe-guide-panel" data-panel="openclaw">
             <p class="vibe-guide-text">Add to <strong>~/.openclaw/openclaw.json</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"vibe-annotations":{"url":"http://127.0.0.1:3846/mcp"}}}'>
-              <code>{"mcpServers":{"vibe-annotations":{"url":"http://127.0.0.1:3846/mcp"}}}</code>
+            <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}'>
+              <code>{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
@@ -626,17 +626,17 @@ var VibeToolbar = (() => {
           </div>
           <div class="vibe-guide-section">
             <div class="vibe-guide-label">Setup</div>
-            <div class="vibe-guide-cmd" data-cmd="npm install -g vibe-annotations-server">
-              <code>npm install -g vibe-annotations-server</code>
+            <div class="vibe-guide-cmd" data-cmd="npm install -g logbook-waypoint-server">
+              <code>npm install -g logbook-waypoint-server</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <div class="vibe-guide-cmd" data-cmd="vibe-annotations-server start">
-              <code>vibe-annotations-server start</code>
+            <div class="vibe-guide-cmd" data-cmd="logbook-waypoint-server start">
+              <code>logbook-waypoint-server start</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
             <p class="vibe-guide-text" style="margin-top:8px;">Then connect your agent (e.g. Claude Code):</p>
-            <div class="vibe-guide-cmd" data-cmd="claude mcp add --transport http vibe-annotations http://127.0.0.1:3846/mcp">
-              <code>claude mcp add --transport http vibe-annotations http://127.0.0.1:3846/mcp</code>
+            <div class="vibe-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
+              <code>claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
@@ -982,7 +982,7 @@ var VibeToolbar = (() => {
 
     const dateStr = new Date().toISOString().slice(0, 10);
     const hostStr = loc.hostname + (loc.port ? '-' + loc.port : '');
-    const filename = `vibe-annotations-${hostStr}-${dateStr}.json`;
+    const filename = `logbook-waypoint-${hostStr}-${dateStr}.json`;
 
     // Must append to document.body (not shadow root) for downloads to work
     const a = document.createElement('a');
@@ -1024,7 +1024,7 @@ var VibeToolbar = (() => {
 
     // Validate envelope
     if (!data || data.vibe_annotations_export !== true || !Array.isArray(data.annotations)) {
-      showInfoModal('Invalid format', 'This file is not a Vibe Annotations export.');
+      showInfoModal('Invalid format', 'This file is not a Logbook Waypoint export.');
       return;
     }
 
@@ -1198,7 +1198,7 @@ var VibeToolbar = (() => {
     const vpStr = vp ? `${vp.width}\u00D7${vp.height}` : '';
     const count = annotations.length;
 
-    let header = `# Vibe Annotations \u2014 ${route}`;
+    let header = `# Logbook Waypoint \u2014 ${route}`;
     header += `\n${host}`;
     if (vpStr) header += ` \u00B7 ${vpStr}`;
     header += ` \u00B7 ${count} annotation${count !== 1 ? 's' : ''}`;
