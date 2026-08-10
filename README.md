@@ -79,6 +79,10 @@ For JSON-based MCP clients:
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
+## Security boundary
+
+The server binds only to IPv4 loopback, validates local Host and Origin headers, enables MCP DNS-rebinding protection, validates annotation IDs, and labels page-derived MCP output as untrusted. See [SECURITY.md](SECURITY.md) for the active boundary and the deferred browser-bridge risk.
+
 ## Project lineage
 
 Logbook Waypoint begins from Vibe Annotations commit [`8864e12`](https://github.com/RaphaelRegnier/vibe-annotations/commit/8864e12cfb28c6825ef6ccf996d291fc2b0ebcd4), the final repository commit distributed under the MIT License before its upstream license change.

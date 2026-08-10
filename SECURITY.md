@@ -56,4 +56,18 @@ When using Logbook Waypoint:
 3. **Data Privacy**: Annotations are stored locally and never sent to external servers
 4. **Extension Permissions**: The extension only requests necessary permissions for localhost domains
 
+## Local trust boundary
+
+The local server:
+
+- Binds only to `127.0.0.1:3846`.
+- Rejects non-loopback `Host` headers and untrusted browser origins.
+- Enables MCP DNS-rebinding protection for streamable HTTP and legacy SSE transports.
+- Accepts only annotation IDs matching the extension's current `vibe_<timestamp>_<random>` contract.
+- Marks annotation and page-derived MCP data as untrusted content that cannot override agent, repository, or tool instructions.
+
+Screenshots are embedded in the local annotation JSON in this foundation. There are no attachment filesystem endpoints, so attachment path-containment controls do not apply yet.
+
+The optional page-world API (`window.__vibeAnnotations`) still communicates through page-visible custom events. Enable the extension only on development pages you trust. Authentication or capability isolation for that bridge is tracked as a separate compatibility-sensitive hardening phase.
+
 Thank you for helping keep Logbook Waypoint and our users safe!
