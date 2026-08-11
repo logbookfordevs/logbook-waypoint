@@ -1375,4 +1375,40 @@ var VIBE_STYLES = `
 .vibe-btn-primary:hover {
   opacity: 0.9;
 }
+
+.waypoint-variant-picker {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: min(360px, calc(100vw - 48px));
+}
+
+.waypoint-variant-list {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.waypoint-variant-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 8px;
+}
+
+.waypoint-variant-activate {
+  justify-content: flex-start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.waypoint-variant-discard:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.waypoint-variant-status {
+  color: var(--v-text-secondary);
+  font-size: 12px;
+}
 `;

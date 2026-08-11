@@ -114,6 +114,24 @@ var VibeAPI = (() => {
     }
   }
 
+  async function runVariantOperation(action, id, key) {
+    const response = await chrome.runtime.sendMessage({ action, id, key });
+    if (!response?.success || !response.annotation) throw new Error(response?.error || `${action} failed`);
+    return response.annotation;
+  }
+
+  function activateVariant(id, key) {
+    return runVariantOperation('activateVariant', id, key);
+  }
+
+  function discardVariant(id, key) {
+    return runVariantOperation('discardVariant', id, key);
+  }
+
+  function finalizeVariant(id, key) {
+    return runVariantOperation('finalizeVariant', id, key);
+  }
+
   async function deleteAnnotationsByUrl() {
     try {
       const r = await chrome.runtime.sendMessage({ action: 'deleteAnnotationsByUrl', url: window.location.href });
@@ -270,6 +288,9 @@ var VibeAPI = (() => {
     saveAnnotation,
     updateAnnotation,
     deleteAnnotation,
+    activateVariant,
+    discardVariant,
+    finalizeVariant,
     deleteAnnotationsByUrl,
     onAnnotationsChanged,
     getScreenshotEnabled,

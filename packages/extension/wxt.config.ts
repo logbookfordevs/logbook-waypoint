@@ -30,6 +30,7 @@ const CONTENT_MODULES = [
   'content/modules/badge-manager.js',
   'content/modules/inspection-mode.js',
   'content/modules/keyboard-target.js',
+  'content/modules/variant-picker.js',
   'content/modules/annotation-popover.js',
   'content/modules/floating-toolbar.js',
   'content/content.js',

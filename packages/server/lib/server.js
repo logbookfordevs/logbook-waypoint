@@ -23,6 +23,15 @@ import {
   mcpTransportSecurity
 } from './security.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
+import {
+  VariantContractError,
+  activateVariant as activateVariantRecord,
+  addVariant as addVariantRecord,
+  assertAnnotationResolvable,
+  createVariantRequest,
+  discardVariant as discardVariantRecord,
+  finalizeVariant as finalizeVariantRecord,
+} from './variants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +77,9 @@ export class LocalAnnotationsServer {
     this.transports = {}; // Track transport sessions
     this.connections = new Set(); // Track HTTP connections
     this.saveLock = Promise.resolve(); // Serialize save operations to prevent race conditions
+    this.variantScaffoldOperations = {
+      remove: async keys => ({ removed: keys, remaining: [] }),
+    };
     
     this.setupExpress();
     this.setupMCP();
@@ -208,6 +220,32 @@ export class LocalAnnotationsServer {
       }
     });
 
+    const runVariantOperation = operation => async (req, res) => {
+      try {
+        const annotation = await operation(req);
+        res.json({ success: true, annotation });
+      } catch (error) {
+        const status = error instanceof VariantContractError ? 409 : 400;
+        res.status(status).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
+      }
+    };
+
+    this.app.post('/api/annotations/:id/variants/request', runVariantOperation(
+      req => this.requestVariants({ id: req.params.id, variants: req.body?.variants }),
+    ));
+    this.app.post('/api/annotations/:id/variants', runVariantOperation(
+      req => this.createVariant({ id: req.params.id, variant: req.body?.variant }),
+    ));
+    this.app.post('/api/annotations/:id/variants/:key/activate', runVariantOperation(
+      req => this.activateVariant({ id: req.params.id, key: req.params.key }),
+    ));
+    this.app.delete('/api/annotations/:id/variants/:key', runVariantOperation(
+      req => this.discardVariant({ id: req.params.id, key: req.params.key }),
+    ));
+    this.app.post('/api/annotations/:id/variants/:key/finalize', runVariantOperation(
+      req => this.finalizeVariant({ id: req.params.id, key: req.params.key }),
+    ));
+
     this.app.put('/api/annotations/:id', async (req, res) => {
       try {
         const { id } = req.params;
@@ -230,6 +268,14 @@ export class LocalAnnotationsServer {
         
         if (index === -1) {
           return res.status(404).json({ error: 'Annotation not found' });
+        }
+
+        if (updates.status === 'resolved' || updates.status === 'completed') {
+          try {
+            assertAnnotationResolvable(annotations[index]);
+          } catch (error) {
+            return res.status(409).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
+          }
         }
         
         annotations[index] = {
@@ -501,6 +547,76 @@ export class LocalAnnotationsServer {
             }
           },
           {
+            name: 'request_variants',
+            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'Annotation ID' },
+                variants: {
+                  type: 'array',
+                  minItems: 1,
+                  items: {
+                    type: 'object',
+                    properties: {
+                      key: { type: 'string' },
+                      name: { type: 'string' },
+                      implementation: { type: 'object' },
+                      scaffold: { type: 'array', items: { type: 'string' } },
+                    },
+                    required: ['key', 'name', 'implementation'],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ['id', 'variants'],
+              additionalProperties: false,
+            },
+          },
+          {
+            name: 'create_variant',
+            description: 'Adds one named candidate to an existing unresolved Variant request.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                variant: { type: 'object' },
+              },
+              required: ['id', 'variant'],
+              additionalProperties: false,
+            },
+          },
+          {
+            name: 'activate_variant',
+            description: 'Makes one Variant Active without changing the Annotation lifecycle.',
+            inputSchema: {
+              type: 'object',
+              properties: { id: { type: 'string' }, key: { type: 'string' } },
+              required: ['id', 'key'],
+              additionalProperties: false,
+            },
+          },
+          {
+            name: 'discard_variant',
+            description: 'Discards an inactive Variant and removes its implementation and exclusive Scaffold.',
+            inputSchema: {
+              type: 'object',
+              properties: { id: { type: 'string' }, key: { type: 'string' } },
+              required: ['id', 'key'],
+              additionalProperties: false,
+            },
+          },
+          {
+            name: 'finalize_variant',
+            description: 'Preserves one chosen implementation and removes all other implementations and Scaffold.',
+            inputSchema: {
+              type: 'object',
+              properties: { id: { type: 'string' }, key: { type: 'string' } },
+              required: ['id', 'key'],
+              additionalProperties: false,
+            },
+          },
+          {
             name: 'get_annotation_screenshot',
             description: 'Retrieves screenshot data for a specific annotation when visual context is needed to understand and implement the user\'s feedback. The read_annotations tool returns a has_screenshot flag to indicate availability. WHEN TO USE THIS TOOL: (1) Annotation mentions visual/layout/styling/positioning issues (e.g., "make it look better", "spacing is off", "layout is broken"), (2) You need to see exact element positioning, colors, or visual hierarchy, (3) The element_context text data seems insufficient to implement the fix accurately. WHEN TO SKIP: (1) Simple text content changes, (2) Clear functional bugs with sufficient text description, (3) Cases where element_context (tag, classes, styles, position) provides enough implementation detail. The screenshot includes viewport dimensions, element bounds, and visual context that complements the text-based element_context data.',
             inputSchema: {
@@ -589,6 +705,27 @@ export class LocalAnnotationsServer {
                   text: JSON.stringify(createToolPayload('get_annotation_screenshot', result), null, 2)
                 }
               ]
+            };
+          }
+
+          case 'request_variants':
+          case 'create_variant':
+          case 'activate_variant':
+          case 'discard_variant':
+          case 'finalize_variant': {
+            const operations = {
+              request_variants: () => this.requestVariants(args),
+              create_variant: () => this.createVariant(args),
+              activate_variant: () => this.activateVariant(args),
+              discard_variant: () => this.discardVariant(args),
+              finalize_variant: () => this.finalizeVariant(args),
+            };
+            const annotation = await operations[name]();
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify(createToolPayload(name, { annotation }), null, 2),
+              }],
             };
           }
 
@@ -743,6 +880,37 @@ export class LocalAnnotationsServer {
   }
 
   // MCP Tool implementations
+  async updateVariantAnnotation(id, update) {
+    if (!isValidAnnotationId(id)) throw new Error('Invalid annotation ID');
+    return this.applyAnnotationsUpdate(async annotations => {
+      const index = annotations.findIndex(annotation => annotation.id === id);
+      if (index === -1) throw new Error(`Annotation with id ${id} not found`);
+      const updated = await update(annotations[index]);
+      annotations[index] = { ...updated, updated_at: new Date().toISOString() };
+      return annotations[index];
+    });
+  }
+
+  async requestVariants(args) {
+    return this.updateVariantAnnotation(args?.id, annotation => createVariantRequest(annotation, args?.variants));
+  }
+
+  async createVariant(args) {
+    return this.updateVariantAnnotation(args?.id, annotation => addVariantRecord(annotation, args?.variant));
+  }
+
+  async activateVariant(args) {
+    return this.updateVariantAnnotation(args?.id, annotation => activateVariantRecord(annotation, args?.key));
+  }
+
+  async discardVariant(args) {
+    return this.updateVariantAnnotation(args?.id, annotation => discardVariantRecord(annotation, args?.key, this.variantScaffoldOperations));
+  }
+
+  async finalizeVariant(args) {
+    return this.updateVariantAnnotation(args?.id, annotation => finalizeVariantRecord(annotation, args?.key, this.variantScaffoldOperations));
+  }
+
   async readAnnotations(args) {
     const annotations = await this.loadAnnotations();
     const { status = 'pending', limit = 50, offset = 0, url } = args;

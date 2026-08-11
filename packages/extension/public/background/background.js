@@ -153,6 +153,14 @@ class VibeAnnotationsBackground {
             .then(() => sendResponse({ success: true }))
             .catch(error => sendResponse({ success: false, error: error.message }));
           break;
+
+        case 'activateVariant':
+        case 'discardVariant':
+        case 'finalizeVariant':
+          this.runVariantOperation(request.action, request.id, request.key)
+            .then(annotation => sendResponse({ success: true, annotation }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+          break;
           
         case 'exportAnnotations':
           this.exportAnnotations(request.format)
@@ -334,6 +342,35 @@ class VibeAnnotationsBackground {
       
       return annotations;
     }
+  }
+
+  async runVariantOperation(action, id, key) {
+    const operation = {
+      activateVariant: { method: 'POST', suffix: 'activate' },
+      discardVariant: { method: 'DELETE', suffix: '' },
+      finalizeVariant: { method: 'POST', suffix: 'finalize' },
+    }[action];
+    if (!operation) throw new Error('Unknown Variant operation');
+    const suffix = operation.suffix ? `/${operation.suffix}` : '';
+    const response = await fetch(`${this.apiServerUrl}/api/annotations/${encodeURIComponent(id)}/variants/${encodeURIComponent(key)}${suffix}`, {
+      method: operation.method,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const result = await response.json();
+    if (!response.ok || !result.annotation) {
+      const remaining = result.remaining_cleanup?.length ? ` Remaining cleanup: ${result.remaining_cleanup.join(', ')}` : '';
+      throw new Error(`${result.error || `Variant operation failed (${response.status})`}${remaining}`);
+    }
+    await this._withStorageLock(async () => {
+      const stored = await chrome.storage.local.get(['annotations']);
+      const annotations = stored.annotations || [];
+      const index = annotations.findIndex(annotation => annotation.id === id);
+      if (index !== -1) {
+        annotations[index] = result.annotation;
+        await chrome.storage.local.set({ annotations });
+      }
+    });
+    return result.annotation;
   }
 
   async saveAnnotation(annotation) {

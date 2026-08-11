@@ -229,6 +229,11 @@ var VibeAnnotationPopover = (() => {
 
   async function onEditRequested({ annotation, element }) {
     VibeInspectionMode.tempDisable();
+    if (WaypointVariantPicker.handles(annotation)) {
+      dismiss();
+      WaypointVariantPicker.show(annotation, element);
+      return;
+    }
     const context = await VibeElementContext.generate(element);
     show(element, context, annotation);
   }
