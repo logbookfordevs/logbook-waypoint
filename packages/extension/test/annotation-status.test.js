@@ -118,6 +118,26 @@ test('generic extension updates reject lifecycle state and Claim changes', async
   );
 });
 
+test('extension saves cannot create or replace lifecycle-owned state', async () => {
+  const { WaypointAnnotationStatus: status } = await loadStatus();
+  const pending = { id: 'waypoint_1750000000000_abc123xyz', status: 'pending', comment: 'Original' };
+
+  assert.doesNotThrow(() => status.assertSaveAllowed(null, pending));
+  assert.throws(
+    () => status.assertSaveAllowed(null, { ...pending, status: 'resolved' }),
+    /must start Pending/i,
+  );
+  assert.throws(
+    () => status.assertSaveAllowed(null, { ...pending, claim: { owner: 'agent-one' } }),
+    /must start Pending/i,
+  );
+  assert.doesNotThrow(() => status.assertSaveAllowed(pending, { ...pending, comment: 'Edited' }));
+  assert.throws(
+    () => status.assertSaveAllowed(pending, { ...pending, status: 'discarded' }),
+    /lifecycle operations/i,
+  );
+});
+
 test('annotation collection adapter combines canonical ID and lifecycle validation', async () => {
   const context = await loadStatus();
   context.WaypointAnnotationId = {
@@ -149,4 +169,5 @@ test('background startup completes schema migrations before enabling Queue consu
   assert.ok(migration < syncFlags);
   assert.ok(syncFlags < messages);
   assert.ok(messages < monitoring);
+  assert.match(source, /WaypointAnnotationStatus\.assertSaveAllowed\(annotations\[existingIndex\], annotation\)/);
 });

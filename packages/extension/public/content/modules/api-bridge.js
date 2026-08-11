@@ -130,8 +130,11 @@ var WaypointAPI = (() => {
       }
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
-      WaypointVariantPolicy.assertSaveAllowed(null, annotation);
-      all.push(annotation);
+      const existingIndex = all.findIndex(candidate => candidate.id === annotation.id);
+      WaypointAnnotationStatus.assertSaveAllowed(all[existingIndex], annotation);
+      WaypointVariantPolicy.assertSaveAllowed(all[existingIndex], annotation);
+      if (existingIndex === -1) all.push(annotation);
+      else all[existingIndex] = annotation;
       await chrome.storage.local.set({ waypointAnnotations: all });
       return true;
     }

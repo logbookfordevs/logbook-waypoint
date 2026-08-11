@@ -47,6 +47,21 @@ globalThis.WaypointAnnotationStatus = (() => {
     return { ...updates };
   }
 
+  function assertSaveAllowed(existing, incoming) {
+    if (!existing) {
+      if (incoming?.status !== 'pending' || Object.hasOwn(incoming, 'claim')) {
+        throw new TypeError('New Annotations must start Pending without a Claim');
+      }
+      return incoming;
+    }
+    const existingClaim = Object.hasOwn(existing, 'claim') ? JSON.stringify(existing.claim) : null;
+    const incomingClaim = Object.hasOwn(incoming, 'claim') ? JSON.stringify(incoming.claim) : null;
+    if (existing.status !== incoming?.status || existingClaim !== incomingClaim) {
+      throw new TypeError('Annotation lifecycle state and Claim change only through lifecycle operations');
+    }
+    return incoming;
+  }
+
   function assertFilter(status) {
     if (status !== 'all' && !CANONICAL_STATUSES.includes(status)) {
       throw new TypeError('Invalid export status');
@@ -72,6 +87,7 @@ globalThis.WaypointAnnotationStatus = (() => {
   return {
     ACTIONABLE_STATUSES: Object.freeze([...ACTIONABLE_STATUSES]),
     CANONICAL_STATUSES,
+    assertSaveAllowed,
     assertFilter,
     countActionable,
     filterActionable,

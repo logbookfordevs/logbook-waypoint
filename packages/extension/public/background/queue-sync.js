@@ -8,6 +8,13 @@ var WaypointQueueSync = (() => {
     return content;
   }
 
+  function withServerLifecycle(candidate, server) {
+    const merged = { ...candidate, status: server.status };
+    if (Object.hasOwn(server, 'claim')) merged.claim = server.claim;
+    else delete merged.claim;
+    return merged;
+  }
+
   function mergeVariantFields(local, server) {
     const localTime = new Date(local.updated_at || local.created_at || 0).getTime();
     const serverTime = new Date(server.updated_at || server.created_at || 0).getTime();
@@ -17,8 +24,9 @@ var WaypointQueueSync = (() => {
       if (field in variantOwner) merged[field] = variantOwner[field];
       else delete merged[field];
     }
-    const matchesServer = JSON.stringify(withoutSyncFlag(merged)) === JSON.stringify(withoutSyncFlag(server));
-    return { ...merged, _synced: matchesServer };
+    const lifecycleMerged = withServerLifecycle(merged, server);
+    const matchesServer = JSON.stringify(withoutSyncFlag(lifecycleMerged)) === JSON.stringify(withoutSyncFlag(server));
+    return { ...lifecycleMerged, _synced: matchesServer };
   }
 
   function merge(localAnnotations, serverAnnotations, deletedAnnotationIds = []) {
@@ -42,7 +50,9 @@ var WaypointQueueSync = (() => {
         const localOwnsVariant = hasVariantOwnedState(local);
         const serverOwnsVariant = hasVariantOwnedState(server);
         if (localOwnsVariant && !serverOwnsVariant) {
-          annotations.push(local);
+          const merged = withServerLifecycle(local, server);
+          annotations.push(merged);
+          if (JSON.stringify(merged) !== JSON.stringify(local)) changed = true;
           continue;
         }
         if (localOwnsVariant || serverOwnsVariant) {
@@ -57,9 +67,11 @@ var WaypointQueueSync = (() => {
           annotations.push({ ...server, _synced: true });
           changed = true;
         } else {
-          if (!local._synced) flagsChanged = true;
-          annotations.push({ ...local, _synced: true });
-          if (localTime > serverTime) changed = true;
+          const merged = withServerLifecycle(local, server);
+          const matchesServer = JSON.stringify(withoutSyncFlag(merged)) === JSON.stringify(withoutSyncFlag(server));
+          if (!matchesServer) flagsChanged = true;
+          annotations.push({ ...merged, _synced: matchesServer });
+          if (localTime > serverTime || JSON.stringify(merged) !== JSON.stringify(local)) changed = true;
         }
       } else if (local) {
         if (local._synced) {

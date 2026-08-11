@@ -439,6 +439,7 @@ class WaypointAnnotationsBackground {
         const annotations = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
 
         const existingIndex = annotations.findIndex(a => a.id === annotation.id);
+        WaypointAnnotationStatus.assertSaveAllowed(annotations[existingIndex], annotation);
         WaypointVariantPolicy.assertSaveAllowed(annotations[existingIndex], annotation);
         if (existingIndex >= 0) {
           annotations[existingIndex] = annotation;

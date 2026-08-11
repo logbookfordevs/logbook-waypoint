@@ -150,6 +150,33 @@ test('direct storage fallback rejects non-Waypoint Annotation IDs', async () => 
   assert.deepEqual(writes, []);
 });
 
+test('direct storage fallback rejects lifecycle state injection', async () => {
+  const context = createBrowserContext();
+  const writes = [];
+  context.chrome = {
+    runtime: { sendMessage: async () => { throw new Error('background unavailable'); } },
+    storage: {
+      local: {
+        get: async () => ({ waypointAnnotations: [] }),
+        set: async value => { writes.push(value); },
+      },
+    },
+  };
+  context.WaypointVariantPolicy = { assertSaveAllowed: () => {} };
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  await assert.rejects(
+    context.WaypointAPI.saveAnnotation({
+      id: 'waypoint_1750000000000_abc123xyz',
+      status: 'resolved',
+      comment: 'Bypass',
+    }),
+    /must start Pending/i,
+  );
+  assert.deepEqual(writes, []);
+});
+
 test('direct storage fallback keeps Annotation identity immutable', async () => {
   const context = createBrowserContext();
   const writes = [];
@@ -308,6 +335,36 @@ test('Queue conflict resolution preserves Variant-owned state from ordinary reco
   assert.equal(fieldGranular.annotations[0].comment, 'new local comment');
   assert.equal(fieldGranular.annotations[0].variant_request.active_variant_key, 'spacious');
   assert.equal(fieldGranular.annotations[0]._synced, false);
+});
+
+test('Queue conflict resolution preserves server-owned lifecycle state and Claim', async () => {
+  const context = createBrowserContext();
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'background/queue-sync.js');
+  const local = {
+    id: 'waypoint_1750000000001_abcdefghi',
+    status: 'pending',
+    comment: 'new local comment',
+    updated_at: '2026-01-03T00:00:00.000Z',
+  };
+
+  for (const server of [
+    {
+      ...local,
+      status: 'claimed',
+      comment: 'old server comment',
+      updated_at: '2026-01-02T00:00:00.000Z',
+      claim: { owner: 'agent-one', refreshed_at: '2026-01-02T00:00:00.000Z', expires_at: '2026-01-02T00:05:00.000Z' },
+    },
+    { ...local, status: 'resolved', comment: 'old server comment', updated_at: '2026-01-02T00:00:00.000Z' },
+    { ...local, status: 'discarded', comment: 'old server comment', updated_at: '2026-01-02T00:00:00.000Z' },
+  ]) {
+    const merged = context.WaypointQueueSync.merge([local], [server], []).annotations[0];
+    assert.equal(merged.comment, 'new local comment');
+    assert.equal(merged.status, server.status);
+    assert.deepEqual(merged.claim, server.claim);
+    assert.equal(merged._synced, false);
+  }
 });
 
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {
