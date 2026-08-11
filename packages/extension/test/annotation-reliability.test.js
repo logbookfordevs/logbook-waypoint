@@ -200,6 +200,37 @@ test('direct storage delete fallback rejects non-Waypoint Annotation IDs', async
   assert.deepEqual(writes, []);
 });
 
+test('storage reads ignore predecessor Annotation IDs', async () => {
+  const context = createBrowserContext();
+  context.window.location = {
+    href: 'http://localhost/review',
+    origin: 'http://localhost',
+    protocol: 'http:',
+  };
+  context.chrome = {
+    storage: {
+      local: {
+        get: async () => ({
+          waypointAnnotations: [
+            { id: 'vibe_1750000000000_abc123xyz', url: context.window.location.href },
+            { id: 'waypoint_1750000000000_abc123xyz', url: context.window.location.href },
+          ],
+        }),
+      },
+    },
+  };
+  context.WaypointAnnotationId = {
+    isValid: value => /^waypoint_[0-9]{10,16}_[a-z0-9]{6,32}$/.test(value),
+  };
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  const annotations = await context.WaypointAPI.loadAnnotations();
+
+  assert.deepEqual(annotations.map(annotation => annotation.id), [
+    'waypoint_1750000000000_abc123xyz',
+  ]);
+});
+
 test('full Queue sync preserves more than 50 annotations in both directions', async () => {
   const context = createBrowserContext();
   await loadScript(context, 'background/queue-sync.js');

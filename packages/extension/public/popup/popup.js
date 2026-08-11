@@ -1,5 +1,11 @@
 // Logbook Waypoint Popup JavaScript
 
+function validWaypointAnnotations(value) {
+  return Array.isArray(value)
+    ? value.filter(annotation => WaypointAnnotationId.isValid(annotation?.id))
+    : [];
+}
+
 class AnnotationsPopup {
   constructor() {
     this.annotations = [];
@@ -90,7 +96,7 @@ class AnnotationsPopup {
       const currentUrl = tab.url;
       
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const allAnnotations = result.waypointAnnotations || [];
+      const allAnnotations = validWaypointAnnotations(result.waypointAnnotations);
       
       // Filter annotations to only show those for the current URL
       this.annotations = allAnnotations.filter(annotation => 

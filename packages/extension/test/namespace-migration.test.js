@@ -62,6 +62,13 @@ test('background persistence consistently reads canonical Waypoint storage prope
   assert.match(source, /stored\.waypointAnnotations/);
   assert.match(source, /fresh\.waypointAnnotations/);
   assert.match(source, /updates\?\.id !== undefined && updates\.id !== id/);
+  assert.match(source, /validWaypointAnnotations/);
+});
+
+test('generated popup loads the shared Annotation ID adapter before storage consumers', async () => {
+  const source = await readFile(new URL('../.output/chrome-mv3/popup/popup.html', import.meta.url), 'utf8');
+
+  assert.ok(source.indexOf('../annotation-id.js') < source.indexOf('popup.js'));
 });
 
 test('generated annotation ID adapter precedes all callers and rejects legacy IDs', async () => {
