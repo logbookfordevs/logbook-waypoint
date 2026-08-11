@@ -101,6 +101,23 @@ test('confirmed project deletion rechecks URL scope inside the serialized mutati
   assert.equal(persisted[0].url, 'http://localhost:4000/one');
 });
 
+test('project deletion wildcard respects URL path and port boundaries', async () => {
+  const server = new LocalAnnotationsServer();
+  const stored = [
+    { id: 'vibe_1_abcdefghi', url: 'http://localhost:3000/app/one', comment: 'Match' },
+    { id: 'vibe_2_abcdefghi', url: 'http://localhost:3000/apple', comment: 'Path collision' },
+    { id: 'vibe_3_abcdefghi', url: 'http://localhost:30000/app/two', comment: 'Port collision' },
+  ];
+  let persisted;
+  server.loadAnnotations = async () => structuredClone(stored);
+  server._saveAnnotationsInternal = async annotations => { persisted = structuredClone(annotations); };
+
+  const result = await server.deleteProjectAnnotations({ url_pattern: 'http://localhost:3000/app/*', confirm: true });
+
+  assert.equal(result.count, 1);
+  assert.deepEqual(persisted.map(annotation => annotation.id), ['vibe_2_abcdefghi', 'vibe_3_abcdefghi']);
+});
+
 test('a persistence failure cannot partially finalize record-owned cleanup', async () => {
   const server = new LocalAnnotationsServer();
   const requested = await createServer().server.requestVariants({

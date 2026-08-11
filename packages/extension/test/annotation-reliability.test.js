@@ -138,19 +138,6 @@ test('full Queue sync preserves more than 50 annotations in both directions', as
   assert.equal(pushed.changed, true);
 });
 
-test('Variant cleanup errors preserve typed remaining work for the picker', async () => {
-  const context = createBrowserContext();
-  await loadScript(context, 'background/variant-errors.js');
-
-  assert.equal(
-    context.WaypointVariantErrors.formatRemainingCleanup([
-      { kind: 'scaffold_missing', key: 'switcher' },
-      { kind: 'active_variant', key: 'bold' },
-    ]),
-    'scaffold_missing:switcher, active_variant:bold',
-  );
-});
-
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {
   const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="target">Old</button></body></html>');
   const target = context.document.querySelector('#target');

@@ -72,10 +72,8 @@ function createToolErrorPayload(tool, error) {
 }
 
 function annotationMatchesUrlPattern(annotation, urlPattern) {
-  if (urlPattern.includes('*') || urlPattern.endsWith('/')) {
-    const baseUrl = urlPattern.replace('*', '').replace(/\/$/, '');
-    return annotation.url.startsWith(baseUrl);
-  }
+  if (urlPattern.endsWith('*')) return annotation.url.startsWith(urlPattern.slice(0, -1));
+  if (urlPattern.endsWith('/')) return annotation.url.startsWith(urlPattern);
   return annotation.url === urlPattern;
 }
 

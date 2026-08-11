@@ -3,6 +3,19 @@ globalThis.WaypointVariantPicker = (() => {
     return annotation?.variant_request?.status === 'unresolved';
   }
 
+  function locksPresentation(annotation) {
+    return annotation?.variant_request?.status === 'finalized';
+  }
+
+  function buildAnnotationUpdates(annotation, comment, pendingChanges, css) {
+    const updates = { comment, updated_at: new Date().toISOString() };
+    if (!locksPresentation(annotation)) {
+      updates.pending_changes = pendingChanges;
+      updates.css = css;
+    }
+    return updates;
+  }
+
   function escapeHTML(value) {
     const node = document.createElement('div');
     node.textContent = String(value);
@@ -82,5 +95,5 @@ globalThis.WaypointVariantPicker = (() => {
     return true;
   }
 
-  return { handles, show };
+  return { buildAnnotationUpdates, handles, locksPresentation, show };
 })();

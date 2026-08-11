@@ -17,6 +17,8 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   context.VibeAPI = {};
   const source = await readFile(new URL('../.output/chrome-mv3/content/modules/variant-picker.js', import.meta.url), 'utf8');
   vm.runInContext(source, context);
+  const errorSource = await readFile(new URL('../.output/chrome-mv3/background/variant-errors.js', import.meta.url), 'utf8');
+  vm.runInContext(errorSource, context);
 
   const ordinary = { id: 'vibe_1_abcdefghi', comment: 'Just a comment' };
   const variants = {
@@ -52,4 +54,22 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   assert.equal(status.getAttribute('role'), 'alert');
   assert.match(status.textContent, /scaffold switcher remains/);
   assert.notEqual(context.document.querySelector('.waypoint-variant-picker'), null);
+
+  const finalized = {
+    ...variants,
+    variant_request: { ...variants.variant_request, status: 'finalized' },
+  };
+  assert.equal(context.WaypointVariantPicker.handles(finalized), false);
+  assert.equal(context.WaypointVariantPicker.locksPresentation(finalized), true);
+  assert.deepEqual(
+    Object.keys(context.WaypointVariantPicker.buildAnnotationUpdates(finalized, 'Updated comment', {}, 'changed')).sort(),
+    ['comment', 'updated_at'],
+  );
+  assert.equal(
+    context.WaypointVariantErrors.formatRemainingCleanup([
+      { kind: 'scaffold_missing', key: 'switcher' },
+      { kind: 'active_variant', key: 'bold' },
+    ]),
+    'scaffold_missing:switcher, active_variant:bold',
+  );
 });
