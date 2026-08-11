@@ -74,7 +74,8 @@ class AnnotationsPopup {
           const parts = url.pathname.split('/');
           const filename = parts[parts.length - 1] || 'index.html';
           const parentDir = parts[parts.length - 2] || '';
-          routeElement.textContent = parentDir ? `${parentDir}/${filename}` : filename;
+          const filePath = parentDir ? `${parentDir}/${filename}` : filename;
+          routeElement.textContent = `${filePath}${url.search}${url.hash}`;
         } else {
           routeElement.textContent = `${url.hostname}:${url.port}${url.pathname}${url.search}${url.hash}`;
         }

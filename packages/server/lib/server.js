@@ -799,7 +799,10 @@ export class LocalAnnotationsServer {
     const projectInfo = Object.entries(groupedByProject).map(([baseUrl, annotations]) => ({
       base_url: baseUrl,
       annotation_count: annotations.length,
-      paths: [...new Set(annotations.map(a => new URL(a.url).pathname))].slice(0, 5), // Show up to 5 unique paths
+      paths: [...new Set(annotations.map(a => {
+        const annotationUrl = new URL(a.url);
+        return `${annotationUrl.pathname}${annotationUrl.search}${annotationUrl.hash}`;
+      }))].slice(0, 5), // Show up to 5 unique paths
       recommended_filter: `${baseUrl}/*`
     }));
 
