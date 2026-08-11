@@ -25,12 +25,12 @@ const CONTENT_MODULES = [
   'content/modules/theme-manager.js',
   'content/modules/api-bridge.js',
   'content/modules/shadow-dom-utils.js',
+  'content/modules/source-identity.js',
   'content/modules/element-context.js',
   'content/modules/badge-manager.js',
   'content/modules/inspection-mode.js',
   'content/modules/annotation-popover.js',
   'content/modules/floating-toolbar.js',
-  'content/modules/bridge-handler.js',
   'content/content.js',
 ];
 
@@ -56,12 +56,6 @@ export default defineConfig({
       {
         matches: LOCAL_MATCHES,
         js: CONTENT_MODULES,
-      },
-      {
-        matches: LOCAL_MATCHES,
-        js: ['content/bridge-api.js'],
-        world: 'MAIN',
-        run_at: 'document_start',
       },
     ],
     commands: {

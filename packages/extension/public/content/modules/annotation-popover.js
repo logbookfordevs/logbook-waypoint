@@ -2122,6 +2122,7 @@ var VibeAnnotationPopover = (() => {
       },
       source_file_path: context.source_mapping?.source_file_path || null,
       source_line_range: context.source_mapping?.source_line_range || null,
+      component_name: context.source_mapping?.component_name || null,
       project_area: context.source_mapping?.project_area || 'unknown',
       url_path: context.source_mapping?.url_path || window.location.pathname,
       source_map_available: context.source_mapping?.source_map_available || false,

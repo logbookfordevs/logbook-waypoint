@@ -454,11 +454,6 @@ var VibeToolbar = (() => {
         <span>Collaborating</span>
         <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
       </button>
-      <button class="vibe-settings-link vibe-workflow-btn" data-workflow="agents" type="button">
-        ${ICONS.robot}
-        <span>Annotating with agents</span>
-        <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
-      </button>
       <div class="vibe-settings-separator"></div>
       <a href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noopener" class="vibe-settings-link">
         ${ICONS.github}
@@ -666,38 +661,6 @@ var VibeToolbar = (() => {
           <div class="vibe-guide-section">
             <div class="vibe-guide-label">Cross-origin remap</div>
             <p class="vibe-guide-text">Importing annotations from a public URL into localhost? The extension offers to <strong>remap URLs</strong> automatically so annotations anchor to your local dev server.</p>
-          </div>
-        `
-      },
-      agents: {
-        title: 'Annotating with agents',
-        content: `
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Let agents annotate for you</div>
-            <p class="vibe-guide-text">Agents can help you annotate collaboratively, or work fully autonomously to review any site.</p>
-          </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Compatible agents</div>
-            <p class="vibe-guide-text"><strong>Claude Chrome extension</strong> has direct page access and can call the API from its javascript tool.</p>
-            <p class="vibe-guide-text"><strong>OpenClaw</strong> uses CDP evaluate to run JS on the page.</p>
-            <p class="vibe-guide-text"><strong>Claude Code, Cursor, Windsurf</strong> can access the page via a DevTools MCP server or Playwright.</p>
-          </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Prompt to get started</div>
-            <p class="vibe-guide-text">Copy this and paste it into your agent's chat to orient it towards the bridge API:</p>
-            <div class="vibe-guide-cmd" data-cmd="Read window.__vibeAnnotations.help() and use this extension for my comments on this project.">
-              <code>Read window.__vibeAnnotations.help() and use this extension for my comments on this project.</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
-            </div>
-          </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Requirement</div>
-            <p class="vibe-guide-text">The extension must be active on the page for the bridge API to be available. This works best when the agent uses <strong>your browser</strong> (Claude Chrome, DevTools MCP), since the extension is already installed.</p>
-            <p class="vibe-guide-text">Agents that launch their own browser (Playwright, Puppeteer) won't have the extension loaded by default. This can be configured by passing the extension path at launch, but requires some local setup.</p>
-          </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">How it works</div>
-            <p class="vibe-guide-text">The agent calls <code>__vibeAnnotations.help()</code> to discover the API, then uses <strong>createStyleAnnotation</strong> for broad CSS changes and <strong>createAnnotation</strong> for single-element edits. Changes preview live in the browser and get recorded as annotations for a coding agent to implement in source.</p>
           </div>
         `
       }
