@@ -61,6 +61,20 @@ test('Watch reconnects from the last successful cursor after Queue restoration',
   assert.equal(resumed.changes[0].annotation.comment, 'Move this button farther');
 });
 
+test('restored Watch history can reconcile a Queue change missed before persistence', async () => {
+  const pending = annotation();
+  const original = new WatchQueue({ initialCursor: 'initial-test-cursor' });
+  original.recordChanges([], [pending]);
+  const acknowledged = await original.watch({ timeoutMs: 0 });
+
+  const restored = new WatchQueue(original.toJSON());
+  const latestById = new Map(restored.history.map(change => [change.annotation.id, change.annotation]));
+  restored.recordChanges([...latestById.values()], [annotation({ status: 'discarded' })]);
+  const resumed = await restored.watch({ cursor: acknowledged.cursor, timeoutMs: 0 });
+
+  assert.equal(resumed.changes[0].annotation.status, 'discarded');
+});
+
 test('Watch wakes for a change and never creates a Claim', async () => {
   const queue = new WatchQueue({ initialCursor: 'initial-test-cursor' });
   const waiting = queue.watch({ timeoutMs: 100 });

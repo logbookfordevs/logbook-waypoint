@@ -802,6 +802,14 @@ export class LocalAnnotationsServer {
       try {
         const saved = JSON.parse(await readFile(WATCH_FILE, 'utf8'));
         this.watchQueue = new WatchQueue(saved);
+        const annotations = currentAnnotations ?? await this.loadAnnotations();
+        const latestById = new Map();
+        for (const change of this.watchQueue.history) {
+          latestById.set(change.annotation.id, change.annotation);
+        }
+        if (this.watchQueue.recordChanges([...latestById.values()], annotations).length > 0) {
+          await this.persistWatchQueue();
+        }
         return this.watchQueue;
       } catch (error) {
         console.warn(`Warning: Could not read Watch history: ${error.message}`);
