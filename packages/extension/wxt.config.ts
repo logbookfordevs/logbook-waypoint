@@ -1,6 +1,6 @@
 import { defineConfig } from 'wxt';
 
-import { PRODUCT_IDENTITY } from '../server/lib/product-identity.js';
+import { PRODUCT_IDENTITY } from '@logbookfordevs/waypoint/product-identity';
 
 const LOCAL_MATCHES = [
   'http://localhost/*',
