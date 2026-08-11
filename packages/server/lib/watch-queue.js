@@ -18,6 +18,7 @@ function comparableAnnotation(annotation) {
 export function toWatchAnnotation(annotation) {
   const {
     screenshot,
+    has_screenshot,
     source_file_path,
     source_line_range,
     source_map_available,
@@ -26,7 +27,23 @@ export function toWatchAnnotation(annotation) {
   } = annotation;
   return {
     ...portableAnnotation,
-    has_screenshot: annotation.has_screenshot ?? Boolean(screenshot?.data_url),
+    has_screenshot: Boolean(screenshot?.data_url),
+  };
+}
+
+function normalizeJournalAnnotation(annotation) {
+  const {
+    screenshot,
+    has_screenshot,
+    source_file_path,
+    source_line_range,
+    source_map_available,
+    context_hints,
+    ...portableAnnotation
+  } = annotation;
+  return {
+    ...portableAnnotation,
+    has_screenshot: Boolean(has_screenshot || screenshot?.data_url),
   };
 }
 
@@ -48,7 +65,7 @@ function validateSavedQueue(saved) {
       throw new Error('Invalid Watch journal change');
     }
     cursors.add(change.cursor);
-    return { ...change, annotation: toWatchAnnotation(change.annotation) };
+    return { ...change, annotation: normalizeJournalAnnotation(change.annotation) };
   });
   return { initialCursor: saved.initialCursor, history };
 }

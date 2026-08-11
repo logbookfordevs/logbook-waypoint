@@ -797,10 +797,7 @@ export class LocalAnnotationsServer {
   }
 
   portableAnnotation(annotation) {
-    return {
-      ...toWatchAnnotation(annotation),
-      has_screenshot: annotation.has_screenshot ?? Boolean(annotation.screenshot?.data_url),
-    };
+    return toWatchAnnotation(annotation);
   }
 
   async watchAnnotations(args) {
@@ -815,7 +812,7 @@ export class LocalAnnotationsServer {
     );
     return {
       changes: result.changes.map(change => ({
-        annotation: this.portableAnnotation(change.annotation),
+        annotation: change.annotation,
         revision: change.revision,
         dedupe_key: `${change.annotation.id}:${change.revision}`,
       })),

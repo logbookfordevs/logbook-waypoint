@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -260,6 +260,36 @@ test('persistent Watch quarantines corruption and rebuilds from the committed Qu
       watch.watch({ cursor: 'cursor-from-corrupted-journal', timeoutMs: 0 }, async () => [pending]),
       /Invalid Watch cursor/,
     );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('persistent Watch discards only a partial tail and preserves successful cursors', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const first = new PersistentWatchQueue({ historyFile });
+  const pending = annotation();
+
+  try {
+    await first.recordChanges([pending]);
+    const acknowledged = await first.watch({ timeoutMs: 0 }, async () => [pending]);
+    await appendFile(historyFile, '{"type":"change","sequence":2');
+
+    const recovered = new PersistentWatchQueue({ historyFile });
+    const resumed = await recovered.watch(
+      { cursor: acknowledged.cursor, timeoutMs: 0 },
+      async () => [pending],
+    );
+    assert.deepEqual(resumed.changes, []);
+    assert.doesNotMatch(await readFile(historyFile, 'utf8'), /"sequence":2/);
+
+    const reloaded = new PersistentWatchQueue({ historyFile });
+    const verified = await reloaded.watch(
+      { cursor: acknowledged.cursor, timeoutMs: 0 },
+      async () => [pending],
+    );
+    assert.deepEqual(verified.changes, []);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

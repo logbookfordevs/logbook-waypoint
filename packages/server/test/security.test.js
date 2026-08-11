@@ -370,6 +370,7 @@ describe('local HTTP security boundary', () => {
       url: 'http://localhost:3000/',
       status: 'pending',
       comment: 'Check spacing',
+      has_screenshot: false,
       viewport: { width: 1280, height: 720 },
       screenshot: {
         data_url: 'data:image/png;base64,AAAA',
