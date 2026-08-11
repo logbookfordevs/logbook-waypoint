@@ -25,9 +25,6 @@ const allowedHistoricalLines = new Map([
     '# Start without Vibe data migration',
     'Waypoint starts with its own empty data and configuration rather than importing or continuously supporting Vibe Annotations storage. This accepts a clean break for the new product in exchange for simpler identifiers, lifecycle rules, security guarantees, and future maintenance.',
   ])],
-  ['docs/UPDATE_SYSTEM.md', new Set([
-    "      'Initial release of Vibe Annotations (MIT foundation)',",
-  ])],
   ['docs/contracts/product-identifiers.md', new Set([
     '- Waypoint starts with empty product data and does not import Vibe Annotations storage or settings.',
   ])],

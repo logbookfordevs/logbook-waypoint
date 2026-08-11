@@ -7,11 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Update notification system for extension updates
+### Changed
 - Version compatibility checking between extension and server
-- Server update check with GitHub API integration
-- Update banner UI in extension popup
+
+### Removed
+- Promotional extension update badges, banners, and embedded release notes
+- Automatic remote server update checks
 
 ## [1.0.0] - 2025-08-04
 

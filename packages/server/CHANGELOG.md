@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Automatic update check against GitHub releases
 - Version information in health endpoint
 - Dynamic version reading from package.json in CLI
+
+### Removed
+- Automatic remote release checks and promotional console notices
 
 ## [0.1.3] - 2025-08-05
 
