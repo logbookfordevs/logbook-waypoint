@@ -160,8 +160,27 @@ test('Queue conflict resolution preserves Variant-owned state from ordinary reco
 
   const serverOwned = context.VibeQueueSync.merge([newerOrdinary], [unresolved], []);
   assert.deepEqual(serverOwned.annotations[0].variant_request, unresolved.variant_request);
-  assert.equal(serverOwned.annotations[0]._synced, true);
+  assert.equal(serverOwned.annotations[0]._synced, false);
   assert.equal(serverOwned.changed, true);
+
+  const localEdited = {
+    ...unresolved,
+    updated_at: '2026-01-03T00:00:00.000Z',
+    comment: 'new local comment',
+  };
+  const staleServerVariant = {
+    ...unresolved,
+    updated_at: '2026-01-02T00:00:00.000Z',
+    comment: 'old server comment',
+    variant_request: {
+      ...unresolved.variant_request,
+      active_variant_key: 'spacious',
+    },
+  };
+  const fieldGranular = context.VibeQueueSync.merge([localEdited], [staleServerVariant], []);
+  assert.equal(fieldGranular.annotations[0].comment, 'new local comment');
+  assert.equal(fieldGranular.annotations[0].variant_request.active_variant_key, 'spacious');
+  assert.equal(fieldGranular.annotations[0]._synced, false);
 });
 
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {

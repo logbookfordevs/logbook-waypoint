@@ -23,7 +23,7 @@ import {
   mcpTransportSecurity
 } from './security.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
-import { PersistentWatchQueue, toWatchAnnotation } from './watch-queue.js';
+import { PersistentWatchQueue, toReadAnnotation, toWatchAnnotation } from './watch-queue.js';
 import {
   VariantContractError,
   activateVariant as activateVariantRecord,
@@ -1053,7 +1053,7 @@ export class LocalAnnotationsServer {
     };
 
     // Transform annotations to strip screenshot data and add has_screenshot flag
-    const annotationsWithScreenshotFlag = paginatedResults.map(annotation => this.portableAnnotation(annotation));
+    const annotationsWithScreenshotFlag = paginatedResults.map(annotation => toReadAnnotation(annotation));
 
     return {
       annotations: annotationsWithScreenshotFlag,

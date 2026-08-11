@@ -3,6 +3,24 @@ var VibeQueueSync = (() => {
     return Boolean(annotation?.variant_request || annotation?.variant_presentation);
   }
 
+  function withoutSyncFlag(annotation) {
+    const { _synced, ...content } = annotation;
+    return content;
+  }
+
+  function mergeVariantFields(local, server) {
+    const localTime = new Date(local.updated_at || local.created_at || 0).getTime();
+    const serverTime = new Date(server.updated_at || server.created_at || 0).getTime();
+    const merged = { ...(serverTime > localTime ? server : local) };
+    const variantOwner = hasVariantOwnedState(server) ? server : local;
+    for (const field of ['variant_request', 'variant_presentation', 'pending_changes', 'css']) {
+      if (field in variantOwner) merged[field] = variantOwner[field];
+      else delete merged[field];
+    }
+    const matchesServer = JSON.stringify(withoutSyncFlag(merged)) === JSON.stringify(withoutSyncFlag(server));
+    return { ...merged, _synced: matchesServer };
+  }
+
   function merge(localAnnotations, serverAnnotations, deletedAnnotationIds = []) {
     const deletedIds = new Set(deletedAnnotationIds);
     const localMap = new Map(localAnnotations.map(annotation => [annotation.id, annotation]));
@@ -27,9 +45,10 @@ var VibeQueueSync = (() => {
           annotations.push(local);
           continue;
         }
-        if (serverOwnsVariant) {
-          annotations.push({ ...server, _synced: true });
-          if (!localOwnsVariant || JSON.stringify(local) !== JSON.stringify(server)) changed = true;
+        if (localOwnsVariant || serverOwnsVariant) {
+          const merged = mergeVariantFields(local, server);
+          annotations.push(merged);
+          if (JSON.stringify(merged) !== JSON.stringify(local) || !merged._synced) changed = true;
           continue;
         }
         const localTime = new Date(local.updated_at || local.created_at || 0).getTime();

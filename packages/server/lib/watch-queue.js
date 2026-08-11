@@ -50,6 +50,17 @@ export function toWatchAnnotation(annotation) {
   return portableAnnotation(annotation, Boolean(annotation.screenshot?.data_url));
 }
 
+export function toReadAnnotation(annotation) {
+  const portable = toWatchAnnotation(annotation);
+  if (!annotation.variant_request) return portable;
+  return {
+    ...portable,
+    ...(annotation.variant_presentation !== undefined ? { variant_presentation: structuredClone(annotation.variant_presentation) } : {}),
+    ...(annotation.pending_changes !== undefined ? { pending_changes: structuredClone(annotation.pending_changes) } : {}),
+    ...(annotation.css !== undefined ? { css: annotation.css } : {}),
+  };
+}
+
 function normalizeJournalAnnotation(annotation) {
   return portableAnnotation(annotation, Boolean(annotation.has_screenshot || annotation.screenshot?.data_url));
 }
