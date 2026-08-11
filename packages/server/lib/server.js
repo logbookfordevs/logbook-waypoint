@@ -65,8 +65,10 @@ function createToolErrorPayload(tool, error) {
     status: 'error',
     data_trust: 'untrusted',
     security_notice: UNTRUSTED_DATA_NOTICE,
-    error: error.message,
-    remaining_cleanup: error.remaining_cleanup,
+    data: {
+      error: error.message,
+      remaining_cleanup: error.remaining_cleanup,
+    },
     timestamp: new Date().toISOString(),
   };
 }
@@ -913,15 +915,7 @@ export class LocalAnnotationsServer {
     }
 
     if (url) {
-      // Support both exact URL matching and base URL pattern matching
-      if (url.includes('*') || url.endsWith('/')) {
-        // Pattern matching: "http://localhost:3000/*" or "http://localhost:3000/"
-        const baseUrl = url.replace('*', '').replace(/\/$/, '');
-        filtered = filtered.filter(a => a.url.startsWith(baseUrl));
-      } else {
-        // Exact URL matching
-        filtered = filtered.filter(a => a.url === url);
-      }
+      filtered = filtered.filter(annotation => annotationMatchesUrlPattern(annotation, url));
     }
 
     // Group annotations by base URL for better context

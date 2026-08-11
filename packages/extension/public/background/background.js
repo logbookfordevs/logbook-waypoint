@@ -3,6 +3,7 @@
 importScripts('queue-sync.js');
 importScripts('source-identity-probe.js');
 importScripts('variant-errors.js');
+importScripts('variant-policy.js');
 
 class VibeAnnotationsBackground {
   constructor() {
@@ -382,6 +383,7 @@ class VibeAnnotationsBackground {
         const annotations = result.annotations || [];
 
         const existingIndex = annotations.findIndex(a => a.id === annotation.id);
+        WaypointVariantPolicy.assertSaveAllowed(annotations[existingIndex], annotation);
         if (existingIndex >= 0) {
           annotations[existingIndex] = annotation;
         } else {
@@ -548,6 +550,7 @@ class VibeAnnotationsBackground {
         if (annotationIndex === -1) {
           throw new Error('Annotation not found');
         }
+        WaypointVariantPolicy.assertUpdateAllowed(annotations[annotationIndex], updates);
 
         annotations[annotationIndex] = {
           ...annotations[annotationIndex],

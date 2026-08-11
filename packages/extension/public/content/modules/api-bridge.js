@@ -75,6 +75,7 @@ var VibeAPI = (() => {
       console.warn('saveAnnotation bg failed, using storage fallback', e);
       const result = await chrome.storage.local.get(['annotations']);
       const all = result.annotations || [];
+      WaypointVariantPolicy.assertSaveAllowed(null, annotation);
       all.push(annotation);
       await chrome.storage.local.set({ annotations: all });
       return true;
@@ -92,6 +93,7 @@ var VibeAPI = (() => {
       const all = result.annotations || [];
       const idx = all.findIndex(a => a.id === id);
       if (idx !== -1) {
+        WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
         all[idx] = { ...all[idx], ...updates };
         await chrome.storage.local.set({ annotations: all });
       }

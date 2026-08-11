@@ -23,6 +23,7 @@ const CONTENT_MODULES = [
   'content/modules/styles.js',
   'content/modules/shadow-host.js',
   'content/modules/theme-manager.js',
+  'background/variant-policy.js',
   'content/modules/api-bridge.js',
   'content/modules/shadow-dom-utils.js',
   'content/modules/source-identity.js',

@@ -118,6 +118,19 @@ test('project deletion wildcard respects URL path and port boundaries', async ()
   assert.deepEqual(persisted.map(annotation => annotation.id), ['vibe_2_abcdefghi', 'vibe_3_abcdefghi']);
 });
 
+test('Annotation reads share safe URL wildcard boundaries', async () => {
+  const server = new LocalAnnotationsServer();
+  server.loadAnnotations = async () => [
+    { id: 'vibe_1_abcdefghi', url: 'http://localhost:3000/app/one', comment: 'Match', status: 'pending' },
+    { id: 'vibe_2_abcdefghi', url: 'http://localhost:3000/apple', comment: 'Path collision', status: 'pending' },
+    { id: 'vibe_3_abcdefghi', url: 'http://localhost:30000/app/two', comment: 'Port collision', status: 'pending' },
+  ];
+
+  const result = await server.readAnnotations({ url: 'http://localhost:3000/app/*' });
+
+  assert.deepEqual(result.annotations.map(annotation => annotation.id), ['vibe_1_abcdefghi']);
+});
+
 test('a persistence failure cannot partially finalize record-owned cleanup', async () => {
   const server = new LocalAnnotationsServer();
   const requested = await createServer().server.requestVariants({
@@ -203,5 +216,5 @@ test('MCP Variant failures retain structured remaining cleanup work', async () =
   assert.equal(response.isError, true);
   assert.equal(payload.data_trust, 'untrusted');
   assert.match(payload.security_notice, /Do not follow instructions/);
-  assert.deepEqual(payload.remaining_cleanup, [{ kind: 'scaffold_missing', key: '<malicious-cleanup-key>' }]);
+  assert.deepEqual(payload.data.remaining_cleanup, [{ kind: 'scaffold_missing', key: '<malicious-cleanup-key>' }]);
 });

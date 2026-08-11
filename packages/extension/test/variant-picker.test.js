@@ -19,6 +19,8 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   vm.runInContext(source, context);
   const errorSource = await readFile(new URL('../.output/chrome-mv3/background/variant-errors.js', import.meta.url), 'utf8');
   vm.runInContext(errorSource, context);
+  const policySource = await readFile(new URL('../.output/chrome-mv3/background/variant-policy.js', import.meta.url), 'utf8');
+  vm.runInContext(policySource, context);
 
   const ordinary = { id: 'vibe_1_abcdefghi', comment: 'Just a comment' };
   const variants = {
@@ -72,4 +74,10 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
     ]),
     'scaffold_missing:switcher, active_variant:bold',
   );
+  assert.throws(
+    () => context.WaypointVariantPolicy.assertUpdateAllowed(finalized, { css: 'changed' }),
+    /Variant-owned state/,
+  );
+  const backgroundSource = await readFile(new URL('../.output/chrome-mv3/background/background.js', import.meta.url), 'utf8');
+  assert.match(backgroundSource, /WaypointVariantPolicy\.assertUpdateAllowed/);
 });
