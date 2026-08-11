@@ -40,22 +40,25 @@ var WaypointSourceIdentityProbe = (() => {
     return null;
 
     function readFiber(startFiber) {
+      const MAX_COMPONENT_LENGTH = 120;
+      const MAX_FILE_PATH_LENGTH = 500;
       let fiber = startFiber;
       let fiberDepth = 0;
       let componentName = null;
 
       while (fiber && fiberDepth < 20) {
-        componentName ||= readComponentName(fiber);
+        componentName ||= readBoundedString(readComponentName(fiber), MAX_COMPONENT_LENGTH);
         const source = fiber._debugSource || fiber._source ||
           fiber.elementType?._source || fiber.type?._source ||
           fiber._debugOwner?._debugSource || fiber._debugOwner?._source;
         if (source?.fileName) {
-          const lineNumber = Number.isInteger(source.lineNumber) && source.lineNumber > 0
+          const filePathHint = readBoundedString(source.fileName, MAX_FILE_PATH_LENGTH);
+          const lineNumber = Number.isSafeInteger(source.lineNumber) && source.lineNumber > 0
             ? source.lineNumber
             : null;
-          return {
+          if (componentName || filePathHint) return {
             component_name: componentName,
-            file_path_hint: String(source.fileName),
+            file_path_hint: filePathHint,
             line_range_hint: lineNumber ? `${lineNumber}-${lineNumber}` : null,
           };
         }
@@ -76,6 +79,13 @@ var WaypointSourceIdentityProbe = (() => {
       if (typeof type === 'function') return type.displayName || type.name || null;
       if (typeof type === 'object') return type.displayName || type.render?.displayName || type.render?.name || null;
       return null;
+    }
+
+    function readBoundedString(value, maxLength) {
+      if (typeof value !== 'string') return null;
+      const hint = value.trim();
+      if (!hint || hint.length > maxLength || /[\u0000-\u001F\u007F]/.test(hint)) return null;
+      return hint;
     }
   }
 

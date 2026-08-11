@@ -6,10 +6,26 @@ var WaypointSourceIdentity = (() => {
   const MAX_COMPONENT_LENGTH = 120;
   const MAX_FILE_PATH_LENGTH = 500;
   const MAX_LINE_RANGE_LENGTH = 40;
+  const PROBE_TIMEOUT_MS = 1_000;
+  const targetProbeQueues = new WeakMap();
 
   async function resolve(target) {
     if (!target?.setAttribute || !target?.getAttribute) return null;
 
+    const previousProbe = targetProbeQueues.get(target) || Promise.resolve();
+    const currentProbe = previousProbe
+      .catch(() => null)
+      .then(() => resolveTarget(target));
+    targetProbeQueues.set(target, currentProbe);
+
+    try {
+      return await currentProbe;
+    } finally {
+      if (targetProbeQueues.get(target) === currentProbe) targetProbeQueues.delete(target);
+    }
+  }
+
+  async function resolveTarget(target) {
     const reactResult = await probeReact(target);
     if (reactResult) return reactResult;
 
@@ -22,17 +38,35 @@ var WaypointSourceIdentity = (() => {
     target.setAttribute(TARGET_ATTRIBUTE, targetId);
 
     try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'probeSourceIdentity',
-        targetId,
-      });
+      const response = await withTimeout(
+        chrome.runtime.sendMessage({
+          action: 'probeSourceIdentity',
+          targetId,
+        }),
+      );
       if (!response?.success) return null;
       return sanitizeResult(response.result);
     } catch {
       return null;
     } finally {
-      if (previousTargetId === null) target.removeAttribute(TARGET_ATTRIBUTE);
-      else target.setAttribute(TARGET_ATTRIBUTE, previousTargetId);
+      if (target.getAttribute(TARGET_ATTRIBUTE) === targetId) {
+        if (previousTargetId === null) target.removeAttribute(TARGET_ATTRIBUTE);
+        else target.setAttribute(TARGET_ATTRIBUTE, previousTargetId);
+      }
+    }
+  }
+
+  async function withTimeout(request) {
+    let timeoutId;
+    try {
+      return await Promise.race([
+        request,
+        new Promise(resolve => {
+          timeoutId = setTimeout(() => resolve(null), PROBE_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 

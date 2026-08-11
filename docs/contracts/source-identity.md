@@ -1,6 +1,6 @@
 # Source Identity
 
-Status: Accepted Phase 0 contract. The public page automation interface still exists today; the restricted probe does not.
+Status: Implemented in Phase 5. The public page automation interface has been removed and the restricted probe is active.
 
 ## Interface
 
@@ -26,6 +26,6 @@ When no adapter returns Source Identity, callers continue with the Target's port
 
 Tests exercise the Source Identity interface with React, portable DOM, spoofed page data, missing framework metadata, and probe failure. The public `window.__vibeAnnotations` interface must be absent after migration.
 
-## Current gap
+## Implemented migration
 
-The MIT foundation exposes annotation CRUD through `window.__vibeAnnotations` and page-visible custom events. That interface must be removed rather than renamed; its eventual replacement is limited to the read-only probe described here.
+The inherited annotation CRUD surface, `window.__vibeAnnotations`, and its page-visible custom events were removed rather than renamed. Source Identity is limited to the read-only probe described here.
