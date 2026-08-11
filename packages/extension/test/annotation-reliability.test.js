@@ -138,6 +138,32 @@ test('full Queue sync preserves more than 50 annotations in both directions', as
   assert.equal(pushed.changed, true);
 });
 
+test('Queue conflict resolution preserves Variant-owned state from ordinary records', async () => {
+  const context = createBrowserContext();
+  await loadScript(context, 'background/queue-sync.js');
+  const unresolved = {
+    id: 'vibe_1_abcdefghi',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    variant_request: { status: 'unresolved', active_variant_key: 'compact', variants: [] },
+    variant_presentation: { css: '.card { gap: 8px; }' },
+    _synced: true,
+  };
+  const newerOrdinary = {
+    id: unresolved.id,
+    updated_at: '2026-01-02T00:00:00.000Z',
+    comment: 'stale ordinary copy',
+  };
+
+  const localOwned = context.VibeQueueSync.merge([unresolved], [newerOrdinary], []);
+  assert.deepEqual(localOwned.annotations[0].variant_request, unresolved.variant_request);
+  assert.equal(localOwned.changed, false);
+
+  const serverOwned = context.VibeQueueSync.merge([newerOrdinary], [unresolved], []);
+  assert.deepEqual(serverOwned.annotations[0].variant_request, unresolved.variant_request);
+  assert.equal(serverOwned.annotations[0]._synced, true);
+  assert.equal(serverOwned.changed, true);
+});
+
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {
   const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="target">Old</button></body></html>');
   const target = context.document.querySelector('#target');

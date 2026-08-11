@@ -28,6 +28,7 @@ describe('local HTTP security boundary', () => {
   function createIsolatedServer() {
     runtimeSequence += 1;
     return new LocalAnnotationsServer({
+      annotationsFile: path.join(isolationDirectory, `annotations-${runtimeSequence}.json`),
       watchHistoryFile: path.join(isolationDirectory, `watch-${runtimeSequence}.json`),
     });
   }

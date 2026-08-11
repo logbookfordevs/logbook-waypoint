@@ -1,4 +1,8 @@
 var VibeQueueSync = (() => {
+  function hasVariantOwnedState(annotation) {
+    return Boolean(annotation?.variant_request || annotation?.variant_presentation);
+  }
+
   function merge(localAnnotations, serverAnnotations, deletedAnnotationIds = []) {
     const deletedIds = new Set(deletedAnnotationIds);
     const localMap = new Map(localAnnotations.map(annotation => [annotation.id, annotation]));
@@ -17,6 +21,17 @@ var VibeQueueSync = (() => {
       const local = localMap.get(id);
       const server = serverMap.get(id);
       if (local && server) {
+        const localOwnsVariant = hasVariantOwnedState(local);
+        const serverOwnsVariant = hasVariantOwnedState(server);
+        if (localOwnsVariant && !serverOwnsVariant) {
+          annotations.push(local);
+          continue;
+        }
+        if (serverOwnsVariant) {
+          annotations.push({ ...server, _synced: true });
+          if (!localOwnsVariant || JSON.stringify(local) !== JSON.stringify(server)) changed = true;
+          continue;
+        }
         const localTime = new Date(local.updated_at || local.created_at || 0).getTime();
         const serverTime = new Date(server.updated_at || server.created_at || 0).getTime();
         if (serverTime > localTime) {
