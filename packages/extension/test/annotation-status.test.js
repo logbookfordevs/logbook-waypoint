@@ -19,7 +19,7 @@ test('annotation status adapter migrates legacy lifecycle values into canonical 
   const { WaypointAnnotationStatus: status } = await loadStatus();
 
   assert.deepEqual(
-    JSON.parse(JSON.stringify(status.normalizeAll([
+    JSON.parse(JSON.stringify(status.migrateLegacyAll([
       { id: 'missing' },
       { id: 'completed', status: 'completed' },
       { id: 'archived', status: 'archived' },
@@ -36,10 +36,11 @@ test('annotation status adapter migrates legacy lifecycle values into canonical 
   assert.equal(status.isActionable({ status: 'claimed' }), true);
   assert.equal(status.isActionable({ status: 'resolved' }), false);
   assert.equal(status.isActionable({ status: 'discarded' }), false);
+  assert.throws(() => status.normalize({ id: 'completed', status: 'completed' }), /invalid annotation status/i);
   assert.throws(() => status.normalize({ id: 'unknown', status: 'future' }), /invalid annotation status/i);
 });
 
-test('export and Queue sync normalize statuses at their public boundaries', async () => {
+test('export, import, and Queue sync reject legacy statuses after one-time migration', async () => {
   const context = await loadStatus();
   context.window = { location: new URL('http://localhost:3000/review') };
   vm.runInContext(await readFile(codecUrl, 'utf8'), context, { filename: 'export-codec.js' });
@@ -50,22 +51,22 @@ test('export and Queue sync normalize statuses at their public boundaries', asyn
   vm.runInContext(await readFile(syncUrl, 'utf8'), context, { filename: 'queue-sync.js' });
 
   const exported = context.WaypointExportCodec.createExportEnvelope([
-    { id: 'completed', url: 'http://localhost:3000/review', status: 'completed' },
-    { id: 'archived', url: 'http://localhost:3000/review', status: 'archived' },
+    { id: 'resolved', url: 'http://localhost:3000/review', status: 'resolved' },
+    { id: 'discarded', url: 'http://localhost:3000/review', status: 'discarded' },
   ]);
   assert.deepEqual(
     JSON.parse(JSON.stringify(exported.annotations.map(annotation => annotation.status))),
     ['resolved', 'discarded'],
   );
 
-  const imported = context.WaypointExportCodec.normalizeImportEnvelope({
+  assert.throws(() => context.WaypointExportCodec.normalizeImportEnvelope({
     waypoint_annotations_export: true,
     annotations: [{ id: 'legacy', status: 'completed' }],
-  });
-  assert.equal(imported.annotations[0].status, 'resolved');
-
-  const merged = context.WaypointQueueSync.merge([], [{ id: 'server', status: 'archived' }]);
-  assert.equal(merged.annotations[0].status, 'discarded');
+  }), /invalid annotation status/i);
+  assert.throws(
+    () => context.WaypointQueueSync.merge([], [{ id: 'server', status: 'archived' }]),
+    /invalid annotation status/i,
+  );
 });
 
 test('lifecycle API calls delegate transitions to the background and normalize its response', async () => {
@@ -75,7 +76,7 @@ test('lifecycle API calls delegate transitions to the background and normalize i
     runtime: {
       sendMessage: async message => {
         messages.push(message);
-        return { success: true, annotation: { id: message.id, status: 'completed' } };
+        return { success: true, annotation: { id: message.id, status: 'resolved' } };
       },
     },
   };

@@ -117,6 +117,7 @@ test('media-only portable exports remain meaningful after safe round-trip', asyn
     id: 'waypoint_1750000000000_abc123xyz',
     url: 'http://localhost:3000/app?tab=open#media',
     comment: '',
+    status: 'pending',
     attachments: [{ id: 'attachment_123', data_url: 'data:image/png;base64,secret' }],
   }]);
 

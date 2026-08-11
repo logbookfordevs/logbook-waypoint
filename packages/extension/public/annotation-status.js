@@ -7,6 +7,12 @@ globalThis.WaypointAnnotationStatus = (() => {
   ]);
 
   function normalizeStatus(value) {
+    const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    if (CANONICAL_STATUSES.includes(status)) return status;
+    throw new TypeError('Invalid Annotation status');
+  }
+
+  function migrateLegacyStatus(value) {
     if (value === undefined) return 'pending';
     const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
     if (CANONICAL_STATUSES.includes(status)) return status;
@@ -22,6 +28,15 @@ globalThis.WaypointAnnotationStatus = (() => {
 
   function normalizeAll(annotations) {
     return Array.isArray(annotations) ? annotations.map(normalize) : [];
+  }
+
+  function migrateLegacy(annotation) {
+    if (!annotation || typeof annotation !== 'object') return annotation;
+    return { ...annotation, status: migrateLegacyStatus(annotation.status) };
+  }
+
+  function migrateLegacyAll(annotations) {
+    return Array.isArray(annotations) ? annotations.map(migrateLegacy) : [];
   }
 
   function normalizeUpdate(updates) {
@@ -53,6 +68,8 @@ globalThis.WaypointAnnotationStatus = (() => {
     countActionable,
     filterActionable,
     isActionable,
+    migrateLegacy,
+    migrateLegacyAll,
     normalize,
     normalizeAll,
     normalizeStatus,

@@ -95,7 +95,7 @@ class AnnotationsPopup {
     annotationsList.innerHTML = `
       <div class="annotations-header">
         <div class="status-indicator-header">
-          <span>Pending annotations</span>
+          <span>Annotation queue</span>
         </div>
       </div>
       ${sortedAnnotations.map(annotation => 
@@ -116,12 +116,16 @@ class AnnotationsPopup {
   renderAnnotationItem(annotation) {
     const timeAgo = this.getTimeAgo(annotation.created_at);
     const viewportWidth = annotation.viewport?.width || 'unknown';
+    const statusLabel = annotation.status[0].toUpperCase() + annotation.status.slice(1);
+    const claimOwner = annotation.claim?.owner
+      ? ` · ${this.escapeHtml(annotation.claim.owner)}`
+      : '';
 
     return `
-      <div class="annotation-item" data-id="${annotation.id}">
+      <div class="annotation-item status-${annotation.status}" data-id="${annotation.id}">
         <div class="annotation-comment" data-full-comment="${this.escapeHtml(annotation.comment)}" title="Click to edit">${this.escapeHtml(annotation.comment)}</div>
         <div class="annotation-meta">
-          <span class="annotation-timestamp">${timeAgo} • ${viewportWidth}w</span>
+          <span class="annotation-timestamp"><span class="status-dot"></span>${statusLabel}${claimOwner} · ${timeAgo} · ${viewportWidth}w</span>
           <div class="annotation-actions">
             <button class="action-btn target-btn" data-id="${annotation.id}" title="Go to element">
               <iconify-icon icon="heroicons:magnifying-glass" width="14" height="14"></iconify-icon>

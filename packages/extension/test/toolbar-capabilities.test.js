@@ -109,6 +109,15 @@ test('popup exposes synchronized theme, pin color, and clear-on-copy settings', 
   assert.match(popup, /waypointBadgeColor/);
 });
 
+test('popup presents retained Queue states and Claim ownership explicitly', async () => {
+  const popup = await readFile(popupUrl, 'utf8');
+
+  assert.match(popup, /Annotation queue/);
+  assert.match(popup, /status-\$\{annotation\.status\}/);
+  assert.match(popup, /annotation\.claim\?\.owner/);
+  assert.doesNotMatch(popup, /Pending annotations/);
+});
+
 test('toolbar and popup retain keyboard-visible auto-resize styling hooks', async () => {
   const [styles, popup] = await Promise.all([
     readFile(stylesUrl, 'utf8'),

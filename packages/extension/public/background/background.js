@@ -105,7 +105,7 @@ class WaypointAnnotationsBackground {
     const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointAnnotationStatusMigrated']);
     if (result.waypointAnnotationStatusMigrated) return;
     const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
-    const normalized = WaypointAnnotationStatus.normalizeAll(annotations);
+    const normalized = WaypointAnnotationStatus.migrateLegacyAll(annotations);
     const updates = { waypointAnnotationStatusMigrated: true };
     if (JSON.stringify(annotations) !== JSON.stringify(normalized)) updates.waypointAnnotations = normalized;
     await chrome.storage.local.set(updates);
