@@ -23,6 +23,16 @@ test('Watch returns a successful empty timeout without changing Queue state', as
   assert.equal(typeof result.cursor, 'string');
 });
 
+test('Watch refuses to record predecessor Annotation IDs', () => {
+  const queue = new WatchQueue({ initialCursor: 'initial-test-cursor' });
+
+  assert.throws(
+    () => queue.recordChanges([], [annotation({ id: 'vibe_1750000000000_abc123xyz' })]),
+    /Invalid Waypoint annotation ID/,
+  );
+  assert.deepEqual(queue.history, []);
+});
+
 test('Watch resumes from an opaque cursor and delivers changed terminal states', async () => {
   const queue = new WatchQueue({ initialCursor: 'initial-test-cursor' });
   const pending = annotation();

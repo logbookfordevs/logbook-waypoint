@@ -92,6 +92,12 @@ var WaypointAPI = (() => {
       return true;
     } catch (e) {
       console.warn('updateAnnotation bg failed, using storage fallback', e);
+      if (!WaypointAnnotationId.isValid(id)) {
+        throw new Error('Invalid Waypoint annotation ID');
+      }
+      if (updates?.id !== undefined && updates.id !== id) {
+        throw new Error('Annotation ID cannot be changed');
+      }
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const all = result.waypointAnnotations || [];
       const idx = all.findIndex(a => a.id === id);

@@ -821,6 +821,9 @@ export class LocalAnnotationsServer {
   }
 
   async _saveAnnotationsInternal(annotations) {
+    if (!Array.isArray(annotations) || annotations.some(annotation => !isValidAnnotationId(annotation?.id))) {
+      throw new TypeError('Invalid Waypoint annotation ID');
+    }
     // Move jsonData outside try block to make it accessible in catch
     console.log(`Saving ${annotations.length} annotations to disk`);
     const jsonData = JSON.stringify(annotations, null, 2);

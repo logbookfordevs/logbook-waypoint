@@ -555,6 +555,9 @@ class WaypointAnnotationsBackground {
         if (!WaypointAnnotationId.isValid(id)) {
           throw new Error('Invalid Waypoint annotation ID');
         }
+        if (updates?.id !== undefined && updates.id !== id) {
+          throw new Error('Annotation ID cannot be changed');
+        }
         const result = await chrome.storage.local.get(['waypointAnnotations']);
         const annotations = result.waypointAnnotations || [];
 

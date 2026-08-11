@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -41,6 +41,24 @@ test('persisted Queue loading rejects predecessor Annotation IDs', async () => {
     assert.deepEqual(annotations.map(annotation => annotation.id), [
       'waypoint_1750000000000_abc123xyz',
     ]);
+  } finally {
+    await rm(directory, { recursive: true });
+  }
+});
+
+test('Queue persistence rejects predecessor Annotation IDs before writing', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-id-save-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const watchHistoryFile = path.join(directory, 'watch-history.json');
+
+  try {
+    const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
+    await assert.rejects(
+      server.saveAnnotations([{ id: 'vibe_1750000000000_abc123xyz' }]),
+      /Invalid Waypoint annotation ID/,
+    );
+    await assert.rejects(access(annotationsFile));
+    await assert.rejects(access(watchHistoryFile));
   } finally {
     await rm(directory, { recursive: true });
   }

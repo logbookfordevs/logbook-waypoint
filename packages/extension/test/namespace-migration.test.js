@@ -61,6 +61,7 @@ test('background persistence consistently reads canonical Waypoint storage prope
   assert.doesNotMatch(source, /stored\.annotations|fresh\.annotations/);
   assert.match(source, /stored\.waypointAnnotations/);
   assert.match(source, /fresh\.waypointAnnotations/);
+  assert.match(source, /updates\?\.id !== undefined && updates\.id !== id/);
 });
 
 test('generated annotation ID adapter precedes all callers and rejects legacy IDs', async () => {

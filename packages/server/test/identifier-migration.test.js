@@ -18,13 +18,16 @@ const allowedHistoricalFiles = new Set([
   'docs/adr/0004-start-without-vibe-data-migration.md',
   'packages/extension/public/popup/iconify-icon.min.js',
 ]);
-const legacyIdentifier = /\bopenclaw\b|\braphael(?: regnier)?\b|\bspellbind(?: creative studio)?\b|github\.com\/raphaelregnier\/vibe-annotations|\bvibe[ _-]annotations(?:-(?:server|extension|mcp))?\b|\bvibe_|\bvibeAnnotations\b|\bVIBE_[A-Z_]+\b/i;
+const legacyIdentifier = /\bopenclaw\b|\braphael(?: regnier)?\b|\bspellbind(?: creative studio)?\b|github\.com\/raphaelregnier\/vibe-annotations|\bvibe[ _-]annotations(?:-(?:server|extension|mcp))?\b|\bvibe_|(?:__)?vibeAnnotations\b|\bVIBE_[A-Z_]+\b/i;
 const allowedHistoricalLines = new Map([
   ['docs/UPDATE_SYSTEM.md', new Set([
     "      'Initial release of Vibe Annotations (MIT foundation)',",
   ])],
   ['docs/contracts/product-identifiers.md', new Set([
     '- Waypoint starts with empty product data and does not import Vibe Annotations storage or settings.',
+  ])],
+  ['docs/contracts/source-identity.md', new Set([
+    'The inherited annotation CRUD surface, `window.__vibeAnnotations`, and its page-visible custom events were removed rather than renamed. Source Identity is limited to the read-only probe described here.',
   ])],
 ]);
 
@@ -52,6 +55,7 @@ function sourceWithoutAllowedAttribution(file, source) {
 }
 
 test('active source and generated files contain no legacy predecessor identifiers or branding', async () => {
+  assert.match('__vibeAnnotations', legacyIdentifier);
   const violations = [];
 
   for (const file of trackedSourceFiles()) {

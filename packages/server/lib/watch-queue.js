@@ -135,6 +135,9 @@ export class WatchQueue {
     const changes = [];
 
     for (const rawAnnotation of nextAnnotations) {
+      if (!isValidAnnotationId(rawAnnotation?.id)) {
+        throw new TypeError('Invalid Waypoint annotation ID');
+      }
       const annotation = toWatchAnnotation(rawAnnotation);
       const previous = previousById.get(annotation.id);
       if (!previous || comparableAnnotation(previous) !== comparableAnnotation(annotation)) {

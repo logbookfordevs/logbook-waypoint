@@ -145,6 +145,36 @@ test('direct storage fallback rejects non-Waypoint Annotation IDs', async () => 
   assert.deepEqual(writes, []);
 });
 
+test('direct storage fallback keeps Annotation identity immutable', async () => {
+  const context = createBrowserContext();
+  const writes = [];
+  context.chrome = {
+    runtime: { sendMessage: async () => { throw new Error('background unavailable'); } },
+    storage: {
+      local: {
+        get: async () => ({
+          waypointAnnotations: [{ id: 'waypoint_1750000000000_abc123xyz', comment: 'Original' }],
+        }),
+        set: async value => { writes.push(value); },
+      },
+    },
+  };
+  context.WaypointAnnotationId = {
+    isValid: value => /^waypoint_[0-9]{10,16}_[a-z0-9]{6,32}$/.test(value),
+  };
+  context.WaypointVariantPolicy = { assertUpdateAllowed: () => {} };
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  await assert.rejects(
+    context.WaypointAPI.updateAnnotation(
+      'waypoint_1750000000000_abc123xyz',
+      { id: 'vibe_1750000000000_abc123xyz' },
+    ),
+    /Annotation ID cannot be changed/,
+  );
+  assert.deepEqual(writes, []);
+});
+
 test('full Queue sync preserves more than 50 annotations in both directions', async () => {
   const context = createBrowserContext();
   await loadScript(context, 'background/queue-sync.js');
