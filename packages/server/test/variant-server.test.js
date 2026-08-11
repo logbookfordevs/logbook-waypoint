@@ -82,6 +82,40 @@ test('discarding an Annotation atomically discards its unresolved Variant reques
   assert.equal(read()[0].status, 'discarded');
 });
 
+test('discarding an Annotation preserves finalized Variant history', async () => {
+  const { server } = createServer();
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+  const finalized = await server.finalizeVariant({ id: 'waypoint_1750000000000_abc123xyz', key: 'a' });
+
+  const discarded = await server.changeAnnotationLifecycle({
+    id: finalized.id,
+    operation: 'discard',
+  });
+
+  assert.equal(discarded.status, 'discarded');
+  assert.equal(discarded.variant_request.status, 'finalized');
+  assert.equal(discarded.variant_request.active_variant_key, 'a');
+  assert.deepEqual(discarded.variant_presentation, finalized.variant_presentation);
+});
+
+test('discarding rejects malformed unresolved Variant state without partial cleanup', async () => {
+  const { server, read, write } = createServer();
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+  const malformed = read();
+  malformed[0].variant_request.scaffold = [];
+  write(malformed);
+
+  await assert.rejects(
+    () => server.changeAnnotationLifecycle({ id: malformed[0].id, operation: 'discard' }),
+    error => {
+      assert.deepEqual(error.remaining_cleanup, [{ kind: 'scaffold_missing', key: 'switcher' }]);
+      return true;
+    },
+  );
+  assert.equal(read()[0].status, 'pending');
+  assert.equal(read()[0].variant_request.status, 'unresolved');
+});
+
 test('failed persistence cannot partially discard unresolved Variant work', async () => {
   const server = new LocalAnnotationsServer();
   const requested = await createServer().server.requestVariants({

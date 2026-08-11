@@ -196,6 +196,9 @@ export function assertAnnotationDeletable(annotation) {
 }
 
 export function discardVariantRequest(annotation) {
+  const request = annotation?.variant_request;
+  if (!request || request.status === 'finalized') return clone(annotation);
+  requireUnresolved(annotation);
   const next = clone(annotation);
   delete next.variant_request;
   delete next.variant_presentation;
