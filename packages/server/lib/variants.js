@@ -191,8 +191,8 @@ export function hasVariantOwnedFields(value) {
 
 export function assertGenericAnnotationUpdateAllowed(current, updates) {
   if (hasVariantOwnedFields(updates)) fail('Variant-owned fields can only be changed through the Variant module');
-  if (current?.variant_request?.status === 'unresolved' && ['pending_changes', 'css'].some(field => field in updates)) {
-    fail('The Active Variant presentation can only be changed through the Variant module');
+  if (current?.variant_request && ['pending_changes', 'css'].some(field => field in updates)) {
+    fail('Variant presentation can only be changed through the Variant module');
   }
   const merged = { ...current, ...updates };
   if (['resolved', 'completed'].includes(merged.status)) assertAnnotationResolvable(merged);

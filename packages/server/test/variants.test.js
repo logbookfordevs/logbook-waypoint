@@ -6,6 +6,7 @@ import {
   activateVariant,
   addVariant,
   assertAnnotationResolvable,
+  assertGenericAnnotationUpdateAllowed,
   createVariantRequest,
   discardVariant,
   finalizeVariant,
@@ -120,4 +121,8 @@ test('resolution is gated until finalization leaves no Scaffold', () => {
 
   const finalized = finalizeVariant(requested, 'compact');
   assert.doesNotThrow(() => assertAnnotationResolvable(finalized));
+  assert.throws(
+    () => assertGenericAnnotationUpdateAllowed(finalized, { css: '.card { gap: 40px; }' }),
+    /Variant presentation/i,
+  );
 });

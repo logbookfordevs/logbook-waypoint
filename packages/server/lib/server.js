@@ -59,6 +59,26 @@ function createToolPayload(tool, data, extra = {}) {
   };
 }
 
+function createToolErrorPayload(tool, error) {
+  return {
+    tool,
+    status: 'error',
+    data_trust: 'untrusted',
+    security_notice: UNTRUSTED_DATA_NOTICE,
+    error: error.message,
+    remaining_cleanup: error.remaining_cleanup,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function annotationMatchesUrlPattern(annotation, urlPattern) {
+  if (urlPattern.includes('*') || urlPattern.endsWith('/')) {
+    const baseUrl = urlPattern.replace('*', '').replace(/\/$/, '');
+    return annotation.url.startsWith(baseUrl);
+  }
+  return annotation.url === urlPattern;
+}
+
 export class LocalAnnotationsServer {
   constructor() {
     this.app = express();
@@ -715,11 +735,7 @@ export class LocalAnnotationsServer {
             isError: true,
             content: [{
               type: 'text',
-              text: JSON.stringify({
-                status: 'error',
-                error: error.message,
-                remaining_cleanup: error.remaining_cleanup,
-              }, null, 2),
+              text: JSON.stringify(createToolErrorPayload(name, error), null, 2),
             }],
           };
         }
@@ -1077,14 +1093,7 @@ export class LocalAnnotationsServer {
     
     // Filter annotations matching the URL pattern
     let matchingAnnotations;
-    if (url_pattern.includes('*') || url_pattern.endsWith('/')) {
-      // Pattern matching: "http://localhost:3000/*" or "http://localhost:3000/"
-      const baseUrl = url_pattern.replace('*', '').replace(/\/$/, '');
-      matchingAnnotations = annotations.filter(a => a.url.startsWith(baseUrl));
-    } else {
-      // Exact URL matching
-      matchingAnnotations = annotations.filter(a => a.url === url_pattern);
-    }
+    matchingAnnotations = annotations.filter(annotation => annotationMatchesUrlPattern(annotation, url_pattern));
     
     if (matchingAnnotations.length === 0) {
       return {
@@ -1121,9 +1130,9 @@ export class LocalAnnotationsServer {
     }
     
     const deletion = await this.applyAnnotationsUpdate(current => {
-      const matchingIds = new Set(matchingAnnotations.map(annotation => annotation.id));
-      const removed = current.filter(annotation => matchingIds.has(annotation.id));
-      const remaining = current.filter(annotation => !matchingIds.has(annotation.id));
+      const removed = current.filter(annotation => annotationMatchesUrlPattern(annotation, url_pattern));
+      const removedIds = new Set(removed.map(annotation => annotation.id));
+      const remaining = current.filter(annotation => !removedIds.has(annotation.id));
       current.splice(0, current.length, ...remaining);
       return { removed, remainingTotal: remaining.length };
     });
@@ -1135,9 +1144,9 @@ export class LocalAnnotationsServer {
     
     return {
       url_pattern,
-      count: matchingAnnotations.length,
+      count: deletion.removed.length,
       deleted: true,
-      message: `Successfully deleted ${matchingAnnotations.length} annotation(s) for project ${url_pattern}`,
+      message: `Successfully deleted ${deletion.removed.length} annotation(s) for project ${url_pattern}`,
       deleted_annotations: deletedInfo,
       remaining_total: deletion.remainingTotal
     };

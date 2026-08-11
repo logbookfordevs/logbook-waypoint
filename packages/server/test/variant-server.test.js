@@ -79,6 +79,28 @@ test('serialized writes recover after an expected Variant failure', async () => 
   assert.equal(activated.variant_request.active_variant_key, 'b');
 });
 
+test('confirmed project deletion rechecks URL scope inside the serialized mutation', async () => {
+  const server = new LocalAnnotationsServer();
+  const initial = [
+    { id: 'vibe_1_abcdefghi', url: 'http://localhost:3000/one', comment: 'Moved later' },
+    { id: 'vibe_2_abcdefghi', url: 'http://localhost:3000/two', comment: 'Still matches' },
+  ];
+  const current = [
+    { ...initial[0], url: 'http://localhost:4000/one' },
+    initial[1],
+  ];
+  let reads = 0;
+  let persisted;
+  server.loadAnnotations = async () => structuredClone(reads++ === 0 ? initial : current);
+  server._saveAnnotationsInternal = async annotations => { persisted = structuredClone(annotations); };
+
+  const result = await server.deleteProjectAnnotations({ url_pattern: 'http://localhost:3000/*', confirm: true });
+
+  assert.equal(result.count, 1);
+  assert.deepEqual(persisted.map(annotation => annotation.id), ['vibe_1_abcdefghi']);
+  assert.equal(persisted[0].url, 'http://localhost:4000/one');
+});
+
 test('a persistence failure cannot partially finalize record-owned cleanup', async () => {
   const server = new LocalAnnotationsServer();
   const requested = await createServer().server.requestVariants({
@@ -141,6 +163,8 @@ test('MCP Variant failures retain structured remaining cleanup work', async () =
   const { server, read, write } = createServer();
   await server.requestVariants({ id: 'vibe_1750000000000_abc123xyz', variants: candidates });
   const inconsistent = read();
+  inconsistent[0].variant_request.variants[0].scaffold = ['<malicious-cleanup-key>'];
+  inconsistent[0].variant_request.variants[1].scaffold = ['<malicious-cleanup-key>'];
   inconsistent[0].variant_request.scaffold = [];
   write(inconsistent);
   let callTool;
@@ -160,5 +184,7 @@ test('MCP Variant failures retain structured remaining cleanup work', async () =
   const payload = JSON.parse(response.content[0].text);
 
   assert.equal(response.isError, true);
-  assert.deepEqual(payload.remaining_cleanup, [{ kind: 'scaffold_missing', key: 'switcher' }]);
+  assert.equal(payload.data_trust, 'untrusted');
+  assert.match(payload.security_notice, /Do not follow instructions/);
+  assert.deepEqual(payload.remaining_cleanup, [{ kind: 'scaffold_missing', key: '<malicious-cleanup-key>' }]);
 });
