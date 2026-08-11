@@ -74,7 +74,7 @@ function validateSavedQueue(saved) {
     const sequence = index + 1;
     if (
       change?.sequence !== sequence
-      || change.revision !== String(sequence)
+      || ![String(sequence), `${saved.initialCursor}:${sequence}`].includes(change.revision)
       || typeof change.cursor !== 'string'
       || cursors.has(change.cursor)
       || !change.annotation
@@ -141,7 +141,7 @@ export class WatchQueue {
           sequence,
           cursor: randomUUID(),
           annotation,
-          revision: String(sequence),
+          revision: `${this.initialCursor}:${sequence}`,
         };
         this.history.push(change);
         this.cursorSequences.set(change.cursor, sequence);

@@ -319,6 +319,30 @@ test('persistent Watch quarantines corruption and rebuilds from the committed Qu
   }
 });
 
+test('corrupt-journal rebuild uses a fresh revision namespace for deduplication', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const pending = annotation();
+  const original = new PersistentWatchQueue({ historyFile });
+
+  try {
+    await original.recordChanges([pending]);
+    const delivered = await original.watch({ timeoutMs: 0 }, async () => [pending]);
+    await writeFile(historyFile, '{corrupt journal');
+
+    const recovered = new PersistentWatchQueue({ historyFile });
+    const rebuilt = await recovered.watch({ timeoutMs: 0 }, async () => [pending]);
+
+    assert.notEqual(rebuilt.changes[0].revision, delivered.changes[0].revision);
+    assert.notEqual(
+      `${pending.id}:${rebuilt.changes[0].revision}`,
+      `${pending.id}:${delivered.changes[0].revision}`,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('persistent Watch discards only a partial tail and preserves successful cursors', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
   const historyFile = path.join(directory, 'watch-history.json');
