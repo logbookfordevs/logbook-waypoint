@@ -2,6 +2,7 @@
 
 importScripts('queue-sync.js');
 importScripts('source-identity-probe.js');
+importScripts('variant-errors.js');
 
 class VibeAnnotationsBackground {
   constructor() {
@@ -358,7 +359,8 @@ class VibeAnnotationsBackground {
     });
     const result = await response.json();
     if (!response.ok || !result.annotation) {
-      const remaining = result.remaining_cleanup?.length ? ` Remaining cleanup: ${result.remaining_cleanup.join(', ')}` : '';
+      const cleanup = WaypointVariantErrors.formatRemainingCleanup(result.remaining_cleanup);
+      const remaining = cleanup ? ` Remaining cleanup: ${cleanup}` : '';
       throw new Error(`${result.error || `Variant operation failed (${response.status})`}${remaining}`);
     }
     await this._withStorageLock(async () => {

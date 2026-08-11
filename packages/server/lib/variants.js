@@ -44,6 +44,8 @@ function validateCandidates(candidates) {
 function requireUnresolved(annotation) {
   const request = annotation?.variant_request;
   if (!request || request.status !== 'unresolved') fail('Annotation does not have an unresolved Variant request');
+  assertSingleActive(request);
+  assertScaffoldReconciled(request);
   return request;
 }
 
@@ -54,8 +56,11 @@ function requireVariant(request, key) {
 }
 
 function assertSingleActive(request) {
-  if (request.variants.length > 0 && request.variants.filter(variant => variant.state === 'active').length !== 1) {
-    fail('Exactly one Variant must be Active while unresolved Variants exist');
+  const active = request.variants.filter(variant => variant.state === 'active');
+  if (request.variants.length > 0 && (active.length !== 1 || active[0].key !== request.active_variant_key)) {
+    fail('The Active Variant key and state could not be reconciled', [
+      cleanupTarget('active_variant', request.active_variant_key),
+    ]);
   }
 }
 
@@ -139,7 +144,6 @@ export function activateVariant(annotation, key) {
 
 export function discardVariant(annotation, key) {
   const request = requireUnresolved(annotation);
-  assertScaffoldReconciled(request);
   const discarded = requireVariant(request, key);
   if (discarded.state === 'active') fail('Activate another surviving Variant before discarding the Active Variant');
 
@@ -156,7 +160,6 @@ export function discardVariant(annotation, key) {
 
 export function finalizeVariant(annotation, key) {
   const request = requireUnresolved(annotation);
-  assertScaffoldReconciled(request);
   const chosen = requireVariant(request, key);
 
   const next = clone(annotation);

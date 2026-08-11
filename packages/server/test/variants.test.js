@@ -99,6 +99,21 @@ test('cleanup failure leaves the input unresolved and reports remaining cleanup'
   assert.deepEqual(requested, beforeAttempt);
 });
 
+test('operations reject an Active key and state mismatch before changing the request', () => {
+  const requested = createVariantRequest(annotation(), candidates);
+  requested.variant_request.active_variant_key = 'spacious';
+
+  assert.throws(
+    () => discardVariant(requested, 'spacious'),
+    error => {
+      assert.equal(error instanceof VariantContractError, true);
+      assert.deepEqual(error.remaining_cleanup, [{ kind: 'active_variant', key: 'spacious' }]);
+      return true;
+    },
+  );
+  assert.equal(requested.variant_request.variants.length, 2);
+});
+
 test('resolution is gated until finalization leaves no Scaffold', () => {
   const requested = createVariantRequest(annotation(), candidates);
   assert.throws(() => assertAnnotationResolvable(requested), /finalized/i);
