@@ -31,13 +31,6 @@ The extension reads this endpoint only from the fixed loopback server URL. It co
 
 Updating the extension or server remains an explicit user-controlled installation operation outside this compatibility contract. Refer to the project's release channel or package installation instructions when an update is intentionally requested.
 
-## Development and testing
+## Verification
 
-When the compatibility interface changes:
-
-1. Keep `/health` local, stable, and free of release metadata.
-2. Update the extension's health-response handling and compatibility copy together.
-3. Add hermetic tests for compatible, incompatible, unavailable, and malformed responses.
-4. Do not use live registries, release APIs, external network calls, or user data as fixtures.
-
-The active regression tests also reject documentation and runtime source that reintroduce promotional release UI or automatic remote update checking.
+The compatibility checks are hermetic and cover compatible, incompatible, unavailable, and malformed health responses. They use no live registry, release API, external network call, or user data fixture. Active regressions also guard the documentation and runtime against promotional release UI and automatic remote update checking.

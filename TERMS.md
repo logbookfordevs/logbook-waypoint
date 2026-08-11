@@ -27,7 +27,8 @@ Logbook Waypoint is a developer tool that:
 
 ### 4.2 Network Communications
 - The extension communicates only with your local server (port 3846)
-- The server may check NPM registry for version updates (optional)
+- The extension may read version compatibility from the local server health endpoint
+- The server does not automatically contact package registries or release services
 - No user data, annotations, or code is transmitted externally
 
 ### 4.3 Permissions
@@ -82,7 +83,7 @@ You remain fully responsible for:
 ### 9.1 Software Updates
 - Chrome extension updates are distributed via Chrome Web Store
 - Server package updates are distributed via NPM
-- Update notifications are provided but updates are optional
+- Compatibility notices are derived only from the local server health response; installation remains user-controlled
 - We reserve the right to modify or discontinue the Software
 
 ### 9.2 Terms Updates

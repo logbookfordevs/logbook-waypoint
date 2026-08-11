@@ -754,10 +754,6 @@ class WaypointAnnotationsBackground {
           }
         }
 
-        if (versionCompatible && data.version && data.version !== extensionVersion) {
-          compatibilityMessage = `Server ${data.version} is connected; update it if annotation sync behaves unexpectedly.`;
-        }
-        
         return {
           connected: true,
           server_url: this.apiServerUrl,
