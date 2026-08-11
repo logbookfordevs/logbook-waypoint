@@ -30,8 +30,8 @@ test('persisted Queue loading rejects predecessor Annotation IDs', async () => {
   const annotationsFile = path.join(directory, 'annotations.json');
   const watchHistoryFile = path.join(directory, 'watch-history.json');
   await writeFile(annotationsFile, JSON.stringify([
-    { id: 'vibe_1750000000000_abc123xyz', comment: 'predecessor data' },
-    { id: 'waypoint_1750000000000_abc123xyz', comment: 'Waypoint data' },
+    { id: 'vibe_1750000000000_abc123xyz', comment: 'predecessor data', status: 'pending' },
+    { id: 'waypoint_1750000000000_abc123xyz', comment: 'Waypoint data', status: 'pending' },
   ]));
 
   try {

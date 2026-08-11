@@ -20,7 +20,9 @@ class WaypointAnnotationsBackground {
     this.apiServerUrl = 'http://127.0.0.1:3846'; // Updated to match external server
     this.apiConnected = false;
     this._storageQueue = Promise.resolve(); // Serializes chrome.storage read-modify-write ops
-    this.init();
+    this.initialization = this.init().catch((error) => {
+      console.error('Failed to initialize Waypoint background:', error);
+    });
   }
 
   // Serialize all storage mutations to prevent concurrent read-modify-write races
@@ -29,7 +31,10 @@ class WaypointAnnotationsBackground {
     return this._storageQueue;
   }
 
-  init() {
+  async init() {
+
+    await this.migrateAnnotationStatuses();
+    await this.migrateSyncFlags();
 
     // Set up event listeners
     this.setupInstallListener();
@@ -39,9 +44,6 @@ class WaypointAnnotationsBackground {
 
     // Re-register content scripts for user-enabled sites
     this.restoreEnabledSites();
-
-    // One-time migration: mark existing annotations as synced
-    this.migrateAnnotationStatuses().then(() => this.migrateSyncFlags());
 
     // Start API server connection monitoring
     this.startAPIConnectionMonitoring();

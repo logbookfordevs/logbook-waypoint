@@ -1,3 +1,5 @@
+import { assertAnnotationLifecycleState, assertAnnotationStatusFilter } from './annotation-lifecycle.js';
+
 const SENSITIVE_EXPORT_KEYS = new Set([
   'attachments',
   'screenshot',
@@ -32,6 +34,7 @@ function routeFor(annotation) {
 }
 
 function exportedAnnotation(annotation) {
+  assertAnnotationLifecycleState(annotation);
   const portable = portableValue(annotation);
   let urlPath = annotation.url_path;
   try {
@@ -43,7 +46,7 @@ function exportedAnnotation(annotation) {
   return {
     ...portable,
     id: annotation.id,
-    status: annotation.status || 'pending',
+    status: annotation.status,
     ...(urlPath ? { url_path: urlPath } : {}),
     has_screenshot: Boolean(annotation.screenshot?.data_url || annotation.screenshot?.attachment_id || annotation.has_screenshot),
     has_attachments: Boolean(annotation.attachments?.length || annotation.has_attachments),
@@ -129,4 +132,3 @@ export function encodeAnnotationsExport(annotations, {
       : markdownFor(routes),
   };
 }
-import { assertAnnotationStatusFilter } from './annotation-lifecycle.js';

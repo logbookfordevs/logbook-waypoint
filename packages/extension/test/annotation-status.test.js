@@ -7,6 +7,7 @@ const statusUrl = new URL('../public/annotation-status.js', import.meta.url);
 const collectionUrl = new URL('../public/annotation-collection.js', import.meta.url);
 const codecUrl = new URL('../public/export-codec.js', import.meta.url);
 const syncUrl = new URL('../public/background/queue-sync.js', import.meta.url);
+const backgroundUrl = new URL('../public/background/background.js', import.meta.url);
 
 async function loadStatus() {
   const source = await readFile(statusUrl, 'utf8');
@@ -134,4 +135,18 @@ test('annotation collection adapter combines canonical ID and lifecycle validati
     () => context.WaypointAnnotationCollection.canonicalize([{ id: 'waypoint_invalid', status: 'completed' }]),
     /invalid annotation status/i,
   );
+});
+
+test('background startup completes schema migrations before enabling Queue consumers', async () => {
+  const source = await readFile(backgroundUrl, 'utf8');
+  const migration = source.indexOf('await this.migrateAnnotationStatuses()');
+  const syncFlags = source.indexOf('await this.migrateSyncFlags()');
+  const messages = source.indexOf('this.setupMessageListener()');
+  const monitoring = source.indexOf('this.startAPIConnectionMonitoring()');
+
+  assert.match(source, /this\.initialization = this\.init\(\)\.catch\(/);
+  assert.ok(migration > -1);
+  assert.ok(migration < syncFlags);
+  assert.ok(syncFlags < messages);
+  assert.ok(messages < monitoring);
 });

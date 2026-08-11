@@ -44,6 +44,17 @@ test('exports reject non-canonical lifecycle status filters', () => {
   );
 });
 
+test('exports reject records with non-canonical lifecycle states', () => {
+  assert.throws(
+    () => encodeAnnotationsExport([{ ...annotations[0], status: 'completed' }]),
+    /invalid lifecycle state/i,
+  );
+  assert.throws(
+    () => encodeAnnotationsExport([{ ...annotations[0], status: undefined }]),
+    /invalid lifecycle state/i,
+  );
+});
+
 test('portable JSON and Markdown never expose media bytes or source filesystem hints', () => {
   const result = encodeAnnotationsExport([{
     ...annotations[0],

@@ -25,6 +25,7 @@ import {
   ANNOTATION_STATUSES,
   AnnotationLifecycle,
   LifecycleError,
+  assertAnnotationLifecycleState,
   assertAnnotationStatusFilter,
 } from './annotation-lifecycle.js';
 import { ALLOWED_IMAGE_MIME_TYPES, AttachmentStore } from './attachment-store.js';
@@ -966,10 +967,9 @@ export class LocalAnnotationsServer {
         return [];
       }
       
+      let annotations;
       try {
-        const annotations = JSON.parse(data);
-        if (!Array.isArray(annotations)) return [];
-        return annotations.filter(annotation => isValidAnnotationId(annotation?.id));
+        annotations = JSON.parse(data);
       } catch (parseError) {
         console.error('Corrupted JSON file, reinitializing:', parseError);
         // Backup corrupted file
@@ -980,9 +980,13 @@ export class LocalAnnotationsServer {
         // The next serialized mutation will replace the corrupted file atomically.
         return [];
       }
+      if (!Array.isArray(annotations)) return [];
+      const validAnnotations = annotations.filter(annotation => isValidAnnotationId(annotation?.id));
+      validAnnotations.forEach(assertAnnotationLifecycleState);
+      return validAnnotations;
     } catch (error) {
       console.error('Error loading annotations:', error);
-      return [];
+      throw error;
     }
   }
 
@@ -994,6 +998,7 @@ export class LocalAnnotationsServer {
     if (!Array.isArray(annotations) || annotations.some(annotation => !isValidAnnotationId(annotation?.id))) {
       throw new TypeError('Invalid Waypoint annotation ID');
     }
+    annotations.forEach(assertAnnotationLifecycleState);
     // Move jsonData outside try block to make it accessible in catch
     console.log(`Saving ${annotations.length} annotations to disk`);
     const jsonData = JSON.stringify(annotations, null, 2);

@@ -7,6 +7,13 @@ export function assertAnnotationStatusFilter(status, { allowAll = true } = {}) {
   return status;
 }
 
+export function assertAnnotationLifecycleState(annotation) {
+  if (!annotation || typeof annotation !== 'object' || !ANNOTATION_STATUSES.includes(annotation.status)) {
+    throw new LifecycleError('invalid_state', 'Annotation has an invalid lifecycle state');
+  }
+  return annotation;
+}
+
 const OWNER_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} ._:@/-]{0,199}$/u;
 
 export class LifecycleError extends Error {
@@ -92,9 +99,7 @@ export class AnnotationLifecycle {
     if (!annotation || typeof annotation !== 'object' || Array.isArray(annotation)) {
       throw new TypeError('Annotation must be an object');
     }
-    if (!ANNOTATION_STATUSES.includes(annotation.status)) {
-      throw new LifecycleError('invalid_state', 'Annotation has an invalid lifecycle state');
-    }
+    assertAnnotationLifecycleState(annotation);
     if (annotation.status !== 'claimed') return structuredClone(withoutClaim(annotation));
     if (
       !annotation.claim

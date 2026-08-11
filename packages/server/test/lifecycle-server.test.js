@@ -150,3 +150,28 @@ test('Queue synchronization cannot implicitly delete retained lifecycle history'
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('persisted Queue records reject non-canonical lifecycle states', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-lifecycle-invalid-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  await writeFile(annotationsFile, JSON.stringify([{
+    id,
+    url: 'http://localhost:3000/app',
+    comment: 'Legacy state',
+    status: 'completed',
+  }]));
+  const server = new LocalAnnotationsServer({
+    annotationsFile,
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+
+  try {
+    await assert.rejects(
+      () => server.readAnnotations({ status: 'all' }),
+      /invalid lifecycle state/i,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
