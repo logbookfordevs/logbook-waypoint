@@ -682,7 +682,7 @@ var WaypointToolbar = (() => {
             <div class="waypoint-guide-label">Workflow</div>
             <p class="waypoint-guide-text">1. Navigate your app and annotate elements across as many routes as needed</p>
             <p class="waypoint-guide-text">2. Tell your agent: <em>"read Logbook Waypoint annotations and implement the changes"</em></p>
-            <p class="waypoint-guide-text">3. The agent pulls all pending annotations via MCP, edits your source files, and deletes each one when done</p>
+            <p class="waypoint-guide-text">3. The agent pulls pending annotations via MCP, edits your source files, then resolves each completed annotation as retained history</p>
           </div>
         `
       },
@@ -940,6 +940,7 @@ var WaypointToolbar = (() => {
           <select class="waypoint-export-status">
             <option value="all">All statuses</option>
             <option value="pending">Pending</option>
+            <option value="claimed">Claimed</option>
             <option value="resolved">Resolved</option>
             <option value="discarded">Discarded</option>
           </select>

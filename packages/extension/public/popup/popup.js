@@ -67,7 +67,7 @@ class AnnotationsPopup {
       const currentUrl = tab.url;
       
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const allAnnotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+      const allAnnotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
       
       // Filter annotations to only show those for the current URL
       this.annotations = allAnnotations.filter(annotation => 

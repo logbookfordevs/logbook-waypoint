@@ -19,10 +19,12 @@ The initial MIT foundation already provides:
 - Local browser and server persistence
 - Optional screenshots and element context
 - An MCP server over HTTP and SSE
-- Tools for reading, deleting, grouping, and inspecting annotations
+- Tools for watching, claiming, releasing, resolving, discarding, deleting, grouping, and inspecting annotations
 - A Chrome-compatible unpacked extension
 
 Waypoint now adds a Logbook-native experience, a clearer work queue, Watch, Variants, Source Identity, and coding-agent setup on top of that foundation.
+
+Annotations move from Pending to Claimed before agent work. Release or inactivity expiry returns them to Pending; resolve and discard retain terminal history. Permanent deletion remains a separate explicit operation.
 
 ## Architecture
 

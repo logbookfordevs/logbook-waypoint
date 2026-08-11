@@ -10,7 +10,7 @@ import { encodeAnnotationsExport } from '../lib/export-codec.js';
 async function loadExtensionContracts() {
   const context = vm.createContext({ URL, WaypointAnnotationId: { isValid: isValidAnnotationId } });
   context.globalThis = context;
-  for (const file of ['annotation-validation.js', 'export-codec.js']) {
+  for (const file of ['annotation-status.js', 'annotation-validation.js', 'export-codec.js']) {
     const source = await readFile(new URL(`../../extension/public/${file}`, import.meta.url), 'utf8');
     vm.runInContext(source, context, { filename: file });
   }

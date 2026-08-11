@@ -9,6 +9,9 @@ const requireFromWxt = createRequire(wxtPackage);
 const { parseHTML } = requireFromWxt('linkedom');
 
 async function loadScript(context, relativePath) {
+  if ((relativePath === 'content/modules/api-bridge.js' || relativePath === 'background/queue-sync.js') && !context.WaypointAnnotationStatus) {
+    await loadScript(context, 'annotation-status.js');
+  }
   const source = await readFile(new URL(`../.output/chrome-mv3/${relativePath}`, import.meta.url), 'utf8');
   vm.runInContext(source, context, { filename: relativePath });
 }
@@ -327,6 +330,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   context.WaypointShadowHost = { getRoot: () => overlay };
   let resolvedTarget = target;
   context.WaypointElementContext = { findElementBySelector: candidate => candidate.id === annotation.id ? resolvedTarget : null };
+  await loadScript(context, 'annotation-status.js');
   await loadScript(context, 'content/modules/event-bus.js');
   await loadScript(context, 'content/modules/badge-manager.js');
   context.WaypointBadgeManager.render([annotation]);

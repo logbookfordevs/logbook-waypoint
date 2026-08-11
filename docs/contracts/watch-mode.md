@@ -1,6 +1,6 @@
 # Watch mode
 
-Status: Accepted Phase 0 contract. Watch mode is not present in the current implementation.
+Status: Implemented.
 
 ## Interface
 

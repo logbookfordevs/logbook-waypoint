@@ -1,6 +1,6 @@
 # Annotation lifecycle
 
-Status: Accepted Phase 0 contract. The current implementation does not yet satisfy every rule below.
+Status: Implemented.
 
 ## Interface
 
@@ -36,11 +36,15 @@ Pending ──claim──▶ Claimed ──resolve──▶ Resolved
 - `resolve_annotation` is the agent completion operation.
 - `delete_annotation` remains a separate destructive operation.
 - Every state change updates the Annotation so Watch can distinguish it from an older observation.
+- Resolving a Pending Annotation requires an explicit Claim first; there is no implicit claim-and-resolve shortcut.
+- The same owner may refresh its Claim. A competing owner is rejected until release or server-defined inactivity expiry.
+
+The server may persist an already-expired Claim as `Pending` immediately before serving a read or Watch request. That is lifecycle expiry maintenance based only on the injected server clock; the read or Watch adapter neither claims nor refreshes the Annotation.
 
 ## Test surface
 
 Tests exercise the lifecycle interface, including rejected transitions, competing Claims, expiry, retained resolution, retained discard, and permanent deletion. HTTP, MCP, and extension adapters must demonstrate the same observable transitions without duplicating lifecycle rules.
 
-## Current gap
+## Implemented adapters
 
-The MIT foundation primarily uses `pending` records and permanent deletion. Claiming, retained resolution, retained discard, and a dedicated resolution tool remain to be implemented.
+The lifecycle module is the only owner of state transitions and Claim expiry. HTTP exposes `claim`, `release`, `resolve`, and `discard` routes for an Annotation. MCP exposes `claim_annotation`, `release_annotation`, `resolve_annotation`, and `discard_annotation`; `delete_annotation` remains separately described as irreversible removal. Extension storage and sync use the same four canonical states and migrate only legacy Waypoint records created before this contract.

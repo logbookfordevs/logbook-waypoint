@@ -4,14 +4,16 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const codecUrl = new URL('../public/export-codec.js', import.meta.url);
+const statusUrl = new URL('../public/annotation-status.js', import.meta.url);
 
 async function loadCodec() {
-  const source = await readFile(codecUrl, 'utf8');
+  const [source, statusSource] = await Promise.all([readFile(codecUrl, 'utf8'), readFile(statusUrl, 'utf8')]);
   const context = vm.createContext({
     URL,
     window: { location: new URL('http://localhost:3000/current?view=queue#open') },
   });
   context.globalThis = context;
+  vm.runInContext(statusSource, context, { filename: 'annotation-status.js' });
   vm.runInContext(source, context, { filename: 'export-codec.js' });
   return context.WaypointExportCodec;
 }

@@ -20,6 +20,7 @@ const LOCAL_MATCHES = [
 
 const CONTENT_MODULES = [
   'annotation-id.js',
+  'annotation-status.js',
   'annotation-validation.js',
   'export-codec.js',
   'agent-setup-config.js',

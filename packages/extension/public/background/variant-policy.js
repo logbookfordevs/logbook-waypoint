@@ -12,7 +12,7 @@ globalThis.WaypointVariantPolicy = (() => {
     }
     if (
       current?.variant_request?.status === 'unresolved'
-      && ['resolved', 'completed'].includes(annotation?.status)
+      && annotation?.status === 'resolved'
     ) {
       throw new Error('An unresolved Variant request cannot become Resolved');
     }
@@ -24,7 +24,7 @@ globalThis.WaypointVariantPolicy = (() => {
     }
     if (
       current?.variant_request?.status === 'unresolved'
-      && ['resolved', 'completed'].includes(updates?.status)
+      && updates?.status === 'resolved'
     ) {
       throw new Error('An unresolved Variant request cannot become Resolved');
     }

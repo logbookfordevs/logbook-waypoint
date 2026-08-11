@@ -4,6 +4,9 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 async function loadScript(context, relativePath) {
+  if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationStatus) {
+    await loadScript(context, 'annotation-status.js');
+  }
   const source = await readFile(new URL(`../.output/chrome-mv3/${relativePath}`, import.meta.url), 'utf8');
   vm.runInContext(source, context, { filename: relativePath });
 }
@@ -88,9 +91,9 @@ test('background only reports site enablement after injection registration and v
     source.indexOf('await chrome.scripting.registerContentScripts') < source.indexOf('if (tabId)'),
     'reload must occur only after content-script registration succeeds',
   );
-  assert.match(source, /for \(const annotation of annotations\) \{\s*this\.validateAnnotationAttachments\(annotation\);\s*\}/s);
+  assert.match(source, /for \(const annotation of normalized\) \{\s*this\.validateAnnotationAttachments\(annotation\);\s*\}/s);
   assert.match(source, /WaypointAnnotationValidation\.assertAll\(newAnnotations\)/);
-  assert.match(source, /WaypointAnnotationValidation\.assertAll\(annotations\)/);
+  assert.match(source, /WaypointAnnotationValidation\.assertAll\(normalized\)/);
   assert.ok(
     source.indexOf('this.validateAnnotationAttachments(a);') < source.indexOf('all.push(a);'),
     'imports must validate media before persisting locally',

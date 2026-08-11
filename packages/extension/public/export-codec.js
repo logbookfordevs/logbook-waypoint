@@ -49,13 +49,14 @@ globalThis.WaypointExportCodec = (() => {
   }
 
   function exportedAnnotation(annotation, fallbackUrl) {
+    annotation = WaypointAnnotationStatus.normalize(annotation);
     const portable = portableValue(annotation);
     const urlPath = getAnnotationRoute(annotation, fallbackUrl);
 
     return {
       ...portable,
       id: annotation.id,
-      status: annotation.status || 'pending',
+      status: annotation.status,
       ...(urlPath ? { url_path: urlPath } : {}),
       has_screenshot: Boolean(annotation.screenshot?.data_url || annotation.screenshot?.attachment_id || annotation.has_screenshot),
       has_attachments: Boolean(annotation.attachments?.length || annotation.has_attachments),
@@ -65,7 +66,8 @@ globalThis.WaypointExportCodec = (() => {
   function filterAnnotationsByStatus(annotations, status = 'all') {
     if (!Array.isArray(annotations)) throw new TypeError('Annotations must be an array');
     if (typeof status !== 'string' || status.length === 0) throw new TypeError('Export status must be a string');
-    return status === 'all' ? annotations : annotations.filter(annotation => annotation.status === status);
+    const normalized = WaypointAnnotationStatus.normalizeAll(annotations);
+    return status === 'all' ? normalized : normalized.filter(annotation => annotation.status === status);
   }
 
   function groupAnnotationsByRoute(annotations, fallbackUrl) {
@@ -123,7 +125,7 @@ globalThis.WaypointExportCodec = (() => {
 
   function normalizeImportEnvelope(data) {
     if (!data || data.waypoint_annotations_export !== true) return null;
-    if (Array.isArray(data.annotations)) return { ...data, annotations: data.annotations.map(annotation => ({ ...annotation })) };
+    if (Array.isArray(data.annotations)) return { ...data, annotations: WaypointAnnotationStatus.normalizeAll(data.annotations) };
     if (!Array.isArray(data.routes)) return null;
 
     const annotations = data.routes.flatMap(group => (group.annotations || []).map(annotation => ({
@@ -134,7 +136,7 @@ globalThis.WaypointExportCodec = (() => {
     if (!annotations.length) return null;
 
     const source = data.source || sourceForExport(data.routes[0]?.origin);
-    return { ...data, source, annotations };
+    return { ...data, source, annotations: WaypointAnnotationStatus.normalizeAll(annotations) };
   }
 
   function formatAnnotationsAsMarkdown(annotations, { scope = 'project', status = 'all', formatGroups } = {}) {

@@ -91,7 +91,7 @@ function present(annotation, variant) {
 
 export function createVariantRequest(annotation, candidates) {
   if (!annotation?.id) fail('A variant request requires an Annotation');
-  if (['resolved', 'completed', 'discarded', 'archived'].includes(annotation.status)) {
+  if (['resolved', 'discarded'].includes(annotation.status)) {
     fail('A terminal Annotation cannot begin a Variant request');
   }
   if (annotation.variant_request) fail('Annotation already has explicit Variant state');
@@ -191,7 +191,7 @@ export function assertAnnotationDeletable(annotation) {
       ...unique(annotation.variant_request.scaffold ?? []).map(key => cleanupTarget('scaffold', key)),
       ...annotation.variant_request.variants.map(variant => cleanupTarget('implementation', variant.key)),
     ];
-    fail('Finalize or discard the unresolved Variant request before deleting its Annotation', remaining);
+    fail('Finalize or discard the unresolved Variant request before resolving, discarding, or deleting its Annotation', remaining);
   }
 }
 
@@ -200,19 +200,31 @@ export function hasVariantOwnedFields(value) {
 }
 
 export function assertGenericAnnotationUpdateAllowed(current, updates) {
+  if ('status' in updates && updates.status !== current?.status) {
+    fail('Annotation lifecycle state can only change through the lifecycle module');
+  }
+  if ('claim' in updates) fail('Annotation Claim can only change through the lifecycle module');
   if (hasVariantOwnedFields(updates)) fail('Variant-owned fields can only be changed through the Variant module');
   if (current?.variant_request && ['pending_changes', 'css'].some(field => field in updates)) {
     fail('Variant presentation can only be changed through the Variant module');
   }
   const merged = { ...current, ...updates };
-  if (['resolved', 'completed'].includes(merged.status)) assertAnnotationResolvable(merged);
+  if (merged.status === 'resolved') assertAnnotationResolvable(merged);
 }
 
 export function assertSyncedAnnotationAllowed(current, incoming) {
   if (hasVariantOwnedFields(incoming) && !current?.variant_request) {
     fail('Create Variant state through the Variant module before synchronization');
   }
-  if (!current) return;
+  if (!current) {
+    if (incoming.status !== 'pending' || 'claim' in incoming) {
+      fail('New synchronized Annotations must begin Pending without a Claim');
+    }
+    return;
+  }
+  if (incoming.status !== current.status || JSON.stringify(incoming.claim ?? null) !== JSON.stringify(current.claim ?? null)) {
+    fail('Synchronization cannot change Annotation lifecycle state or Claim');
+  }
   if (current.variant_request) {
     for (const field of ['variant_request', 'variant_presentation', 'pending_changes', 'css']) {
       if (JSON.stringify(current[field] ?? null) !== JSON.stringify(incoming[field] ?? null)) {
@@ -220,5 +232,5 @@ export function assertSyncedAnnotationAllowed(current, incoming) {
       }
     }
   }
-  if (['resolved', 'completed'].includes(incoming.status)) assertAnnotationResolvable(incoming);
+  if (incoming.status === 'resolved') assertAnnotationResolvable(incoming);
 }

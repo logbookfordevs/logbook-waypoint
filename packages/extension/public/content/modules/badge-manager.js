@@ -120,11 +120,12 @@ var WaypointBadgeManager = (() => {
   }
 
   function render(annotations) {
+    const actionableAnnotations = WaypointAnnotationStatus.filterActionable(annotations);
     removeProvisional();
-    rollbackChangedTargets(annotations);
-    syncStyleAnnotations(annotations);
+    rollbackChangedTargets(actionableAnnotations);
+    syncStyleAnnotations(actionableAnnotations);
 
-    const sorted = [...annotations].sort((a, b) =>
+    const sorted = [...actionableAnnotations].sort((a, b) =>
       new Date(a.created_at) - new Date(b.created_at)
     );
     const previousBadges = new Map(badges.map(entry => [entry.annotation.id, entry]));
@@ -173,8 +174,8 @@ var WaypointBadgeManager = (() => {
     }
     if (!badges.length) stopRAF();
 
-    lastTotal = annotations.length;
-    WaypointEvents.emit('badges:rendered', { count: badges.length, total: annotations.length, styleCount: styleInjections.filter(s => s.annotation.type === 'stylesheet').length });
+    lastTotal = actionableAnnotations.length;
+    WaypointEvents.emit('badges:rendered', { count: badges.length, total: actionableAnnotations.length, styleCount: styleInjections.filter(s => s.annotation.type === 'stylesheet').length });
   }
 
   function injectStyleAnnotation(annotation) {

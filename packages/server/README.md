@@ -138,6 +138,8 @@ The server provides:
 - **HTTP API** (`/api/annotations`): For Chrome extension communication
 - **Health Check** (`/health`): For status monitoring
 
+The HTTP API and MCP tools share one Annotation lifecycle: Pending Annotations may be claimed, Claims may be refreshed by the same owner or released, and Claimed Annotations may be resolved. Pending or owner-claimed Annotations may be discarded. Resolved and Discarded records are retained; deletion is a separate permanent operation.
+
 Data is stored in `~/.logbook-waypoint/annotations.json`.
 
 ## Development

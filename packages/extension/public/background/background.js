@@ -1,6 +1,7 @@
 // Logbook Waypoint Background Service Worker
 
 importScripts('../annotation-id.js');
+importScripts('../annotation-status.js');
 importScripts('../annotation-validation.js');
 importScripts('../export-codec.js');
 importScripts('queue-sync.js');
@@ -39,7 +40,7 @@ class WaypointAnnotationsBackground {
     this.restoreEnabledSites();
 
     // One-time migration: mark existing annotations as synced
-    this.migrateSyncFlags();
+    this.migrateAnnotationStatuses().then(() => this.migrateSyncFlags());
 
     // Start API server connection monitoring
     this.startAPIConnectionMonitoring();
@@ -100,6 +101,16 @@ class WaypointAnnotationsBackground {
     await chrome.storage.local.set({ waypointSyncFlagsMigrated: true });
   }
 
+  async migrateAnnotationStatuses() {
+    const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointAnnotationStatusMigrated']);
+    if (result.waypointAnnotationStatusMigrated) return;
+    const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+    const normalized = WaypointAnnotationStatus.normalizeAll(annotations);
+    const updates = { waypointAnnotationStatusMigrated: true };
+    if (JSON.stringify(annotations) !== JSON.stringify(normalized)) updates.waypointAnnotations = normalized;
+    await chrome.storage.local.set(updates);
+  }
+
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
@@ -137,6 +148,15 @@ class WaypointAnnotationsBackground {
         case 'updateAnnotation':
           this.updateAnnotation(request.id, request.updates)
             .then(() => sendResponse({ success: true }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+          break;
+
+        case 'claimAnnotation':
+        case 'releaseAnnotation':
+        case 'resolveAnnotation':
+        case 'discardAnnotation':
+          this.runLifecycleOperation(request.action, request.id, request.owner, request.url)
+            .then(annotation => sendResponse({ success: true, annotation }))
             .catch(error => sendResponse({ success: false, error: error.message }));
           break;
 
@@ -230,7 +250,7 @@ class WaypointAnnotationsBackground {
     // Listen for storage changes to sync data
     chrome.storage.onChanged.addListener((changes, namespace) => {
       if (namespace === 'local' && changes.waypointAnnotations) {
-        this.onAnnotationsChanged(WaypointAnnotationId.filterValid(changes.waypointAnnotations.newValue));
+        this.onAnnotationsChanged(WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(changes.waypointAnnotations.newValue)));
       }
     });
   }
@@ -257,8 +277,9 @@ class WaypointAnnotationsBackground {
 
   async syncAnnotationsToAPI(annotations) {
     try {
-      WaypointAnnotationValidation.assertAll(annotations);
-      for (const annotation of annotations) {
+      const normalized = WaypointAnnotationStatus.normalizeAll(annotations);
+      WaypointAnnotationValidation.assertAll(normalized);
+      for (const annotation of normalized) {
         this.validateAnnotationAttachments(annotation);
       }
       
@@ -268,7 +289,7 @@ class WaypointAnnotationsBackground {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ annotations })
+        body: JSON.stringify({ annotations: normalized })
       });
       
       if (!response.ok) {
@@ -284,7 +305,7 @@ class WaypointAnnotationsBackground {
       await chrome.storage.local.set({
         waypointApiSyncPending: false,
         waypointApiLastSync: Date.now(),
-        waypointApiSyncCount: annotations.length
+        waypointApiSyncCount: normalized.length
       });
       
       
@@ -317,7 +338,7 @@ class WaypointAnnotationsBackground {
       }
       
       const result = await response.json();
-      const annotations = result.annotations || [];
+      const annotations = WaypointAnnotationStatus.normalizeAll(result.annotations);
       
       
       return annotations;
@@ -325,7 +346,7 @@ class WaypointAnnotationsBackground {
       console.error('[Background] Error getting annotations from API:', error);
       // Fallback to local storage if API fails
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+      const annotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
       
       
       if (url) {
@@ -360,25 +381,59 @@ class WaypointAnnotationsBackground {
     }
     await this._withStorageLock(async () => {
       const stored = await chrome.storage.local.get(['waypointAnnotations']);
-      const annotations = WaypointAnnotationId.filterValid(stored.waypointAnnotations);
+      const annotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(stored.waypointAnnotations));
       const index = annotations.findIndex(annotation => annotation.id === id);
       if (index !== -1) {
-        annotations[index] = result.annotation;
+        annotations[index] = WaypointAnnotationStatus.normalize(result.annotation);
         await chrome.storage.local.set({ waypointAnnotations: annotations });
       }
     });
-    return result.annotation;
+    return WaypointAnnotationStatus.normalize(result.annotation);
+  }
+
+  async runLifecycleOperation(action, id, owner, url) {
+    const operation = {
+      claimAnnotation: 'claim',
+      releaseAnnotation: 'release',
+      resolveAnnotation: 'resolve',
+      discardAnnotation: 'discard',
+    }[action];
+    if (!operation) throw new Error('Unknown lifecycle operation');
+    if (!WaypointAnnotationId.isValid(id)) throw new Error('Invalid Waypoint annotation ID');
+
+    const response = await fetch(`${this.apiServerUrl}/api/annotations/${encodeURIComponent(id)}/${operation}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ owner, url }),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.annotation) {
+      throw new Error(result.error || `Lifecycle operation failed (${response.status})`);
+    }
+
+    const annotation = { ...WaypointAnnotationStatus.normalize(result.annotation), _synced: true };
+    await this._withStorageLock(async () => {
+      const stored = await chrome.storage.local.get(['waypointAnnotations']);
+      const annotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(stored.waypointAnnotations));
+      const index = annotations.findIndex(candidate => candidate.id === id);
+      if (index !== -1) {
+        annotations[index] = annotation;
+        await chrome.storage.local.set({ waypointAnnotations: annotations });
+      }
+    });
+    return annotation;
   }
 
   async saveAnnotation(annotation) {
     return this._withStorageLock(async () => {
       try {
+        annotation = WaypointAnnotationStatus.normalize(annotation);
         if (!WaypointAnnotationId.isValid(annotation?.id)) {
           throw new Error('Invalid Waypoint annotation ID');
         }
         this.validateAnnotationAttachments(annotation);
         const result = await chrome.storage.local.get(['waypointAnnotations']);
-        const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+        const annotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
 
         const existingIndex = annotations.findIndex(a => a.id === annotation.id);
         WaypointVariantPolicy.assertSaveAllowed(annotations[existingIndex], annotation);
@@ -396,12 +451,12 @@ class WaypointAnnotationsBackground {
           const savedAnnotation = await this.saveAnnotationToAPI(annotation);
           // Re-read and update _synced flag
           const fresh = await chrome.storage.local.get(['waypointAnnotations']);
-          const arr = WaypointAnnotationId.filterValid(fresh.waypointAnnotations);
+          const arr = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(fresh.waypointAnnotations));
           const targetIndex = arr.findIndex(a => a.id === annotation.id);
           const target = arr[targetIndex];
           if (target && !target._synced) {
             arr[targetIndex] = savedAnnotation && WaypointAnnotationId.isValid(savedAnnotation.id)
-              ? { ...savedAnnotation, _synced: true }
+              ? { ...WaypointAnnotationStatus.normalize(savedAnnotation), _synced: true }
               : { ...target, _synced: true };
             await chrome.storage.local.set({ waypointAnnotations: arr });
           }
@@ -454,7 +509,7 @@ class WaypointAnnotationsBackground {
           throw new Error('Invalid Waypoint annotation ID');
         }
         const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
-        const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+        const annotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
         const deletedIds = result.waypointDeletedAnnotationIds || [];
         const deletedAnnotation = annotations.find(annotation => annotation.id === id);
         WaypointVariantPolicy.assertDeleteAllowed(deletedAnnotation);
@@ -493,7 +548,7 @@ class WaypointAnnotationsBackground {
   async deleteAnnotationsByUrl(url) {
     return this._withStorageLock(async () => {
       const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
-      const all = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+      const all = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
       const deletedIds = result.waypointDeletedAnnotationIds || [];
 
       const toDelete = all.filter(a => a.url === url);
@@ -556,8 +611,9 @@ class WaypointAnnotationsBackground {
         if (updates?.id !== undefined && updates.id !== id) {
           throw new Error('Annotation ID cannot be changed');
         }
+        updates = WaypointAnnotationStatus.normalizeUpdate(updates);
         const result = await chrome.storage.local.get(['waypointAnnotations']);
-        const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+        const annotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
 
         const annotationIndex = annotations.findIndex(annotation => annotation.id === id);
         if (annotationIndex === -1) {
@@ -623,13 +679,14 @@ class WaypointAnnotationsBackground {
   async updateBadge(tabId, url) {
     try {
       const annotations = await this.getAnnotations(url);
-      const pendingCount = annotations.filter(a => a.status === 'pending').length;
+      const counts = WaypointAnnotationStatus.countActionable(annotations);
+      const actionableCount = counts.pending + counts.claimed;
       
       
-      if (pendingCount > 0) {
+      if (actionableCount > 0) {
         await chrome.action.setBadgeText({
           tabId: tabId,
-          text: pendingCount.toString()
+          text: actionableCount.toString()
         });
         
         // Set badge color based on server status
@@ -641,7 +698,7 @@ class WaypointAnnotationsBackground {
         
         await chrome.action.setTitle({
           tabId: tabId,
-          title: `Logbook Waypoint - ${pendingCount} pending annotation${pendingCount === 1 ? '' : 's'}`
+          title: `Logbook Waypoint - ${actionableCount} actionable annotation${actionableCount === 1 ? '' : 's'} (${counts.pending} pending, ${counts.claimed} claimed)`
         });
       } else {
         await this.clearBadge(tabId);
@@ -655,15 +712,16 @@ class WaypointAnnotationsBackground {
   async updateBadgeFromLocalStorage(tabId, url) {
     try {
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+      const annotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
       const urlAnnotations = annotations.filter(a => a.url === url);
-      const pendingCount = urlAnnotations.filter(a => a.status === 'pending').length;
+      const counts = WaypointAnnotationStatus.countActionable(urlAnnotations);
+      const actionableCount = counts.pending + counts.claimed;
       
       
-      if (pendingCount > 0) {
+      if (actionableCount > 0) {
         await chrome.action.setBadgeText({
           tabId: tabId,
-          text: pendingCount.toString()
+          text: actionableCount.toString()
         });
         
         // Set badge color based on server status
@@ -675,7 +733,7 @@ class WaypointAnnotationsBackground {
         
         await chrome.action.setTitle({
           tabId: tabId,
-          title: `Logbook Waypoint - ${pendingCount} pending annotation${pendingCount === 1 ? '' : 's'}`
+          title: `Logbook Waypoint - ${actionableCount} actionable annotation${actionableCount === 1 ? '' : 's'} (${counts.pending} pending, ${counts.claimed} claimed)`
         });
       } else {
         await this.clearBadge(tabId);
@@ -815,7 +873,7 @@ class WaypointAnnotationsBackground {
       if (!response.ok) return;
       const serverResult = await response.json();
       if (!Array.isArray(serverResult.annotations)) return; // Unexpected response (e.g. multi-project warning) — skip sync
-      serverAnnotations = WaypointAnnotationId.filterValid(serverResult.annotations);
+      serverAnnotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(serverResult.annotations));
       for (const annotation of serverAnnotations) {
         this.validateAnnotationAttachments(annotation);
       }
@@ -827,7 +885,7 @@ class WaypointAnnotationsBackground {
     return this._withStorageLock(async () => {
       try {
         const localResult = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
-        const localAnnotations = WaypointAnnotationId.filterValid(localResult.waypointAnnotations);
+        const localAnnotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(localResult.waypointAnnotations));
         const deletedIds = new Set(
           (localResult.waypointDeletedAnnotationIds || []).filter(WaypointAnnotationId.isValid),
         );
@@ -1031,6 +1089,7 @@ class WaypointAnnotationsBackground {
         matches: [originPattern],
         js: [
           'annotation-id.js',
+          'annotation-status.js',
           'annotation-validation.js',
           'export-codec.js',
           'agent-setup-config.js',
@@ -1084,7 +1143,7 @@ class WaypointAnnotationsBackground {
     try {
       // Get all annotations from storage
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+      const annotations = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
       
       // Force sync to API
       await this.syncAnnotationsToAPI(annotations);
@@ -1106,11 +1165,12 @@ class WaypointAnnotationsBackground {
       return { imported: 0 };
     }
 
+    newAnnotations = WaypointAnnotationStatus.normalizeAll(newAnnotations);
     WaypointAnnotationValidation.assertAll(newAnnotations);
 
     return this._withStorageLock(async () => {
       const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
-      const all = WaypointAnnotationId.filterValid(result.waypointAnnotations);
+      const all = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
       const deletedIds = result.waypointDeletedAnnotationIds || [];
       const existingIds = new Set(all.map(a => a.id));
 
