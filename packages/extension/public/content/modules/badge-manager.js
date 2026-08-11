@@ -112,7 +112,9 @@ var VibeBadgeManager = (() => {
 
   function render(annotations) {
     removeProvisional();
-    clearAll(undefined, false);
+    rollbackChangedTargets(annotations);
+    clearAll(undefined, { restoreTargets: false, removeStyles: false });
+    syncStyleAnnotations(annotations);
 
     const sorted = [...annotations].sort((a, b) =>
       new Date(a.created_at) - new Date(b.created_at)
@@ -122,7 +124,6 @@ var VibeBadgeManager = (() => {
     sorted.forEach((annotation) => {
       // Stylesheet annotations — inject as <style> tag
       if (annotation.type === 'stylesheet' && annotation.css) {
-        injectStyleAnnotation(annotation);
         return;
       }
 
@@ -135,10 +136,6 @@ var VibeBadgeManager = (() => {
             if (rpc[prop]) target.style[prop] = rpc[prop].value;
           }
           if (rpc.copyChange) target.textContent = rpc.copyChange.value;
-        }
-        // Inject companion CSS rules if present
-        if (annotation.css) {
-          injectStyleAnnotation(annotation);
         }
         badgeIndex++;
         addBadge(target, annotation, badgeIndex);
@@ -155,6 +152,40 @@ var VibeBadgeManager = (() => {
     style.textContent = annotation.css;
     document.head.appendChild(style);
     styleInjections.push({ styleEl: style, annotation });
+  }
+
+  function rollbackChangedTargets(annotations) {
+    const nextById = new Map(annotations.map(annotation => [annotation.id, annotation]));
+    for (const entry of badges) {
+      const next = nextById.get(entry.annotation.id);
+      const previewChanged = JSON.stringify(next?.pending_changes || null)
+        !== JSON.stringify(entry.annotation.pending_changes || null);
+      if (!next || previewChanged) {
+        const pendingChanges = entry.annotation.pending_changes;
+        for (const prop of getStyleProps(pendingChanges)) entry.targetElement.style[prop] = '';
+        if (pendingChanges?.copyChange) entry.targetElement.textContent = pendingChanges.copyChange.original;
+      }
+    }
+  }
+
+  function syncStyleAnnotations(annotations) {
+    const desired = new Map(
+      annotations.filter(annotation => annotation.css).map(annotation => [annotation.id, annotation])
+    );
+
+    for (const entry of [...styleInjections]) {
+      const annotation = desired.get(entry.annotation.id);
+      if (!annotation) {
+        entry.styleEl.remove();
+        styleInjections.splice(styleInjections.indexOf(entry), 1);
+        continue;
+      }
+      if (entry.styleEl.textContent !== annotation.css) entry.styleEl.textContent = annotation.css;
+      entry.annotation = annotation;
+      desired.delete(annotation.id);
+    }
+
+    for (const annotation of desired.values()) injectStyleAnnotation(annotation);
   }
 
   function addBadge(targetElement, annotation, index) {
@@ -219,10 +250,12 @@ var VibeBadgeManager = (() => {
     }
   }
 
-  function clearAll(annotations, restoreTargets = true) {
+  function clearAll(annotations, { restoreTargets = true, removeStyles = true } = {}) {
     // Clear injected stylesheets
-    for (const entry of styleInjections) entry.styleEl.remove();
-    styleInjections = [];
+    if (removeStyles) {
+      for (const entry of styleInjections) entry.styleEl.remove();
+      styleInjections = [];
+    }
 
     // Clear tracked badges
     const clearedEls = new Set();

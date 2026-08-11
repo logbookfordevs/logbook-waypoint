@@ -2,19 +2,12 @@
 // Single interface for data operations used by all modules
 
 var VibeAPI = (() => {
-  const SERVER_URL = 'http://127.0.0.1:3846';
   let statusCache = null;
   let statusCacheTime = 0;
   const CACHE_TTL = 2000;
 
   function isFileProtocol() {
     return window.location.protocol === 'file:';
-  }
-
-  function isLocalOrigin() {
-    const h = window.location.hostname;
-    return h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0'
-      || h.endsWith('.local') || h.endsWith('.test') || h.endsWith('.localhost');
   }
 
   // --- Server status ---
@@ -25,22 +18,7 @@ var VibeAPI = (() => {
 
     let status;
 
-    if (isFileProtocol() || !isLocalOrigin()) {
-      // Non-local origins can't fetch localhost directly (CORS) — route via background
-      status = await _checkViaBg();
-    } else {
-      try {
-        const res = await fetch(`${SERVER_URL}/health`, {
-          method: 'GET',
-          signal: AbortSignal.timeout(2000),
-          mode: 'cors',
-          credentials: 'omit'
-        });
-        status = { connected: res.ok };
-      } catch {
-        status = await _checkViaBg();
-      }
-    }
+    status = await _checkViaBg();
 
     statusCache = status;
     statusCacheTime = now;
@@ -50,7 +28,8 @@ var VibeAPI = (() => {
   async function _checkViaBg() {
     try {
       const r = await chrome.runtime.sendMessage({ action: 'checkMCPStatus' });
-      return { connected: !!(r && r.success && r.status && r.status.connected) };
+      if (!r?.success || !r.status) return { connected: false };
+      return r.status;
     } catch {
       return { connected: false };
     }

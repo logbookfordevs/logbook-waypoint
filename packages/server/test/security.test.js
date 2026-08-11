@@ -134,6 +134,23 @@ describe('local HTTP security boundary', () => {
     }
   });
 
+  test('does not treat malformed zero-prefixed limits as a full sync request', async () => {
+    const originalLoad = instance.loadAnnotations;
+    instance.loadAnnotations = async () => Array.from({ length: 75 }, (_, index) => ({
+      id: `vibe_1750000000000_${index.toString().padStart(9, '0')}`,
+      url: `http://localhost:3000/page/${index}`,
+      comment: `annotation ${index}`
+    }));
+
+    try {
+      const response = await fetch(`${baseUrl}/api/annotations?limit=0junk`);
+      const payload = await response.json();
+      assert.equal(payload.annotations.length, 50);
+    } finally {
+      instance.loadAnnotations = originalLoad;
+    }
+  });
+
   test('rejects a sync batch containing an invalid annotation ID', async () => {
     const response = await fetch(`${baseUrl}/api/annotations/sync`, {
       method: 'POST',

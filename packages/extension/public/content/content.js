@@ -213,12 +213,7 @@ console.log('[Vibe] content.js loaded');
     });
 
     document.addEventListener('keydown', (e) => {
-      const path = typeof e.composedPath === 'function' ? e.composedPath() : [e.target];
-      const isEditing = path.some(node => node instanceof Element && (
-        node.matches('input, textarea, select, [contenteditable="true"], [role="textbox"]')
-        || node.isContentEditable
-      ));
-      if (isEditing) return;
+      if (VibeKeyboardTarget.isEditableEvent(e)) return;
 
       // ESC — stop annotation mode
       if (e.key === 'Escape' && VibeInspectionMode.isActive()) {

@@ -108,9 +108,10 @@ export class LocalAnnotationsServer {
           filtered = filtered.filter(a => a.url === url);
         }
         
-        const parsedLimit = Number.parseInt(limit, 10);
-        if (parsedLimit !== 0) {
-          filtered = filtered.slice(0, Number.isFinite(parsedLimit) ? parsedLimit : 50);
+        const limitText = String(limit);
+        const parsedLimit = /^\d+$/.test(limitText) ? Number(limitText) : 50;
+        if (limitText !== '0') {
+          filtered = filtered.slice(0, parsedLimit);
         }
         
         res.json({
@@ -820,9 +821,16 @@ export class LocalAnnotationsServer {
 
     // Transform annotations to strip screenshot data and add has_screenshot flag
     const annotationsWithScreenshotFlag = paginatedResults.map(annotation => {
-      const { screenshot, ...annotationWithoutScreenshot } = annotation;
+      const {
+        screenshot,
+        source_file_path,
+        source_line_range,
+        source_map_available,
+        context_hints,
+        ...portableAnnotation
+      } = annotation;
       return {
-        ...annotationWithoutScreenshot,
+        ...portableAnnotation,
         has_screenshot: !!(screenshot && screenshot.data_url)
       };
     });

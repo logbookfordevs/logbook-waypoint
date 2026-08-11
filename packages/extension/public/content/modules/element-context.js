@@ -706,8 +706,9 @@ var VibeElementContext = (() => {
   }
 
   function narrowByParentChain(candidates, parentChain) {
+    if (!parentChain?.length) return candidates;
     const contextualMatches = candidates.filter(candidate => matchesParentChain(candidate, parentChain));
-    return contextualMatches.length ? contextualMatches : candidates;
+    return contextualMatches;
   }
 
   function findElementBySelector(annotation) {

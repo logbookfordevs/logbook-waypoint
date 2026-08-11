@@ -9,6 +9,7 @@ var VibeToolbar = (() => {
   let isAnnotating = false;
   let isCollapsed = false;
   let serverOnline = false;
+  let serverCompatibilityMessage = null;
   let annotationCount = 0;
   let styleAnnotationCount = 0;
   let clearOnCopy = false;
@@ -214,7 +215,7 @@ var VibeToolbar = (() => {
     const version = chrome.runtime.getManifest().version;
     const currentTheme = VibeThemeManager.getPreference();
     const themeIcon = THEME_ICONS[currentTheme] || THEME_ICONS.system;
-    const route = window.location.pathname;
+    const route = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
     settingsDropdown = document.createElement('div');
     const rect = toolbarEl.getBoundingClientRect();
@@ -247,7 +248,7 @@ var VibeToolbar = (() => {
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="vibe-status-dot ${serverOnline ? 'online' : 'offline'}"></span>
-            <span style="font-size:12px;color:var(--v-text-secondary);">${serverOnline ? 'Connected' : 'Offline'}</span>
+            <span class="vibe-server-status-text" style="font-size:12px;color:var(--v-text-secondary);">${serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline')}</span>
           </div>
         </div>
         <div class="vibe-settings-separator"></div>
@@ -788,14 +789,17 @@ var VibeToolbar = (() => {
 
   async function refreshServerStatus() {
     const status = await VibeAPI.checkServerStatus();
-    const changed = serverOnline !== status.connected;
+    const changed = serverOnline !== status.connected || serverCompatibilityMessage !== status.compatibility_message;
     serverOnline = status.connected;
+    serverCompatibilityMessage = status.compatibility_message || null;
     if (changed) {
       updateUI();
       // Update settings dropdown if open
       if (settingsDropdown) {
         const dot = settingsDropdown.querySelector('.vibe-status-dot');
         if (dot) dot.className = `vibe-status-dot ${serverOnline ? 'online' : 'offline'}`;
+        const text = settingsDropdown.querySelector('.vibe-server-status-text');
+        if (text) text.textContent = serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline');
       }
     }
   }

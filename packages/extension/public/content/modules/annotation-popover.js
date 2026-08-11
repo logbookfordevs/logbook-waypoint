@@ -629,7 +629,7 @@ var VibeAnnotationPopover = (() => {
           await VibeAPI.deleteAnnotation(existingAnnotation.id);
           VibeEvents.emit('annotation:deleted', { id: existingAnnotation.id, annotation: existingAnnotation });
           activeExistingAnnotation = null;
-          dismiss(true);
+          dismiss(true, true);
           return;
         }
         const confirmed = await showConfirm(root, 'Delete annotation?', 'This cannot be undone.');
@@ -637,7 +637,7 @@ var VibeAnnotationPopover = (() => {
           await VibeAPI.deleteAnnotation(existingAnnotation.id);
           VibeEvents.emit('annotation:deleted', { id: existingAnnotation.id, annotation: existingAnnotation });
           activeExistingAnnotation = null;
-          dismiss(true);
+          dismiss(true, true);
         }
       });
     }
