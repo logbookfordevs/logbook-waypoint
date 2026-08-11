@@ -108,3 +108,17 @@ test('codec normalizes server route-only envelopes for the existing toolbar impo
     JSON.parse(JSON.stringify(exported.annotations)),
   );
 });
+
+test('media-only portable exports remain meaningful after safe round-trip', async () => {
+  const codec = await loadCodec();
+  const payload = codec.createExportEnvelope([{
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/app?tab=open#media',
+    comment: '',
+    attachments: [{ id: 'attachment_123', data_url: 'data:image/png;base64,secret' }],
+  }]);
+
+  assert.equal(payload.annotations[0].has_attachments, true);
+  assert.equal('attachments' in payload.annotations[0], false);
+  assert.equal(payload.annotations[0].url_path, '/app?tab=open#media');
+});

@@ -6,8 +6,11 @@ globalThis.WaypointAnnotationValidation = (() => {
         && !Array.isArray(annotation.pending_changes)
         && Object.keys(annotation.pending_changes).length > 0
       || typeof annotation.css === 'string' && annotation.css.trim().length > 0
-      || Boolean(annotation.screenshot?.data_url || annotation.screenshot?.attachment_id)
-      || Array.isArray(annotation.attachments) && annotation.attachments.length > 0;
+      || typeof annotation.screenshot?.data_url === 'string' && annotation.screenshot.data_url.trim().length > 0
+      || typeof annotation.screenshot?.attachment_id === 'string' && annotation.screenshot.attachment_id.trim().length > 0
+      || Array.isArray(annotation.attachments) && annotation.attachments.length > 0
+      || annotation.has_screenshot === true
+      || annotation.has_attachments === true;
   }
 
   function assertAnnotation(annotation) {

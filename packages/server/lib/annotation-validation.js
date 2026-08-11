@@ -34,7 +34,9 @@ export function hasMeaningfulAnnotationContent(annotation) {
     || hasNonEmptyRecord(annotation.pending_changes)
     || isNonEmptyString(annotation.css)
     || hasScreenshotReferenceOrData(annotation.screenshot)
-    || Array.isArray(annotation.attachments) && annotation.attachments.length > 0;
+    || Array.isArray(annotation.attachments) && annotation.attachments.length > 0
+    || annotation.has_screenshot === true
+    || annotation.has_attachments === true;
 }
 
 export function assertValidAnnotation(annotation) {

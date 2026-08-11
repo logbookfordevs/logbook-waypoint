@@ -35,10 +35,10 @@ globalThis.WaypointExportCodec = (() => {
   }
 
   function getAnnotationRoute(annotation, fallbackUrl) {
-    if (annotation.url_path) return annotation.url_path;
     try {
       return routeFor(annotation).route;
     } catch {
+      if (annotation.url_path) return annotation.url_path;
       try {
         const url = new URL(fallbackUrl);
         return `${url.pathname}${url.search}${url.hash}`;
