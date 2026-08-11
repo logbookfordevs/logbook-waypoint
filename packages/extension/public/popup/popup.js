@@ -1020,8 +1020,8 @@ class AnnotationsPopup {
     if (copyAllBtn) {
       copyAllBtn.addEventListener('click', async () => {
         const commands = [
-          'npm install -g logbook-waypoint-server',
-          'logbook-waypoint-server start',
+          'pnpm add --global @logbookfordevs/waypoint',
+          'waypoint start',
           'claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp'
         ];
         const allCommands = commands.join('\n');
@@ -1116,14 +1116,14 @@ class AnnotationsPopup {
     if (viewLogsBtn) {
       viewLogsBtn.addEventListener('click', () => {
         // For now, just show an alert with instructions
-        alert('To view server logs, run:\nlogbook-waypoint-server logs\n\nOr check your terminal where you started the server.');
+        alert('To view server logs, run:\nwaypoint logs\n\nOr check your terminal where you started the server.');
       });
     }
 
     if (restartServerBtn) {
       restartServerBtn.addEventListener('click', () => {
         // For now, just show an alert with instructions
-        alert('To restart the server, run:\nlogbook-waypoint-server restart\n\nThen click "Check Again" to verify.');
+        alert('To restart the server, run:\nwaypoint restart\n\nThen click "Check Again" to verify.');
       });
     }
   }

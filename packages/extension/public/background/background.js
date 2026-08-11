@@ -81,7 +81,7 @@ class VibeAnnotationsBackground {
       
       // Set badge to notify user
       chrome.action.setBadgeText({ text: 'NEW' });
-      chrome.action.setBadgeBackgroundColor({ color: '#d97757' }); // Vibe orange
+      chrome.action.setBadgeBackgroundColor({ color: '#d97757' }); // Waypoint terracotta
       
       // Also update settings
       const result = await chrome.storage.local.get(['settings']);

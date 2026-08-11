@@ -25,7 +25,6 @@ Status: Accepted Phase 0 contract. Some repository identifiers still use transit
 
 ## Current gaps
 
-- The package is currently named `logbook-waypoint-server` and its binary is `logbook-waypoint-server`.
 - New Annotations still use the inherited `vibe_` prefix.
 - Internal page events, classes, storage keys, and symbols still contain inherited Vibe names.
 

@@ -28,8 +28,8 @@ The next route adds a Logbook-native experience, a clearer work queue, watch mod
 
 Logbook Waypoint currently has two parts:
 
-1. **Browser extension** (`extension/`) — captures and manages visual annotations.
-2. **Local MCP server** (`annotations-server/`) — persists annotations and exposes them to coding agents on `127.0.0.1:3846`.
+1. **Browser extension** (`packages/extension/`) — captures and manages visual annotations and builds with WXT.
+2. **Local MCP server** (`packages/server/`) — persists annotations and exposes them to coding agents on `127.0.0.1:3846`.
 
 Some internal `vibe_*` identifiers remain intentionally unchanged in this first checkpoint. They are implementation details inherited from the MIT foundation and will be migrated only with tests around the browser/server protocol.
 
@@ -41,12 +41,24 @@ Some internal `vibe_*` identifiers remain intentionally unchanged in this first 
 
 ## Development setup
 
+Install the pnpm workspace once from the repository root:
+
+```bash
+pnpm install
+```
+
+Build and verify both packages:
+
+```bash
+pnpm check
+pnpm test
+pnpm build
+```
+
 ### Local server
 
 ```bash
-cd annotations-server
-npm install
-npm run start
+pnpm --filter @logbookfordevs/waypoint start
 ```
 
 ### Browser extension
@@ -54,7 +66,7 @@ npm run start
 1. Open `chrome://extensions` in a Chromium browser.
 2. Enable **Developer mode**.
 3. Choose **Load unpacked**.
-4. Select this repository's `extension/` directory.
+4. Select this repository's `packages/extension/.output/chrome-mv3/` directory.
 
 ### MCP connection
 

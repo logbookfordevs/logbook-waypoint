@@ -51,29 +51,31 @@ Unsure where to begin contributing? You can start by looking through these issue
 
 ```
 logbook-waypoint/
-├── extension/          # Chrome extension source code
-├── annotations-server/ # MCP server (npm package)
+├── packages/
+│   ├── extension/      # WXT browser extension
+│   └── server/         # @logbookfordevs/waypoint
 ├── docs/              # Documentation
+├── pnpm-workspace.yaml # Workspace definition
 └── README.md          # Main documentation
 ```
 
 ### Extension Development
 
-1. Load the extension in Chrome:
+1. Run `pnpm install` and `pnpm build`.
+2. Load the extension in Chrome:
    - Open `chrome://extensions/`
    - Enable Developer mode
    - Click "Load unpacked"
-   - Select the `extension/` directory
+   - Select `packages/extension/.output/chrome-mv3/`
 
-2. Make your changes
-3. Reload the extension to test
+3. Make your changes.
+4. Run `pnpm check && pnpm test && pnpm build` before the manual reload.
 
 ### Server Development
 
-1. Navigate to `annotations-server/`
-2. Install dependencies: `npm install`
-3. Run in development: `node bin/cli.js start`
-4. Test your changes
+1. Install dependencies from the repository root with `pnpm install`.
+2. Run `pnpm --filter @logbookfordevs/waypoint start`.
+3. Test your changes.
 
 ### Code Style
 

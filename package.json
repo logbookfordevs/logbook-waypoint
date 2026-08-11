@@ -1,0 +1,25 @@
+{
+  "name": "logbook-waypoint",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first visual feedback for developers and coding agents",
+  "author": "Leonardo Reis Dias",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logbookfordevs/logbook-waypoint.git"
+  },
+  "homepage": "https://github.com/logbookfordevs/logbook-waypoint#readme",
+  "bugs": {
+    "url": "https://github.com/logbookfordevs/logbook-waypoint/issues"
+  },
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @logbookfordevs/waypoint-extension build",
+    "check": "pnpm --filter @logbookfordevs/waypoint-extension check",
+    "test": "pnpm -r test"
+  }
+}

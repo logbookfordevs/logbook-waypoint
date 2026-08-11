@@ -6,14 +6,14 @@ This document describes the comprehensive update notification system implemented
 
 The update system consists of three main components:
 1. **Extension Update Detection** - Detects Chrome extension updates automatically
-2. **Server Update Checking** - Monitors GitHub releases for server package updates  
+2. **Server Update Checking** - Monitors the npm registry for server package updates
 3. **Version Compatibility** - Ensures extension and server versions work together
 
 ## Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│ Chrome Extension│    │ Local Server     │    │ GitHub Releases │
+│ Chrome Extension│    │ Local Server     │    │ npm Registry    │
 │                 │    │                  │    │                 │
 │ Update Detection│◄──►│ Version API      │◄──►│ Latest Releases │
 │ Badge Notification   │ Compatibility    │    │ Version Tags    │
@@ -27,7 +27,7 @@ The update system consists of three main components:
 
 The Chrome extension automatically detects when it has been updated using the `chrome.runtime.onInstalled` API.
 
-**File**: `extension/background/background.js`
+**File**: `packages/extension/public/background/background.js`
 
 ```javascript
 chrome.runtime.onInstalled.addListener((details) => {
@@ -54,7 +54,7 @@ The update banner appears at the top of the extension popup with:
 - "What's new" button to view changelog
 - Dismiss button to hide banner
 
-**Implementation**: `extension/popup/popup.html` + `extension/popup/popup.css`
+**Implementation**: `packages/extension/public/popup/popup.html` + `packages/extension/public/popup/popup.css`
 
 ### Changelog Integration
 
@@ -81,13 +81,13 @@ getChangelogForVersion(version) {
 
 The server automatically checks NPM registry for newer versions on startup.
 
-**File**: `annotations-server/lib/server.js`
+**File**: `packages/server/lib/server.js`
 
 ```javascript
 async checkForUpdates() {
   // Check NPM registry for latest version
   const response = await fetch(
-    'https://registry.npmjs.org/logbook-waypoint-server/latest'
+    'https://registry.npmjs.org/@logbookfordevs%2Fwaypoint/latest'
   );
   
   // Compare versions and notify if newer available
@@ -95,7 +95,7 @@ async checkForUpdates() {
     console.log(chalk.yellow(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  Update available: ${currentVersion} → ${latestVersion}        ║
-║  Run: npm update -g logbook-waypoint-server                    ║
+║  Run: pnpm update --global @logbookfordevs/waypoint                    ║
 ╚════════════════════════════════════════════════════════════════╝
     `));
   }
@@ -113,7 +113,7 @@ async checkForUpdates() {
 
 The system calls the NPM Registry API:
 ```
-GET https://registry.npmjs.org/logbook-waypoint-server/latest
+GET https://registry.npmjs.org/@logbookfordevs%2Fwaypoint/latest
 ```
 
 **Response handling**:
@@ -127,7 +127,7 @@ When an update is available, users get a simple update command:
 
 ```bash
 # Update to latest version
-npm update -g logbook-waypoint-server
+pnpm update --global @logbookfordevs/waypoint
 ```
 
 ## Version Compatibility System
@@ -149,7 +149,7 @@ The server exposes version information via the `/health` endpoint:
 
 The extension checks server compatibility when connecting:
 
-**File**: `extension/background/background.js`
+**File**: `packages/extension/public/background/background.js`
 
 ```javascript
 async checkAPIConnectionStatus() {
@@ -230,7 +230,7 @@ Update notifications can be configured in the extension:
 **Update Check Settings**:
 - Cache duration: 24 hours (86400000 ms)
 - Cache file: `~/.logbook-waypoint/.update-check`
-- NPM Registry endpoint: `https://registry.npmjs.org/logbook-waypoint-server/latest`
+- NPM Registry endpoint: `https://registry.npmjs.org/@logbookfordevs%2Fwaypoint/latest`
 
 ## Development Guidelines
 
@@ -267,7 +267,7 @@ chrome.storage.local.set({
 rm ~/.logbook-waypoint/.update-check
 
 # Start server to see update check
-npm run dev
+pnpm --filter @logbookfordevs/waypoint start
 ```
 
 ### Version Numbering
@@ -319,7 +319,7 @@ Follow [Semantic Versioning](https://semver.org/):
 ls -la ~/.logbook-waypoint/.update-check
 
 # Check NPM Registry manually  
-curl https://registry.npmjs.org/logbook-waypoint-server/latest
+curl https://registry.npmjs.org/@logbookfordevs%2Fwaypoint/latest
 ```
 
 **Extension badge not clearing**:
@@ -359,4 +359,4 @@ When contributing to the update system:
 
 ## Changelog
 
-See [CHANGELOG.md](../CHANGELOG.md) for detailed version history and [annotations-server/CHANGELOG.md](../annotations-server/CHANGELOG.md) for server changes.
+See [CHANGELOG.md](../CHANGELOG.md) for detailed version history and [the server changelog](../packages/server/CHANGELOG.md) for server changes.

@@ -1,0 +1,7 @@
+{
+  "name": "Logbook Waypoint",
+  "description": "Place visual waypoints on local interfaces and route them to coding agents through MCP.",
+  "repository": "https://github.com/logbookfordevs/logbook-waypoint",
+  "support": "https://github.com/logbookfordevs/logbook-waypoint/issues",
+  "homepage": "https://github.com/logbookfordevs/logbook-waypoint#readme"
+}

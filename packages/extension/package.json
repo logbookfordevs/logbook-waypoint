@@ -1,0 +1,20 @@
+{
+  "name": "@logbookfordevs/waypoint-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Logbook Waypoint browser extension",
+  "author": "Leonardo Reis Dias",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "wxt build",
+    "check": "wxt prepare && tsc --noEmit",
+    "postinstall": "wxt prepare",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.1.5",
+    "wxt": "0.21.3"
+  }
+}

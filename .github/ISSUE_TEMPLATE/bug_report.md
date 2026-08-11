@@ -37,4 +37,4 @@ Add any other context about the problem here.
 **Logs**
 If applicable, please include:
 - Browser console logs
-- Server logs (run `logbook-waypoint-server logs`)
+- Server logs (run `waypoint logs`)

@@ -3,8 +3,9 @@ node_modules/
 npm-debug.log*
 
 # Extension build artifacts
-extension/dist/
-extension/*.zip
+packages/extension/.output/
+packages/extension/.wxt/
+packages/extension/*.zip
 
 # MCP Server
 mcp-server/logs/

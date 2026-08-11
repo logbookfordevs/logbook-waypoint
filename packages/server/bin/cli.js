@@ -61,7 +61,7 @@ async function checkPort() {
 
 // Commands
 program
-  .name('logbook-waypoint-server')
+  .name('waypoint')
   .description('Global MCP server for Logbook Waypoint browser extension')
   .version(packageJson.version);
 
@@ -193,7 +193,7 @@ program
       console.log(chalk.gray(`   URL: http://127.0.0.1:${PORT}/sse`));
     } else if (running && !portAvailable) {
       console.log(chalk.yellow('⚠️  Server process exists but is not responding'));
-      console.log(chalk.gray('   Try running: logbook-waypoint-server restart'));
+      console.log(chalk.gray('   Try running: waypoint restart'));
     } else {
       console.log(chalk.gray('○ Server is not running'));
     }

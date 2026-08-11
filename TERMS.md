@@ -4,7 +4,7 @@
 
 ## 1. Acceptance of Terms
 
-By installing, accessing, or using Logbook Waypoint (the "Software"), including the Chrome browser extension and the logbook-waypoint-server npm package, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, do not use the Software.
+By installing, accessing, or using Logbook Waypoint (the "Software"), including the browser extension and the `@logbookfordevs/waypoint` npm package, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, do not use the Software.
 
 ## 2. License Grant
 

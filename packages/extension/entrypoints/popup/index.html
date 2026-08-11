@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logbook Waypoint</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       width: 320px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 13px;
-      color: #1f2937;
-      background: #fff;
+      color: #17231f;
+      background: #f7f0df;
       padding: 20px;
     }
     .header {
@@ -18,8 +20,9 @@
       gap: 10px;
       margin-bottom: 14px;
     }
-    .header img { width: 28px; height: 28px; border-radius: 6px; }
-    .header h1 { font-size: 15px; font-weight: 600; }
+    .header img { width: 32px; height: 32px; border-radius: 9px; }
+    .header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+    .eyebrow { color: #a34b2a; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
     .update-banner {
       background: #eff6ff;
       border: 1px solid #3b82f6;
@@ -71,14 +74,14 @@
       padding: 10px 16px;
       border: none;
       border-radius: 8px;
-      background: #d97757;
+      background: #bd4d29;
       color: #fff;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 10px;
     }
-    .action-btn:hover { background: #c4684a; }
+    .action-btn:hover { background: #963c22; }
     .action-btn:disabled { background: #d1d5db; cursor: default; }
     .action-btn.secondary {
       background: transparent;
@@ -112,31 +115,15 @@
       font-size: 11px;
     }
     .hidden { display: none !important; }
-    @media (prefers-color-scheme: dark) {
-      body { background: #1f2937; color: #e5e7eb; }
-      .update-banner { background: #1e3a5f; border-color: #3b82f6; }
-      .update-banner strong { color: #93c5fd; }
-      .update-link { color: #60a5fa; }
-      .dismiss-btn { color: #9ca3af; }
-      .dismiss-btn:hover { color: #e5e7eb; }
-      .message { background: #78350f; border-color: #b45309; }
-      .message strong { color: #fde68a; }
-      .success { background: #064e3b; border-color: #059669; color: #a7f3d0; }
-      .site-url { color: #9ca3af; }
-      .supported { color: #9ca3af; }
-      .supported strong { color: #d1d5db; }
-      .separator { border-color: #374151; }
-      code { background: #374151; color: #e5e7eb; }
-      .action-btn.secondary { color: #9ca3af; }
-      .action-btn.secondary:hover { background: #374151; color: #e5e7eb; }
-    }
+    .route-line { height: 1px; margin: 0 0 16px; background: repeating-linear-gradient(90deg, #c99d55 0 5px, transparent 5px 10px); }
   </style>
 </head>
 <body>
   <div class="header">
-    <img src="assets/icons/icon48.png" alt="Logbook Waypoint">
-    <h1>Logbook Waypoint</h1>
+    <img src="/assets/icons/icon48.png" alt="Logbook Waypoint">
+    <div><div class="eyebrow">Chart the change</div><h1>Logbook Waypoint</h1></div>
   </div>
+  <div class="route-line" aria-hidden="true"></div>
   <div class="update-banner hidden" id="updateBanner">
     <strong id="updateText"></strong>
     <div style="display:flex;align-items:center;gap:8px;">
@@ -160,6 +147,6 @@
     <code>file://</code>
   </div>
 
-  <script src="popup.js"></script>
+  <script src="/popup-legacy.js"></script>
 </body>
 </html>

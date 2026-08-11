@@ -30,17 +30,18 @@ jobs:
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+
     - name: Install dependencies
-      run: |
-        cd annotations-server
-        npm install
+      run: pnpm install --no-frozen-lockfile
 
     - name: Get NPM version and publish
       run: |
-        cd annotations-server
+        cd packages/server
         
         # Get latest published version from NPM.
-        LATEST_NPM_VERSION=$(npm view logbook-waypoint-server version 2>/dev/null || echo "0.1.0")
+        LATEST_NPM_VERSION=$(npm view @logbookfordevs/waypoint version 2>/dev/null || echo "0.1.0")
         echo "Latest NPM version: $LATEST_NPM_VERSION"
         
         # Set the package.json to the latest NPM version, then bump
@@ -52,7 +53,7 @@ jobs:
         echo "Publishing new version: $NEW_VERSION"
         
         # Publish to NPM
-        npm publish
+        pnpm publish --no-git-checks
         
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

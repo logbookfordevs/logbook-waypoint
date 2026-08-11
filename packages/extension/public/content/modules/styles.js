@@ -766,13 +766,13 @@ var VIBE_STYLES = `
   right: 24px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  background: var(--v-surface-1);
-  border: 1px solid var(--v-outline);
-  border-radius: var(--v-radius-full);
-  padding: 4px;
+  gap: 3px;
+  background: #fbf4e3;
+  border: 1px solid #cfb881;
+  border-radius: 14px;
+  padding: 5px;
   pointer-events: auto;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06);
+  box-shadow: 0 10px 28px rgba(35, 46, 40, 0.14), 0 2px 5px rgba(35, 46, 40, 0.08);
   z-index: 50;
   user-select: none;
   cursor: default;
@@ -780,7 +780,7 @@ var VIBE_STYLES = `
 }
 
 .vibe-toolbar:hover {
-  box-shadow: 0 6px 32px rgba(0,0,0,0.16), 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 14px 34px rgba(35, 46, 40, 0.18), 0 3px 7px rgba(35, 46, 40, 0.1);
 }
 
 .vibe-toolbar.dragging {
@@ -798,23 +798,23 @@ var VIBE_STYLES = `
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: 9px;
   border: none;
   background: transparent;
-  color: var(--v-text-secondary);
+  color: #4f5f58;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
   position: relative;
 }
 
 .vibe-toolbar-btn:hover {
-  background: var(--v-surface-hover);
-  color: var(--v-text-primary);
+  background: #efe2c5;
+  color: #17231f;
 }
 
 .vibe-toolbar-btn.active {
-  background: var(--v-accent);
-  color: var(--v-on-accent);
+  background: #bd4d29;
+  color: #fffaf0;
 }
 
 .vibe-toolbar-btn.active:hover {
@@ -840,8 +840,19 @@ var VIBE_STYLES = `
 .vibe-toolbar-divider {
   width: 1px;
   height: 20px;
-  background: var(--v-outline);
+  background: #cfb881;
   margin: 0 2px;
+}
+
+.waypoint-pet-slot {
+  display: none;
+}
+
+.waypoint-pet-slot[data-state="ready"] {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
 }
 
 /* Drag handle (vertical bar) */
@@ -858,7 +869,7 @@ var VIBE_STYLES = `
   width: 4px;
   height: 20px;
   border-radius: 2px;
-  background: var(--v-outline-highlight);
+  background: repeating-linear-gradient(180deg, #a9894f 0 2px, transparent 2px 5px);
   transition: background 0.15s ease;
 }
 
@@ -891,7 +902,7 @@ var VIBE_STYLES = `
 /* Collapsed toolbar */
 .vibe-toolbar.collapsed {
   padding: 4px;
-  border-radius: 50%;
+  border-radius: 12px;
 }
 
 .vibe-toolbar.collapsed .vibe-tb-collapse {

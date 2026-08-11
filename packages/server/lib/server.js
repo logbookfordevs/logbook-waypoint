@@ -1170,9 +1170,9 @@ export class LocalAnnotationsServer {
       if (Date.now() - lastCheck < 86400000) return;
       
       // Fetch latest version from NPM registry
-      const response = await fetch('https://registry.npmjs.org/logbook-waypoint-server/latest', {
+      const response = await fetch('https://registry.npmjs.org/@logbookfordevs%2Fwaypoint/latest', {
         headers: {
-          'User-Agent': 'logbook-waypoint-server'
+          'User-Agent': '@logbookfordevs/waypoint'
         }
       });
       
@@ -1210,7 +1210,7 @@ export class LocalAnnotationsServer {
         console.log(chalk.yellow(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  Update available: ${packageJson.version} → ${latestVersion}                          ║
-║  Run: npm update -g logbook-waypoint-server                    ║
+║  Run: pnpm update --global @logbookfordevs/waypoint            ║
 ╚════════════════════════════════════════════════════════════════╝
         `));
       }

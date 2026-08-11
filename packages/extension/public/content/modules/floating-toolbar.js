@@ -1,4 +1,4 @@
-// Floating pill toolbar — always visible, bottom-right by default
+// Floating navigation toolbar — always visible, bottom-right by default
 // Draggable, collapsible, position persisted to storage
 // Settings dropdown with theme toggle, MCP status, clear-on-copy
 
@@ -29,7 +29,7 @@ var VibeToolbar = (() => {
     trash: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
     settings: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
     collapse: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
-    // Vibe logo — actual icon (set dynamically in buildToolbar)
+    // Waypoint icon — set dynamically in buildToolbar
     logo: '',
     eyeOff: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>',
     power: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>',
@@ -100,6 +100,7 @@ var VibeToolbar = (() => {
         <span class="vibe-toolbar-tip">${isCollapsed ? 'Expand' : 'Collapse'}</span>
       </button>
       <div class="vibe-toolbar-inner">
+        <span class="waypoint-pet-slot" data-waypoint-pet-slot aria-hidden="true"></span>
         <div class="vibe-toolbar-divider"></div>
         <button class="vibe-toolbar-btn vibe-tb-annotate" title="Annotate (${shortcutHint})">
           ${ICONS.annotate}
@@ -512,12 +513,12 @@ var VibeToolbar = (() => {
         <div class="vibe-guide-section">
           <div class="vibe-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--v-text-secondary);">(optional)</span></div>
           <p class="vibe-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
-          <div class="vibe-guide-cmd" data-cmd="npm install -g logbook-waypoint-server">
-            <code>npm install -g logbook-waypoint-server</code>
+          <div class="vibe-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
+            <code>pnpm add --global @logbookfordevs/waypoint</code>
             <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <div class="vibe-guide-cmd" data-cmd="logbook-waypoint-server start">
-            <code>logbook-waypoint-server start</code>
+          <div class="vibe-guide-cmd" data-cmd="waypoint start">
+            <code>waypoint start</code>
             <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
           <p class="vibe-guide-text" style="margin-top:8px;">Then connect your agent:</p>
@@ -626,12 +627,12 @@ var VibeToolbar = (() => {
           </div>
           <div class="vibe-guide-section">
             <div class="vibe-guide-label">Setup</div>
-            <div class="vibe-guide-cmd" data-cmd="npm install -g logbook-waypoint-server">
-              <code>npm install -g logbook-waypoint-server</code>
+            <div class="vibe-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
+              <code>pnpm add --global @logbookfordevs/waypoint</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <div class="vibe-guide-cmd" data-cmd="logbook-waypoint-server start">
-              <code>logbook-waypoint-server start</code>
+            <div class="vibe-guide-cmd" data-cmd="waypoint start">
+              <code>waypoint start</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
             <p class="vibe-guide-text" style="margin-top:8px;">Then connect your agent (e.g. Claude Code):</p>
@@ -643,7 +644,7 @@ var VibeToolbar = (() => {
           <div class="vibe-guide-section">
             <div class="vibe-guide-label">Workflow</div>
             <p class="vibe-guide-text">1. Navigate your app and annotate elements across as many routes as needed</p>
-            <p class="vibe-guide-text">2. Tell your agent: <em>"read vibe annotations and implement the changes"</em></p>
+            <p class="vibe-guide-text">2. Tell your agent: <em>"read Logbook Waypoint annotations and implement the changes"</em></p>
             <p class="vibe-guide-text">3. The agent pulls all pending annotations via MCP, edits your source files, and deletes each one when done</p>
           </div>
         `

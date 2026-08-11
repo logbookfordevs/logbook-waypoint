@@ -1,11 +1,11 @@
-# logbook-waypoint-server
+# waypoint
 
 Global MCP server for Logbook Waypoint browser extension.
 
 ## Installation
 
 ```bash
-npm install -g logbook-waypoint-server
+pnpm add --global @logbookfordevs/waypoint
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm install -g logbook-waypoint-server
 ### Start the server
 
 ```bash
-logbook-waypoint-server start
+waypoint start
 ```
 
 The server will run in the background on port 3846.
@@ -21,27 +21,27 @@ The server will run in the background on port 3846.
 ### Stop the server
 
 ```bash
-logbook-waypoint-server stop
+waypoint stop
 ```
 
 ### Check server status
 
 ```bash
-logbook-waypoint-server status
+waypoint status
 ```
 
 ### Restart the server
 
 ```bash
-logbook-waypoint-server restart
+waypoint restart
 ```
 
 ### View logs
 
 ```bash
-logbook-waypoint-server logs
+waypoint logs
 # or follow logs
-logbook-waypoint-server logs -f
+waypoint logs -f
 ```
 
 ## AI Coding Agent Integration
@@ -143,15 +143,9 @@ Data is stored in `~/.logbook-waypoint/annotations.json`.
 ## Development
 
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd logbook-waypoint-server
-
-# Install dependencies
-npm install
-
-# Run in development mode
-npm run dev
+# From the repository root
+pnpm install
+pnpm --filter @logbookfordevs/waypoint start
 ```
 
 ## License
