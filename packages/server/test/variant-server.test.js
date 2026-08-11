@@ -243,7 +243,7 @@ test('committed Variant mutations publish safe Watch activity and survive Watch 
 
     assert.equal(activity.changes.length, 1);
     assert.equal(activity.changes[0].annotation.variant_request.status, 'unresolved');
-    assert.doesNotMatch(JSON.stringify(activity), /implementation|scaffold/);
+    assert.doesNotMatch(JSON.stringify(activity), /implementation|scaffold|pending_changes/);
 
     server.watchQueue.recordChanges = async () => { throw new Error('watch unavailable'); };
     const activated = await server.activateVariant({ id: initial[0].id, key: 'b' });

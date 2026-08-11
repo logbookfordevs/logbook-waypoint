@@ -248,6 +248,8 @@ test('portable Watch activity excludes Variant implementation and Scaffold data'
     component_name: 'SecretCard',
     file_path_hint: 'src/SecretCard.tsx',
     line_range_hint: '10-20',
+    pending_changes: { color: { original: 'black', value: 'red' } },
+    css: '.card { gap: 8px; }',
     variant_presentation: { css: '.card { gap: 8px; }' },
     variant_request: {
       status: 'unresolved',
@@ -269,7 +271,7 @@ test('portable Watch activity excludes Variant implementation and Scaffold data'
     variants: [{ key: 'compact', name: 'Compact', state: 'active' }],
   });
   assert.equal('variant_presentation' in portable, false);
-  assert.doesNotMatch(JSON.stringify(portable), /implementation|scaffold|\.card|SecretCard|file_path_hint|line_range_hint/);
+  assert.doesNotMatch(JSON.stringify(portable), /implementation|scaffold|pending_changes|\.card|SecretCard|file_path_hint|line_range_hint/);
 });
 
 test('persistent Watch does not revise an unchanged screenshot-bearing Annotation after restart', async () => {

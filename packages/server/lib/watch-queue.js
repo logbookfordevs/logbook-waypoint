@@ -28,6 +28,8 @@ function portableAnnotation(annotation, hasScreenshot) {
     line_range_hint,
     variant_presentation,
     variant_request,
+    pending_changes,
+    css,
     ...portableFields
   } = annotation;
   const portableVariantRequest = variant_request && {
@@ -37,6 +39,8 @@ function portableAnnotation(annotation, hasScreenshot) {
   };
   return {
     ...portableFields,
+    ...(!variant_request && pending_changes !== undefined ? { pending_changes } : {}),
+    ...(!variant_request && css !== undefined ? { css } : {}),
     ...(portableVariantRequest ? { variant_request: portableVariantRequest } : {}),
     has_screenshot: hasScreenshot,
   };
