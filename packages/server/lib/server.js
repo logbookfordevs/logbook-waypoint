@@ -422,7 +422,7 @@ export class LocalAnnotationsServer {
         tools: [
           {
             name: 'watch_annotations',
-            description: 'Waits for new or changed Queue activity without changing lifecycle state or creating a Claim. Returns an opaque continuation cursor and untrusted annotation content. Reuse only the cursor from the last successful response to resume after reconnecting.',
+            description: 'Waits for new or changed Queue activity without changing lifecycle state or creating a Claim. Returns an opaque continuation cursor and untrusted annotation content. Reuse only the cursor from the last successful response to resume after reconnecting. Delivery is at least once: deduplicate changes by annotation id and revision.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -715,7 +715,11 @@ export class LocalAnnotationsServer {
       await fs.promises.rename(tempFile, DATA_FILE);
       annotationFileSaved = true;
 
-      await this.watchQueue.recordChanges(annotations, async () => previousAnnotations);
+      try {
+        await this.watchQueue.recordChanges(annotations, async () => previousAnnotations);
+      } catch (error) {
+        console.warn(`Watch history will reconcile from the committed Queue: ${error.message}`);
+      }
       
       console.log(`Successfully saved ${annotations.length} annotations to ${DATA_FILE}`);
     } catch (error) {
@@ -821,6 +825,7 @@ export class LocalAnnotationsServer {
       changes: result.changes.map(change => ({
         annotation: this.portableAnnotation(change.annotation),
         revision: change.revision,
+        dedupe_key: `${change.annotation.id}:${change.revision}`,
       })),
       cursor: result.cursor,
       timed_out: result.changes.length === 0,

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -71,8 +71,7 @@ test('restored Watch history can reconcile a Queue change missed before persiste
   const acknowledged = await original.watch({ timeoutMs: 0 });
 
   const restored = new WatchQueue(original.toJSON());
-  const latestById = new Map(restored.history.map(change => [change.annotation.id, change.annotation]));
-  restored.recordChanges([...latestById.values()], [annotation({ status: 'discarded' })]);
+  restored.reconcile([annotation({ status: 'discarded' })]);
   const resumed = await restored.watch({ cursor: acknowledged.cursor, timeoutMs: 0 });
 
   assert.equal(resumed.changes[0].annotation.status, 'discarded');
@@ -143,5 +142,61 @@ test('persistent Watch reconciles current Queue state when history missed a chan
     assert.equal(resumed.changes[0].annotation.status, 'discarded');
   } finally {
     await rm(directory, { recursive: true });
+  }
+});
+
+test('persistent Watch makes a delivered cursor durable before waking its caller', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const watch = new PersistentWatchQueue({ historyFile });
+
+  try {
+    const initial = await watch.watch({ timeoutMs: 0 }, async () => []);
+    const waiting = watch.watch({ cursor: initial.cursor, timeoutMs: 100 }, async () => []);
+    await new Promise(resolve => setImmediate(resolve));
+    const recording = watch.recordChanges([annotation()]);
+    const delivered = await waiting;
+    const restored = new PersistentWatchQueue({ historyFile });
+
+    const resumed = await restored.watch(
+      { cursor: delivered.cursor, timeoutMs: 0 },
+      async () => [annotation()],
+    );
+    await recording;
+
+    assert.deepEqual(resumed.changes, []);
+  } finally {
+    await rm(directory, { recursive: true });
+  }
+});
+
+test('persistent Watch reconciles a committed Queue after journal recovery', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const watch = new PersistentWatchQueue({ historyFile });
+  const pending = annotation();
+
+  try {
+    const initial = await watch.watch({ timeoutMs: 0 }, async () => []);
+    await rm(directory, { recursive: true });
+    await writeFile(directory, 'temporarily blocks Watch persistence');
+    await assert.rejects(watch.recordChanges([pending]), /EEXIST|ENOTDIR/);
+    await rm(directory);
+    await mkdir(directory);
+
+    const recovered = await watch.watch(
+      { cursor: initial.cursor, timeoutMs: 0 },
+      async () => [pending],
+    );
+
+    assert.equal(recovered.changes[0].annotation.id, pending.id);
+    const restored = new PersistentWatchQueue({ historyFile });
+    const resumed = await restored.watch(
+      { cursor: recovered.cursor, timeoutMs: 0 },
+      async () => [pending],
+    );
+    assert.deepEqual(resumed.changes, []);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });

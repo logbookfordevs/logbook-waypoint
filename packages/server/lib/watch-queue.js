@@ -60,6 +60,25 @@ export class WatchQueue {
     return this.recordChanges([...latestById.values()], nextAnnotations);
   }
 
+  reconciledCopy(nextAnnotations) {
+    const candidate = new WatchQueue(structuredClone(this.toJSON()));
+    const changes = candidate.reconcile(nextAnnotations);
+    return { candidate, changes };
+  }
+
+  commit(candidate) {
+    const changed = candidate.sequence > this.sequence;
+    this.initialCursor = candidate.initialCursor;
+    this.history = candidate.history;
+    this.sequence = candidate.sequence;
+    if (changed) this.notifyWaiters();
+  }
+
+  notifyWaiters() {
+    for (const notify of this.waiters) notify();
+    this.waiters.clear();
+  }
+
   async watch({ cursor, timeoutMs = 25_000 } = {}) {
     if (cursor !== undefined && (typeof cursor !== 'string' || cursor.length > 512)) {
       throw new Error('Invalid Watch cursor');
@@ -101,19 +120,31 @@ export class PersistentWatchQueue {
     this.queue = null;
     this.initialization = null;
     this.operations = Promise.resolve();
+    this.needsReconciliation = false;
   }
 
   async watch(options, loadAnnotations) {
-    const queue = await this.ensureQueue(loadAnnotations);
+    const queue = await this.serialize(async () => {
+      const initializedQueue = await this.ensureQueue(loadAnnotations);
+      if (this.needsReconciliation) {
+        const annotations = await loadAnnotations();
+        await this.reconcileAndPersist(initializedQueue, annotations);
+        this.needsReconciliation = false;
+      }
+      return initializedQueue;
+    });
     return queue.watch(options);
   }
 
   async recordChanges(nextAnnotations, loadAnnotations = async () => []) {
     return this.serialize(async () => {
       const queue = await this.ensureQueue(loadAnnotations);
-      const changes = queue.reconcile(nextAnnotations);
-      if (changes.length > 0) await this.persist(queue);
-      return changes;
+      try {
+        return await this.reconcileAndPersist(queue, nextAnnotations);
+      } catch (error) {
+        this.needsReconciliation = true;
+        throw error;
+      }
     });
   }
 
@@ -144,6 +175,14 @@ export class PersistentWatchQueue {
   serialize(operation) {
     this.operations = this.operations.catch(() => {}).then(operation);
     return this.operations;
+  }
+
+  async reconcileAndPersist(queue, annotations) {
+    const { candidate, changes } = queue.reconciledCopy(annotations);
+    if (changes.length === 0) return changes;
+    await this.persist(candidate);
+    queue.commit(candidate);
+    return changes;
   }
 
   async persist(queue) {

@@ -314,6 +314,9 @@ describe('local HTTP security boundary', () => {
 
     try {
       await client.connect(transport);
+      const tools = await client.listTools();
+      const watchTool = tools.tools.find(tool => tool.name === 'watch_annotations');
+      assert.match(watchTool.description, /deduplicate.*annotation.*id.*revision/i);
       const empty = await client.callTool({
         name: 'watch_annotations',
         arguments: { timeout_ms: 0 }
@@ -341,6 +344,17 @@ describe('local HTTP security boundary', () => {
       assert.equal('screenshot' in delivered, false);
       assert.equal('claim' in delivered, false);
       assert.match(changedPayload.security_notice, /untrusted/i);
+
+      const repeated = await client.callTool({
+        name: 'watch_annotations',
+        arguments: { cursor: firstPayload.data.cursor, timeout_ms: 0 }
+      });
+      const repeatedPayload = JSON.parse(repeated.content[0].text);
+      assert.equal(repeatedPayload.data.changes[0].dedupe_key, changedPayload.data.changes[0].dedupe_key);
+      assert.equal(new Set([
+        changedPayload.data.changes[0].dedupe_key,
+        repeatedPayload.data.changes[0].dedupe_key
+      ]).size, 1);
     } finally {
       await client.close().catch(() => {});
       server.closeAllConnections();

@@ -498,6 +498,7 @@ var VibeToolbar = (() => {
       </button>
     `;
 
+    const agentSetup = globalThis.WaypointAgentSetup;
     body.innerHTML = `
       <div class="vibe-guide">
         <div class="vibe-guide-section">
@@ -551,23 +552,23 @@ var VibeToolbar = (() => {
             </div>
           </div>
           <div class="vibe-guide-panel" data-panel="codex">
-            <p class="vibe-guide-text">Add to <strong>~/.codex/config.toml</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd="[mcp_servers.logbook-waypoint]&#10;url = &quot;http://127.0.0.1:3846/mcp&quot;">
-              <code>[mcp_servers.logbook-waypoint] url = "..."</code>
+            <p class="vibe-guide-text">${agentSetup.codex.introduction} <strong>${agentSetup.codex.path}</strong>:</p>
+            <div class="vibe-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.codex.command)}">
+              <code>${agentSetup.codex.display}</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
           <div class="vibe-guide-panel" data-panel="pi">
-            <p class="vibe-guide-text">Pi uses MCP through an extension. After installing one, add to <strong>~/.pi/agent/mcp.json</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}'>
-              <code>{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}</code>
+            <p class="vibe-guide-text">${agentSetup.pi.introduction} <strong>${agentSetup.pi.path}</strong>:</p>
+            <div class="vibe-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.pi.command)}">
+              <code>${agentSetup.pi.display}</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
           <div class="vibe-guide-panel" data-panel="opencode">
-            <p class="vibe-guide-text">Add to <strong>~/.config/opencode/opencode.json</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd='{"mcp":{"logbook-waypoint":{"type":"remote","url":"http://127.0.0.1:3846/mcp","enabled":true}}}'>
-              <code>{"mcp":{"logbook-waypoint":{"type":"remote","url":"http://127.0.0.1:3846/mcp","enabled":true}}}</code>
+            <p class="vibe-guide-text">${agentSetup.opencode.introduction} <strong>${agentSetup.opencode.path}</strong>:</p>
+            <div class="vibe-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.opencode.command)}">
+              <code>${agentSetup.opencode.display}</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
@@ -591,7 +592,8 @@ var VibeToolbar = (() => {
     // Copy buttons
     body.querySelectorAll('.vibe-guide-copy').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const cmd = btn.closest('.vibe-guide-cmd').dataset.cmd;
+        const encodedCommand = btn.closest('.vibe-guide-cmd').dataset.cmd;
+        const cmd = encodedCommand.includes('%') ? decodeURIComponent(encodedCommand) : encodedCommand;
         await navigator.clipboard.writeText(cmd);
         btn.innerHTML = ICONS.check;
         setTimeout(() => { btn.innerHTML = ICONS.clipboard; }, 1500);

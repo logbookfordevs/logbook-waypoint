@@ -251,11 +251,11 @@ class AnnotationsPopup {
       });
     }
 
-    // Setup command copying
-    this.setupCommandCopying();
-
     // Setup agent tabs
     this.setupAgentTabs();
+
+    // Setup command copying
+    this.setupCommandCopying();
 
     // Setup screen navigation
     this.setupScreenNavigation();
@@ -1125,6 +1125,27 @@ class AnnotationsPopup {
   }
 
   setupAgentTabs() {
+    document.querySelectorAll('[data-waypoint-agent-setup]').forEach(panel => {
+      const setup = globalThis.WaypointAgentSetup[panel.dataset.agent];
+      const guidance = document.createElement('p');
+      guidance.append(`${setup.introduction} `);
+      const path = document.createElement('strong');
+      path.textContent = setup.path;
+      guidance.append(path, ':');
+
+      const command = document.createElement('div');
+      command.className = 'command-code';
+      const code = document.createElement('code');
+      code.textContent = setup.display;
+      const copy = document.createElement('button');
+      copy.className = 'copy-btn';
+      copy.dataset.command = setup.command;
+      copy.title = 'Copy configuration';
+      copy.innerHTML = '<iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>';
+      command.append(code, copy);
+      panel.replaceChildren(guidance, command);
+    });
+
     // Setup tab switching functionality
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');

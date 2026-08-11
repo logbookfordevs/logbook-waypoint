@@ -170,53 +170,9 @@
                   <p>Make sure to press the refresh button after adding the new MCP plugin.</p>
                 </div>
 
-                <!-- Codex Tab -->
-                <div class="tab-content" data-agent="codex">
-                  <p>Add to <strong>~/.codex/config.toml</strong>:</p>
-                  <div class="command-code">
-                    <code>[mcp_servers.logbook-waypoint]
-url = "http://127.0.0.1:3846/mcp"</code>
-                    <button class="copy-btn" data-command="[mcp_servers.logbook-waypoint]&#10;url = &quot;http://127.0.0.1:3846/mcp&quot;" title="Copy configuration">
-                      <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Pi Tab -->
-                <div class="tab-content" data-agent="pi">
-                  <p>Pi uses MCP through an extension. After installing one, add to <strong>~/.pi/agent/mcp.json</strong>:</p>
-                  <div class="command-code">
-                    <code>{
-  "mcpServers": {
-    "logbook-waypoint": {
-      "url": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}</code>
-                    <button class="copy-btn" data-command='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}' title="Copy configuration">
-                      <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- OpenCode Tab -->
-                <div class="tab-content" data-agent="opencode">
-                  <p>Add to <strong>~/.config/opencode/opencode.json</strong>:</p>
-                  <div class="command-code">
-                    <code>{
-  "mcp": {
-    "logbook-waypoint": {
-      "type": "remote",
-      "url": "http://127.0.0.1:3846/mcp",
-      "enabled": true
-    }
-  }
-}</code>
-                    <button class="copy-btn" data-command='{"mcp":{"logbook-waypoint":{"type":"remote","url":"http://127.0.0.1:3846/mcp","enabled":true}}}' title="Copy configuration">
-                      <iconify-icon icon="lucide:copy" width="14" height="14"></iconify-icon>
-                    </button>
-                  </div>
-                </div>
+                <div class="tab-content" data-agent="codex" data-waypoint-agent-setup></div>
+                <div class="tab-content" data-agent="pi" data-waypoint-agent-setup></div>
+                <div class="tab-content" data-agent="opencode" data-waypoint-agent-setup></div>
                 
                 <!-- VS Code Tab -->
                 <div class="tab-content" data-agent="vscode">
@@ -564,6 +520,7 @@ url = "http://127.0.0.1:3846/mcp"</code>
   </div>
   <script src="iconify-icon.min.js"></script>
   <script src="themes.js"></script>
+  <script src="../agent-setup-config.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

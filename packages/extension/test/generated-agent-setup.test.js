@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import vm from 'node:vm';
 
 const WAYPOINT_MCP_URL = 'http://127.0.0.1:3846/mcp';
 
-test('generated toolbar guides supported coding agents with Waypoint-native MCP settings', async () => {
+test('generated toolbar guides every supported coding agent without OpenClaw', async () => {
   const source = await readFile(
     new URL('../.output/chrome-mv3/content/modules/floating-toolbar.js', import.meta.url),
     'utf8',
@@ -15,10 +16,7 @@ test('generated toolbar guides supported coding agents with Waypoint-native MCP 
   }
 
   assert.doesNotMatch(source, /OpenClaw/i);
-  assert.match(source, /~\/\.pi\/agent\/mcp\.json/);
-  assert.match(source, /~\/\.config\/opencode\/opencode\.json/);
-  assert.match(source, new RegExp(`"logbook-waypoint"[\\s\\S]{0,240}${WAYPOINT_MCP_URL}`));
-  assert.match(source, /"type":"remote"/);
+  assert.match(source, /WaypointAgentSetup/);
 });
 
 test('popup setup wizard guides every supported coding agent without OpenClaw', async () => {
@@ -32,7 +30,37 @@ test('popup setup wizard guides every supported coding agent without OpenClaw', 
   }
 
   assert.doesNotMatch(source, /OpenClaw/i);
-  assert.match(source, /~\/\.pi\/agent\/mcp\.json/);
-  assert.match(source, /~\/\.config\/opencode\/opencode\.json/);
-  assert.match(source, new RegExp(`"logbook-waypoint"[\\s\\S]{0,240}${WAYPOINT_MCP_URL}`));
+  assert.match(source, /agent-setup-config\.js/);
+
+  const popupScript = await readFile(
+    new URL('../.output/chrome-mv3/popup/popup.js', import.meta.url),
+    'utf8',
+  );
+  assert.match(popupScript, /setupAgentTabs\(\);[\s\S]{0,120}setupCommandCopying\(\)/);
+});
+
+test('generated setup data is the single Waypoint-native source for agent configurations', async () => {
+  const source = await readFile(
+    new URL('../.output/chrome-mv3/agent-setup-config.js', import.meta.url),
+    'utf8',
+  );
+  const context = { globalThis: {} };
+  vm.runInNewContext(source, context);
+  const setup = context.globalThis.WaypointAgentSetup;
+
+  assert.equal(setup.codex.path, '~/.codex/config.toml');
+  assert.equal(setup.pi.path, '~/.pi/agent/mcp.json');
+  assert.equal(setup.opencode.path, '~/.config/opencode/opencode.json');
+  assert.match(setup.codex.command, /mcp_servers\.logbook-waypoint/);
+  assert.equal(JSON.parse(setup.pi.command).mcpServers['logbook-waypoint'].url, WAYPOINT_MCP_URL);
+  assert.deepEqual(
+    JSON.parse(setup.opencode.command).mcp['logbook-waypoint'],
+    { type: 'remote', url: WAYPOINT_MCP_URL, enabled: true },
+  );
+
+  const manifest = JSON.parse(await readFile(
+    new URL('../.output/chrome-mv3/manifest.json', import.meta.url),
+    'utf8',
+  ));
+  assert.equal(manifest.content_scripts[0].js[0], 'agent-setup-config.js');
 });

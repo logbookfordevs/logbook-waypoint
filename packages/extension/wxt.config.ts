@@ -19,6 +19,7 @@ const LOCAL_MATCHES = [
 ];
 
 const CONTENT_MODULES = [
+  'agent-setup-config.js',
   'content/modules/event-bus.js',
   'content/modules/styles.js',
   'content/modules/shadow-host.js',
