@@ -527,7 +527,8 @@ var VibeToolbar = (() => {
             <button class="vibe-guide-tab" data-tab="cursor">Cursor</button>
             <button class="vibe-guide-tab" data-tab="windsurf">Windsurf</button>
             <button class="vibe-guide-tab" data-tab="codex">Codex</button>
-            <button class="vibe-guide-tab" data-tab="openclaw">OpenClaw</button>
+            <button class="vibe-guide-tab" data-tab="pi">Pi</button>
+            <button class="vibe-guide-tab" data-tab="opencode">OpenCode</button>
           </div>
           <div class="vibe-guide-panel active" data-panel="claude">
             <div class="vibe-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
@@ -556,10 +557,17 @@ var VibeToolbar = (() => {
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
-          <div class="vibe-guide-panel" data-panel="openclaw">
-            <p class="vibe-guide-text">Add to <strong>~/.openclaw/openclaw.json</strong>:</p>
+          <div class="vibe-guide-panel" data-panel="pi">
+            <p class="vibe-guide-text">Pi uses MCP through an extension. After installing one, add to <strong>~/.pi/agent/mcp.json</strong>:</p>
             <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}'>
               <code>{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}</code>
+              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+            </div>
+          </div>
+          <div class="vibe-guide-panel" data-panel="opencode">
+            <p class="vibe-guide-text">Add to <strong>~/.config/opencode/opencode.json</strong>:</p>
+            <div class="vibe-guide-cmd" data-cmd='{"mcp":{"logbook-waypoint":{"type":"remote","url":"http://127.0.0.1:3846/mcp","enabled":true}}}'>
+              <code>{"mcp":{"logbook-waypoint":{"type":"remote","url":"http://127.0.0.1:3846/mcp","enabled":true}}}</code>
               <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
