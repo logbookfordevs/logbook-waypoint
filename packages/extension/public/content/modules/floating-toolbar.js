@@ -238,7 +238,7 @@ var WaypointToolbar = (() => {
         <button class="waypoint-settings-link waypoint-get-started-btn" type="button">
           ${ICONS.book}
           <span>Documentation</span>
-          <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
+          <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
         </button>
         <div class="waypoint-settings-separator"></div>
         <div class="waypoint-settings-item">
@@ -248,7 +248,7 @@ var WaypointToolbar = (() => {
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="waypoint-status-dot ${serverOnline ? 'online' : 'offline'}"></span>
-            <span class="waypoint-server-status-text" style="font-size:12px;color:var(--v-text-secondary);">${escapeHTML(serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline'))}</span>
+            <span class="waypoint-server-status-text" style="font-size:12px;color:var(--waypoint-text-secondary);">${escapeHTML(serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline'))}</span>
           </div>
         </div>
         <div class="waypoint-settings-separator"></div>
@@ -273,7 +273,7 @@ var WaypointToolbar = (() => {
             ${ICONS.camera}
             <div>
               <span>Screenshots</span>
-              <div style="font-size:11px;color:var(--v-text-secondary);margin-top:1px;">Only used via MCP server, not clipboard</div>
+              <div style="font-size:11px;color:var(--waypoint-text-secondary);margin-top:1px;">Only used via MCP server, not clipboard</div>
             </div>
           </div>
           <button class="waypoint-toggle waypoint-screenshot-toggle ${screenshotEnabled ? 'on' : ''}" type="button"></button>
@@ -430,9 +430,9 @@ var WaypointToolbar = (() => {
 
     // Replace header with back navigation
     header.innerHTML = `
-      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--v-text-secondary);font-family:var(--v-font);font-size:13px;padding:0;">
+      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--waypoint-text-secondary);font-family:var(--waypoint-font);font-size:13px;padding:0;">
         ${ICONS.back}
-        <span style="color:var(--v-text-primary);font-weight:600;">Documentation</span>
+        <span style="color:var(--waypoint-text-primary);font-weight:600;">Documentation</span>
       </button>
     `;
 
@@ -441,23 +441,23 @@ var WaypointToolbar = (() => {
       <button class="waypoint-settings-link waypoint-get-started-guide-btn" type="button">
         ${ICONS.rocket}
         <span>Get started</span>
-        <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
+        <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <div class="waypoint-settings-separator"></div>
       <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="single-page" type="button">
         ${ICONS.webpage}
         <span>Editing a single page</span>
-        <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
+        <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="multi-page" type="button">
         ${ICONS.globe}
         <span>Editing multiple pages</span>
-        <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
+        <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="collaborate" type="button">
         ${ICONS.users}
         <span>Collaborating</span>
-        <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
+        <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <div class="waypoint-settings-separator"></div>
       <a href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noopener" class="waypoint-settings-link">
@@ -492,9 +492,9 @@ var WaypointToolbar = (() => {
     if (!header || !body) return;
 
     header.innerHTML = `
-      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--v-text-secondary);font-family:var(--v-font);font-size:13px;padding:0;">
+      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--waypoint-text-secondary);font-family:var(--waypoint-font);font-size:13px;padding:0;">
         ${ICONS.back}
-        <span style="color:var(--v-text-primary);font-weight:600;">Get started</span>
+        <span style="color:var(--waypoint-text-primary);font-weight:600;">Get started</span>
       </button>
     `;
 
@@ -512,7 +512,7 @@ var WaypointToolbar = (() => {
         </div>
 
         <div class="waypoint-guide-section">
-          <div class="waypoint-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--v-text-secondary);">(optional)</span></div>
+          <div class="waypoint-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--waypoint-text-secondary);">(optional)</span></div>
           <p class="waypoint-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
           <div class="waypoint-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
             <code>pnpm add --global @logbookfordevs/waypoint</code>
@@ -685,9 +685,9 @@ var WaypointToolbar = (() => {
     if (!wf) return;
 
     header.innerHTML = `
-      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--v-text-secondary);font-family:var(--v-font);font-size:13px;padding:0;">
+      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--waypoint-text-secondary);font-family:var(--waypoint-font);font-size:13px;padding:0;">
         ${ICONS.back}
-        <span style="color:var(--v-text-primary);font-weight:600;">${wf.title}</span>
+        <span style="color:var(--waypoint-text-primary);font-weight:600;">${wf.title}</span>
       </button>
     `;
 
@@ -866,7 +866,7 @@ var WaypointToolbar = (() => {
         <div class="waypoint-confirm">
           <div class="waypoint-confirm-title">Delete all annotations?</div>
           <div class="waypoint-confirm-msg">All annotations on this page will be permanently deleted.</div>
-          <label class="waypoint-confirm-skip" style="display:flex;align-items:center;gap:6px;margin:8px 0 4px;font-size:12px;color:var(--v-text-secondary,#6b7280);cursor:pointer;user-select:none;">
+          <label class="waypoint-confirm-skip" style="display:flex;align-items:center;gap:6px;margin:8px 0 4px;font-size:12px;color:var(--waypoint-text-secondary,#6b7280);cursor:pointer;user-select:none;">
             <input type="checkbox" class="waypoint-confirm-skip-cb" style="margin:0;">
             Don't ask again
           </label>
@@ -1104,7 +1104,7 @@ var WaypointToolbar = (() => {
             These annotations were exported from <strong>${escapeHTML(sourceOrigin)}</strong>.
             Remap URLs to <strong>${escapeHTML(currentOrigin)}</strong> for local development?
           </div>
-          <div style="font-size:12px;color:var(--v-text-secondary);margin-top:8px;margin-bottom:4px;line-height:1.5;">
+          <div style="font-size:12px;color:var(--waypoint-text-secondary);margin-top:8px;margin-bottom:4px;line-height:1.5;">
             Important: Annotations might not perfectly anchor or apply the styling changes if the selectors aren't identical.
           </div>
           <div class="waypoint-confirm-actions">
@@ -1301,7 +1301,7 @@ var WaypointToolbar = (() => {
 
   function applyBadgeColor(color) {
     const root = WaypointShadowHost.getRoot();
-    if (root) root.host.style.setProperty('--v-badge-bg', color);
+    if (root) root.host.style.setProperty('--waypoint-badge-bg', color);
   }
 
   function camelToKebab(str) {

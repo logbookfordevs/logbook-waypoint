@@ -892,7 +892,7 @@ var WaypointAnnotationPopover = (() => {
         const isActive = r === activeRow && c === activeCol;
         const cx = 4 + c * 5;
         const cy = 4 + r * 5;
-        dots += `<circle cx="${cx}" cy="${cy}" r="1.4" fill="${isActive ? 'var(--v-accent)' : 'currentColor'}" opacity="${isActive ? '1' : '0.35'}"/>`;
+        dots += `<circle cx="${cx}" cy="${cy}" r="1.4" fill="${isActive ? 'var(--waypoint-accent)' : 'currentColor'}" opacity="${isActive ? '1' : '0.35'}"/>`;
       }
     }
     return `<svg width="14" height="14" viewBox="0 0 18 18" class="waypoint-align-dots">${dots}</svg>`;
@@ -2085,7 +2085,7 @@ var WaypointAnnotationPopover = (() => {
         <div class="waypoint-confirm">
           <div class="waypoint-confirm-title">${escapeHTML(title)}</div>
           <div class="waypoint-confirm-msg">${escapeHTML(message)}</div>
-          <label class="waypoint-confirm-skip" style="display:flex;align-items:center;gap:6px;margin:8px 0 4px;font-size:12px;color:var(--v-text-secondary,#6b7280);cursor:pointer;user-select:none;">
+          <label class="waypoint-confirm-skip" style="display:flex;align-items:center;gap:6px;margin:8px 0 4px;font-size:12px;color:var(--waypoint-text-secondary,#6b7280);cursor:pointer;user-select:none;">
             <input type="checkbox" class="waypoint-confirm-skip-cb" style="margin:0;">
             Don't ask again
           </label>

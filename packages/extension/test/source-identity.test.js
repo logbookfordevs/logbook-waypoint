@@ -240,7 +240,7 @@ test('extension build removes the public annotation automation surface', async (
   ]);
   const publicSurface = [config, background, content, toolbar].join('\n');
 
-  assert.doesNotMatch(publicSurface, /__waypointAnnotations/);
+  assert.doesNotMatch(publicSurface, /__(?:vibe|waypoint)Annotations/);
   assert.doesNotMatch(publicSurface, /bridge-api\.js|bridge-handler\.js|waypoint-bridge:/);
   assert.match(config, /content\/modules\/source-identity\.js/);
   assert.match(background, /unregisterContentScripts\(\{ ids: \[legacyPageScriptId\] \}\)/);

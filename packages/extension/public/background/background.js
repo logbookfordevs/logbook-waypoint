@@ -367,7 +367,7 @@ class WaypointAnnotationsBackground {
     }
     await this._withStorageLock(async () => {
       const stored = await chrome.storage.local.get(['waypointAnnotations']);
-      const annotations = stored.annotations || [];
+      const annotations = stored.waypointAnnotations || [];
       const index = annotations.findIndex(annotation => annotation.id === id);
       if (index !== -1) {
         annotations[index] = result.annotation;
@@ -402,7 +402,7 @@ class WaypointAnnotationsBackground {
           await this.saveAnnotationToAPI(annotation);
           // Re-read and update _synced flag
           const fresh = await chrome.storage.local.get(['waypointAnnotations']);
-          const arr = fresh.annotations || [];
+          const arr = fresh.waypointAnnotations || [];
           const target = arr.find(a => a.id === annotation.id);
           if (target && !target._synced) {
             target._synced = true;

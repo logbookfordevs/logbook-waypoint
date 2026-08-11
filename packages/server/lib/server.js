@@ -797,7 +797,9 @@ export class LocalAnnotationsServer {
       }
       
       try {
-        return JSON.parse(data);
+        const annotations = JSON.parse(data);
+        if (!Array.isArray(annotations)) return [];
+        return annotations.filter(annotation => isValidAnnotationId(annotation?.id));
       } catch (parseError) {
         console.error('Corrupted JSON file, reinitializing:', parseError);
         // Backup corrupted file

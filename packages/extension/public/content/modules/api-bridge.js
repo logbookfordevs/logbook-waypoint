@@ -73,6 +73,9 @@ var WaypointAPI = (() => {
     } catch (e) {
       // Fallback: direct storage
       console.warn('saveAnnotation bg failed, using storage fallback', e);
+      if (!WaypointAnnotationId.isValid(annotation?.id)) {
+        throw new Error('Invalid Waypoint annotation ID');
+      }
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const all = result.waypointAnnotations || [];
       WaypointVariantPolicy.assertSaveAllowed(null, annotation);

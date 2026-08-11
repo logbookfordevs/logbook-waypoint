@@ -43,6 +43,7 @@ test('extension source exposes only Waypoint namespace, storage, and export cont
   assert.match(source, /waypoint_annotations_export/);
   assert.match(source, /WaypointAnnotationId\.create/);
   assert.match(source, /annotations\.every\(annotation => WaypointAnnotationId\.isValid\(annotation\?\.id\)\)/);
+  assert.doesNotMatch(source, /--v-|['"]v-(?:surface|text|outline|accent|warning|danger|highlight|badge|tooltip)/);
 });
 
 test('generated extension artifacts preserve the canonical namespace without vendored Iconify internals', async () => {
@@ -51,6 +52,15 @@ test('generated extension artifacts preserve the canonical namespace without ven
   const artifacts = artifactSources.join('\n');
   assert.equal(artifacts.toLowerCase().includes(legacyNamespace), false);
   assert.equal(artifacts.includes(legacyExportEnvelope), false);
+  assert.doesNotMatch(artifacts, /--v-|['"]v-(?:surface|text|outline|accent|warning|danger|highlight|badge|tooltip)/);
+});
+
+test('background persistence consistently reads canonical Waypoint storage properties', async () => {
+  const source = await readFile(new URL('../public/background/background.js', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(source, /stored\.annotations|fresh\.annotations/);
+  assert.match(source, /stored\.waypointAnnotations/);
+  assert.match(source, /fresh\.waypointAnnotations/);
 });
 
 test('generated annotation ID adapter precedes all callers and rejects legacy IDs', async () => {
