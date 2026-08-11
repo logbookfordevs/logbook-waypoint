@@ -119,13 +119,15 @@ test('content status preserves the server compatibility nudge', async () => {
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {
   const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="target">Old</button></body></html>');
   const target = context.document.querySelector('#target');
+  target.style.color = 'green';
+  target.style.backgroundColor = 'yellow';
   const overlay = context.document.querySelector('#overlay');
   const annotation = {
     id: 'vibe_1_abcdefghi',
     comment: 'Change it',
     created_at: '2026-01-01T00:00:00.000Z',
     pending_changes: {
-      color: { original: '', value: 'red' },
+      color: { original: 'green', value: 'red' },
       copyChange: { original: 'Old', value: 'New' },
     },
     css: '#target:hover { color: blue; }',
@@ -143,7 +145,8 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   assert.equal(context.document.querySelector('[data-vibe-style]'), firstStyle);
 
   context.VibeBadgeManager.render([]);
-  assert.equal(target.style.color, '');
+  assert.equal(target.style.color, 'green');
+  assert.equal(target.style.backgroundColor, 'yellow');
   assert.equal(target.textContent, 'Old');
   assert.equal(context.document.querySelector('[data-vibe-style]'), null);
 });

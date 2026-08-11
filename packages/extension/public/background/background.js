@@ -840,11 +840,12 @@ class VibeAnnotationsBackground {
         // Push merged result to server only if content changed
         if (changed) {
           try {
-            await fetch(`${this.apiServerUrl}/api/annotations/sync`, {
+            const syncResponse = await fetch(`${this.apiServerUrl}/api/annotations/sync`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ annotations: merged })
             });
+            if (!syncResponse.ok) throw new Error(`API sync error: ${syncResponse.status}`);
             // Mark all as synced
             let needsUpdate = false;
             for (const a of merged) {

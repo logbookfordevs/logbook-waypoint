@@ -70,12 +70,7 @@ class AnnotationsPopup {
       if (this.isLocalhostUrl(tab.url)) {
         const url = new URL(tab.url);
         if (url.protocol === 'file:') {
-          // For file URLs, show just the filename and parent directory
-          const parts = url.pathname.split('/');
-          const filename = parts[parts.length - 1] || 'index.html';
-          const parentDir = parts[parts.length - 2] || '';
-          const filePath = parentDir ? `${parentDir}/${filename}` : filename;
-          routeElement.textContent = `${filePath}${url.search}${url.hash}`;
+          routeElement.textContent = `${url.pathname}${url.search}${url.hash}`;
         } else {
           routeElement.textContent = `${url.hostname}:${url.port}${url.pathname}${url.search}${url.hash}`;
         }

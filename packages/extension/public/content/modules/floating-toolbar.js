@@ -248,7 +248,7 @@ var VibeToolbar = (() => {
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="vibe-status-dot ${serverOnline ? 'online' : 'offline'}"></span>
-            <span class="vibe-server-status-text" style="font-size:12px;color:var(--v-text-secondary);">${serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline')}</span>
+            <span class="vibe-server-status-text" style="font-size:12px;color:var(--v-text-secondary);">${escapeHTML(serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline'))}</span>
           </div>
         </div>
         <div class="vibe-settings-separator"></div>
