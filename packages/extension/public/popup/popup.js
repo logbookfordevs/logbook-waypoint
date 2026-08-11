@@ -102,27 +102,6 @@ class AnnotationsPopup {
     }
   }
 
-  async saveAnnotations() {
-    try {
-      // Get all annotations from storage first
-      const result = await chrome.storage.local.get(['annotations']);
-      const allAnnotations = result.annotations || [];
-      
-      // Update the complete annotations array with our local changes
-      this.annotations.forEach(updatedAnnotation => {
-        const index = allAnnotations.findIndex(a => a.id === updatedAnnotation.id);
-        if (index >= 0) {
-          allAnnotations[index] = updatedAnnotation;
-        }
-      });
-      
-      // Save the complete updated array back to storage
-      await chrome.storage.local.set({ annotations: allAnnotations });
-    } catch (error) {
-      console.error('Error saving annotations:', error);
-    }
-  }
-
   render() {
     const annotationsList = document.getElementById('annotations-list');
     
@@ -564,10 +543,14 @@ class AnnotationsPopup {
       return;
     }
 
+    const response = await chrome.runtime.sendMessage({
+      action: 'updateAnnotation',
+      id,
+      updates: { comment: newComment },
+    });
+    if (!response?.success) throw new Error(response?.error || 'Failed to update annotation');
     annotation.comment = newComment;
     annotation.updated_at = new Date().toISOString();
-    
-    await this.saveAnnotations();
     // Don't re-render while editing to avoid losing focus
   }
 

@@ -7,6 +7,7 @@ import {
   addVariant,
   assertAnnotationResolvable,
   assertGenericAnnotationUpdateAllowed,
+  assertSyncedAnnotationAllowed,
   createVariantRequest,
   discardVariant,
   finalizeVariant,
@@ -124,5 +125,15 @@ test('resolution is gated until finalization leaves no Scaffold', () => {
   assert.throws(
     () => assertGenericAnnotationUpdateAllowed(finalized, { css: '.card { gap: 40px; }' }),
     /Variant presentation/i,
+  );
+});
+
+test('sync cannot introduce Variant-owned state onto an existing ordinary Annotation', () => {
+  const current = annotation();
+  const incoming = createVariantRequest(current, candidates);
+
+  assert.throws(
+    () => assertSyncedAnnotationAllowed(current, incoming),
+    /Variant state/,
   );
 });

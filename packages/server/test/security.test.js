@@ -367,6 +367,16 @@ describe('local HTTP security boundary', () => {
         changedPayload.data.changes[0].dedupe_key,
         repeatedPayload.data.changes[0].dedupe_key
       ]).size, 1);
+
+      const invalid = await client.callTool({
+        name: 'watch_annotations',
+        arguments: { cursor: 'forged-cursor', timeout_ms: 0 }
+      });
+      const invalidPayload = JSON.parse(invalid.content[0].text);
+      assert.equal(invalid.isError, true);
+      assert.equal(invalidPayload.status, 'error');
+      assert.equal(invalidPayload.data_trust, 'untrusted');
+      assert.match(invalidPayload.security_notice, /untrusted/i);
     } finally {
       await client.close().catch(() => {});
       server.closeAllConnections();
@@ -482,10 +492,11 @@ describe('local HTTP security boundary', () => {
         { name: 'delete_annotation', arguments: {} },
         { name: 'get_annotation_screenshot', arguments: { id: '../../outside' } }
       ]) {
-        await assert.rejects(
-          client.callTool(request),
-          /invalid annotation id/i
-        );
+        const result = await client.callTool(request);
+        const payload = JSON.parse(result.content[0].text);
+        assert.equal(result.isError, true);
+        assert.equal(payload.data_trust, 'untrusted');
+        assert.match(payload.data.error, /invalid annotation id/i);
       }
     } finally {
       await client.close().catch(() => {});

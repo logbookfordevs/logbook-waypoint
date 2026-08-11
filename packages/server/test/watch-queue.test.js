@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { PersistentWatchQueue, WatchQueue } from '../lib/watch-queue.js';
+import { PersistentWatchQueue, toWatchAnnotation, WatchQueue } from '../lib/watch-queue.js';
 
 const annotation = (overrides = {}) => ({
   id: 'waypoint_1750000000000_abc123xyz',
@@ -241,6 +241,35 @@ test('persistent Watch journal excludes screenshots and Source Identity hints', 
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('portable Watch activity excludes Variant implementation and Scaffold data', () => {
+  const portable = toWatchAnnotation(annotation({
+    component_name: 'SecretCard',
+    file_path_hint: 'src/SecretCard.tsx',
+    line_range_hint: '10-20',
+    variant_presentation: { css: '.card { gap: 8px; }' },
+    variant_request: {
+      status: 'unresolved',
+      active_variant_key: 'compact',
+      scaffold: ['variant-shell'],
+      variants: [{
+        key: 'compact',
+        name: 'Compact',
+        state: 'active',
+        implementation: { css: '.card { gap: 8px; }' },
+        scaffold: ['variant-shell'],
+      }],
+    },
+  }));
+
+  assert.deepEqual(portable.variant_request, {
+    status: 'unresolved',
+    active_variant_key: 'compact',
+    variants: [{ key: 'compact', name: 'Compact', state: 'active' }],
+  });
+  assert.equal('variant_presentation' in portable, false);
+  assert.doesNotMatch(JSON.stringify(portable), /implementation|scaffold|\.card|SecretCard|file_path_hint|line_range_hint/);
 });
 
 test('persistent Watch does not revise an unchanged screenshot-bearing Annotation after restart', async () => {

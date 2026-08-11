@@ -982,6 +982,7 @@ class VibeAnnotationsBackground {
         id: scriptId,
         matches: [originPattern],
         js: [
+          'agent-setup-config.js',
           'content/modules/event-bus.js',
           'content/modules/styles.js',
           'content/modules/shadow-host.js',

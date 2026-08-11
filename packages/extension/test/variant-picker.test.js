@@ -87,6 +87,14 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
     /Variant-owned state/,
   );
   assert.throws(
+    () => context.WaypointVariantPolicy.assertSaveAllowed(variants, {
+      id: variants.id,
+      comment: variants.comment,
+      status: 'resolved',
+    }),
+    /cannot become Resolved/,
+  );
+  assert.throws(
     () => context.WaypointVariantPolicy.assertDeleteAllowed(variants),
     /before deleting/,
   );
@@ -96,9 +104,11 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   assert.equal(backgroundSource.match(/WaypointVariantPolicy\.assertSaveAllowed/g).length >= 2, true);
   assert.match(
     backgroundSource,
-    /background\/variant-policy\.js[\s\S]*content\/modules\/api-bridge\.js[\s\S]*content\/modules\/variant-picker\.js[\s\S]*content\/modules\/annotation-popover\.js/,
+    /agent-setup-config\.js[\s\S]*background\/variant-policy\.js[\s\S]*content\/modules\/api-bridge\.js[\s\S]*content\/modules\/variant-picker\.js[\s\S]*content\/modules\/annotation-popover\.js/,
   );
   const popupSource = await readFile(new URL('../.output/chrome-mv3/popup/popup.js', import.meta.url), 'utf8');
+  assert.match(popupSource, /sendMessage\(\{\s*action: 'updateAnnotation',[\s\S]*updates: \{ comment: newComment/);
+  assert.doesNotMatch(popupSource, /allAnnotations\[index\] = updatedAnnotation/);
   assert.match(popupSource, /sendMessage\(\{ action: 'deleteAnnotation', id \}\)/);
   assert.doesNotMatch(popupSource, /filteredAnnotations[\s\S]*storage\.local\.set\(\{ annotations: filteredAnnotations \}\)/);
 });

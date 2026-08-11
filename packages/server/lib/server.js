@@ -83,7 +83,7 @@ function annotationMatchesUrlPattern(annotation, urlPattern) {
 }
 
 export class LocalAnnotationsServer {
-  constructor({ watchHistoryFile = WATCH_FILE } = {}) {
+  constructor({ annotationsFile = DATA_FILE, watchHistoryFile = WATCH_FILE } = {}) {
     this.app = express();
     this.mcpServer = new Server(
       {
@@ -101,6 +101,7 @@ export class LocalAnnotationsServer {
     this.transports = {}; // Track transport sessions
     this.connections = new Set(); // Track HTTP connections
     this.saveLock = Promise.resolve(); // Serialize save operations to prevent race conditions
+    this.annotationsFile = annotationsFile;
     this.watchQueue = new PersistentWatchQueue({ historyFile: watchHistoryFile });
     
     this.setupExpress();
@@ -767,16 +768,13 @@ export class LocalAnnotationsServer {
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
-        if (error instanceof VariantContractError) {
-          return {
-            isError: true,
-            content: [{
-              type: 'text',
-              text: JSON.stringify(createToolErrorPayload(name, error), null, 2),
-            }],
-          };
-        }
-        throw new Error(`Tool execution failed: ${error.message}`);
+        return {
+          isError: true,
+          content: [{
+            type: 'text',
+            text: JSON.stringify(createToolErrorPayload(name, error), null, 2),
+          }],
+        };
       }
     });
 
@@ -787,11 +785,11 @@ export class LocalAnnotationsServer {
 
   async loadAnnotations() {
     try {
-      if (!existsSync(DATA_FILE)) {
+      if (!existsSync(this.annotationsFile)) {
         await this.ensureDataFile();
         return [];
       }
-      const data = await readFile(DATA_FILE, 'utf8');
+      const data = await readFile(this.annotationsFile, 'utf8');
       
       // Handle empty or corrupted file
       if (!data || data.trim() === '') {
@@ -804,7 +802,7 @@ export class LocalAnnotationsServer {
       } catch (parseError) {
         console.error('Corrupted JSON file, reinitializing:', parseError);
         // Backup corrupted file
-        const backupFile = DATA_FILE + '.corrupted.' + Date.now();
+        const backupFile = this.annotationsFile + '.corrupted.' + Date.now();
         await writeFile(backupFile, data);
         console.log(`Corrupted file backed up to: ${backupFile}`);
         
@@ -829,29 +827,29 @@ export class LocalAnnotationsServer {
     let annotationFileSaved = false;
     try {
       let previousAnnotations = [];
-      if (existsSync(DATA_FILE)) {
+      if (existsSync(this.annotationsFile)) {
         try {
-          previousAnnotations = JSON.parse(await readFile(DATA_FILE, 'utf8'));
+          previousAnnotations = JSON.parse(await readFile(this.annotationsFile, 'utf8'));
         } catch {
           previousAnnotations = [];
         }
       }
       // Ensure directory exists right before operations  
-      const dataDir = path.dirname(DATA_FILE);
+      const dataDir = path.dirname(this.annotationsFile);
       if (!existsSync(dataDir)) {
         console.log(`Creating data directory: ${dataDir}`);
         await mkdir(dataDir, { recursive: true });
       }
       
       // Atomic write: write to temp file first, then rename
-      const tempFile = DATA_FILE + '.tmp';
+      const tempFile = this.annotationsFile + '.tmp';
       console.log(`Writing temp file: ${tempFile}`);
       await writeFile(tempFile, jsonData);
       
       // Rename temp file to actual file (atomic operation)
-      console.log(`Renaming ${tempFile} to ${DATA_FILE}`);
+      console.log(`Renaming ${tempFile} to ${this.annotationsFile}`);
       const fs = await import('fs');
-      await fs.promises.rename(tempFile, DATA_FILE);
+      await fs.promises.rename(tempFile, this.annotationsFile);
       annotationFileSaved = true;
 
       try {
@@ -860,7 +858,7 @@ export class LocalAnnotationsServer {
         console.warn(`Watch history will reconcile from the committed Queue: ${error.message}`);
       }
       
-      console.log(`Successfully saved ${annotations.length} annotations to ${DATA_FILE}`);
+      console.log(`Successfully saved ${annotations.length} annotations to ${this.annotationsFile}`);
     } catch (error) {
       console.error('Error saving annotations:', error);
 
@@ -869,7 +867,7 @@ export class LocalAnnotationsServer {
       }
       
       // Clean up temp file if it exists
-      const tempFile = DATA_FILE + '.tmp';
+      const tempFile = this.annotationsFile + '.tmp';
       try {
         if (existsSync(tempFile)) {
           const fs = await import('fs');
@@ -908,19 +906,19 @@ export class LocalAnnotationsServer {
   }
 
   async ensureDataFile() {
-    const dataDir = path.dirname(DATA_FILE);
+    const dataDir = path.dirname(this.annotationsFile);
     if (!existsSync(dataDir)) {
       console.log(`Creating data directory: ${dataDir}`);
       await mkdir(dataDir, { recursive: true });
     }
     
-    if (!existsSync(DATA_FILE)) {
-      console.log(`Creating new annotation file: ${DATA_FILE}`);
-      await writeFile(DATA_FILE, JSON.stringify([], null, 2));
+    if (!existsSync(this.annotationsFile)) {
+      console.log(`Creating new annotation file: ${this.annotationsFile}`);
+      await writeFile(this.annotationsFile, JSON.stringify([], null, 2));
     } else {
       // File exists - log current annotation count for verification
       try {
-        const existingData = await readFile(DATA_FILE, 'utf8');
+        const existingData = await readFile(this.annotationsFile, 'utf8');
         const annotations = JSON.parse(existingData || '[]');
         console.log(`Annotation file exists with ${annotations.length} annotations`);
       } catch (error) {
@@ -1486,7 +1484,7 @@ export class LocalAnnotationsServer {
       console.log(`HTTP API: http://127.0.0.1:${PORT}/api/annotations`);
       console.log(`MCP Endpoint: http://127.0.0.1:${PORT}/mcp`);
       console.log(`Health: http://127.0.0.1:${PORT}/health`);
-      console.log(`Data: ${DATA_FILE}`);
+      console.log(`Data: ${this.annotationsFile}`);
       console.log('\nServer ready to handle requests');
     });
   }

@@ -15,7 +15,7 @@ function comparableAnnotation(annotation) {
   return JSON.stringify(canonicalValue(annotation));
 }
 
-export function toWatchAnnotation(annotation) {
+function portableAnnotation(annotation, hasScreenshot) {
   const {
     screenshot,
     has_screenshot,
@@ -23,28 +23,31 @@ export function toWatchAnnotation(annotation) {
     source_line_range,
     source_map_available,
     context_hints,
-    ...portableAnnotation
+    component_name,
+    file_path_hint,
+    line_range_hint,
+    variant_presentation,
+    variant_request,
+    ...portableFields
   } = annotation;
+  const portableVariantRequest = variant_request && {
+    status: variant_request.status,
+    active_variant_key: variant_request.active_variant_key,
+    variants: variant_request.variants?.map(({ key, name, state }) => ({ key, name, state })),
+  };
   return {
-    ...portableAnnotation,
-    has_screenshot: Boolean(screenshot?.data_url),
+    ...portableFields,
+    ...(portableVariantRequest ? { variant_request: portableVariantRequest } : {}),
+    has_screenshot: hasScreenshot,
   };
 }
 
+export function toWatchAnnotation(annotation) {
+  return portableAnnotation(annotation, Boolean(annotation.screenshot?.data_url));
+}
+
 function normalizeJournalAnnotation(annotation) {
-  const {
-    screenshot,
-    has_screenshot,
-    source_file_path,
-    source_line_range,
-    source_map_available,
-    context_hints,
-    ...portableAnnotation
-  } = annotation;
-  return {
-    ...portableAnnotation,
-    has_screenshot: Boolean(has_screenshot || screenshot?.data_url),
-  };
+  return portableAnnotation(annotation, Boolean(annotation.has_screenshot || annotation.screenshot?.data_url));
 }
 
 function validateSavedQueue(saved) {

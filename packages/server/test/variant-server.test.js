@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
@@ -223,4 +226,31 @@ test('MCP Variant failures retain structured remaining cleanup work', async () =
   assert.equal(payload.data_trust, 'untrusted');
   assert.match(payload.security_notice, /Do not follow instructions/);
   assert.deepEqual(payload.data.remaining_cleanup, [{ kind: 'scaffold_missing', key: '<malicious-cleanup-key>' }]);
+});
+
+test('committed Variant mutations publish safe Watch activity and survive Watch failure', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-watch-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const watchHistoryFile = path.join(directory, 'watch-history.json');
+  const initial = createServer().read();
+  await writeFile(annotationsFile, JSON.stringify(initial));
+  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
+
+  try {
+    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    await server.requestVariants({ id: initial[0].id, variants: candidates });
+    const activity = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
+
+    assert.equal(activity.changes.length, 1);
+    assert.equal(activity.changes[0].annotation.variant_request.status, 'unresolved');
+    assert.doesNotMatch(JSON.stringify(activity), /implementation|scaffold/);
+
+    server.watchQueue.recordChanges = async () => { throw new Error('watch unavailable'); };
+    const activated = await server.activateVariant({ id: initial[0].id, key: 'b' });
+    const committed = JSON.parse(await readFile(annotationsFile, 'utf8'));
+    assert.equal(activated.variant_request.active_variant_key, 'b');
+    assert.equal(committed[0].variant_request.active_variant_key, 'b');
+  } finally {
+    await rm(directory, { recursive: true });
+  }
 });

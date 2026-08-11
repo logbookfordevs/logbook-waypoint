@@ -209,7 +209,9 @@ export function assertGenericAnnotationUpdateAllowed(current, updates) {
 }
 
 export function assertSyncedAnnotationAllowed(current, incoming) {
-  if (!current && hasVariantOwnedFields(incoming)) fail('Create Variant state through the Variant module before synchronization');
+  if (hasVariantOwnedFields(incoming) && !current?.variant_request) {
+    fail('Create Variant state through the Variant module before synchronization');
+  }
   if (!current) return;
   if (current.variant_request) {
     for (const field of ['variant_request', 'variant_presentation', 'pending_changes', 'css']) {
