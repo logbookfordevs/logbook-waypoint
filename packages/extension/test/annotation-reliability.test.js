@@ -289,6 +289,24 @@ test('full Queue sync preserves more than 50 annotations in both directions', as
   assert.equal(pushed.changed, true);
 });
 
+test('Queue sync retains migrated terminal history missing from the server', async () => {
+  const context = createBrowserContext();
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'background/queue-sync.js');
+  const migrated = {
+    id: 'waypoint_1750000000001_abcdefghi',
+    status: 'resolved',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    _synced: false,
+  };
+
+  const result = context.WaypointQueueSync.merge([migrated], [], []);
+  assert.deepEqual(JSON.parse(JSON.stringify(result.annotations)), [migrated]);
+
+  const background = await readFile(new URL('../public/background/background.js', import.meta.url), 'utf8');
+  assert.match(background, /serverIds\.has\(annotation\.id\) \|\| annotation\.status === 'pending'/);
+});
+
 test('Queue conflict resolution preserves Variant-owned state from ordinary records', async () => {
   const context = createBrowserContext();
   await loadScript(context, 'annotation-id.js');

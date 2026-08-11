@@ -32,6 +32,7 @@ Pending ──claim──▶ Claimed ──resolve──▶ Resolved
 - Expiry or explicit release returns a claimed Annotation to `Pending`.
 - Resolution is explicit and retains the Annotation as history.
 - Discard is explicit and retains the Annotation as history.
+- Discarding an Annotation with an unresolved Variant request atomically removes that request and its presentation before retaining the Annotation as `Discarded`; a persistence failure leaves both unchanged.
 - Deletion is explicit permanent removal and is not a completion state.
 - `resolve_annotation` is the agent completion operation.
 - `delete_annotation` remains a separate destructive operation.

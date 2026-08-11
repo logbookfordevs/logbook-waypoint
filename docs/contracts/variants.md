@@ -17,6 +17,7 @@ The Variant module exposes variant creation, activation, discard, and finalizati
 - The Active Variant cannot be discarded without first activating another surviving Variant.
 - Finalization preserves exactly one chosen implementation.
 - Finalization removes every discarded implementation and all Scaffold.
+- Discarding the owning Annotation is the explicit request-level discard: it atomically removes the unresolved request, every candidate presentation, and Scaffold metadata while retaining the Annotation as `Discarded`.
 - An Annotation cannot become `Resolved` while variant Scaffold remains.
 - Closing and reopening the editor for an unresolved variant Annotation restores the same Active Variant without introducing a lifecycle transition.
 

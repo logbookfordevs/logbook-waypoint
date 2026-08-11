@@ -67,6 +67,39 @@ test('server leaves persisted state untouched when cleanup is incomplete', async
   assert.equal(read()[0].variant_request.status, 'unresolved');
 });
 
+test('discarding an Annotation atomically discards its unresolved Variant request', async () => {
+  const { server, read } = createServer();
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+
+  const discarded = await server.changeAnnotationLifecycle({
+    id: 'waypoint_1750000000000_abc123xyz',
+    operation: 'discard',
+  });
+
+  assert.equal(discarded.status, 'discarded');
+  assert.equal('variant_request' in discarded, false);
+  assert.equal('variant_presentation' in discarded, false);
+  assert.equal(read()[0].status, 'discarded');
+});
+
+test('failed persistence cannot partially discard unresolved Variant work', async () => {
+  const server = new LocalAnnotationsServer();
+  const requested = await createServer().server.requestVariants({
+    id: 'waypoint_1750000000000_abc123xyz',
+    variants: candidates,
+  });
+  const persisted = [structuredClone(requested)];
+  server.loadAnnotations = async () => structuredClone(persisted);
+  server._saveAnnotationsInternal = async () => { throw new Error('disk unavailable'); };
+
+  await assert.rejects(
+    () => server.changeAnnotationLifecycle({ id: persisted[0].id, operation: 'discard' }),
+    /disk unavailable/,
+  );
+  assert.equal(persisted[0].status, 'pending');
+  assert.equal(persisted[0].variant_request.status, 'unresolved');
+});
+
 test('serialized writes recover after an expected Variant failure', async () => {
   const server = new LocalAnnotationsServer();
   let stored = [createServer().read()[0]];

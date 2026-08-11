@@ -97,7 +97,7 @@ class WaypointAnnotationsBackground {
     if (annotations.length) {
       let changed = false;
       for (const a of annotations) {
-        if (!a._synced) { a._synced = true; changed = true; }
+        if (a._synced === undefined) { a._synced = true; changed = true; }
       }
       if (changed) await chrome.storage.local.set({ waypointAnnotations: annotations });
     }
@@ -109,6 +109,9 @@ class WaypointAnnotationsBackground {
     if (result.waypointAnnotationStatusMigrated) return;
     const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
     const normalized = WaypointAnnotationCollection.migrateLegacy(annotations);
+    for (let index = 0; index < normalized.length; index += 1) {
+      if (normalized[index].status !== annotations[index].status) normalized[index]._synced = false;
+    }
     const updates = { waypointAnnotationStatusMigrated: true };
     if (JSON.stringify(annotations) !== JSON.stringify(normalized)) updates.waypointAnnotations = normalized;
     await chrome.storage.local.set(updates);
@@ -884,7 +887,9 @@ class WaypointAnnotationsBackground {
         // Push merged result to server only if content changed
         if (changed) {
           try {
-            await this.syncAnnotationsToAPI(merged);
+            const serverIds = new Set(serverAnnotations.map(annotation => annotation.id));
+            const uploadable = merged.filter(annotation => serverIds.has(annotation.id) || annotation.status === 'pending');
+            await this.syncAnnotationsToAPI(uploadable);
             // Mark all as synced
             let needsUpdate = false;
             for (const a of merged) {

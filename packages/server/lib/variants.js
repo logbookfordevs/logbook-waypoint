@@ -191,8 +191,17 @@ export function assertAnnotationDeletable(annotation) {
       ...unique(annotation.variant_request.scaffold ?? []).map(key => cleanupTarget('scaffold', key)),
       ...annotation.variant_request.variants.map(variant => cleanupTarget('implementation', variant.key)),
     ];
-    fail('Finalize or discard the unresolved Variant request before resolving, discarding, or deleting its Annotation', remaining);
+    fail('Finalize the Variant request before resolving or deleting its Annotation, or discard the Annotation', remaining);
   }
+}
+
+export function discardVariantRequest(annotation) {
+  const next = clone(annotation);
+  delete next.variant_request;
+  delete next.variant_presentation;
+  delete next.pending_changes;
+  delete next.css;
+  return next;
 }
 
 export function hasVariantOwnedFields(value) {

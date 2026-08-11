@@ -175,3 +175,22 @@ test('persisted Queue records reject non-canonical lifecycle states', async () =
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('permanent deletion returns 404 for a missing canonical Annotation', async () => {
+  const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
+  const { directory, server } = await fixture(now);
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const missingId = 'waypoint_1750000000001_abcdefghi';
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${listener.address().port}/api/annotations/${missingId}`, {
+      method: 'DELETE',
+    });
+    assert.equal(response.status, 404);
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});

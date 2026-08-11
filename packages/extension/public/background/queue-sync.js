@@ -74,11 +74,11 @@ var WaypointQueueSync = (() => {
           if (localTime > serverTime || JSON.stringify(merged) !== JSON.stringify(local)) changed = true;
         }
       } else if (local) {
-        if (local._synced) {
+        if (local._synced && local.status === 'pending') {
           changed = true;
         } else {
           annotations.push(local);
-          changed = true;
+          if (!local._synced) changed = true;
         }
       } else if (server) {
         annotations.push({ ...server, _synced: true });

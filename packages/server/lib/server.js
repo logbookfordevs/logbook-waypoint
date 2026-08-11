@@ -41,6 +41,7 @@ import {
   assertGenericAnnotationUpdateAllowed,
   assertSyncedAnnotationAllowed,
   createVariantRequest,
+  discardVariantRequest,
   discardVariant as discardVariantRecord,
   finalizeVariant as finalizeVariantRecord,
 } from './variants.js';
@@ -1440,10 +1441,13 @@ export class LocalAnnotationsServer {
       if (scope && !annotationMatchesProjectScope(annotations[index], scope)) {
         throw new Error('Annotation not found');
       }
-      if (args.operation === 'resolve' || args.operation === 'discard') {
+      if (args.operation === 'resolve') {
         assertAnnotationDeletable(annotations[index]);
       }
-      const updated = this.lifecycle.apply(annotations[index], args);
+      const lifecycleInput = args.operation === 'discard'
+        ? discardVariantRequest(annotations[index])
+        : annotations[index];
+      const updated = this.lifecycle.apply(lifecycleInput, args);
       annotations[index] = updated;
       return toReadAnnotation(updated);
     });
@@ -1458,7 +1462,7 @@ export class LocalAnnotationsServer {
     
     const deletedAnnotation = await this.applyAnnotationsUpdate(annotations => {
       const index = annotations.findIndex(annotation => annotation.id === id);
-      if (index === -1) throw new Error(`Annotation with id ${id} not found`);
+      if (index === -1) throw new Error('Annotation not found');
       assertAnnotationDeletable(annotations[index]);
       return annotations.splice(index, 1)[0];
     });
