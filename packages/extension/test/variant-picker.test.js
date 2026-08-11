@@ -98,4 +98,7 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
     backgroundSource,
     /background\/variant-policy\.js[\s\S]*content\/modules\/api-bridge\.js[\s\S]*content\/modules\/variant-picker\.js[\s\S]*content\/modules\/annotation-popover\.js/,
   );
+  const popupSource = await readFile(new URL('../.output/chrome-mv3/popup/popup.js', import.meta.url), 'utf8');
+  assert.match(popupSource, /sendMessage\(\{ action: 'deleteAnnotation', id \}\)/);
+  assert.doesNotMatch(popupSource, /filteredAnnotations[\s\S]*storage\.local\.set\(\{ annotations: filteredAnnotations \}\)/);
 });

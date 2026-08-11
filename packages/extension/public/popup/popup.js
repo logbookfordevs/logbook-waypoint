@@ -622,19 +622,12 @@ class AnnotationsPopup {
 
   async deleteAnnotation(id) {
     if (confirm('Are you sure you want to delete this annotation?')) {
-      // Get all annotations from storage
-      const result = await chrome.storage.local.get(['annotations']);
-      const allAnnotations = result.annotations || [];
-      
-      // Remove the annotation completely
-      const filteredAnnotations = allAnnotations.filter(a => a.id !== id);
-      
-      // Save back to storage
-      await chrome.storage.local.set({ annotations: filteredAnnotations });
-      
-      // Update local array
+      const result = await chrome.runtime.sendMessage({ action: 'deleteAnnotation', id });
+      if (!result?.success) {
+        alert(result?.error || 'Unable to delete annotation');
+        return;
+      }
       this.annotations = this.annotations.filter(a => a.id !== id);
-      
       this.render();
     }
   }
