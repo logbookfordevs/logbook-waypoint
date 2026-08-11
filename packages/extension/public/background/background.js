@@ -2,6 +2,8 @@
 
 importScripts('queue-sync.js');
 importScripts('source-identity-probe.js');
+importScripts('variant-errors.js');
+importScripts('variant-policy.js');
 
 class VibeAnnotationsBackground {
   constructor() {
@@ -151,6 +153,14 @@ class VibeAnnotationsBackground {
         case 'updateAnnotation':
           this.updateAnnotation(request.id, request.updates)
             .then(() => sendResponse({ success: true }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+          break;
+
+        case 'activateVariant':
+        case 'discardVariant':
+        case 'finalizeVariant':
+          this.runVariantOperation(request.action, request.id, request.key)
+            .then(annotation => sendResponse({ success: true, annotation }))
             .catch(error => sendResponse({ success: false, error: error.message }));
           break;
           
@@ -336,6 +346,36 @@ class VibeAnnotationsBackground {
     }
   }
 
+  async runVariantOperation(action, id, key) {
+    const operation = {
+      activateVariant: { method: 'POST', suffix: 'activate' },
+      discardVariant: { method: 'DELETE', suffix: '' },
+      finalizeVariant: { method: 'POST', suffix: 'finalize' },
+    }[action];
+    if (!operation) throw new Error('Unknown Variant operation');
+    const suffix = operation.suffix ? `/${operation.suffix}` : '';
+    const response = await fetch(`${this.apiServerUrl}/api/annotations/${encodeURIComponent(id)}/variants/${encodeURIComponent(key)}${suffix}`, {
+      method: operation.method,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const result = await response.json();
+    if (!response.ok || !result.annotation) {
+      const cleanup = WaypointVariantErrors.formatRemainingCleanup(result.remaining_cleanup);
+      const remaining = cleanup ? ` Remaining cleanup: ${cleanup}` : '';
+      throw new Error(`${result.error || `Variant operation failed (${response.status})`}${remaining}`);
+    }
+    await this._withStorageLock(async () => {
+      const stored = await chrome.storage.local.get(['annotations']);
+      const annotations = stored.annotations || [];
+      const index = annotations.findIndex(annotation => annotation.id === id);
+      if (index !== -1) {
+        annotations[index] = result.annotation;
+        await chrome.storage.local.set({ annotations });
+      }
+    });
+    return result.annotation;
+  }
+
   async saveAnnotation(annotation) {
     return this._withStorageLock(async () => {
       try {
@@ -343,6 +383,7 @@ class VibeAnnotationsBackground {
         const annotations = result.annotations || [];
 
         const existingIndex = annotations.findIndex(a => a.id === annotation.id);
+        WaypointVariantPolicy.assertSaveAllowed(annotations[existingIndex], annotation);
         if (existingIndex >= 0) {
           annotations[existingIndex] = annotation;
         } else {
@@ -410,6 +451,8 @@ class VibeAnnotationsBackground {
         const result = await chrome.storage.local.get(['annotations', 'deletedAnnotationIds']);
         const annotations = result.annotations || [];
         const deletedIds = result.deletedAnnotationIds || [];
+        const deletedAnnotation = annotations.find(annotation => annotation.id === id);
+        WaypointVariantPolicy.assertDeleteAllowed(deletedAnnotation);
 
         const filteredAnnotations = annotations.filter(annotation => annotation.id !== id);
 
@@ -429,7 +472,6 @@ class VibeAnnotationsBackground {
         }
 
         // Find the deleted annotation's URL to update badge
-        const deletedAnnotation = annotations.find(a => a.id === id);
         if (deletedAnnotation) {
           await this.updateBadgeForUrl(deletedAnnotation.url);
         }
@@ -450,6 +492,7 @@ class VibeAnnotationsBackground {
       const deletedIds = result.deletedAnnotationIds || [];
 
       const toDelete = all.filter(a => a.url === url);
+      for (const annotation of toDelete) WaypointVariantPolicy.assertDeleteAllowed(annotation);
       const remaining = all.filter(a => a.url !== url);
 
       for (const a of toDelete) {
@@ -509,6 +552,7 @@ class VibeAnnotationsBackground {
         if (annotationIndex === -1) {
           throw new Error('Annotation not found');
         }
+        WaypointVariantPolicy.assertUpdateAllowed(annotations[annotationIndex], updates);
 
         annotations[annotationIndex] = {
           ...annotations[annotationIndex],
@@ -942,12 +986,15 @@ class VibeAnnotationsBackground {
           'content/modules/styles.js',
           'content/modules/shadow-host.js',
           'content/modules/theme-manager.js',
+          'background/variant-policy.js',
           'content/modules/api-bridge.js',
           'content/modules/shadow-dom-utils.js',
           'content/modules/source-identity.js',
           'content/modules/element-context.js',
           'content/modules/badge-manager.js',
           'content/modules/inspection-mode.js',
+          'content/modules/keyboard-target.js',
+          'content/modules/variant-picker.js',
           'content/modules/annotation-popover.js',
           'content/modules/floating-toolbar.js',
           'content/content.js'
@@ -1016,6 +1063,7 @@ class VibeAnnotationsBackground {
       const importedIds = [];
       for (const a of newAnnotations) {
         if (!existingIds.has(a.id)) {
+          WaypointVariantPolicy.assertSaveAllowed(null, a);
           all.push(a);
           existingIds.add(a.id);
           importedIds.push(a.id);

@@ -75,6 +75,7 @@ var VibeAPI = (() => {
       console.warn('saveAnnotation bg failed, using storage fallback', e);
       const result = await chrome.storage.local.get(['annotations']);
       const all = result.annotations || [];
+      WaypointVariantPolicy.assertSaveAllowed(null, annotation);
       all.push(annotation);
       await chrome.storage.local.set({ annotations: all });
       return true;
@@ -92,6 +93,7 @@ var VibeAPI = (() => {
       const all = result.annotations || [];
       const idx = all.findIndex(a => a.id === id);
       if (idx !== -1) {
+        WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
         all[idx] = { ...all[idx], ...updates };
         await chrome.storage.local.set({ annotations: all });
       }
@@ -108,10 +110,29 @@ var VibeAPI = (() => {
       console.warn('deleteAnnotation bg failed, using storage fallback', e);
       const result = await chrome.storage.local.get(['annotations']);
       const all = result.annotations || [];
+      WaypointVariantPolicy.assertDeleteAllowed(all.find(annotation => annotation.id === id));
       const filtered = all.filter(a => a.id !== id);
       await chrome.storage.local.set({ annotations: filtered });
       return true;
     }
+  }
+
+  async function runVariantOperation(action, id, key) {
+    const response = await chrome.runtime.sendMessage({ action, id, key });
+    if (!response?.success || !response.annotation) throw new Error(response?.error || `${action} failed`);
+    return response.annotation;
+  }
+
+  function activateVariant(id, key) {
+    return runVariantOperation('activateVariant', id, key);
+  }
+
+  function discardVariant(id, key) {
+    return runVariantOperation('discardVariant', id, key);
+  }
+
+  function finalizeVariant(id, key) {
+    return runVariantOperation('finalizeVariant', id, key);
   }
 
   async function deleteAnnotationsByUrl() {
@@ -123,6 +144,9 @@ var VibeAPI = (() => {
       console.warn('deleteAnnotationsByUrl bg failed, using storage fallback', e);
       const result = await chrome.storage.local.get(['annotations']);
       const all = result.annotations || [];
+      for (const annotation of all.filter(candidate => candidate.url === window.location.href)) {
+        WaypointVariantPolicy.assertDeleteAllowed(annotation);
+      }
       const remaining = all.filter(a => a.url !== window.location.href);
       await chrome.storage.local.set({ annotations: remaining });
       return all.length - remaining.length;
@@ -270,6 +294,9 @@ var VibeAPI = (() => {
     saveAnnotation,
     updateAnnotation,
     deleteAnnotation,
+    activateVariant,
+    discardVariant,
+    finalizeVariant,
     deleteAnnotationsByUrl,
     onAnnotationsChanged,
     getScreenshotEnabled,

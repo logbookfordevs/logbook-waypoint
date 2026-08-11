@@ -263,6 +263,13 @@ console.log('[Vibe] content.js loaded');
       }
     });
 
+    VibeEvents.on('annotation:variant-updated', ({ annotation }) => {
+      localSaveCount++;
+      const index = annotations.findIndex(candidate => candidate.id === annotation.id);
+      if (index !== -1) annotations[index] = annotation;
+      VibeEvents.emit('annotations:render', annotations);
+    });
+
     // Annotation deleted
     VibeEvents.on('annotation:deleted', ({ id }) => {
       localSaveCount++;

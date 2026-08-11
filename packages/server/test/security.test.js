@@ -22,11 +22,22 @@ describe('local HTTP security boundary', () => {
   let instance;
   let listener;
   let baseUrl;
+  let isolationDirectory;
+  let runtimeSequence = 0;
+
+  function createIsolatedServer() {
+    runtimeSequence += 1;
+    return new LocalAnnotationsServer({
+      watchHistoryFile: path.join(isolationDirectory, `watch-${runtimeSequence}.json`),
+    });
+  }
 
   before(async () => {
-    instance = new LocalAnnotationsServer();
-    instance.loadAnnotations = async () => [];
-    instance.saveAnnotations = async () => {};
+    isolationDirectory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-security-'));
+    instance = createIsolatedServer();
+    let annotations = [];
+    instance.loadAnnotations = async () => structuredClone(annotations);
+    instance._saveAnnotationsInternal = async next => { annotations = structuredClone(next); };
 
     listener = await new Promise((resolve) => {
       const server = instance.app.listen(0, '127.0.0.1', () => resolve(server));
@@ -36,9 +47,10 @@ describe('local HTTP security boundary', () => {
     baseUrl = `http://127.0.0.1:${address.port}`;
   });
 
-  after(() => {
+  after(async () => {
     listener.closeAllConnections();
     listener.close();
+    await rm(isolationDirectory, { recursive: true });
   });
 
   test('accepts an originless loopback health request', async () => {
@@ -247,7 +259,7 @@ describe('local HTTP security boundary', () => {
   });
 
   test('the production listener binds only to IPv4 loopback', async () => {
-    const runtime = new LocalAnnotationsServer();
+    const runtime = createIsolatedServer();
     const server = runtime.listen(0);
     await new Promise((resolve) => server.once('listening', resolve));
 
@@ -260,7 +272,7 @@ describe('local HTTP security boundary', () => {
   });
 
   test('marks page-supplied annotation content as untrusted in MCP output', async () => {
-    const runtime = new LocalAnnotationsServer();
+    const runtime = createIsolatedServer();
     runtime.loadAnnotations = async () => [{
       id: 'vibe_1750000000000_abc123xyz',
       url: 'http://localhost:3000/',
@@ -364,7 +376,7 @@ describe('local HTTP security boundary', () => {
   });
 
   test('embedded screenshots are retrievable only through their explicit MCP tool', async () => {
-    const runtime = new LocalAnnotationsServer();
+    const runtime = createIsolatedServer();
     runtime.loadAnnotations = async () => [{
       id: 'vibe_1750000000000_abc123xyz',
       url: 'http://localhost:3000/',
@@ -411,7 +423,7 @@ describe('local HTTP security boundary', () => {
   });
 
   test('MCP preserves read_annotations and explicit permanent delete_annotation', async () => {
-    const runtime = new LocalAnnotationsServer();
+    const runtime = createIsolatedServer();
     const stored = [{
       id: 'vibe_1750000000000_abc123xyz',
       url: 'http://localhost:3000/',
@@ -419,7 +431,7 @@ describe('local HTTP security boundary', () => {
       comment: 'Remove obsolete copy'
     }];
     runtime.loadAnnotations = async () => stored;
-    runtime.saveAnnotations = async annotations => {
+    runtime._saveAnnotationsInternal = async annotations => {
       stored.splice(0, stored.length, ...annotations);
     };
     const server = runtime.listen(0);
@@ -454,7 +466,7 @@ describe('local HTTP security boundary', () => {
   });
 
   test('MCP ID-taking tools reject missing and malformed IDs', async () => {
-    const runtime = new LocalAnnotationsServer();
+    const runtime = createIsolatedServer();
     runtime.loadAnnotations = async () => [];
     const server = runtime.listen(0);
     await new Promise((resolve) => server.once('listening', resolve));

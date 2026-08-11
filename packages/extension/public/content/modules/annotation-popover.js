@@ -229,6 +229,11 @@ var VibeAnnotationPopover = (() => {
 
   async function onEditRequested({ annotation, element }) {
     VibeInspectionMode.tempDisable();
+    if (WaypointVariantPicker.handles(annotation)) {
+      dismiss();
+      WaypointVariantPicker.show(annotation, element);
+      return;
+    }
     const context = await VibeElementContext.generate(element);
     show(element, context, annotation);
   }
@@ -242,6 +247,7 @@ var VibeAnnotationPopover = (() => {
     if (!root) return;
 
     const isEdit = !!existingAnnotation;
+    const presentationLocked = WaypointVariantPicker.locksPresentation(existingAnnotation);
     const isFile = VibeAPI.isFileProtocol();
     const elType = classifyElement(targetElement);
 
@@ -312,7 +318,7 @@ var VibeAnnotationPopover = (() => {
     // Build tabs — cold start: no active tab, all panels hidden
     const tabs = getTabsForType(elType);
     const tabBarHTML = tabs.map(t =>
-      `<button class="vibe-tab" data-tab="${t.key}" type="button">${t.label}</button>`
+      `<button class="vibe-tab" data-tab="${t.key}" type="button" ${presentationLocked ? 'disabled' : ''}>${t.label}</button>`
     ).join('');
     const panelsHTML = tabs.map(t =>
       `<div class="vibe-tab-panel" data-tab-panel="${t.key}" style="display:none">${panelContent[t.key] || ''}</div>`
@@ -327,7 +333,7 @@ var VibeAnnotationPopover = (() => {
       <div class="vibe-drag-handle"></div>
       <div class="vibe-popover-title">
         <span>Editing <code>${escapeHTML(selectorLabel)}</code></span>
-        <button class="vibe-design-reset" type="button" title="Reset all">${ICONS.reset}</button>
+        <button class="vibe-design-reset" type="button" title="${presentationLocked ? 'Finalized Variant presentation' : 'Reset all'}" ${presentationLocked ? 'disabled' : ''}>${ICONS.reset}</button>
       </div>
       <div class="vibe-tab-bar">${tabBarHTML}</div>
       <div class="vibe-design-toolbar">
@@ -645,14 +651,19 @@ var VibeAnnotationPopover = (() => {
     // Save
     saveBtn.addEventListener('click', async () => {
       const comment = textarea.value.trim();
-      const pendingChanges = buildPendingChanges();
+      const pendingChanges = presentationLocked ? existingAnnotation.pending_changes : buildPendingChanges();
       const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value.trim() : '';
       const cssField = cssRulesVal || null;
 
       if (isEdit) {
-        const updates = { comment, updated_at: new Date().toISOString(), pending_changes: pendingChanges, css: cssField };
+        const updates = WaypointVariantPicker.buildAnnotationUpdates(existingAnnotation, comment, pendingChanges, cssField);
         await VibeAPI.updateAnnotation(existingAnnotation.id, updates);
-        VibeEvents.emit('annotation:updated', { id: existingAnnotation.id, comment, pending_changes: pendingChanges, css: cssField });
+        VibeEvents.emit('annotation:updated', {
+          id: existingAnnotation.id,
+          comment,
+          pending_changes: presentationLocked ? existingAnnotation.pending_changes : pendingChanges,
+          css: presentationLocked ? existingAnnotation.css : cssField,
+        });
       } else {
         const annotation = buildAnnotation(context, comment, pendingChanges);
         if (cssField) annotation.css = cssField;
