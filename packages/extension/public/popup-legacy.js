@@ -13,18 +13,18 @@
   const updateText = document.getElementById('updateText');
   const updateDismiss = document.getElementById('updateDismiss');
   try {
-    const { updateInfo } = await chrome.storage.local.get(['updateInfo']);
-    if (updateInfo?.hasUpdate) {
+    const { waypointUpdateInfo } = await chrome.storage.local.get(['waypointUpdateInfo']);
+    if (waypointUpdateInfo?.hasUpdate) {
       // Clear the NEW badge immediately on popup open
       chrome.action.setBadgeText({ text: '' });
 
       updateBanner.classList.remove('hidden');
-      updateText.textContent = `Version ${updateInfo.currentVersion} installed`;
-      const releaseUrl = updateInfo.releaseUrl || 'https://github.com/logbookfordevs/logbook-waypoint/releases';
+      updateText.textContent = `Version ${waypointUpdateInfo.currentVersion} installed`;
+      const releaseUrl = waypointUpdateInfo.releaseUrl || 'https://github.com/logbookfordevs/logbook-waypoint/releases';
       updateLink.href = releaseUrl;
 
       async function dismissBanner() {
-        await chrome.storage.local.set({ updateInfo: { ...updateInfo, hasUpdate: false } });
+        await chrome.storage.local.set({ waypointUpdateInfo: { ...waypointUpdateInfo, hasUpdate: false } });
         updateBanner.classList.add('hidden');
       }
 
@@ -124,11 +124,11 @@
     if (!allGranted) allSitesBtn.classList.remove('hidden');
 
     async function onEnabled(pattern, label) {
-      const result = await chrome.storage.local.get(['vibeEnabledSites']);
-      const sites = result.vibeEnabledSites || [];
+      const result = await chrome.storage.local.get(['waypointEnabledSites']);
+      const sites = result.waypointEnabledSites || [];
       if (!sites.includes(pattern)) {
         sites.push(pattern);
-        await chrome.storage.local.set({ vibeEnabledSites: sites });
+        await chrome.storage.local.set({ waypointEnabledSites: sites });
       }
       await chrome.runtime.sendMessage({
         action: 'enableSite',

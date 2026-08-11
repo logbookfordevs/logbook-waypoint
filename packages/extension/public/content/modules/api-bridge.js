@@ -1,7 +1,7 @@
 // Wraps all chrome.runtime.sendMessage and chrome.storage calls
 // Single interface for data operations used by all modules
 
-var VibeAPI = (() => {
+var WaypointAPI = (() => {
   let statusCache = null;
   let statusCacheTime = 0;
   const CACHE_TTL = 2000;
@@ -44,8 +44,8 @@ var VibeAPI = (() => {
 
   async function loadAnnotations() {
     try {
-      const result = await chrome.storage.local.get(['annotations']);
-      const all = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const all = result.waypointAnnotations || [];
       return all.filter(a => a.url === window.location.href);
     } catch {
       return [];
@@ -54,8 +54,8 @@ var VibeAPI = (() => {
 
   async function loadProjectAnnotations() {
     try {
-      const result = await chrome.storage.local.get(['annotations']);
-      const all = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const all = result.waypointAnnotations || [];
       const origin = window.location.origin;
       return all.filter(a => {
         try { return new URL(a.url).origin === origin; } catch { return false; }
@@ -73,11 +73,11 @@ var VibeAPI = (() => {
     } catch (e) {
       // Fallback: direct storage
       console.warn('saveAnnotation bg failed, using storage fallback', e);
-      const result = await chrome.storage.local.get(['annotations']);
-      const all = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const all = result.waypointAnnotations || [];
       WaypointVariantPolicy.assertSaveAllowed(null, annotation);
       all.push(annotation);
-      await chrome.storage.local.set({ annotations: all });
+      await chrome.storage.local.set({ waypointAnnotations: all });
       return true;
     }
   }
@@ -89,13 +89,13 @@ var VibeAPI = (() => {
       return true;
     } catch (e) {
       console.warn('updateAnnotation bg failed, using storage fallback', e);
-      const result = await chrome.storage.local.get(['annotations']);
-      const all = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const all = result.waypointAnnotations || [];
       const idx = all.findIndex(a => a.id === id);
       if (idx !== -1) {
         WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
         all[idx] = { ...all[idx], ...updates };
-        await chrome.storage.local.set({ annotations: all });
+        await chrome.storage.local.set({ waypointAnnotations: all });
       }
       return true;
     }
@@ -108,11 +108,11 @@ var VibeAPI = (() => {
       return true;
     } catch (e) {
       console.warn('deleteAnnotation bg failed, using storage fallback', e);
-      const result = await chrome.storage.local.get(['annotations']);
-      const all = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const all = result.waypointAnnotations || [];
       WaypointVariantPolicy.assertDeleteAllowed(all.find(annotation => annotation.id === id));
       const filtered = all.filter(a => a.id !== id);
-      await chrome.storage.local.set({ annotations: filtered });
+      await chrome.storage.local.set({ waypointAnnotations: filtered });
       return true;
     }
   }
@@ -142,13 +142,13 @@ var VibeAPI = (() => {
       return r.count || 0;
     } catch (e) {
       console.warn('deleteAnnotationsByUrl bg failed, using storage fallback', e);
-      const result = await chrome.storage.local.get(['annotations']);
-      const all = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const all = result.waypointAnnotations || [];
       for (const annotation of all.filter(candidate => candidate.url === window.location.href)) {
         WaypointVariantPolicy.assertDeleteAllowed(annotation);
       }
       const remaining = all.filter(a => a.url !== window.location.href);
-      await chrome.storage.local.set({ annotations: remaining });
+      await chrome.storage.local.set({ waypointAnnotations: remaining });
       return all.length - remaining.length;
     }
   }
@@ -157,8 +157,8 @@ var VibeAPI = (() => {
 
   function onAnnotationsChanged(cb) {
     chrome.storage.onChanged.addListener((changes, ns) => {
-      if (ns === 'local' && changes.annotations) {
-        cb(changes.annotations.newValue || []);
+      if (ns === 'local' && changes.waypointAnnotations) {
+        cb(changes.waypointAnnotations.newValue || []);
       }
     });
   }
@@ -167,8 +167,8 @@ var VibeAPI = (() => {
 
   async function getScreenshotEnabled() {
     try {
-      const r = await chrome.storage.local.get(['screenshotEnabled']);
-      return r.screenshotEnabled !== undefined ? r.screenshotEnabled : true;
+      const r = await chrome.storage.local.get(['waypointScreenshotEnabled']);
+      return r.waypointScreenshotEnabled !== undefined ? r.waypointScreenshotEnabled : true;
     } catch {
       return true;
     }
@@ -176,14 +176,14 @@ var VibeAPI = (() => {
 
   async function saveScreenshotEnabled(enabled) {
     try {
-      await chrome.storage.local.set({ screenshotEnabled: enabled });
+      await chrome.storage.local.set({ waypointScreenshotEnabled: enabled });
     } catch { /* ignore */ }
   }
 
   async function getToolbarPosition() {
     try {
-      const r = await chrome.storage.local.get(['vibeToolbarPos']);
-      return r.vibeToolbarPos || null;
+      const r = await chrome.storage.local.get(['waypointToolbarPos']);
+      return r.waypointToolbarPos || null;
     } catch {
       return null;
     }
@@ -191,14 +191,14 @@ var VibeAPI = (() => {
 
   async function saveToolbarPosition(pos) {
     try {
-      await chrome.storage.local.set({ vibeToolbarPos: pos });
+      await chrome.storage.local.set({ waypointToolbarPos: pos });
     } catch { /* ignore */ }
   }
 
   async function getToolbarCollapsed() {
     try {
-      const r = await chrome.storage.local.get(['vibeToolbarCollapsed']);
-      return !!r.vibeToolbarCollapsed;
+      const r = await chrome.storage.local.get(['waypointToolbarCollapsed']);
+      return !!r.waypointToolbarCollapsed;
     } catch {
       return false;
     }
@@ -206,14 +206,14 @@ var VibeAPI = (() => {
 
   async function saveToolbarCollapsed(collapsed) {
     try {
-      await chrome.storage.local.set({ vibeToolbarCollapsed: collapsed });
+      await chrome.storage.local.set({ waypointToolbarCollapsed: collapsed });
     } catch { /* ignore */ }
   }
 
   async function getClearOnCopy() {
     try {
-      const r = await chrome.storage.local.get(['vibeClearOnCopy']);
-      return !!r.vibeClearOnCopy;
+      const r = await chrome.storage.local.get(['waypointClearOnCopy']);
+      return !!r.waypointClearOnCopy;
     } catch {
       return false;
     }
@@ -221,14 +221,14 @@ var VibeAPI = (() => {
 
   async function saveClearOnCopy(enabled) {
     try {
-      await chrome.storage.local.set({ vibeClearOnCopy: enabled });
+      await chrome.storage.local.set({ waypointClearOnCopy: enabled });
     } catch { /* ignore */ }
   }
 
   async function getBadgeColor() {
     try {
-      const r = await chrome.storage.local.get(['vibeBadgeColor']);
-      return r.vibeBadgeColor || '#4b5563';
+      const r = await chrome.storage.local.get(['waypointBadgeColor']);
+      return r.waypointBadgeColor || '#4b5563';
     } catch {
       return '#4b5563';
     }
@@ -236,13 +236,13 @@ var VibeAPI = (() => {
 
   async function saveBadgeColor(color) {
     try {
-      await chrome.storage.local.set({ vibeBadgeColor: color });
+      await chrome.storage.local.set({ waypointBadgeColor: color });
     } catch { /* ignore */ }
   }
 
   function getOverlayHidden() {
     try {
-      return sessionStorage.getItem('vibeOverlayHidden') === '1';
+      return sessionStorage.getItem('waypointOverlayHidden') === '1';
     } catch {
       return false;
     }
@@ -250,15 +250,15 @@ var VibeAPI = (() => {
 
   function saveOverlayHidden(hidden) {
     try {
-      if (hidden) sessionStorage.setItem('vibeOverlayHidden', '1');
-      else sessionStorage.removeItem('vibeOverlayHidden');
+      if (hidden) sessionStorage.setItem('waypointOverlayHidden', '1');
+      else sessionStorage.removeItem('waypointOverlayHidden');
     } catch { /* ignore */ }
   }
 
   async function getSkipDeleteConfirm() {
     try {
-      const r = await chrome.storage.local.get(['vibeSkipDeleteConfirm']);
-      return !!r.vibeSkipDeleteConfirm;
+      const r = await chrome.storage.local.get(['waypointSkipDeleteConfirm']);
+      return !!r.waypointSkipDeleteConfirm;
     } catch {
       return false;
     }
@@ -266,14 +266,14 @@ var VibeAPI = (() => {
 
   async function saveSkipDeleteConfirm(skip) {
     try {
-      await chrome.storage.local.set({ vibeSkipDeleteConfirm: skip });
+      await chrome.storage.local.set({ waypointSkipDeleteConfirm: skip });
     } catch { /* ignore */ }
   }
 
   async function getCustomShortcut() {
     try {
-      const r = await chrome.storage.local.get(['vibeCustomShortcut']);
-      return r.vibeCustomShortcut || null;
+      const r = await chrome.storage.local.get(['waypointCustomShortcut']);
+      return r.waypointCustomShortcut || null;
     } catch {
       return null;
     }
@@ -281,7 +281,7 @@ var VibeAPI = (() => {
 
   async function saveCustomShortcut(shortcut) {
     try {
-      await chrome.storage.local.set({ vibeCustomShortcut: shortcut });
+      await chrome.storage.local.set({ waypointCustomShortcut: shortcut });
     } catch { /* ignore */ }
   }
 

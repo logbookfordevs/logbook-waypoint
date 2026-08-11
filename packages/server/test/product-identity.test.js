@@ -16,6 +16,8 @@ test('server package exposes the canonical package and CLI identifiers', async (
   assert.equal(packageManifest.repository.url, `git+${PRODUCT_IDENTITY.repositoryUrl}.git`);
   assert.equal(packageManifest.homepage, PRODUCT_IDENTITY.homepageUrl);
   assert.equal(packageManifest.bugs.url, PRODUCT_IDENTITY.supportUrl);
+  assert.equal(PRODUCT_IDENTITY.annotationIdPrefix, 'waypoint_');
+  assert.equal('futureAnnotationIdPrefix' in PRODUCT_IDENTITY, false);
   assert.deepEqual(packageManifest.exports['./product-identity'], {
     types: './lib/product-identity.d.ts',
     import: './lib/product-identity.js',

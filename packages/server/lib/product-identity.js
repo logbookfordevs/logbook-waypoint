@@ -1,3 +1,5 @@
+import { ANNOTATION_ID_PREFIX } from './annotation-id.js';
+
 export const PRODUCT_IDENTITY = Object.freeze({
   productName: 'Logbook Waypoint',
   description: 'Place visual annotations on local interfaces and route them to coding agents through MCP.',
@@ -6,7 +8,7 @@ export const PRODUCT_IDENTITY = Object.freeze({
   cliCommand: 'waypoint',
   mcpConfigKey: 'logbook-waypoint',
   dataDirectory: '.logbook-waypoint',
-  futureAnnotationIdPrefix: 'waypoint_',
+  annotationIdPrefix: ANNOTATION_ID_PREFIX,
   repositoryUrl: 'https://github.com/logbookfordevs/logbook-waypoint',
   supportUrl: 'https://github.com/logbookfordevs/logbook-waypoint/issues',
   homepageUrl: 'https://github.com/logbookfordevs/logbook-waypoint#readme',

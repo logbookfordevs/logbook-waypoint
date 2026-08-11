@@ -2,7 +2,7 @@
 // All visual feedback happens inside shadow DOM (highlight overlay div)
 // No host DOM mutation during inspection
 
-var VibeInspectionMode = (() => {
+var WaypointInspectionMode = (() => {
   let active = false;
   let highlightEl = null;
   let toastEl = null;
@@ -17,20 +17,20 @@ var VibeInspectionMode = (() => {
   let onClick = null;
 
   function init() {
-    VibeEvents.on('inspection:start', start);
-    VibeEvents.on('inspection:stop', stop);
+    WaypointEvents.on('inspection:start', start);
+    WaypointEvents.on('inspection:stop', stop);
   }
 
   function start() {
     if (active) return;
     active = true;
 
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
     // Create highlight overlay
     highlightEl = document.createElement('div');
-    highlightEl.className = 'vibe-highlight';
+    highlightEl.className = 'waypoint-highlight';
     highlightEl.style.display = 'none';
     root.appendChild(highlightEl);
 
@@ -55,11 +55,11 @@ var VibeInspectionMode = (() => {
 
     // Crosshair cursor on all host page elements
     const cursorStyle = document.createElement('style');
-    cursorStyle.setAttribute('data-vibe-cursor', '');
+    cursorStyle.setAttribute('data-waypoint-cursor', '');
     cursorStyle.textContent = '*, *::before, *::after { cursor: crosshair !important; }';
     document.head.appendChild(cursorStyle);
 
-    VibeEvents.emit('inspection:started');
+    WaypointEvents.emit('inspection:started');
   }
 
   function stop() {
@@ -87,10 +87,10 @@ var VibeInspectionMode = (() => {
     hoveredElement = null;
 
     // Restore cursor
-    const cursorStyle = document.querySelector('[data-vibe-cursor]');
+    const cursorStyle = document.querySelector('[data-waypoint-cursor]');
     if (cursorStyle) cursorStyle.remove();
 
-    VibeEvents.emit('inspection:stopped');
+    WaypointEvents.emit('inspection:stopped');
   }
 
   function isActive() {
@@ -112,7 +112,7 @@ var VibeInspectionMode = (() => {
 
   function isOurUI(e) {
     const path = e.composedPath();
-    const host = VibeShadowHost.getHost();
+    const host = WaypointShadowHost.getHost();
     return host && path.includes(host);
   }
 
@@ -160,7 +160,7 @@ var VibeInspectionMode = (() => {
     if (!active || isOurUI(e)) return;
     e.stopPropagation();
 
-    const target = getDeepTarget(e) || VibeShadowDOMUtils.elementFromPointDeep(e.clientX, e.clientY);
+    const target = getDeepTarget(e) || WaypointShadowDOMUtils.elementFromPointDeep(e.clientX, e.clientY);
     if (!target) return;
 
     hoveredElement = target;
@@ -184,7 +184,7 @@ var VibeInspectionMode = (() => {
   function handlePointerMove(e) {
     if (!active || isOurUI(e)) return;
 
-    const target = getDeepTarget(e) || VibeShadowDOMUtils.elementFromPointDeep(e.clientX, e.clientY);
+    const target = getDeepTarget(e) || WaypointShadowDOMUtils.elementFromPointDeep(e.clientX, e.clientY);
     if (!target || target === document.body || target === document.documentElement) return;
     if (target === hoveredElement) return;
 
@@ -203,7 +203,7 @@ var VibeInspectionMode = (() => {
     if (!target || target === document.body || target === document.documentElement) return;
 
     tempDisable();
-    VibeEvents.emit('inspection:elementClicked', { element: target, clientX: e.clientX, clientY: e.clientY });
+    WaypointEvents.emit('inspection:elementClicked', { element: target, clientX: e.clientX, clientY: e.clientY });
   }
 
   // Safety nets — swallow mousedown/click so frameworks never see the interaction
@@ -233,7 +233,7 @@ var VibeInspectionMode = (() => {
 
   function showToast(root) {
     toastEl = document.createElement('div');
-    toastEl.className = 'vibe-toast';
+    toastEl.className = 'waypoint-toast';
     toastEl.innerHTML = `
       <p>Click any element to annotate</p>
       <p class="sub">Press ESC to exit</p>
@@ -243,7 +243,7 @@ var VibeInspectionMode = (() => {
     // Auto-fade after 3s
     setTimeout(() => {
       if (!toastEl) return;
-      toastEl.classList.add('vibe-toast--out');
+      toastEl.classList.add('waypoint-toast--out');
       setTimeout(() => {
         if (toastEl) { toastEl.remove(); toastEl = null; }
       }, 250);

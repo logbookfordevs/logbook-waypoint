@@ -1,14 +1,8 @@
-export const ANNOTATION_ID_PATTERN = /^vibe_[0-9]{10,16}_[a-z0-9]{6,32}$/;
-
 export const MCP_ALLOWED_ORIGINS = [
   'http://127.0.0.1:3846',
   'http://localhost:3846',
   'http://[::1]:3846'
 ];
-
-export function isValidAnnotationId(value) {
-  return typeof value === 'string' && ANNOTATION_ID_PATTERN.test(value);
-}
 
 export function isAllowedHostHeader(value) {
   return typeof value === 'string'

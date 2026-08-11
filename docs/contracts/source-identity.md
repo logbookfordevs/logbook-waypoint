@@ -24,7 +24,7 @@ When no adapter returns Source Identity, callers continue with the Target's port
 
 ## Test surface
 
-Tests exercise the Source Identity interface with React, portable DOM, spoofed page data, missing framework metadata, and probe failure. The public `window.__vibeAnnotations` interface must be absent after migration.
+Tests exercise the Source Identity interface with React, portable DOM, spoofed page data, missing framework metadata, and probe failure. No public Annotation automation interface may be present.
 
 ## Implemented migration
 

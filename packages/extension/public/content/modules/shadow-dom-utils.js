@@ -2,7 +2,7 @@
 // Works with open shadow roots only (closed roots return null for .shadowRoot).
 // Performance: avoids full-tree walks where possible; caches nothing (DOM is mutable).
 
-var VibeShadowDOMUtils = (() => {
+var WaypointShadowDOMUtils = (() => {
 
   // --- Predicates ---
 

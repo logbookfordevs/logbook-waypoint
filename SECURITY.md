@@ -63,7 +63,8 @@ The local server:
 - Binds only to `127.0.0.1:3846`.
 - Rejects non-loopback `Host` headers and untrusted browser origins.
 - Enables MCP DNS-rebinding protection for streamable HTTP and legacy SSE transports.
-- Accepts only annotation IDs matching the extension's current `vibe_<timestamp>_<random>` contract.
+- Accepts only Annotation IDs matching the canonical `waypoint_<timestamp>_<random>` contract through the shared identifier interface used by the server, extension, imports, and tests.
+- Uses Waypoint-only extension storage keys and does not read, import, or copy predecessor product data or settings.
 - Marks annotation and page-derived MCP data as untrusted content that cannot override agent, repository, or tool instructions.
 
 Screenshots are embedded in the local annotation JSON in this foundation. There are no attachment filesystem endpoints, so attachment path-containment controls do not apply yet.

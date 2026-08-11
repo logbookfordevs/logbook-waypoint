@@ -39,24 +39,24 @@ test('portable Target fallback respects parent context and open shadow roots', a
       <section class="second shared"><button>Save</button></section>
     </main></body></html>
   `);
-  context.VibeAPI = { getScreenshotEnabled: async () => false };
+  context.WaypointAPI = { getScreenshotEnabled: async () => false };
   await loadScript(context, 'content/modules/shadow-dom-utils.js');
   await loadScript(context, 'content/modules/element-context.js');
 
   const secondButton = context.document.querySelector('.second button');
-  const selector = context.VibeElementContext.generateSelector(secondButton);
-  assert.equal(secondButton.hasAttribute('data-vibe-id'), false);
+  const selector = context.WaypointElementContext.generateSelector(secondButton);
+  assert.equal(secondButton.hasAttribute('data-waypoint-id'), false);
   assert.equal(secondButton.hasAttribute('data-text-content'), false);
   assert.equal(context.document.querySelector(selector), secondButton);
 
-  const recovered = context.VibeElementContext.findElementBySelector({
+  const recovered = context.WaypointElementContext.findElementBySelector({
     selector: 'button',
     element_context: { tag: 'button', text: 'Save', classes: [], position: { x: 0, y: 0 } },
     parent_chain: [{ tag: 'section', classes: ['second', 'shared'], id: null, role: null }],
   });
   assert.equal(recovered, secondButton);
 
-  const missingContext = context.VibeElementContext.findElementBySelector({
+  const missingContext = context.WaypointElementContext.findElementBySelector({
     selector: 'button',
     element_context: { tag: 'button', text: 'Save', classes: [] },
     parent_chain: [{ tag: 'section', classes: ['missing'], id: null, role: null }],
@@ -69,15 +69,15 @@ test('portable Target fallback respects parent context and open shadow roots', a
   const shadowButton = context.document.createElement('button');
   shadowButton.textContent = 'Shadow save';
   shadow.appendChild(shadowButton);
-  const shadowSelector = context.VibeElementContext.generateSelector(shadowButton);
+  const shadowSelector = context.WaypointElementContext.generateSelector(shadowButton);
   assert.match(shadowSelector, /\s>>\s/);
-  assert.equal(context.VibeElementContext.findElementBySelector({ selector: shadowSelector }), shadowButton);
+  assert.equal(context.WaypointElementContext.findElementBySelector({ selector: shadowSelector }), shadowButton);
 
   shadowButton.remove();
   const lightDomDecoy = context.document.createElement('button');
   lightDomDecoy.textContent = 'Shadow save';
   context.document.body.appendChild(lightDomDecoy);
-  const missingShadowTarget = context.VibeElementContext.findElementBySelector({
+  const missingShadowTarget = context.WaypointElementContext.findElementBySelector({
     selector: shadowSelector,
     element_context: { tag: 'button', text: 'Shadow save', classes: [] },
     parent_chain: null,
@@ -94,9 +94,9 @@ test('keyboard shortcuts ignore editable controls across composed paths', async 
   const editable = context.document.createElement('div');
   editable.setAttribute('contenteditable', 'true');
 
-  assert.equal(context.VibeKeyboardTarget.isEditableEvent({ composedPath: () => [input] }), true);
-  assert.equal(context.VibeKeyboardTarget.isEditableEvent({ composedPath: () => [editable] }), true);
-  assert.equal(context.VibeKeyboardTarget.isEditableEvent({ composedPath: () => [toolbarButton] }), false);
+  assert.equal(context.WaypointKeyboardTarget.isEditableEvent({ composedPath: () => [input] }), true);
+  assert.equal(context.WaypointKeyboardTarget.isEditableEvent({ composedPath: () => [editable] }), true);
+  assert.equal(context.WaypointKeyboardTarget.isEditableEvent({ composedPath: () => [toolbarButton] }), false);
 });
 
 test('content status preserves the server compatibility nudge', async () => {
@@ -115,7 +115,7 @@ test('content status preserves the server compatibility nudge', async () => {
   };
   await loadScript(context, 'content/modules/api-bridge.js');
 
-  const status = await context.VibeAPI.checkServerStatus();
+  const status = await context.WaypointAPI.checkServerStatus();
   assert.equal(status.connected, true);
   assert.equal(status.compatibility_message, 'Server update recommended.');
 });
@@ -124,16 +124,16 @@ test('full Queue sync preserves more than 50 annotations in both directions', as
   const context = createBrowserContext();
   await loadScript(context, 'background/queue-sync.js');
   const annotations = Array.from({ length: 75 }, (_, index) => ({
-    id: `vibe_${index}_abcdefghi`,
+    id: `waypoint_${index}_abcdefghi`,
     created_at: '2026-01-01T00:00:00.000Z',
   }));
 
-  const pulled = context.VibeQueueSync.merge([], annotations, []);
+  const pulled = context.WaypointQueueSync.merge([], annotations, []);
   assert.equal(pulled.annotations.length, 75);
   assert.equal(pulled.annotations.every(annotation => annotation._synced), true);
 
   const local = annotations.map(annotation => ({ ...annotation, _synced: false }));
-  const pushed = context.VibeQueueSync.merge(local, [], []);
+  const pushed = context.WaypointQueueSync.merge(local, [], []);
   assert.equal(pushed.annotations.length, 75);
   assert.equal(pushed.changed, true);
 });
@@ -142,7 +142,7 @@ test('Queue conflict resolution preserves Variant-owned state from ordinary reco
   const context = createBrowserContext();
   await loadScript(context, 'background/queue-sync.js');
   const unresolved = {
-    id: 'vibe_1_abcdefghi',
+    id: 'waypoint_1_abcdefghi',
     updated_at: '2026-01-01T00:00:00.000Z',
     variant_request: { status: 'unresolved', active_variant_key: 'compact', variants: [] },
     variant_presentation: { css: '.card { gap: 8px; }' },
@@ -154,11 +154,11 @@ test('Queue conflict resolution preserves Variant-owned state from ordinary reco
     comment: 'stale ordinary copy',
   };
 
-  const localOwned = context.VibeQueueSync.merge([unresolved], [newerOrdinary], []);
+  const localOwned = context.WaypointQueueSync.merge([unresolved], [newerOrdinary], []);
   assert.deepEqual(localOwned.annotations[0].variant_request, unresolved.variant_request);
   assert.equal(localOwned.changed, false);
 
-  const serverOwned = context.VibeQueueSync.merge([newerOrdinary], [unresolved], []);
+  const serverOwned = context.WaypointQueueSync.merge([newerOrdinary], [unresolved], []);
   assert.deepEqual(serverOwned.annotations[0].variant_request, unresolved.variant_request);
   assert.equal(serverOwned.annotations[0]._synced, false);
   assert.equal(serverOwned.changed, true);
@@ -177,7 +177,7 @@ test('Queue conflict resolution preserves Variant-owned state from ordinary reco
       active_variant_key: 'spacious',
     },
   };
-  const fieldGranular = context.VibeQueueSync.merge([localEdited], [staleServerVariant], []);
+  const fieldGranular = context.WaypointQueueSync.merge([localEdited], [staleServerVariant], []);
   assert.equal(fieldGranular.annotations[0].comment, 'new local comment');
   assert.equal(fieldGranular.annotations[0].variant_request.active_variant_key, 'spacious');
   assert.equal(fieldGranular.annotations[0]._synced, false);
@@ -195,7 +195,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   context.document.body.appendChild(replacement);
   const overlay = context.document.querySelector('#overlay');
   const annotation = {
-    id: 'vibe_1_abcdefghi',
+    id: 'waypoint_1_abcdefghi',
     comment: 'Change it',
     created_at: '2026-01-01T00:00:00.000Z',
     pending_changes: {
@@ -204,32 +204,32 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
     },
     css: '#target:hover { color: blue; }',
   };
-  context.VibeShadowHost = { getRoot: () => overlay };
+  context.WaypointShadowHost = { getRoot: () => overlay };
   let resolvedTarget = target;
-  context.VibeElementContext = { findElementBySelector: candidate => candidate.id === annotation.id ? resolvedTarget : null };
+  context.WaypointElementContext = { findElementBySelector: candidate => candidate.id === annotation.id ? resolvedTarget : null };
   await loadScript(context, 'content/modules/event-bus.js');
   await loadScript(context, 'content/modules/badge-manager.js');
-  context.VibeBadgeManager.render([annotation]);
-  const firstStyle = context.document.querySelector('[data-vibe-style]');
-  const firstBadge = overlay.querySelector('.vibe-badge');
+  context.WaypointBadgeManager.render([annotation]);
+  const firstStyle = context.document.querySelector('[data-waypoint-style]');
+  const firstBadge = overlay.querySelector('.waypoint-badge');
   assert.equal(target.style.color, 'red');
   assert.equal(target.textContent, 'New');
 
-  context.VibeBadgeManager.render([annotation]);
-  assert.equal(context.document.querySelector('[data-vibe-style]'), firstStyle);
-  assert.equal(overlay.querySelector('.vibe-badge'), firstBadge);
+  context.WaypointBadgeManager.render([annotation]);
+  assert.equal(context.document.querySelector('[data-waypoint-style]'), firstStyle);
+  assert.equal(overlay.querySelector('.waypoint-badge'), firstBadge);
 
   resolvedTarget = replacement;
-  context.VibeBadgeManager.render([annotation]);
+  context.WaypointBadgeManager.render([annotation]);
   assert.equal(target.style.color, 'green');
   assert.equal(target.textContent, 'Old');
   assert.equal(replacement.style.color, 'red');
   assert.equal(replacement.textContent, 'New');
-  assert.equal(overlay.querySelector('.vibe-badge'), firstBadge);
+  assert.equal(overlay.querySelector('.waypoint-badge'), firstBadge);
 
-  context.VibeBadgeManager.render([]);
+  context.WaypointBadgeManager.render([]);
   assert.equal(replacement.style.color, 'green');
   assert.equal(replacement.style.backgroundColor, 'yellow');
   assert.equal(replacement.textContent, 'Old');
-  assert.equal(context.document.querySelector('[data-vibe-style]'), null);
+  assert.equal(context.document.querySelector('[data-waypoint-style]'), null);
 });

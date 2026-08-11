@@ -6,7 +6,7 @@ import { LocalAnnotationsServer } from '../lib/server.js';
 test('agent Queue context keeps portable Target data and omits Source Identity fields', async () => {
   const server = new LocalAnnotationsServer();
   server.loadAnnotations = async () => [{
-    id: 'vibe_1750000000000_abc123xyz',
+    id: 'waypoint_1750000000000_abc123xyz',
     url: 'http://localhost:3000/page?mode=review#target',
     url_path: '/page?mode=review#target',
     comment: 'Align this Target',

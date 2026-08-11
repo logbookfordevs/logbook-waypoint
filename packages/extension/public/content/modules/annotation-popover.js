@@ -3,7 +3,7 @@
 // Edit mode with pre-filled text + delete button.
 // Element-aware tabs: text elements get typography, containers get layout/spacing/border.
 
-var VibeAnnotationPopover = (() => {
+var WaypointAnnotationPopover = (() => {
   let currentPopover = null;
   let currentTargetHighlight = null;
   let highlightRafId = null;
@@ -133,8 +133,8 @@ var VibeAnnotationPopover = (() => {
   };
 
   function init() {
-    VibeEvents.on('inspection:elementClicked', onElementClicked);
-    VibeEvents.on('annotation:edit', onEditRequested);
+    WaypointEvents.on('inspection:elementClicked', onElementClicked);
+    WaypointEvents.on('annotation:edit', onEditRequested);
   }
 
   function getTabsForType(elType) {
@@ -223,18 +223,18 @@ var VibeAnnotationPopover = (() => {
   }
 
   async function onElementClicked({ element, clientX, clientY }) {
-    const context = await VibeElementContext.generate(element);
+    const context = await WaypointElementContext.generate(element);
     show(element, context, null, clientX, clientY);
   }
 
   async function onEditRequested({ annotation, element }) {
-    VibeInspectionMode.tempDisable();
+    WaypointInspectionMode.tempDisable();
     if (WaypointVariantPicker.handles(annotation)) {
       dismiss();
       WaypointVariantPicker.show(annotation, element);
       return;
     }
-    const context = await VibeElementContext.generate(element);
+    const context = await WaypointElementContext.generate(element);
     show(element, context, annotation);
   }
 
@@ -243,33 +243,33 @@ var VibeAnnotationPopover = (() => {
   async function show(targetElement, context, existingAnnotation, clickX, clickY) {
     dismiss();
 
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
     const isEdit = !!existingAnnotation;
     const presentationLocked = WaypointVariantPicker.locksPresentation(existingAnnotation);
-    const isFile = VibeAPI.isFileProtocol();
+    const isFile = WaypointAPI.isFileProtocol();
     const elType = classifyElement(targetElement);
 
     // Target highlight
     currentTargetHighlight = document.createElement('div');
-    currentTargetHighlight.className = 'vibe-target-highlight';
+    currentTargetHighlight.className = 'waypoint-target-highlight';
     root.appendChild(currentTargetHighlight);
     positionTargetHighlight(targetElement);
 
     // Anchor wrapper (full viewport, catches outside clicks)
     const anchor = document.createElement('div');
-    anchor.className = 'vibe-popover-anchor';
+    anchor.className = 'waypoint-popover-anchor';
     root.appendChild(anchor);
 
     // Popover card
     const popover = document.createElement('div');
-    popover.className = 'vibe-popover';
+    popover.className = 'waypoint-popover';
 
     // Warning bar (file protocol only — server status is shown in toolbar/settings)
     let warningHTML = '';
     if (isFile) {
-      warningHTML = `<div class="vibe-warning">${ICONS.warning}<span>Local file mode</span></div>`;
+      warningHTML = `<div class="waypoint-warning">${ICONS.warning}<span>Local file mode</span></div>`;
     }
 
     // Original computed values — use pending_changes.*.original when editing
@@ -296,32 +296,32 @@ var VibeAnnotationPopover = (() => {
     const rawCssInitial = buildRawCssContent(context);
     const hasCssRules = !!(existingAnnotation?.css);
     panelContent['raw-css'] = `
-      <div class="vibe-raw-css-section">
-        <button class="vibe-raw-css-toggle" type="button">
-          <span class="vibe-raw-css-chevron${hasCssRules ? '' : ' open'}">${ICONS.chevron}</span>
-          <span class="vibe-raw-css-label">Inline overrides</span>
+      <div class="waypoint-raw-css-section">
+        <button class="waypoint-raw-css-toggle" type="button">
+          <span class="waypoint-raw-css-chevron${hasCssRules ? '' : ' open'}">${ICONS.chevron}</span>
+          <span class="waypoint-raw-css-label">Inline overrides</span>
         </button>
-        <div class="vibe-raw-css-collapsible" style="display:${hasCssRules ? 'none' : ''}">
-          <textarea class="vibe-raw-css" spellcheck="false">${escapeHTML(rawCssInitial)}</textarea>
+        <div class="waypoint-raw-css-collapsible" style="display:${hasCssRules ? 'none' : ''}">
+          <textarea class="waypoint-raw-css" spellcheck="false">${escapeHTML(rawCssInitial)}</textarea>
         </div>
       </div>
-      <div class="vibe-raw-css-section">
-        <button class="vibe-raw-css-toggle" type="button">
-          <span class="vibe-raw-css-chevron${hasCssRules ? ' open' : ''}">${ICONS.chevron}</span>
-          <span class="vibe-raw-css-label">CSS rules <span class="vibe-raw-css-hint">:hover, ::before, @media…</span></span>
+      <div class="waypoint-raw-css-section">
+        <button class="waypoint-raw-css-toggle" type="button">
+          <span class="waypoint-raw-css-chevron${hasCssRules ? ' open' : ''}">${ICONS.chevron}</span>
+          <span class="waypoint-raw-css-label">CSS rules <span class="waypoint-raw-css-hint">:hover, ::before, @media…</span></span>
         </button>
-        <div class="vibe-raw-css-collapsible" style="display:${hasCssRules ? '' : 'none'}">
-          <textarea class="vibe-css-rules" spellcheck="false" placeholder="${escapeHTML(context.selector)} {\n  \n}">${escapeHTML(existingAnnotation?.css || '')}</textarea>
+        <div class="waypoint-raw-css-collapsible" style="display:${hasCssRules ? '' : 'none'}">
+          <textarea class="waypoint-css-rules" spellcheck="false" placeholder="${escapeHTML(context.selector)} {\n  \n}">${escapeHTML(existingAnnotation?.css || '')}</textarea>
         </div>
       </div>`;
 
     // Build tabs — cold start: no active tab, all panels hidden
     const tabs = getTabsForType(elType);
     const tabBarHTML = tabs.map(t =>
-      `<button class="vibe-tab" data-tab="${t.key}" type="button" ${presentationLocked ? 'disabled' : ''}>${t.label}</button>`
+      `<button class="waypoint-tab" data-tab="${t.key}" type="button" ${presentationLocked ? 'disabled' : ''}>${t.label}</button>`
     ).join('');
     const panelsHTML = tabs.map(t =>
-      `<div class="vibe-tab-panel" data-tab-panel="${t.key}" style="display:none">${panelContent[t.key] || ''}</div>`
+      `<div class="waypoint-tab-panel" data-tab-panel="${t.key}" style="display:none">${panelContent[t.key] || ''}</div>`
     ).join('');
 
     // Build short selector label for title
@@ -330,30 +330,30 @@ var VibeAnnotationPopover = (() => {
       : context.tag;
 
     popover.innerHTML = `
-      <div class="vibe-drag-handle"></div>
-      <div class="vibe-popover-title">
+      <div class="waypoint-drag-handle"></div>
+      <div class="waypoint-popover-title">
         <span>Editing <code>${escapeHTML(selectorLabel)}</code></span>
-        <button class="vibe-design-reset" type="button" title="${presentationLocked ? 'Finalized Variant presentation' : 'Reset all'}" ${presentationLocked ? 'disabled' : ''}>${ICONS.reset}</button>
+        <button class="waypoint-design-reset" type="button" title="${presentationLocked ? 'Finalized Variant presentation' : 'Reset all'}" ${presentationLocked ? 'disabled' : ''}>${ICONS.reset}</button>
       </div>
-      <div class="vibe-tab-bar">${tabBarHTML}</div>
-      <div class="vibe-design-toolbar">
+      <div class="waypoint-tab-bar">${tabBarHTML}</div>
+      <div class="waypoint-design-toolbar">
         ${panelsHTML}
       </div>
       ${warningHTML}
-      <div class="vibe-popover-body">
-        <div class="vibe-input-wrap">
-          <textarea class="vibe-textarea" placeholder="What should change?" maxlength="1000">${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
-          <span class="vibe-kbd-hint">${kbdHint} to save</span>
+      <div class="waypoint-popover-body">
+        <div class="waypoint-input-wrap">
+          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000">${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
+          <span class="waypoint-kbd-hint">${kbdHint} to save</span>
         </div>
       </div>
-      <div class="vibe-popover-footer">
-        <div class="vibe-footer-left">
-          ${isEdit ? `<button class="vibe-btn-icon vibe-delete-btn" title="Delete">${ICONS.trash}</button>` : ''}
-          <span class="vibe-viewport-info">${getDeviceIcon(window.innerWidth)} ${window.innerWidth}w</span>
+      <div class="waypoint-popover-footer">
+        <div class="waypoint-footer-left">
+          ${isEdit ? `<button class="waypoint-btn-icon waypoint-delete-btn" title="Delete">${ICONS.trash}</button>` : ''}
+          <span class="waypoint-viewport-info">${getDeviceIcon(window.innerWidth)} ${window.innerWidth}w</span>
         </div>
-        <div class="vibe-footer-right">
-          <button class="vibe-btn vibe-btn-secondary vibe-cancel-btn">Cancel</button>
-          <button class="vibe-btn vibe-btn-primary vibe-save-btn">${isEdit ? 'Save' : 'Save as pointer'}</button>
+        <div class="waypoint-footer-right">
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-cancel-btn">Cancel</button>
+          <button class="waypoint-btn waypoint-btn-primary waypoint-save-btn">${isEdit ? 'Save' : 'Save as pointer'}</button>
         </div>
       </div>
     `;
@@ -365,15 +365,15 @@ var VibeAnnotationPopover = (() => {
     positionPopover(anchor, targetElement, clickX, clickY);
 
     // Wire drag handle
-    const dragHandle = popover.querySelector('.vibe-drag-handle');
+    const dragHandle = popover.querySelector('.waypoint-drag-handle');
     wireDragHandle(dragHandle, popover);
 
     // Wire up
-    const textarea = popover.querySelector('.vibe-textarea');
-    const saveBtn = popover.querySelector('.vibe-save-btn');
-    const cancelBtn = popover.querySelector('.vibe-cancel-btn');
-    const deleteBtn = popover.querySelector('.vibe-delete-btn');
-    const resetBtn = popover.querySelector('.vibe-design-reset');
+    const textarea = popover.querySelector('.waypoint-textarea');
+    const saveBtn = popover.querySelector('.waypoint-save-btn');
+    const cancelBtn = popover.querySelector('.waypoint-cancel-btn');
+    const deleteBtn = popover.querySelector('.waypoint-delete-btn');
+    const resetBtn = popover.querySelector('.waypoint-design-reset');
 
     // Track active element for revert-on-dismiss
     activeElement = targetElement;
@@ -382,9 +382,9 @@ var VibeAnnotationPopover = (() => {
     activeElType = elType;
 
     // Tab switching — cold start: toolbar hidden, no active tab. Reclick deselects.
-    const tabBtns = popover.querySelectorAll('.vibe-tab');
-    const tabPanels = popover.querySelectorAll('.vibe-tab-panel');
-    const designToolbar = popover.querySelector('.vibe-design-toolbar');
+    const tabBtns = popover.querySelectorAll('.waypoint-tab');
+    const tabPanels = popover.querySelectorAll('.waypoint-tab-panel');
+    const designToolbar = popover.querySelector('.waypoint-design-toolbar');
     designToolbar.style.display = 'none'; // hidden until a tab is clicked
     tabBtns.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -400,12 +400,12 @@ var VibeAnnotationPopover = (() => {
           tabPanels.forEach(p => p.style.display = p.dataset.tabPanel === tab.dataset.tab ? '' : 'none');
           // Auto-resize content textarea when switching to Content tab
           if (tab.dataset.tab === 'content') {
-            const contentInput = popover.querySelector('.vibe-content-input');
+            const contentInput = popover.querySelector('.waypoint-content-input');
             if (contentInput) requestAnimationFrame(() => autoResizeContentInput(contentInput));
           }
           // Refresh raw CSS textarea when switching to it
           if (tab.dataset.tab === 'raw-css') {
-            const rawTA = popover.querySelector('.vibe-raw-css');
+            const rawTA = popover.querySelector('.waypoint-raw-css');
             if (rawTA && !rawTA._userEdited) {
               rawTA.value = buildRawCssContent(context);
             }
@@ -416,11 +416,11 @@ var VibeAnnotationPopover = (() => {
     });
 
     // --- Collapsible toggles in CSS panel ---
-    popover.querySelectorAll('.vibe-raw-css-toggle').forEach(btn => {
+    popover.querySelectorAll('.waypoint-raw-css-toggle').forEach(btn => {
       btn.addEventListener('click', () => {
-        const section = btn.closest('.vibe-raw-css-section');
-        const body = section.querySelector('.vibe-raw-css-collapsible');
-        const chevron = btn.querySelector('.vibe-raw-css-chevron');
+        const section = btn.closest('.waypoint-raw-css-section');
+        const body = section.querySelector('.waypoint-raw-css-collapsible');
+        const chevron = btn.querySelector('.waypoint-raw-css-chevron');
         const isOpen = body.style.display !== 'none';
         body.style.display = isOpen ? 'none' : '';
         chevron.classList.toggle('open', !isOpen);
@@ -428,7 +428,7 @@ var VibeAnnotationPopover = (() => {
     });
 
     // --- Raw CSS panel wiring ---
-    const rawCssTextarea = popover.querySelector('.vibe-raw-css');
+    const rawCssTextarea = popover.querySelector('.waypoint-raw-css');
     const rawCssOriginals = new Map();
     // Parse initial content into originals map
     rawCssInitial.split('\n').forEach(line => {
@@ -463,14 +463,14 @@ var VibeAnnotationPopover = (() => {
     }
 
     // --- CSS Rules panel wiring ---
-    const cssRulesTextarea = popover.querySelector('.vibe-css-rules');
+    const cssRulesTextarea = popover.querySelector('.waypoint-css-rules');
     const cssRulesOriginal = existingAnnotation?.css || '';
     let cssRulesPreviewStyle = null;
 
     if (cssRulesTextarea) {
       // Create companion <style> for live preview
       cssRulesPreviewStyle = document.createElement('style');
-      cssRulesPreviewStyle.setAttribute('data-vibe-css-preview', 'true');
+      cssRulesPreviewStyle.setAttribute('data-waypoint-css-preview', 'true');
       if (cssRulesOriginal) cssRulesPreviewStyle.textContent = cssRulesOriginal;
       document.head.appendChild(cssRulesPreviewStyle);
       activeCssRulesStyleEl = cssRulesPreviewStyle;
@@ -630,18 +630,18 @@ var VibeAnnotationPopover = (() => {
     // Clear activeExistingAnnotation so dismiss doesn't re-apply old pending_changes
     if (deleteBtn && isEdit) {
       deleteBtn.addEventListener('click', async () => {
-        const skip = await VibeAPI.getSkipDeleteConfirm();
+        const skip = await WaypointAPI.getSkipDeleteConfirm();
         if (skip) {
-          await VibeAPI.deleteAnnotation(existingAnnotation.id);
-          VibeEvents.emit('annotation:deleted', { id: existingAnnotation.id, annotation: existingAnnotation });
+          await WaypointAPI.deleteAnnotation(existingAnnotation.id);
+          WaypointEvents.emit('annotation:deleted', { id: existingAnnotation.id, annotation: existingAnnotation });
           activeExistingAnnotation = null;
           dismiss(true, true);
           return;
         }
         const confirmed = await showConfirm(root, 'Delete annotation?', 'This cannot be undone.');
         if (confirmed) {
-          await VibeAPI.deleteAnnotation(existingAnnotation.id);
-          VibeEvents.emit('annotation:deleted', { id: existingAnnotation.id, annotation: existingAnnotation });
+          await WaypointAPI.deleteAnnotation(existingAnnotation.id);
+          WaypointEvents.emit('annotation:deleted', { id: existingAnnotation.id, annotation: existingAnnotation });
           activeExistingAnnotation = null;
           dismiss(true, true);
         }
@@ -657,8 +657,8 @@ var VibeAnnotationPopover = (() => {
 
       if (isEdit) {
         const updates = WaypointVariantPicker.buildAnnotationUpdates(existingAnnotation, comment, pendingChanges, cssField);
-        await VibeAPI.updateAnnotation(existingAnnotation.id, updates);
-        VibeEvents.emit('annotation:updated', {
+        await WaypointAPI.updateAnnotation(existingAnnotation.id, updates);
+        WaypointEvents.emit('annotation:updated', {
           id: existingAnnotation.id,
           comment,
           pending_changes: presentationLocked ? existingAnnotation.pending_changes : pendingChanges,
@@ -671,8 +671,8 @@ var VibeAnnotationPopover = (() => {
           const r = targetElement.getBoundingClientRect();
           annotation.badge_offset = { x: clickX - r.left, y: clickY - r.top };
         }
-        await VibeAPI.saveAnnotation(annotation);
-        VibeEvents.emit('annotation:saved', { annotation, element: targetElement });
+        await WaypointAPI.saveAnnotation(annotation);
+        WaypointEvents.emit('annotation:saved', { annotation, element: targetElement });
       }
 
       dismiss(true, true);
@@ -684,9 +684,9 @@ var VibeAnnotationPopover = (() => {
   function buildContentToolbarHTML(targetElement, pc) {
     const currentText = pc?.copyChange ? pc.copyChange.value : targetElement.textContent;
     return `
-      <div class="vibe-design-row vibe-content-row">
-        <span class="vibe-design-icon vibe-content-icon" title="Text content">${ICONS.textContent}</span>
-        <textarea class="vibe-content-input" spellcheck="false">${escapeHTML(currentText)}</textarea>
+      <div class="waypoint-design-row waypoint-content-row">
+        <span class="waypoint-design-icon waypoint-content-icon" title="Text content">${ICONS.textContent}</span>
+        <textarea class="waypoint-content-input" spellcheck="false">${escapeHTML(currentText)}</textarea>
       </div>`;
   }
 
@@ -698,7 +698,7 @@ var VibeAnnotationPopover = (() => {
   function wireContentToolbar(popover, targetElement, pc, resetBtn) {
     const origText = pc?.copyChange ? pc.copyChange.original : targetElement.textContent;
     activeOriginalText = origText;
-    const input = popover.querySelector('.vibe-content-input');
+    const input = popover.querySelector('.waypoint-content-input');
     if (!input) return () => null;
 
     // Note: initial auto-size deferred to tab activation (panel starts hidden)
@@ -750,33 +750,33 @@ var VibeAnnotationPopover = (() => {
 
     return {
       font: `
-        <div class="vibe-design-row">
-          <span class="vibe-design-icon" title="Font size">${ICONS.typeSize}</span>
-          <div class="vibe-stepper">
-            <input class="vibe-stepper-input" data-prop="fontSize" type="number" min="1" max="999" value="${Math.round(curFS)}">
-            <span class="vibe-stepper-unit">px</span>
+        <div class="waypoint-design-row">
+          <span class="waypoint-design-icon" title="Font size">${ICONS.typeSize}</span>
+          <div class="waypoint-stepper">
+            <input class="waypoint-stepper-input" data-prop="fontSize" type="number" min="1" max="999" value="${Math.round(curFS)}">
+            <span class="waypoint-stepper-unit">px</span>
           </div>
-          <div class="vibe-prop-spacer"></div>
-          <span class="vibe-design-icon" title="Font weight">${ICONS.typeWeight}</span>
-          <div class="vibe-stepper">
-            <input class="vibe-stepper-input" data-prop="fontWeight" type="number" min="100" max="900" step="100" value="${Math.round(curFW)}">
+          <div class="waypoint-prop-spacer"></div>
+          <span class="waypoint-design-icon" title="Font weight">${ICONS.typeWeight}</span>
+          <div class="waypoint-stepper">
+            <input class="waypoint-stepper-input" data-prop="fontWeight" type="number" min="100" max="900" step="100" value="${Math.round(curFW)}">
           </div>
-          <div class="vibe-prop-spacer"></div>
-          <span class="vibe-design-icon" title="Line height">${ICONS.typeLeading}</span>
-          <div class="vibe-stepper">
-            <input class="vibe-stepper-input" data-prop="lineHeight" type="number" min="1" max="999" value="${Math.round(curLH)}">
-            <span class="vibe-stepper-unit">px</span>
+          <div class="waypoint-prop-spacer"></div>
+          <span class="waypoint-design-icon" title="Line height">${ICONS.typeLeading}</span>
+          <div class="waypoint-stepper">
+            <input class="waypoint-stepper-input" data-prop="lineHeight" type="number" min="1" max="999" value="${Math.round(curLH)}">
+            <span class="waypoint-stepper-unit">px</span>
           </div>
         </div>
-        <div class="vibe-design-row">
-          <span class="vibe-design-icon" title="Text color">${ICONS.droplet}</span>
-          <button class="vibe-color-swatch" data-color-prop="color" type="button" style="background:${curColorHex}"></button>
-          <input class="vibe-color-input vibe-color-input-inline" data-color-prop="color" type="text" value="${curColorHex}" placeholder="#000000">
-          <div class="vibe-prop-spacer"></div>
-          <div class="vibe-align-group">
-            <button class="vibe-align-btn ${curTA === 'left' ? 'active' : ''}" data-align="left" type="button" title="Align left">${ICONS.alignLeft}</button>
-            <button class="vibe-align-btn ${curTA === 'center' ? 'active' : ''}" data-align="center" type="button" title="Align center">${ICONS.alignCenter}</button>
-            <button class="vibe-align-btn ${curTA === 'right' ? 'active' : ''}" data-align="right" type="button" title="Align right">${ICONS.alignRight}</button>
+        <div class="waypoint-design-row">
+          <span class="waypoint-design-icon" title="Text color">${ICONS.droplet}</span>
+          <button class="waypoint-color-swatch" data-color-prop="color" type="button" style="background:${curColorHex}"></button>
+          <input class="waypoint-color-input waypoint-color-input-inline" data-color-prop="color" type="text" value="${curColorHex}" placeholder="#000000">
+          <div class="waypoint-prop-spacer"></div>
+          <div class="waypoint-align-group">
+            <button class="waypoint-align-btn ${curTA === 'left' ? 'active' : ''}" data-align="left" type="button" title="Align left">${ICONS.alignLeft}</button>
+            <button class="waypoint-align-btn ${curTA === 'center' ? 'active' : ''}" data-align="center" type="button" title="Align center">${ICONS.alignCenter}</button>
+            <button class="waypoint-align-btn ${curTA === 'right' ? 'active' : ''}" data-align="right" type="button" title="Align right">${ICONS.alignRight}</button>
           </div>
         </div>`
     };
@@ -795,7 +795,7 @@ var VibeAnnotationPopover = (() => {
       lineHeight: { ...TEXT_PROP_CONFIG.lineHeight, orig: origLH },
     };
 
-    const alignBtns = popover.querySelectorAll('.vibe-align-btn');
+    const alignBtns = popover.querySelectorAll('.waypoint-align-btn');
     let currentTextAlign = pc?.textAlign ? pc.textAlign.value : origTA;
 
     // Color state
@@ -820,7 +820,7 @@ var VibeAnnotationPopover = (() => {
 
     // Reset handler
     resetBtn.addEventListener('click', () => {
-      popover.querySelectorAll('.vibe-stepper-input').forEach(input => {
+      popover.querySelectorAll('.waypoint-stepper-input').forEach(input => {
         const cfg = PROP_CONFIG[input.dataset.prop];
         if (!cfg) return;
         input.value = Math.round(cfg.orig);
@@ -837,7 +837,7 @@ var VibeAnnotationPopover = (() => {
     // Return buildPendingChanges
     return function buildPendingChanges() {
       const changes = {};
-      popover.querySelectorAll('.vibe-stepper-input').forEach(input => {
+      popover.querySelectorAll('.waypoint-stepper-input').forEach(input => {
         const prop = input.dataset.prop;
         const cfg = PROP_CONFIG[prop];
         if (!cfg) return;
@@ -895,7 +895,7 @@ var VibeAnnotationPopover = (() => {
         dots += `<circle cx="${cx}" cy="${cy}" r="1.4" fill="${isActive ? 'var(--v-accent)' : 'currentColor'}" opacity="${isActive ? '1' : '0.35'}"/>`;
       }
     }
-    return `<svg width="14" height="14" viewBox="0 0 18 18" class="vibe-align-dots">${dots}</svg>`;
+    return `<svg width="14" height="14" viewBox="0 0 18 18" class="waypoint-align-dots">${dots}</svg>`;
   }
 
   function alignLabel(jc, ai, isVert) {
@@ -963,104 +963,104 @@ var VibeAnnotationPopover = (() => {
         const ai = isVert ? ALIGN_3[col] : ALIGN_3[row];
         const isActive = curJC === jc && curAI === ai;
         const label = alignLabel(jc, ai, isVert);
-        matrixHTML += `<button class="vibe-matrix-cell ${isActive ? 'active' : ''}" data-jc="${jc}" data-ai="${ai}" type="button" title="${label}"><span class="vibe-matrix-dot"></span></button>`;
+        matrixHTML += `<button class="waypoint-matrix-cell ${isActive ? 'active' : ''}" data-jc="${jc}" data-ai="${ai}" type="button" title="${label}"><span class="waypoint-matrix-dot"></span></button>`;
       }
     }
     return {
       layout: `
-        <div class="vibe-design-row">
-          <div class="vibe-toggle-group vibe-flow-group">
-            <button class="vibe-toggle-btn ${mode === 'block' ? 'active' : ''}" data-mode="block" type="button" title="Block">${ICONS.displayBlock}</button>
-            <button class="vibe-toggle-btn ${mode === 'vflex' ? 'active' : ''}" data-mode="vflex" type="button" title="Vertical flex">${ICONS.displayVFlex}</button>
-            <button class="vibe-toggle-btn ${mode === 'hflex' ? 'active' : ''}" data-mode="hflex" type="button" title="Horizontal flex">${ICONS.displayHFlex}</button>
-            <button class="vibe-toggle-btn ${mode === 'grid' ? 'active' : ''}" data-mode="grid" type="button" title="CSS Grid">${ICONS.displayGrid}</button>
+        <div class="waypoint-design-row">
+          <div class="waypoint-toggle-group waypoint-flow-group">
+            <button class="waypoint-toggle-btn ${mode === 'block' ? 'active' : ''}" data-mode="block" type="button" title="Block">${ICONS.displayBlock}</button>
+            <button class="waypoint-toggle-btn ${mode === 'vflex' ? 'active' : ''}" data-mode="vflex" type="button" title="Vertical flex">${ICONS.displayVFlex}</button>
+            <button class="waypoint-toggle-btn ${mode === 'hflex' ? 'active' : ''}" data-mode="hflex" type="button" title="Horizontal flex">${ICONS.displayHFlex}</button>
+            <button class="waypoint-toggle-btn ${mode === 'grid' ? 'active' : ''}" data-mode="grid" type="button" title="CSS Grid">${ICONS.displayGrid}</button>
           </div>
         </div>
-        <div class="vibe-flex-options" ${isFlex ? '' : 'style="display:none"'}>
-          <div class="vibe-layout-split">
-            <div class="vibe-layout-left">
-              <div class="vibe-align-matrix" data-direction="${mode}">${matrixHTML}</div>
+        <div class="waypoint-flex-options" ${isFlex ? '' : 'style="display:none"'}>
+          <div class="waypoint-layout-split">
+            <div class="waypoint-layout-left">
+              <div class="waypoint-align-matrix" data-direction="${mode}">${matrixHTML}</div>
             </div>
-            <div class="vibe-layout-right">
-              <label class="vibe-check-label">
-                <input type="checkbox" class="vibe-reverse-check" ${reversed ? 'checked' : ''}>
+            <div class="waypoint-layout-right">
+              <label class="waypoint-check-label">
+                <input type="checkbox" class="waypoint-reverse-check" ${reversed ? 'checked' : ''}>
                 <span>Reverse order</span>
               </label>
-              <label class="vibe-check-label">
-                <input type="checkbox" class="vibe-wrap-check" ${isWrapped ? 'checked' : ''}>
+              <label class="waypoint-check-label">
+                <input type="checkbox" class="waypoint-wrap-check" ${isWrapped ? 'checked' : ''}>
                 <span>Wrap items</span>
               </label>
             </div>
           </div>
-          <div class="vibe-layout-split vibe-gap-row">
-            <div class="vibe-layout-left">
-              <div class="vibe-design-row vibe-gap-input-row ${curJC === 'space-between' ? 'disabled' : ''}">
-                <span class="vibe-gap-label">Gap space</span>
-                <div class="vibe-stepper vibe-stepper-grow">
-                  <input class="vibe-stepper-input" data-prop="gap" type="number" min="0" max="999" value="${Math.round(curGap)}" ${curJC === 'space-between' ? 'disabled' : ''}>
-                  <span class="vibe-stepper-unit">px</span>
+          <div class="waypoint-layout-split waypoint-gap-row">
+            <div class="waypoint-layout-left">
+              <div class="waypoint-design-row waypoint-gap-input-row ${curJC === 'space-between' ? 'disabled' : ''}">
+                <span class="waypoint-gap-label">Gap space</span>
+                <div class="waypoint-stepper waypoint-stepper-grow">
+                  <input class="waypoint-stepper-input" data-prop="gap" type="number" min="0" max="999" value="${Math.round(curGap)}" ${curJC === 'space-between' ? 'disabled' : ''}>
+                  <span class="waypoint-stepper-unit">px</span>
                 </div>
               </div>
             </div>
-            <div class="vibe-layout-right">
-              <label class="vibe-check-label">
-                <input type="checkbox" class="vibe-space-auto-check" ${curJC === 'space-between' ? 'checked' : ''}>
+            <div class="waypoint-layout-right">
+              <label class="waypoint-check-label">
+                <input type="checkbox" class="waypoint-space-auto-check" ${curJC === 'space-between' ? 'checked' : ''}>
                 <span>Space auto</span>
               </label>
             </div>
           </div>
         </div>
-        <div class="vibe-grid-options" ${isGrid ? '' : 'style="display:none"'}>
-          <div class="vibe-design-row">
-            <span class="vibe-design-icon-label vibe-design-icon-label-wide" title="Columns">Cols</span>
-            <div class="vibe-stepper vibe-stepper-sm">
-              <input class="vibe-stepper-input vibe-grid-cols" type="number" min="1" max="24" value="${gridCols}">
+        <div class="waypoint-grid-options" ${isGrid ? '' : 'style="display:none"'}>
+          <div class="waypoint-design-row">
+            <span class="waypoint-design-icon-label waypoint-design-icon-label-wide" title="Columns">Cols</span>
+            <div class="waypoint-stepper waypoint-stepper-sm">
+              <input class="waypoint-stepper-input waypoint-grid-cols" type="number" min="1" max="24" value="${gridCols}">
             </div>
-            <div class="vibe-prop-spacer"></div>
-            <span class="vibe-design-icon" title="Column gap">${ICONS.gapH}</span>
-            <div class="vibe-stepper vibe-stepper-sm">
-              <input class="vibe-stepper-input vibe-grid-col-gap" type="number" min="0" max="999" value="${Math.round(curColGap)}">
-              <span class="vibe-stepper-unit">px</span>
+            <div class="waypoint-prop-spacer"></div>
+            <span class="waypoint-design-icon" title="Column gap">${ICONS.gapH}</span>
+            <div class="waypoint-stepper waypoint-stepper-sm">
+              <input class="waypoint-stepper-input waypoint-grid-col-gap" type="number" min="0" max="999" value="${Math.round(curColGap)}">
+              <span class="waypoint-stepper-unit">px</span>
             </div>
           </div>
-          <div class="vibe-design-row">
-            <span class="vibe-design-icon-label vibe-design-icon-label-wide" title="Rows">Rows</span>
-            <div class="vibe-stepper vibe-stepper-sm">
-              <input class="vibe-stepper-input vibe-grid-rows" type="number" min="1" max="24" value="${gridRows}">
+          <div class="waypoint-design-row">
+            <span class="waypoint-design-icon-label waypoint-design-icon-label-wide" title="Rows">Rows</span>
+            <div class="waypoint-stepper waypoint-stepper-sm">
+              <input class="waypoint-stepper-input waypoint-grid-rows" type="number" min="1" max="24" value="${gridRows}">
             </div>
-            <div class="vibe-prop-spacer"></div>
-            <span class="vibe-design-icon" title="Row gap">${ICONS.gapV}</span>
-            <div class="vibe-stepper vibe-stepper-sm">
-              <input class="vibe-stepper-input vibe-grid-row-gap" type="number" min="0" max="999" value="${Math.round(curRowGap)}">
-              <span class="vibe-stepper-unit">px</span>
+            <div class="waypoint-prop-spacer"></div>
+            <span class="waypoint-design-icon" title="Row gap">${ICONS.gapV}</span>
+            <div class="waypoint-stepper waypoint-stepper-sm">
+              <input class="waypoint-stepper-input waypoint-grid-row-gap" type="number" min="0" max="999" value="${Math.round(curRowGap)}">
+              <span class="waypoint-stepper-unit">px</span>
             </div>
           </div>
         </div>`,
       border: `
-        <div class="vibe-section-header"><span class="vibe-section-label">Border</span></div>
-        <div class="vibe-design-row">
-          <span class="vibe-design-icon" title="Border radius">${ICONS.borderR}</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="borderRadius" type="number" min="0" max="999" value="${Math.round(curBR)}">
-            <span class="vibe-stepper-unit">px</span>
+        <div class="waypoint-section-header"><span class="waypoint-section-label">Border</span></div>
+        <div class="waypoint-design-row">
+          <span class="waypoint-design-icon" title="Border radius">${ICONS.borderR}</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="borderRadius" type="number" min="0" max="999" value="${Math.round(curBR)}">
+            <span class="waypoint-stepper-unit">px</span>
           </div>
-          <div class="vibe-prop-spacer"></div>
-          <span class="vibe-design-icon" title="Border width">${ICONS.borderW}</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="borderWidth" type="number" min="0" max="20" value="${Math.round(curBW)}">
-            <span class="vibe-stepper-unit">px</span>
+          <div class="waypoint-prop-spacer"></div>
+          <span class="waypoint-design-icon" title="Border width">${ICONS.borderW}</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="borderWidth" type="number" min="0" max="20" value="${Math.round(curBW)}">
+            <span class="waypoint-stepper-unit">px</span>
           </div>
-          <div class="vibe-prop-spacer"></div>
-          <span class="vibe-design-icon" title="Border color">${ICONS.droplet}</span>
-          <button class="vibe-color-swatch" data-color-prop="borderColor" type="button" style="background:${curBorderHex}"></button>
-          <input class="vibe-color-input" data-color-prop="borderColor" type="text" value="${curBorderHex}" placeholder="#000000">
+          <div class="waypoint-prop-spacer"></div>
+          <span class="waypoint-design-icon" title="Border color">${ICONS.droplet}</span>
+          <button class="waypoint-color-swatch" data-color-prop="borderColor" type="button" style="background:${curBorderHex}"></button>
+          <input class="waypoint-color-input" data-color-prop="borderColor" type="text" value="${curBorderHex}" placeholder="#000000">
         </div>`,
       colorRows: `
-        <div class="vibe-section-header"><span class="vibe-section-label">Background</span></div>
-        <div class="vibe-design-row vibe-color-row">
-          <span class="vibe-design-icon" title="Background">${ICONS.droplet}</span>
-          <button class="vibe-color-swatch" data-color-prop="backgroundColor" type="button" style="background:${curBgHex}"></button>
-          <input class="vibe-color-input" data-color-prop="backgroundColor" type="text" value="${curBgHex}" placeholder="#000000">
+        <div class="waypoint-section-header"><span class="waypoint-section-label">Background</span></div>
+        <div class="waypoint-design-row waypoint-color-row">
+          <span class="waypoint-design-icon" title="Background">${ICONS.droplet}</span>
+          <button class="waypoint-color-swatch" data-color-prop="backgroundColor" type="button" style="background:${curBgHex}"></button>
+          <input class="waypoint-color-input" data-color-prop="backgroundColor" type="text" value="${curBgHex}" placeholder="#000000">
         </div>`
     };
   }
@@ -1112,8 +1112,8 @@ var VibeAnnotationPopover = (() => {
 
     // --- Display mode selector ---
     const modeBtns = popover.querySelectorAll('[data-mode]');
-    const flexOptions = popover.querySelector('.vibe-flex-options');
-    const gridOptions = popover.querySelector('.vibe-grid-options');
+    const flexOptions = popover.querySelector('.waypoint-flex-options');
+    const gridOptions = popover.querySelector('.waypoint-grid-options');
 
     function getFlexDir(mode, rev) {
       if (mode === 'vflex') return rev ? 'column-reverse' : 'column';
@@ -1164,7 +1164,7 @@ var VibeAnnotationPopover = (() => {
     });
 
     // --- 3×3 alignment matrix (inline) ---
-    const matrixContainer = popover.querySelector('.vibe-align-matrix');
+    const matrixContainer = popover.querySelector('.waypoint-align-matrix');
 
     function rebuildMatrix(newMode) {
       if (!matrixContainer) return;
@@ -1177,7 +1177,7 @@ var VibeAnnotationPopover = (() => {
           const ai = isVert ? ALIGN_3[col] : ALIGN_3[row];
           const isActive = currentJC === jc && currentAI === ai;
           const label = alignLabel(jc, ai, isVert);
-          html += `<button class="vibe-matrix-cell ${isActive ? 'active' : ''}" data-jc="${jc}" data-ai="${ai}" type="button" title="${label}"><span class="vibe-matrix-dot"></span></button>`;
+          html += `<button class="waypoint-matrix-cell ${isActive ? 'active' : ''}" data-jc="${jc}" data-ai="${ai}" type="button" title="${label}"><span class="waypoint-matrix-dot"></span></button>`;
         }
       }
       matrixContainer.innerHTML = html;
@@ -1185,7 +1185,7 @@ var VibeAnnotationPopover = (() => {
     }
 
     function wireMatrixCells() {
-      const cells = popover.querySelectorAll('.vibe-matrix-cell');
+      const cells = popover.querySelectorAll('.waypoint-matrix-cell');
       cells.forEach(cell => {
         cell.addEventListener('click', () => {
           currentJC = cell.dataset.jc;
@@ -1204,9 +1204,9 @@ var VibeAnnotationPopover = (() => {
       });
     }
     // --- Space auto checkbox ---
-    const spaceAutoCheck = popover.querySelector('.vibe-space-auto-check');
-    const gapInputRow = popover.querySelector('.vibe-gap-input-row');
-    const gapInput = popover.querySelector('.vibe-flex-options [data-prop="gap"]');
+    const spaceAutoCheck = popover.querySelector('.waypoint-space-auto-check');
+    const gapInputRow = popover.querySelector('.waypoint-gap-input-row');
+    const gapInput = popover.querySelector('.waypoint-flex-options [data-prop="gap"]');
     let jcBeforeSpaceAuto = currentJC !== 'space-between' ? currentJC : 'flex-start';
 
     function updateSpaceAutoState(isAuto) {
@@ -1217,7 +1217,7 @@ var VibeAnnotationPopover = (() => {
     wireMatrixCells();
 
     // --- Reverse checkbox ---
-    const reverseCheck = popover.querySelector('.vibe-reverse-check');
+    const reverseCheck = popover.querySelector('.waypoint-reverse-check');
     if (reverseCheck) {
       reverseCheck.addEventListener('change', () => {
         currentReversed = reverseCheck.checked;
@@ -1227,7 +1227,7 @@ var VibeAnnotationPopover = (() => {
     }
 
     // --- Wrap checkbox ---
-    const wrapCheck = popover.querySelector('.vibe-wrap-check');
+    const wrapCheck = popover.querySelector('.waypoint-wrap-check');
     if (wrapCheck) {
       wrapCheck.addEventListener('change', () => {
         currentFlexWrap = wrapCheck.checked ? 'wrap' : 'nowrap';
@@ -1252,10 +1252,10 @@ var VibeAnnotationPopover = (() => {
     }
 
     // --- Grid numeric inputs (columns/rows count + per-axis gap) ---
-    const gridColsInput = popover.querySelector('.vibe-grid-cols');
-    const gridRowsInput = popover.querySelector('.vibe-grid-rows');
-    const gridColGapInput = popover.querySelector('.vibe-grid-col-gap');
-    const gridRowGapInput = popover.querySelector('.vibe-grid-row-gap');
+    const gridColsInput = popover.querySelector('.waypoint-grid-cols');
+    const gridRowsInput = popover.querySelector('.waypoint-grid-rows');
+    const gridColGapInput = popover.querySelector('.waypoint-grid-col-gap');
+    const gridRowGapInput = popover.querySelector('.waypoint-grid-row-gap');
 
     function applyGridCols() {
       const n = parseInt(gridColsInput?.value) || 1;
@@ -1296,7 +1296,7 @@ var VibeAnnotationPopover = (() => {
 
     // --- Reset ---
     resetBtn.addEventListener('click', () => {
-      popover.querySelectorAll('.vibe-stepper-input').forEach(input => {
+      popover.querySelectorAll('.waypoint-stepper-input').forEach(input => {
         const cfg = PROP_CONFIG[input.dataset.prop];
         if (!cfg) return;
         input.value = Math.round(cfg.orig);
@@ -1361,7 +1361,7 @@ var VibeAnnotationPopover = (() => {
 
       // Gap — flex uses single gap, grid uses column-gap/row-gap
       if (currentMode === 'vflex' || currentMode === 'hflex') {
-        const gapInput = popover.querySelector('.vibe-flex-options [data-prop="gap"]');
+        const gapInput = popover.querySelector('.waypoint-flex-options [data-prop="gap"]');
         const gapVal = Math.round(parseFloat(gapInput?.value) || 0);
         if (gapVal !== Math.round(origGap)) changes.gap = { original: Math.round(origGap) + 'px', value: gapVal + 'px' };
       }
@@ -1422,45 +1422,45 @@ var VibeAnnotationPopover = (() => {
 
     return {
       sizing: `
-      <div class="vibe-section-header"><span class="vibe-section-label">Width</span></div>
-      <div class="vibe-sizing-row">
-        <div class="vibe-sizing-pair">
-          <span class="vibe-design-icon-label" title="Width">W</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-text vibe-sizing-input" data-sizing="width" type="text" value="${vals.width}" placeholder="Default">
+      <div class="waypoint-section-header"><span class="waypoint-section-label">Width</span></div>
+      <div class="waypoint-sizing-row">
+        <div class="waypoint-sizing-pair">
+          <span class="waypoint-design-icon-label" title="Width">W</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="width" type="text" value="${vals.width}" placeholder="Default">
           </div>
         </div>
-        <div class="vibe-sizing-pair">
-          <span class="vibe-design-icon-label" title="Min width">Min</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-text vibe-sizing-input" data-sizing="minWidth" type="text" value="${vals.minWidth}" placeholder="—">
+        <div class="waypoint-sizing-pair">
+          <span class="waypoint-design-icon-label" title="Min width">Min</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="minWidth" type="text" value="${vals.minWidth}" placeholder="—">
           </div>
         </div>
-        <div class="vibe-sizing-pair">
-          <span class="vibe-design-icon-label" title="Max width">Max</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-text vibe-sizing-input" data-sizing="maxWidth" type="text" value="${vals.maxWidth}" placeholder="—">
+        <div class="waypoint-sizing-pair">
+          <span class="waypoint-design-icon-label" title="Max width">Max</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="maxWidth" type="text" value="${vals.maxWidth}" placeholder="—">
           </div>
         </div>
       </div>
-      <div class="vibe-section-header"><span class="vibe-section-label">Height</span></div>
-      <div class="vibe-sizing-row">
-        <div class="vibe-sizing-pair">
-          <span class="vibe-design-icon-label" title="Height">H</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-text vibe-sizing-input" data-sizing="height" type="text" value="${vals.height}" placeholder="Default">
+      <div class="waypoint-section-header"><span class="waypoint-section-label">Height</span></div>
+      <div class="waypoint-sizing-row">
+        <div class="waypoint-sizing-pair">
+          <span class="waypoint-design-icon-label" title="Height">H</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="height" type="text" value="${vals.height}" placeholder="Default">
           </div>
         </div>
-        <div class="vibe-sizing-pair">
-          <span class="vibe-design-icon-label" title="Min height">Min</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-text vibe-sizing-input" data-sizing="minHeight" type="text" value="${vals.minHeight}" placeholder="—">
+        <div class="waypoint-sizing-pair">
+          <span class="waypoint-design-icon-label" title="Min height">Min</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="minHeight" type="text" value="${vals.minHeight}" placeholder="—">
           </div>
         </div>
-        <div class="vibe-sizing-pair">
-          <span class="vibe-design-icon-label" title="Max height">Max</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-text vibe-sizing-input" data-sizing="maxHeight" type="text" value="${vals.maxHeight}" placeholder="—">
+        <div class="waypoint-sizing-pair">
+          <span class="waypoint-design-icon-label" title="Max height">Max</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="maxHeight" type="text" value="${vals.maxHeight}" placeholder="—">
           </div>
         </div>
       </div>`,
@@ -1496,88 +1496,88 @@ var VibeAnnotationPopover = (() => {
     const marH = curML === curMR ? `${Math.round(curML)}` : `${Math.round(curML)}, ${Math.round(curMR)}`;
 
     return `
-      <div class="vibe-section-header"><span class="vibe-section-label">Padding</span></div>
-      <div class="vibe-spacing-row vibe-padding-vh-row" ${padNeedsSplit ? 'style="display:none"' : ''}>
-        <div class="vibe-spacing-inputs">
-          <span class="vibe-design-icon" title="Padding vertical">${ICONS.paddingV}</span>
-          <div class="vibe-stepper vibe-stepper-grow">
-            <input class="vibe-stepper-text vibe-pad-v" type="text" value="${padV}" title="Top, Bottom">
-            <span class="vibe-stepper-unit">px</span>
+      <div class="waypoint-section-header"><span class="waypoint-section-label">Padding</span></div>
+      <div class="waypoint-spacing-row waypoint-padding-vh-row" ${padNeedsSplit ? 'style="display:none"' : ''}>
+        <div class="waypoint-spacing-inputs">
+          <span class="waypoint-design-icon" title="Padding vertical">${ICONS.paddingV}</span>
+          <div class="waypoint-stepper waypoint-stepper-grow">
+            <input class="waypoint-stepper-text waypoint-pad-v" type="text" value="${padV}" title="Top, Bottom">
+            <span class="waypoint-stepper-unit">px</span>
           </div>
-          <div class="vibe-prop-spacer"></div>
-          <span class="vibe-design-icon" title="Padding horizontal">${ICONS.paddingH}</span>
-          <div class="vibe-stepper vibe-stepper-grow">
-            <input class="vibe-stepper-text vibe-pad-h" type="text" value="${padH}" title="Left, Right">
-            <span class="vibe-stepper-unit">px</span>
+          <div class="waypoint-prop-spacer"></div>
+          <span class="waypoint-design-icon" title="Padding horizontal">${ICONS.paddingH}</span>
+          <div class="waypoint-stepper waypoint-stepper-grow">
+            <input class="waypoint-stepper-text waypoint-pad-h" type="text" value="${padH}" title="Left, Right">
+            <span class="waypoint-stepper-unit">px</span>
           </div>
         </div>
-        <button class="vibe-split-btn vibe-pad-split-btn ${padNeedsSplit ? 'active' : ''}" type="button" title="Split padding">${padNeedsSplit ? ICONS.merge : ICONS.split}</button>
+        <button class="waypoint-split-btn waypoint-pad-split-btn ${padNeedsSplit ? 'active' : ''}" type="button" title="Split padding">${padNeedsSplit ? ICONS.merge : ICONS.split}</button>
       </div>
-      <div class="vibe-spacing-row vibe-padding-split-row" ${padNeedsSplit ? '' : 'style="display:none"'}>
-        <div class="vibe-spacing-inputs">
-          <span class="vibe-design-icon-label" title="Top">T</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="paddingTop" type="number" min="0" max="999" value="${Math.round(curPT)}">
+      <div class="waypoint-spacing-row waypoint-padding-split-row" ${padNeedsSplit ? '' : 'style="display:none"'}>
+        <div class="waypoint-spacing-inputs">
+          <span class="waypoint-design-icon-label" title="Top">T</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="paddingTop" type="number" min="0" max="999" value="${Math.round(curPT)}">
           </div>
-          <span class="vibe-design-icon-label" title="Right">R</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="paddingRight" type="number" min="0" max="999" value="${Math.round(curPR)}">
+          <span class="waypoint-design-icon-label" title="Right">R</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="paddingRight" type="number" min="0" max="999" value="${Math.round(curPR)}">
           </div>
-          <span class="vibe-design-icon-label" title="Bottom">B</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="paddingBottom" type="number" min="0" max="999" value="${Math.round(curPB)}">
+          <span class="waypoint-design-icon-label" title="Bottom">B</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="paddingBottom" type="number" min="0" max="999" value="${Math.round(curPB)}">
           </div>
-          <span class="vibe-design-icon-label" title="Left">L</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="paddingLeft" type="number" min="0" max="999" value="${Math.round(curPL)}">
+          <span class="waypoint-design-icon-label" title="Left">L</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="paddingLeft" type="number" min="0" max="999" value="${Math.round(curPL)}">
           </div>
         </div>
-        <button class="vibe-split-btn vibe-pad-split-btn active" type="button" title="Merge padding">${ICONS.merge}</button>
+        <button class="waypoint-split-btn waypoint-pad-split-btn active" type="button" title="Merge padding">${ICONS.merge}</button>
       </div>
-      <div class="vibe-section-header"><span class="vibe-section-label">Margin</span></div>
-      <div class="vibe-spacing-row vibe-margin-vh-row" ${marNeedsSplit ? 'style="display:none"' : ''}>
-        <div class="vibe-spacing-inputs">
-          <span class="vibe-design-icon" title="Margin vertical">${ICONS.marginV}</span>
-          <div class="vibe-stepper vibe-stepper-grow">
-            <input class="vibe-stepper-text vibe-mar-v" type="text" value="${marV}" title="Top, Bottom">
-            <span class="vibe-stepper-unit">px</span>
+      <div class="waypoint-section-header"><span class="waypoint-section-label">Margin</span></div>
+      <div class="waypoint-spacing-row waypoint-margin-vh-row" ${marNeedsSplit ? 'style="display:none"' : ''}>
+        <div class="waypoint-spacing-inputs">
+          <span class="waypoint-design-icon" title="Margin vertical">${ICONS.marginV}</span>
+          <div class="waypoint-stepper waypoint-stepper-grow">
+            <input class="waypoint-stepper-text waypoint-mar-v" type="text" value="${marV}" title="Top, Bottom">
+            <span class="waypoint-stepper-unit">px</span>
           </div>
-          <div class="vibe-prop-spacer"></div>
-          <span class="vibe-design-icon" title="Margin horizontal">${ICONS.marginH}</span>
-          <div class="vibe-stepper vibe-stepper-grow">
-            <input class="vibe-stepper-text vibe-mar-h" type="text" value="${marH}" title="Left, Right">
-            <span class="vibe-stepper-unit">px</span>
+          <div class="waypoint-prop-spacer"></div>
+          <span class="waypoint-design-icon" title="Margin horizontal">${ICONS.marginH}</span>
+          <div class="waypoint-stepper waypoint-stepper-grow">
+            <input class="waypoint-stepper-text waypoint-mar-h" type="text" value="${marH}" title="Left, Right">
+            <span class="waypoint-stepper-unit">px</span>
           </div>
         </div>
-        <button class="vibe-split-btn vibe-mar-split-btn ${marNeedsSplit ? 'active' : ''}" type="button" title="Split margin">${marNeedsSplit ? ICONS.merge : ICONS.split}</button>
+        <button class="waypoint-split-btn waypoint-mar-split-btn ${marNeedsSplit ? 'active' : ''}" type="button" title="Split margin">${marNeedsSplit ? ICONS.merge : ICONS.split}</button>
       </div>
-      <div class="vibe-spacing-row vibe-margin-split-row" ${marNeedsSplit ? '' : 'style="display:none"'}>
-        <div class="vibe-spacing-inputs">
-          <span class="vibe-design-icon-label" title="Top">T</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="marginTop" type="number" min="-999" max="999" value="${Math.round(curMT)}">
+      <div class="waypoint-spacing-row waypoint-margin-split-row" ${marNeedsSplit ? '' : 'style="display:none"'}>
+        <div class="waypoint-spacing-inputs">
+          <span class="waypoint-design-icon-label" title="Top">T</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="marginTop" type="number" min="-999" max="999" value="${Math.round(curMT)}">
           </div>
-          <span class="vibe-design-icon-label" title="Right">R</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="marginRight" type="number" min="-999" max="999" value="${Math.round(curMR)}">
+          <span class="waypoint-design-icon-label" title="Right">R</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="marginRight" type="number" min="-999" max="999" value="${Math.round(curMR)}">
           </div>
-          <span class="vibe-design-icon-label" title="Bottom">B</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="marginBottom" type="number" min="-999" max="999" value="${Math.round(curMB)}">
+          <span class="waypoint-design-icon-label" title="Bottom">B</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="marginBottom" type="number" min="-999" max="999" value="${Math.round(curMB)}">
           </div>
-          <span class="vibe-design-icon-label" title="Left">L</span>
-          <div class="vibe-stepper vibe-stepper-sm">
-            <input class="vibe-stepper-input" data-prop="marginLeft" type="number" min="-999" max="999" value="${Math.round(curML)}">
+          <span class="waypoint-design-icon-label" title="Left">L</span>
+          <div class="waypoint-stepper waypoint-stepper-sm">
+            <input class="waypoint-stepper-input" data-prop="marginLeft" type="number" min="-999" max="999" value="${Math.round(curML)}">
           </div>
         </div>
-        <button class="vibe-split-btn vibe-mar-split-btn active" type="button" title="Merge margin">${ICONS.merge}</button>
+        <button class="waypoint-split-btn waypoint-mar-split-btn active" type="button" title="Merge margin">${ICONS.merge}</button>
       </div>`;
   }
 
 
   function wireSizingToolbar(popover, targetElement, pc, s, resetBtn) {
     // --- Sizing inputs (width/height/min/max) ---
-    const sizingInputs = popover.querySelectorAll('.vibe-sizing-input');
+    const sizingInputs = popover.querySelectorAll('.waypoint-sizing-input');
     const sizingOriginals = {};
     for (const p of SIZING_PROPS) {
       sizingOriginals[p] = pc?.[p] ? pc[p].original : (s[p] || SIZING_UNSET[p]);
@@ -1630,19 +1630,19 @@ var VibeAnnotationPopover = (() => {
     });
 
     const notify = () => { popover._updateResetVisibility?.(); popover._updateSave?.(); };
-    let padSplit = popover.querySelector('.vibe-padding-split-row')?.style.display !== 'none';
-    let marSplit = popover.querySelector('.vibe-margin-split-row')?.style.display !== 'none';
+    let padSplit = popover.querySelector('.waypoint-padding-split-row')?.style.display !== 'none';
+    let marSplit = popover.querySelector('.waypoint-margin-split-row')?.style.display !== 'none';
 
-    const padVInput = popover.querySelector('.vibe-pad-v');
-    const padHInput = popover.querySelector('.vibe-pad-h');
-    const padVHRow = popover.querySelector('.vibe-padding-vh-row');
-    const padSplitRow = popover.querySelector('.vibe-padding-split-row');
-    const padSplitBtns = popover.querySelectorAll('.vibe-pad-split-btn');
-    const marVInput = popover.querySelector('.vibe-mar-v');
-    const marHInput = popover.querySelector('.vibe-mar-h');
-    const marVHRow = popover.querySelector('.vibe-margin-vh-row');
-    const marSplitRow = popover.querySelector('.vibe-margin-split-row');
-    const marSplitBtns = popover.querySelectorAll('.vibe-mar-split-btn');
+    const padVInput = popover.querySelector('.waypoint-pad-v');
+    const padHInput = popover.querySelector('.waypoint-pad-h');
+    const padVHRow = popover.querySelector('.waypoint-padding-vh-row');
+    const padSplitRow = popover.querySelector('.waypoint-padding-split-row');
+    const padSplitBtns = popover.querySelectorAll('.waypoint-pad-split-btn');
+    const marVInput = popover.querySelector('.waypoint-mar-v');
+    const marHInput = popover.querySelector('.waypoint-mar-h');
+    const marVHRow = popover.querySelector('.waypoint-margin-vh-row');
+    const marSplitRow = popover.querySelector('.waypoint-margin-split-row');
+    const marSplitBtns = popover.querySelectorAll('.waypoint-mar-split-btn');
 
     if (padVInput) {
       const applyPadVH = () => {
@@ -1822,7 +1822,7 @@ var VibeAnnotationPopover = (() => {
   // --- Shared: wire stepper inputs ---
 
   function wireStepperInputs(popover, targetElement, PROP_CONFIG) {
-    popover.querySelectorAll('.vibe-stepper-input').forEach(input => {
+    popover.querySelectorAll('.waypoint-stepper-input').forEach(input => {
       const prop = input.dataset.prop;
       const cfg = PROP_CONFIG[prop];
       if (!cfg) return;
@@ -1835,7 +1835,7 @@ var VibeAnnotationPopover = (() => {
         popover._updateResetVisibility?.();
         popover._updateSave?.();
       };
-      input._vibeInputHandler = handler;
+      input._waypointInputHandler = handler;
       input.addEventListener('input', handler);
 
       input.addEventListener('keydown', (e) => {
@@ -1853,8 +1853,8 @@ var VibeAnnotationPopover = (() => {
   // --- Shared: color picker ---
 
   function wireColorPicker(popover, targetElement, colorState, prop) {
-    const swatch = popover.querySelector(`.vibe-color-swatch[data-color-prop="${prop}"]`);
-    const hexInput = popover.querySelector(`.vibe-color-input[data-color-prop="${prop}"]`);
+    const swatch = popover.querySelector(`.waypoint-color-swatch[data-color-prop="${prop}"]`);
+    const hexInput = popover.querySelector(`.waypoint-color-input[data-color-prop="${prop}"]`);
     if (!swatch || !hexInput) return;
 
     // Hex input → apply live
@@ -1880,19 +1880,19 @@ var VibeAnnotationPopover = (() => {
     swatch.addEventListener('click', (e) => {
       e.stopPropagation();
       // Close any existing palette
-      const existing = popover.querySelector('.vibe-color-palette');
+      const existing = popover.querySelector('.waypoint-color-palette');
       if (existing) { existing.remove(); return; }
 
-      const vars = VibeElementContext.scanPageColorVariables();
+      const vars = WaypointElementContext.scanPageColorVariables();
       const palette = document.createElement('div');
-      palette.className = 'vibe-color-palette';
+      palette.className = 'waypoint-color-palette';
 
       if (vars.length === 0) {
-        palette.innerHTML = '<span class="vibe-color-palette-empty">No CSS variables detected</span>';
+        palette.innerHTML = '<span class="waypoint-color-palette-empty">No CSS variables detected</span>';
       } else {
         vars.forEach(v => {
           const btn = document.createElement('button');
-          btn.className = 'vibe-color-palette-swatch';
+          btn.className = 'waypoint-color-palette-swatch';
           if (colorState[prop].variable === v.name) btn.classList.add('active');
           btn.style.background = v.value;
           btn.title = v.name;
@@ -1931,8 +1931,8 @@ var VibeAnnotationPopover = (() => {
     colorState[prop].value = origValue;
     colorState[prop].variable = null;
     targetElement.style[prop] = '';
-    const swatch = popover.querySelector(`.vibe-color-swatch[data-color-prop="${prop}"]`);
-    const hexInput = popover.querySelector(`.vibe-color-input[data-color-prop="${prop}"]`);
+    const swatch = popover.querySelector(`.waypoint-color-swatch[data-color-prop="${prop}"]`);
+    const hexInput = popover.querySelector(`.waypoint-color-input[data-color-prop="${prop}"]`);
     const hex = toHex(origValue);
     if (swatch) swatch.style.background = hex;
     if (hexInput) hexInput.value = hex;
@@ -1979,8 +1979,8 @@ var VibeAnnotationPopover = (() => {
     activeOriginalText = null;
     activeTextDirty = false;
     activeOriginalCssText = null;
-    if (hadPopover && !saved) VibeEvents.emit('popover:cancelled');
-    if (reEnableInspection) VibeInspectionMode.reEnable();
+    if (hadPopover && !saved) WaypointEvents.emit('popover:cancelled');
+    if (reEnableInspection) WaypointInspectionMode.reEnable();
   }
 
   // --- Drag handle ---
@@ -2018,7 +2018,7 @@ var VibeAnnotationPopover = (() => {
   function positionPopover(anchor, targetElement, clickX, clickY) {
     const gap = 10;
     const popoverWidth = 340;
-    const popover = anchor.querySelector('.vibe-popover');
+    const popover = anchor.querySelector('.waypoint-popover');
     if (!popover) return;
 
     // Measure actual rendered height
@@ -2080,31 +2080,31 @@ var VibeAnnotationPopover = (() => {
   function showConfirm(root, title, message) {
     return new Promise(resolve => {
       const backdrop = document.createElement('div');
-      backdrop.className = 'vibe-confirm-backdrop';
+      backdrop.className = 'waypoint-confirm-backdrop';
       backdrop.innerHTML = `
-        <div class="vibe-confirm">
-          <div class="vibe-confirm-title">${escapeHTML(title)}</div>
-          <div class="vibe-confirm-msg">${escapeHTML(message)}</div>
-          <label class="vibe-confirm-skip" style="display:flex;align-items:center;gap:6px;margin:8px 0 4px;font-size:12px;color:var(--v-text-secondary,#6b7280);cursor:pointer;user-select:none;">
-            <input type="checkbox" class="vibe-confirm-skip-cb" style="margin:0;">
+        <div class="waypoint-confirm">
+          <div class="waypoint-confirm-title">${escapeHTML(title)}</div>
+          <div class="waypoint-confirm-msg">${escapeHTML(message)}</div>
+          <label class="waypoint-confirm-skip" style="display:flex;align-items:center;gap:6px;margin:8px 0 4px;font-size:12px;color:var(--v-text-secondary,#6b7280);cursor:pointer;user-select:none;">
+            <input type="checkbox" class="waypoint-confirm-skip-cb" style="margin:0;">
             Don't ask again
           </label>
-          <div class="vibe-confirm-actions">
-            <button class="vibe-btn vibe-btn-secondary vibe-confirm-no">Cancel</button>
-            <button class="vibe-btn vibe-btn-danger vibe-confirm-yes">Delete</button>
+          <div class="waypoint-confirm-actions">
+            <button class="waypoint-btn waypoint-btn-secondary waypoint-confirm-no">Cancel</button>
+            <button class="waypoint-btn waypoint-btn-danger waypoint-confirm-yes">Delete</button>
           </div>
         </div>
       `;
       root.appendChild(backdrop);
 
-      backdrop.querySelector('.vibe-confirm-no').addEventListener('click', () => {
+      backdrop.querySelector('.waypoint-confirm-no').addEventListener('click', () => {
         backdrop.remove();
         resolve(false);
       });
-      backdrop.querySelector('.vibe-confirm-yes').addEventListener('click', () => {
-        const skipCb = backdrop.querySelector('.vibe-confirm-skip-cb');
+      backdrop.querySelector('.waypoint-confirm-yes').addEventListener('click', () => {
+        const skipCb = backdrop.querySelector('.waypoint-confirm-skip-cb');
         if (skipCb && skipCb.checked) {
-          VibeAPI.saveSkipDeleteConfirm(true);
+          WaypointAPI.saveSkipDeleteConfirm(true);
         }
         backdrop.remove();
         resolve(true);
@@ -2119,7 +2119,7 @@ var VibeAnnotationPopover = (() => {
 
   function buildAnnotation(context, comment, pendingChanges) {
     const annotation = {
-      id: 'vibe_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      id: WaypointAnnotationId.create(),
       url: window.location.href,
       selector: context.selector,
       comment,

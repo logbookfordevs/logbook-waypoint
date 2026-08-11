@@ -923,7 +923,7 @@ input:checked + .toggle-slider:before {
 }
 
 /* Highlight animation for focused annotations */
-@keyframes vibe-highlight {
+@keyframes waypoint-highlight {
   0% {
     background-color: var(--theme-accent);
     transform: scale(1.02);

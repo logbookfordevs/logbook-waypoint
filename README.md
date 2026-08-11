@@ -22,7 +22,7 @@ The initial MIT foundation already provides:
 - Tools for reading, deleting, grouping, and inspecting annotations
 - A Chrome-compatible unpacked extension
 
-The next route adds a Logbook-native experience, a clearer work queue, watch mode, variants, and Impeccable workflows without importing post-MIT Vibe Annotations code.
+Waypoint now adds a Logbook-native experience, a clearer work queue, Watch, Variants, Source Identity, and coding-agent setup on top of that foundation.
 
 ## Architecture
 
@@ -31,7 +31,7 @@ Logbook Waypoint currently has two parts:
 1. **Browser extension** (`packages/extension/`) — captures and manages visual annotations and builds with WXT.
 2. **Local MCP server** (`packages/server/`) — persists annotations and exposes them to coding agents on `127.0.0.1:3846`.
 
-Some internal `vibe_*` identifiers remain intentionally unchanged in this first checkpoint. They are implementation details inherited from the MIT foundation and will be migrated only with tests around the browser/server protocol.
+The extension, server, package, CLI, MCP configuration, storage keys, and Annotation IDs use the canonical identifiers defined in [the product identifier contract](docs/contracts/product-identifiers.md). Waypoint starts with its own empty storage and does not import settings or Annotations from predecessor products.
 
 ## Design foundations
 
@@ -99,7 +99,7 @@ The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
 ## Security boundary
 
-The server binds only to IPv4 loopback, validates local Host and Origin headers, enables MCP DNS-rebinding protection, validates annotation IDs, and labels page-derived MCP output as untrusted. See [SECURITY.md](SECURITY.md) for the active boundary and the deferred browser-bridge risk.
+The server binds only to IPv4 loopback, validates local Host and Origin headers, enables MCP DNS-rebinding protection, validates Annotation IDs, and labels page-derived MCP output as untrusted. The extension exposes no public page-world automation bridge. See [SECURITY.md](SECURITY.md) for the active boundary.
 
 ## Project lineage
 

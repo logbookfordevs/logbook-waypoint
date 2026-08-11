@@ -8,6 +8,6 @@ test('generated content-script keeps target selectors portable without mutating 
     'utf8',
   );
 
-  assert.doesNotMatch(source, /data-vibe-id/);
+  assert.doesNotMatch(source, /data-waypoint-id/);
   assert.doesNotMatch(source, /data-text-content/);
 });

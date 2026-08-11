@@ -23,32 +23,32 @@ globalThis.WaypointVariantPicker = (() => {
   }
 
   function show(annotation, targetElement) {
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root || !handles(annotation)) return false;
 
     root.querySelector('.waypoint-variant-picker-anchor')?.remove();
     const request = annotation.variant_request;
     const anchor = document.createElement('div');
-    anchor.className = 'vibe-popover-anchor waypoint-variant-picker-anchor';
+    anchor.className = 'waypoint-popover-anchor waypoint-variant-picker-anchor';
     anchor.innerHTML = `
-      <section class="vibe-popover waypoint-variant-picker" aria-label="Variants">
-        <div class="vibe-drag-handle"></div>
-        <div class="vibe-popover-title"><span>Variants</span></div>
+      <section class="waypoint-popover waypoint-variant-picker" aria-label="Variants">
+        <div class="waypoint-drag-handle"></div>
+        <div class="waypoint-popover-title"><span>Variants</span></div>
         <div class="waypoint-variant-list">
           ${request.variants.map(variant => `
             <div class="waypoint-variant-row" data-variant-key="${escapeHTML(variant.key)}">
-              <button class="vibe-btn ${variant.state === 'active' ? 'vibe-btn-primary' : 'vibe-btn-secondary'} waypoint-variant-activate" type="button" aria-pressed="${variant.state === 'active'}">
+              <button class="waypoint-btn ${variant.state === 'active' ? 'waypoint-btn-primary' : 'waypoint-btn-secondary'} waypoint-variant-activate" type="button" aria-pressed="${variant.state === 'active'}">
                 ${escapeHTML(variant.name)}${variant.state === 'active' ? ' · Active' : ''}
               </button>
-              <button class="vibe-btn-icon waypoint-variant-discard" type="button" title="Discard ${escapeHTML(variant.name)}" ${variant.state === 'active' ? 'disabled' : ''}>×</button>
+              <button class="waypoint-btn-icon waypoint-variant-discard" type="button" title="Discard ${escapeHTML(variant.name)}" ${variant.state === 'active' ? 'disabled' : ''}>×</button>
             </div>
           `).join('')}
         </div>
-        <div class="vibe-popover-footer">
-          <div class="vibe-footer-left"><span class="waypoint-variant-status">Choose the implementation to present.</span></div>
-          <div class="vibe-footer-right">
-            <button class="vibe-btn vibe-btn-secondary waypoint-variant-close" type="button">Close</button>
-            <button class="vibe-btn vibe-btn-primary waypoint-variant-finalize" type="button">Finalize Active</button>
+        <div class="waypoint-popover-footer">
+          <div class="waypoint-footer-left"><span class="waypoint-variant-status">Choose the implementation to present.</span></div>
+          <div class="waypoint-footer-right">
+            <button class="waypoint-btn waypoint-btn-secondary waypoint-variant-close" type="button">Close</button>
+            <button class="waypoint-btn waypoint-btn-primary waypoint-variant-finalize" type="button">Finalize Active</button>
           </div>
         </div>
       </section>`;
@@ -72,24 +72,24 @@ globalThis.WaypointVariantPicker = (() => {
     anchor.querySelectorAll('.waypoint-variant-activate').forEach(button => button.addEventListener('click', async () => {
       const key = button.closest('[data-variant-key]').dataset.variantKey;
       if (key === request.active_variant_key) return;
-      const updated = await applyOperation(() => VibeAPI.activateVariant(annotation.id, key));
+      const updated = await applyOperation(() => WaypointAPI.activateVariant(annotation.id, key));
       if (!updated) return;
-      VibeEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
+      WaypointEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
       anchor.remove();
       show(updated, targetElement);
     }));
     anchor.querySelectorAll('.waypoint-variant-discard').forEach(button => button.addEventListener('click', async () => {
       const key = button.closest('[data-variant-key]').dataset.variantKey;
-      const updated = await applyOperation(() => VibeAPI.discardVariant(annotation.id, key));
+      const updated = await applyOperation(() => WaypointAPI.discardVariant(annotation.id, key));
       if (!updated) return;
-      VibeEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
+      WaypointEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
       anchor.remove();
       show(updated, targetElement);
     }));
     anchor.querySelector('.waypoint-variant-finalize').addEventListener('click', async () => {
-      const updated = await applyOperation(() => VibeAPI.finalizeVariant(annotation.id, request.active_variant_key));
+      const updated = await applyOperation(() => WaypointAPI.finalizeVariant(annotation.id, request.active_variant_key));
       if (!updated) return;
-      VibeEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
+      WaypointEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
       anchor.remove();
     });
     return true;

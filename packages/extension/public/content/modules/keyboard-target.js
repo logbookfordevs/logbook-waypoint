@@ -1,4 +1,4 @@
-var VibeKeyboardTarget = (() => {
+var WaypointKeyboardTarget = (() => {
   function isEditableNode(node) {
     return !!node?.matches && (
       node.matches('input, textarea, select, [contenteditable], [role="textbox"]')

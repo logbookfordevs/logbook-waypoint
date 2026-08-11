@@ -1,11 +1,12 @@
 // Logbook Waypoint Background Service Worker
 
+importScripts('../annotation-id.js');
 importScripts('queue-sync.js');
 importScripts('source-identity-probe.js');
 importScripts('variant-errors.js');
 importScripts('variant-policy.js');
 
-class VibeAnnotationsBackground {
+class WaypointAnnotationsBackground {
   constructor() {
     this.apiServerUrl = 'http://127.0.0.1:3846'; // Updated to match external server
     this.apiConnected = false;
@@ -53,8 +54,8 @@ class VibeAnnotationsBackground {
     // Initialize storage with empty annotations array
     try {
       await chrome.storage.local.set({
-        annotations: [],
-        settings: {
+        waypointAnnotations: [],
+        waypointSettings: {
           version: '0.1.0',
           firstInstall: Date.now(),
           apiEnabled: false
@@ -74,7 +75,7 @@ class VibeAnnotationsBackground {
       
       // Store update info for popup to display
       await chrome.storage.local.set({
-        updateInfo: {
+        waypointUpdateInfo: {
           hasUpdate: true,
           previousVersion,
           currentVersion,
@@ -89,13 +90,13 @@ class VibeAnnotationsBackground {
       chrome.action.setBadgeBackgroundColor({ color: '#d97757' }); // Waypoint terracotta
       
       // Also update settings
-      const result = await chrome.storage.local.get(['settings']);
-      const settings = result.settings || {};
+      const result = await chrome.storage.local.get(['waypointSettings']);
+      const settings = result.waypointSettings || {};
       
       settings.lastUpdate = Date.now();
       settings.previousVersion = previousVersion;
       
-      await chrome.storage.local.set({ settings });
+      await chrome.storage.local.set({ waypointSettings: settings });
       
     } catch (error) {
       console.error('Error during update migration:', error);
@@ -103,17 +104,17 @@ class VibeAnnotationsBackground {
   }
 
   async migrateSyncFlags() {
-    const result = await chrome.storage.local.get(['annotations', '_syncFlagsMigrated']);
-    if (result._syncFlagsMigrated) return;
-    const annotations = result.annotations || [];
+    const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointSyncFlagsMigrated']);
+    if (result.waypointSyncFlagsMigrated) return;
+    const annotations = result.waypointAnnotations || [];
     if (annotations.length) {
       let changed = false;
       for (const a of annotations) {
         if (!a._synced) { a._synced = true; changed = true; }
       }
-      if (changed) await chrome.storage.local.set({ annotations });
+      if (changed) await chrome.storage.local.set({ waypointAnnotations: annotations });
     }
-    await chrome.storage.local.set({ _syncFlagsMigrated: true });
+    await chrome.storage.local.set({ waypointSyncFlagsMigrated: true });
   }
 
   setupMessageListener() {
@@ -239,8 +240,8 @@ class VibeAnnotationsBackground {
   setupStorageListener() {
     // Listen for storage changes to sync data
     chrome.storage.onChanged.addListener((changes, namespace) => {
-      if (namespace === 'local' && changes.annotations) {
-        this.onAnnotationsChanged(changes.annotations.newValue || []);
+      if (namespace === 'local' && changes.waypointAnnotations) {
+        this.onAnnotationsChanged(changes.waypointAnnotations.newValue || []);
       }
     });
   }
@@ -288,9 +289,9 @@ class VibeAnnotationsBackground {
       }
       
       await chrome.storage.local.set({
-        apiSyncPending: false,
-        apiLastSync: Date.now(),
-        apiSyncCount: annotations.length
+        waypointApiSyncPending: false,
+        waypointApiLastSync: Date.now(),
+        waypointApiSyncCount: annotations.length
       });
       
       
@@ -298,9 +299,9 @@ class VibeAnnotationsBackground {
       console.error('Error syncing annotations to API:', error);
       
       await chrome.storage.local.set({
-        apiSyncPending: true,
-        apiSyncError: error.message,
-        apiLastSync: Date.now()
+        waypointApiSyncPending: true,
+        waypointApiSyncError: error.message,
+        waypointApiLastSync: Date.now()
       });
       
       throw error;
@@ -330,8 +331,8 @@ class VibeAnnotationsBackground {
     } catch (error) {
       console.error('[Background] Error getting annotations from API:', error);
       // Fallback to local storage if API fails
-      const result = await chrome.storage.local.get(['annotations']);
-      const annotations = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const annotations = result.waypointAnnotations || [];
       
       
       if (url) {
@@ -365,12 +366,12 @@ class VibeAnnotationsBackground {
       throw new Error(`${result.error || `Variant operation failed (${response.status})`}${remaining}`);
     }
     await this._withStorageLock(async () => {
-      const stored = await chrome.storage.local.get(['annotations']);
+      const stored = await chrome.storage.local.get(['waypointAnnotations']);
       const annotations = stored.annotations || [];
       const index = annotations.findIndex(annotation => annotation.id === id);
       if (index !== -1) {
         annotations[index] = result.annotation;
-        await chrome.storage.local.set({ annotations });
+        await chrome.storage.local.set({ waypointAnnotations: annotations });
       }
     });
     return result.annotation;
@@ -379,8 +380,11 @@ class VibeAnnotationsBackground {
   async saveAnnotation(annotation) {
     return this._withStorageLock(async () => {
       try {
-        const result = await chrome.storage.local.get(['annotations']);
-        const annotations = result.annotations || [];
+        if (!WaypointAnnotationId.isValid(annotation?.id)) {
+          throw new Error('Invalid Waypoint annotation ID');
+        }
+        const result = await chrome.storage.local.get(['waypointAnnotations']);
+        const annotations = result.waypointAnnotations || [];
 
         const existingIndex = annotations.findIndex(a => a.id === annotation.id);
         WaypointVariantPolicy.assertSaveAllowed(annotations[existingIndex], annotation);
@@ -391,18 +395,18 @@ class VibeAnnotationsBackground {
         }
 
         // Save to local storage FIRST (before API call that might hang)
-        await chrome.storage.local.set({ annotations });
+        await chrome.storage.local.set({ waypointAnnotations: annotations });
 
         // Then try API server — mark as synced on success
         try {
           await this.saveAnnotationToAPI(annotation);
           // Re-read and update _synced flag
-          const fresh = await chrome.storage.local.get(['annotations']);
+          const fresh = await chrome.storage.local.get(['waypointAnnotations']);
           const arr = fresh.annotations || [];
           const target = arr.find(a => a.id === annotation.id);
           if (target && !target._synced) {
             target._synced = true;
-            await chrome.storage.local.set({ annotations: arr });
+            await chrome.storage.local.set({ waypointAnnotations: arr });
           }
         } catch (apiErr) {
           console.warn('Failed to save to API, will sync later:', apiErr.message);
@@ -448,9 +452,12 @@ class VibeAnnotationsBackground {
   async deleteAnnotation(id) {
     return this._withStorageLock(async () => {
       try {
-        const result = await chrome.storage.local.get(['annotations', 'deletedAnnotationIds']);
-        const annotations = result.annotations || [];
-        const deletedIds = result.deletedAnnotationIds || [];
+        if (!WaypointAnnotationId.isValid(id)) {
+          throw new Error('Invalid Waypoint annotation ID');
+        }
+        const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
+        const annotations = result.waypointAnnotations || [];
+        const deletedIds = result.waypointDeletedAnnotationIds || [];
         const deletedAnnotation = annotations.find(annotation => annotation.id === id);
         WaypointVariantPolicy.assertDeleteAllowed(deletedAnnotation);
 
@@ -460,8 +467,8 @@ class VibeAnnotationsBackground {
         if (!deletedIds.includes(id)) deletedIds.push(id);
 
         await chrome.storage.local.set({
-          annotations: filteredAnnotations,
-          deletedAnnotationIds: deletedIds
+          waypointAnnotations: filteredAnnotations,
+          waypointDeletedAnnotationIds: deletedIds
         });
 
         // Also delete from API server
@@ -487,9 +494,9 @@ class VibeAnnotationsBackground {
 
   async deleteAnnotationsByUrl(url) {
     return this._withStorageLock(async () => {
-      const result = await chrome.storage.local.get(['annotations', 'deletedAnnotationIds']);
-      const all = result.annotations || [];
-      const deletedIds = result.deletedAnnotationIds || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
+      const all = result.waypointAnnotations || [];
+      const deletedIds = result.waypointDeletedAnnotationIds || [];
 
       const toDelete = all.filter(a => a.url === url);
       for (const annotation of toDelete) WaypointVariantPolicy.assertDeleteAllowed(annotation);
@@ -500,8 +507,8 @@ class VibeAnnotationsBackground {
       }
 
       await chrome.storage.local.set({
-        annotations: remaining,
-        deletedAnnotationIds: deletedIds
+        waypointAnnotations: remaining,
+        waypointDeletedAnnotationIds: deletedIds
       });
 
       // Fire-and-forget API deletes
@@ -545,8 +552,11 @@ class VibeAnnotationsBackground {
   async updateAnnotation(id, updates) {
     return this._withStorageLock(async () => {
       try {
-        const result = await chrome.storage.local.get(['annotations']);
-        const annotations = result.annotations || [];
+        if (!WaypointAnnotationId.isValid(id)) {
+          throw new Error('Invalid Waypoint annotation ID');
+        }
+        const result = await chrome.storage.local.get(['waypointAnnotations']);
+        const annotations = result.waypointAnnotations || [];
 
         const annotationIndex = annotations.findIndex(annotation => annotation.id === id);
         if (annotationIndex === -1) {
@@ -560,7 +570,7 @@ class VibeAnnotationsBackground {
           updated_at: new Date().toISOString()
         };
 
-        await chrome.storage.local.set({ annotations });
+        await chrome.storage.local.set({ waypointAnnotations: annotations });
 
         await this.updateBadgeForUrl(annotations[annotationIndex].url);
 
@@ -657,8 +667,8 @@ class VibeAnnotationsBackground {
   // Direct badge update from local storage (bypasses API)
   async updateBadgeFromLocalStorage(tabId, url) {
     try {
-      const result = await chrome.storage.local.get(['annotations']);
-      const annotations = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const annotations = result.waypointAnnotations || [];
       const urlAnnotations = annotations.filter(a => a.url === url);
       const pendingCount = urlAnnotations.filter(a => a.status === 'pending').length;
       
@@ -830,11 +840,11 @@ class VibeAnnotationsBackground {
     // Merge inside the storage lock to serialize against save/delete/import
     return this._withStorageLock(async () => {
       try {
-        const localResult = await chrome.storage.local.get(['annotations', 'deletedAnnotationIds']);
-        const localAnnotations = localResult.annotations || [];
-        const deletedIds = new Set(localResult.deletedAnnotationIds || []);
+        const localResult = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
+        const localAnnotations = localResult.waypointAnnotations || [];
+        const deletedIds = new Set(localResult.waypointDeletedAnnotationIds || []);
 
-        const mergeResult = VibeQueueSync.merge(localAnnotations, serverAnnotations, deletedIds);
+        const mergeResult = WaypointQueueSync.merge(localAnnotations, serverAnnotations, deletedIds);
         const merged = mergeResult.annotations;
         const { changed, flagsChanged } = mergeResult;
         const serverMap = new Map(serverAnnotations.map(annotation => [annotation.id, annotation]));
@@ -844,8 +854,8 @@ class VibeAnnotationsBackground {
 
         // Persist merged result locally
         await chrome.storage.local.set({
-          annotations: merged,
-          lastServerSync: Date.now()
+          waypointAnnotations: merged,
+          waypointLastServerSync: Date.now()
         });
 
         // Push merged result to server only if content changed
@@ -863,7 +873,7 @@ class VibeAnnotationsBackground {
               if (!a._synced) { a._synced = true; needsUpdate = true; }
             }
             if (needsUpdate) {
-              await chrome.storage.local.set({ annotations: merged });
+              await chrome.storage.local.set({ waypointAnnotations: merged });
             }
           } catch (e) {
             console.warn('Failed to push merged annotations to server:', e.message);
@@ -878,9 +888,9 @@ class VibeAnnotationsBackground {
         }
 
         const activeTombstones = [...deletedIds].filter(id => serverMap.has(id));
-        await chrome.storage.local.set({ deletedAnnotationIds: activeTombstones });
+        await chrome.storage.local.set({ waypointDeletedAnnotationIds: activeTombstones });
 
-        console.log(`[Vibe] Sync complete — merged: ${merged.length} annotations`);
+        console.log(`[Waypoint] Sync complete — merged: ${merged.length} annotations`);
         await this.updateAllBadges();
 
         // Notify content scripts to refresh
@@ -940,8 +950,8 @@ class VibeAnnotationsBackground {
     if (!url) return false;
     try {
       const origin = new URL(url).origin + '/*';
-      const result = await chrome.storage.local.get(['vibeEnabledSites']);
-      const sites = result.vibeEnabledSites || [];
+      const result = await chrome.storage.local.get(['waypointEnabledSites']);
+      const sites = result.waypointEnabledSites || [];
       return sites.includes(origin);
     } catch {
       return false;
@@ -954,8 +964,8 @@ class VibeAnnotationsBackground {
 
   async restoreEnabledSites() {
     try {
-      const result = await chrome.storage.local.get(['vibeEnabledSites']);
-      const sites = result.vibeEnabledSites || [];
+      const result = await chrome.storage.local.get(['waypointEnabledSites']);
+      const sites = result.waypointEnabledSites || [];
       for (const originPattern of sites) {
         // Only register if permission is still granted
         const has = await chrome.permissions.contains({ origins: [originPattern] });
@@ -970,7 +980,7 @@ class VibeAnnotationsBackground {
 
   async enableSite(originPattern, tabId) {
     // Register dynamic content scripts for this origin
-    const scriptId = 'vibe-' + originPattern.replace(/[^a-zA-Z0-9]/g, '_');
+    const scriptId = 'waypoint-' + originPattern.replace(/[^a-zA-Z0-9]/g, '_');
     const legacyPageScriptId = scriptId + '_bridge';
 
     try {
@@ -1031,8 +1041,8 @@ class VibeAnnotationsBackground {
   async forceAPISync() {
     try {
       // Get all annotations from storage
-      const result = await chrome.storage.local.get(['annotations']);
-      const annotations = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const annotations = result.waypointAnnotations || [];
       
       // Force sync to API
       await this.syncAnnotationsToAPI(annotations);
@@ -1055,14 +1065,17 @@ class VibeAnnotationsBackground {
     }
 
     return this._withStorageLock(async () => {
-      const result = await chrome.storage.local.get(['annotations', 'deletedAnnotationIds']);
-      const all = result.annotations || [];
-      const deletedIds = result.deletedAnnotationIds || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
+      const all = result.waypointAnnotations || [];
+      const deletedIds = result.waypointDeletedAnnotationIds || [];
       const existingIds = new Set(all.map(a => a.id));
 
       let imported = 0;
       const importedIds = [];
       for (const a of newAnnotations) {
+        if (!WaypointAnnotationId.isValid(a?.id)) {
+          throw new Error('Invalid Waypoint annotation ID');
+        }
         if (!existingIds.has(a.id)) {
           WaypointVariantPolicy.assertSaveAllowed(null, a);
           all.push(a);
@@ -1076,8 +1089,8 @@ class VibeAnnotationsBackground {
         // Clear imported IDs from tombstone list so smartSync doesn't remove them
         const cleanedTombstones = deletedIds.filter(id => !importedIds.includes(id));
         await chrome.storage.local.set({
-          annotations: all,
-          deletedAnnotationIds: cleanedTombstones
+          waypointAnnotations: all,
+          waypointDeletedAnnotationIds: cleanedTombstones
         });
 
         // Sync to server immediately and mark as synced
@@ -1088,7 +1101,7 @@ class VibeAnnotationsBackground {
             if (!a._synced) { a._synced = true; flagsChanged = true; }
           }
           if (flagsChanged) {
-            await chrome.storage.local.set({ annotations: all });
+            await chrome.storage.local.set({ waypointAnnotations: all });
           }
         } catch (e) {
           console.warn('Failed to sync imported annotations to server:', e.message);
@@ -1101,16 +1114,11 @@ class VibeAnnotationsBackground {
     });
   }
 
-  // Utility function for generating IDs
-  generateId() {
-    return 'vibe_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  }
-
   getChangelogForVersion(version) {
     // Real changelog mapping for actual versions
     const changelogs = {
       '1.0.0': [
-        'Initial release of Vibe Annotations (MIT foundation)',
+        'Initial release of Waypoint Annotations (MIT foundation)',
         'Visual annotation system for localhost development',
         'MCP integration for AI coding agents',
         'Light/dark theme support with system preference detection'
@@ -1158,7 +1166,7 @@ class VibeAnnotationsBackground {
 }
 
 // Initialize the background service worker
-const bg = new VibeAnnotationsBackground();
+const bg = new WaypointAnnotationsBackground();
 
 // Keyboard shortcut commands (chrome.commands)
 chrome.commands.onCommand.addListener(async (command, tab) => {

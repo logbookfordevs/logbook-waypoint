@@ -2,7 +2,7 @@
 // Position-tracked via RAF loop (only runs when badges exist)
 // Zero host DOM modification for display
 
-var VibeBadgeManager = (() => {
+var WaypointBadgeManager = (() => {
   const DESIGN_PROPS = [
     'fontSize','fontWeight','lineHeight','textAlign',
     'paddingTop','paddingRight','paddingBottom','paddingLeft',
@@ -40,11 +40,11 @@ var VibeBadgeManager = (() => {
   let lastTotal = 0; // total annotations (including unanchored)
 
   function init() {
-    VibeEvents.on('annotations:render', render);
-    VibeEvents.on('annotation:deleted', onDeleted);
-    VibeEvents.on('annotation:updated', onUpdated);
-    VibeEvents.on('inspection:elementClicked', onProvisionalPin);
-    VibeEvents.on('popover:cancelled', removeProvisional);
+    WaypointEvents.on('annotations:render', render);
+    WaypointEvents.on('annotation:deleted', onDeleted);
+    WaypointEvents.on('annotation:updated', onUpdated);
+    WaypointEvents.on('inspection:elementClicked', onProvisionalPin);
+    WaypointEvents.on('popover:cancelled', removeProvisional);
     startDOMObserver();
   }
 
@@ -79,7 +79,7 @@ var VibeBadgeManager = (() => {
     let changed = false;
     for (const entry of badges) {
       if (!entry.targetElement.isConnected) {
-        const newTarget = VibeElementContext.findElementBySelector(entry.annotation);
+        const newTarget = WaypointElementContext.findElementBySelector(entry.annotation);
         if (newTarget && newTarget !== entry.targetElement) {
           entry.targetElement = newTarget;
           entry.el.style.display = '';
@@ -95,16 +95,16 @@ var VibeBadgeManager = (() => {
         }
       }
     }
-    if (changed) console.log('[Vibe] Re-matched badges after framework re-render');
+    if (changed) console.log('[Waypoint] Re-matched badges after framework re-render');
   }
 
   function onProvisionalPin({ clientX, clientY }) {
     removeProvisional();
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root || clientX == null) return;
 
     const badge = document.createElement('div');
-    badge.className = 'vibe-badge';
+    badge.className = 'waypoint-badge';
     badge.textContent = (badges.length + 1).toString();
     badge.style.top = `${clientY - 11}px`;
     badge.style.left = `${clientX}px`;
@@ -137,7 +137,7 @@ var VibeBadgeManager = (() => {
         return;
       }
 
-      const target = VibeElementContext.findElementBySelector(annotation);
+      const target = WaypointElementContext.findElementBySelector(annotation);
       if (target) {
         // Rehydrate pending design changes
         const rpc = annotation.pending_changes;
@@ -156,7 +156,7 @@ var VibeBadgeManager = (() => {
           existing.annotation = annotation;
           existing.targetElement = target;
           existing.el.childNodes[0].textContent = badgeIndex.toString();
-          const tooltip = existing.el.querySelector('.vibe-badge-tooltip');
+          const tooltip = existing.el.querySelector('.waypoint-badge-tooltip');
           if (tooltip) tooltip.textContent = annotation.comment;
           badges.push(existing);
           positionBadge(existing);
@@ -174,12 +174,12 @@ var VibeBadgeManager = (() => {
     if (!badges.length) stopRAF();
 
     lastTotal = annotations.length;
-    VibeEvents.emit('badges:rendered', { count: badges.length, total: annotations.length, styleCount: styleInjections.filter(s => s.annotation.type === 'stylesheet').length });
+    WaypointEvents.emit('badges:rendered', { count: badges.length, total: annotations.length, styleCount: styleInjections.filter(s => s.annotation.type === 'stylesheet').length });
   }
 
   function injectStyleAnnotation(annotation) {
     const style = document.createElement('style');
-    style.setAttribute('data-vibe-style', annotation.id);
+    style.setAttribute('data-waypoint-style', annotation.id);
     style.textContent = annotation.css;
     document.head.appendChild(style);
     styleInjections.push({ styleEl: style, annotation });
@@ -218,17 +218,17 @@ var VibeBadgeManager = (() => {
   }
 
   function addBadge(targetElement, annotation, index) {
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
     const badge = document.createElement('div');
-    badge.className = 'vibe-badge';
+    badge.className = 'waypoint-badge';
     badge.textContent = index.toString();
     badge.dataset.annotationId = annotation.id;
 
     // Tooltip
     const tooltip = document.createElement('div');
-    tooltip.className = 'vibe-badge-tooltip';
+    tooltip.className = 'waypoint-badge-tooltip';
     tooltip.textContent = annotation.comment;
     badge.appendChild(tooltip);
 
@@ -239,7 +239,7 @@ var VibeBadgeManager = (() => {
     // Click → edit (read from entry so we get the latest annotation after updates)
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
-      VibeEvents.emit('annotation:edit', { annotation: entry.annotation, element: entry.targetElement });
+      WaypointEvents.emit('annotation:edit', { annotation: entry.annotation, element: entry.targetElement });
     });
     badges.push(entry);
 
@@ -305,7 +305,7 @@ var VibeBadgeManager = (() => {
     if (restoreTargets && annotations) {
       for (const a of annotations) {
         if (!a.pending_changes) continue;
-        const el = VibeElementContext.findElementBySelector(a);
+        const el = WaypointElementContext.findElementBySelector(a);
         if (el && !clearedEls.has(el)) {
           const pc = a.pending_changes;
           restorePendingChanges(el, pc);
@@ -333,7 +333,7 @@ var VibeBadgeManager = (() => {
       badges.splice(idx, 1);
     } else if (annotation?.pending_changes) {
       // Badge was lost but element may still have inline styles — retry selector
-      const el = VibeElementContext.findElementBySelector(annotation);
+      const el = WaypointElementContext.findElementBySelector(annotation);
       if (el) {
         const pc = annotation.pending_changes;
         restorePendingChanges(el, pc);
@@ -350,7 +350,7 @@ var VibeBadgeManager = (() => {
   function onUpdated({ id, comment, pending_changes, css }) {
     const entry = badges.find(b => b.annotation.id === id);
     if (entry) {
-      const tooltip = entry.el.querySelector('.vibe-badge-tooltip');
+      const tooltip = entry.el.querySelector('.waypoint-badge-tooltip');
       if (tooltip) tooltip.textContent = comment;
       const oldPC = entry.annotation.pending_changes;
       // Revert old copy change before applying new state
@@ -386,7 +386,7 @@ var VibeBadgeManager = (() => {
   }
 
   function highlightElement(annotation) {
-    const el = VibeElementContext.findElementBySelector(annotation);
+    const el = WaypointElementContext.findElementBySelector(annotation);
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     el.style.outline = '3px solid #d97757';

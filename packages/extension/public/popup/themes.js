@@ -51,8 +51,8 @@ class ThemeManager {
 
   async loadThemePreference() {
     try {
-      const result = await chrome.storage.local.get(['themePreference']);
-      this.currentTheme = result.themePreference || 'system';
+      const result = await chrome.storage.local.get(['waypointThemePreference']);
+      this.currentTheme = result.waypointThemePreference || 'system';
     } catch (error) {
       console.error('Error loading theme preference:', error);
       this.currentTheme = 'system';
@@ -61,7 +61,7 @@ class ThemeManager {
 
   async saveThemePreference(theme) {
     try {
-      await chrome.storage.local.set({ themePreference: theme });
+      await chrome.storage.local.set({ waypointThemePreference: theme });
       this.currentTheme = theme;
       this.applyTheme();
     } catch (error) {

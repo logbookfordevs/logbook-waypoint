@@ -9,6 +9,10 @@
     "./product-identity": {
       "types": "./lib/product-identity.d.ts",
       "import": "./lib/product-identity.js"
+    },
+    "./annotation-id": {
+      "types": "./lib/annotation-id.d.ts",
+      "import": "./lib/annotation-id.js"
     }
   },
   "bin": {

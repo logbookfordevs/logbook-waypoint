@@ -44,14 +44,14 @@ class AnnotationsPopup {
 
   async checkForUpdateNotification() {
     try {
-      const result = await chrome.storage.local.get(['updateInfo']);
-      const updateInfo = result.updateInfo;
+      const result = await chrome.storage.local.get(['waypointUpdateInfo']);
+      const waypointUpdateInfo = result.waypointUpdateInfo;
       
-      if (updateInfo && updateInfo.hasUpdate) {
+      if (waypointUpdateInfo && waypointUpdateInfo.hasUpdate) {
         const updateBanner = document.getElementById('update-banner');
         const updateMessage = document.getElementById('update-banner-message');
         
-        updateMessage.textContent = `Extension updated to v${updateInfo.currentVersion}`;
+        updateMessage.textContent = `Extension updated to v${waypointUpdateInfo.currentVersion}`;
         updateBanner.style.display = 'block';
         
         // Clear the "NEW" badge since user is viewing the popup
@@ -89,8 +89,8 @@ class AnnotationsPopup {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       const currentUrl = tab.url;
       
-      const result = await chrome.storage.local.get(['annotations']);
-      const allAnnotations = result.annotations || [];
+      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const allAnnotations = result.waypointAnnotations || [];
       
       // Filter annotations to only show those for the current URL
       this.annotations = allAnnotations.filter(annotation => 
@@ -243,15 +243,15 @@ class AnnotationsPopup {
   async handleFocusedAnnotation() {
     try {
       // Check if there's a specific annotation to focus on
-      const result = await chrome.storage.local.get(['focusedAnnotationId']);
-      const focusedAnnotationId = result.focusedAnnotationId;
+      const result = await chrome.storage.local.get(['waypointFocusedAnnotationId']);
+      const waypointFocusedAnnotationId = result.waypointFocusedAnnotationId;
       
-      if (focusedAnnotationId) {
+      if (waypointFocusedAnnotationId) {
         // Clear the stored focused annotation ID
-        await chrome.storage.local.remove(['focusedAnnotationId']);
+        await chrome.storage.local.remove(['waypointFocusedAnnotationId']);
         
         // Scroll to and highlight the annotation
-        this.scrollToAnnotation(focusedAnnotationId);
+        this.scrollToAnnotation(waypointFocusedAnnotationId);
       }
     } catch (error) {
       console.error('Error handling focused annotation:', error);
@@ -270,7 +270,7 @@ class AnnotationsPopup {
       });
       
       // Add a highlight effect
-      annotationElement.style.animation = 'vibe-highlight 2s ease-out';
+      annotationElement.style.animation = 'waypoint-highlight 2s ease-out';
       
       // Remove the animation after it completes
       setTimeout(() => {
@@ -898,7 +898,7 @@ class AnnotationsPopup {
 
   async updateScreenshotSetting(enabled) {
     try {
-      await chrome.storage.local.set({ screenshotEnabled: enabled });
+      await chrome.storage.local.set({ waypointScreenshotEnabled: enabled });
       console.log(`Screenshot capture ${enabled ? 'enabled' : 'disabled'}`);
     } catch (error) {
       console.error('Error saving screenshot setting:', error);
@@ -907,10 +907,10 @@ class AnnotationsPopup {
 
   async updateScreenshotToggle() {
     try {
-      const result = await chrome.storage.local.get(['screenshotEnabled']);
+      const result = await chrome.storage.local.get(['waypointScreenshotEnabled']);
       const screenshotToggle = document.getElementById('screenshot-toggle');
       // Default to enabled (true) if not set
-      const enabled = result.screenshotEnabled !== undefined ? result.screenshotEnabled : true;
+      const enabled = result.waypointScreenshotEnabled !== undefined ? result.waypointScreenshotEnabled : true;
       screenshotToggle.checked = enabled;
     } catch (error) {
       console.error('Error loading screenshot setting:', error);
@@ -1157,13 +1157,13 @@ class AnnotationsPopup {
 
   async showChangelog() {
     try {
-      const result = await chrome.storage.local.get(['updateInfo']);
-      const updateInfo = result.updateInfo;
+      const result = await chrome.storage.local.get(['waypointUpdateInfo']);
+      const waypointUpdateInfo = result.waypointUpdateInfo;
       
-      if (updateInfo && updateInfo.changelog) {
+      if (waypointUpdateInfo && waypointUpdateInfo.changelog) {
         // For now, just show an alert. In a real app, you'd open a modal or new tab
-        const changes = updateInfo.changelog.join('\n• ');
-        alert(`What's new in v${updateInfo.currentVersion}:\n\n• ${changes}`);
+        const changes = waypointUpdateInfo.changelog.join('\n• ');
+        alert(`What's new in v${waypointUpdateInfo.currentVersion}:\n\n• ${changes}`);
       }
     } catch (error) {
       console.error('Error showing changelog:', error);
@@ -1177,7 +1177,7 @@ class AnnotationsPopup {
       updateBanner.style.display = 'none';
       
       // Clear the update info from storage
-      await chrome.storage.local.remove(['updateInfo']);
+      await chrome.storage.local.remove(['waypointUpdateInfo']);
     } catch (error) {
       console.error('Error dismissing update banner:', error);
     }
@@ -1191,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Listen for storage changes to update UI in real-time
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === 'local' && changes.annotations) {
+  if (namespace === 'local' && changes.waypointAnnotations) {
     // Don't reload if we're currently editing an annotation
     const isCurrentlyEditing = document.querySelector('.annotation-comment.editing');
     if (!isCurrentlyEditing) {

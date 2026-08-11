@@ -14,14 +14,13 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { randomUUID } from 'crypto';
 import chalk from 'chalk';
 import {
   isAllowedBrowserOrigin,
-  isValidAnnotationId,
   localRequestBoundary,
   mcpTransportSecurity
 } from './security.js';
+import { isValidAnnotationId } from './annotation-id.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
 import { PersistentWatchQueue, toReadAnnotation, toWatchAnnotation } from './watch-queue.js';
 import {

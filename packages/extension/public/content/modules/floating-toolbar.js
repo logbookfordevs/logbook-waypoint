@@ -2,7 +2,7 @@
 // Draggable, collapsible, position persisted to storage
 // Settings dropdown with theme toggle, MCP status, clear-on-copy
 
-var VibeToolbar = (() => {
+var WaypointToolbar = (() => {
   let toolbarEl = null;
   let settingsDropdown = null;
   let activeRecordingCleanup = null;
@@ -63,15 +63,15 @@ var VibeToolbar = (() => {
   const THEME_CYCLE = ['light', 'dark', 'system'];
 
   async function init() {
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
-    isCollapsed = await VibeAPI.getToolbarCollapsed();
-    clearOnCopy = await VibeAPI.getClearOnCopy();
-    screenshotEnabled = await VibeAPI.getScreenshotEnabled();
-    badgeColor = await VibeAPI.getBadgeColor();
+    isCollapsed = await WaypointAPI.getToolbarCollapsed();
+    clearOnCopy = await WaypointAPI.getClearOnCopy();
+    screenshotEnabled = await WaypointAPI.getScreenshotEnabled();
+    badgeColor = await WaypointAPI.getBadgeColor();
     applyBadgeColor(badgeColor);
-    customShortcut = await VibeAPI.getCustomShortcut();
+    customShortcut = await WaypointAPI.getCustomShortcut();
     if (customShortcut) shortcutHint = formatShortcut(customShortcut);
     await refreshServerStatus();
 
@@ -79,14 +79,14 @@ var VibeToolbar = (() => {
     await restorePosition();
 
     // Listen for events
-    VibeEvents.on('inspection:started', () => { isAnnotating = true; updateUI(); });
-    VibeEvents.on('inspection:stopped', () => { isAnnotating = false; updateUI(); });
-    VibeEvents.on('badges:rendered', ({ total, styleCount }) => {
+    WaypointEvents.on('inspection:started', () => { isAnnotating = true; updateUI(); });
+    WaypointEvents.on('inspection:stopped', () => { isAnnotating = false; updateUI(); });
+    WaypointEvents.on('badges:rendered', ({ total, styleCount }) => {
       styleAnnotationCount = styleCount || 0;
       annotationCount = Math.max(0, (total || 0) - styleAnnotationCount);
       updateUI();
     });
-    VibeEvents.on('annotations:cleared', () => { annotationCount = 0; styleAnnotationCount = 0; updateUI(); });
+    WaypointEvents.on('annotations:cleared', () => { annotationCount = 0; styleAnnotationCount = 0; updateUI(); });
 
     // Periodic server status check
     setInterval(refreshServerStatus, 10000);
@@ -97,32 +97,32 @@ var VibeToolbar = (() => {
     ICONS.logo = `<img src="${logoUrl}" style="pointer-events:none;">`;
 
     toolbarEl = document.createElement('div');
-    toolbarEl.className = 'vibe-toolbar' + (isCollapsed ? ' collapsed' : '');
+    toolbarEl.className = 'waypoint-toolbar' + (isCollapsed ? ' collapsed' : '');
 
     toolbarEl.innerHTML = `
-      <button class="vibe-toolbar-btn vibe-tb-collapse" title="${isCollapsed ? 'Expand' : 'Collapse'}">
+      <button class="waypoint-toolbar-btn waypoint-tb-collapse" title="${isCollapsed ? 'Expand' : 'Collapse'}">
         ${isCollapsed ? ICONS.logo : ICONS.collapse}
-        <span class="vibe-toolbar-tip">${isCollapsed ? 'Expand' : 'Collapse'}</span>
+        <span class="waypoint-toolbar-tip">${isCollapsed ? 'Expand' : 'Collapse'}</span>
       </button>
-      <div class="vibe-toolbar-inner">
+      <div class="waypoint-toolbar-inner">
         <span class="waypoint-pet-slot" data-waypoint-pet-slot aria-hidden="true"></span>
-        <div class="vibe-toolbar-divider"></div>
-        <button class="vibe-toolbar-btn vibe-tb-annotate" title="Annotate (${shortcutHint})">
+        <div class="waypoint-toolbar-divider"></div>
+        <button class="waypoint-toolbar-btn waypoint-tb-annotate" title="Annotate (${shortcutHint})">
           ${ICONS.annotate}
-          <span class="vibe-toolbar-tip">Annotate</span>
+          <span class="waypoint-toolbar-tip">Annotate</span>
         </button>
-        <button class="vibe-toolbar-btn vibe-tb-copy" title="Copy all annotations" disabled>
+        <button class="waypoint-toolbar-btn waypoint-tb-copy" title="Copy all annotations" disabled>
           ${ICONS.copy}
-          <span class="vibe-toolbar-tip">Copy all</span>
+          <span class="waypoint-toolbar-tip">Copy all</span>
         </button>
-        <button class="vibe-toolbar-btn vibe-tb-delete" title="Delete all annotations" disabled>
+        <button class="waypoint-toolbar-btn waypoint-tb-delete" title="Delete all annotations" disabled>
           ${ICONS.trash}
-          <span class="vibe-toolbar-tip">Delete all</span>
+          <span class="waypoint-toolbar-tip">Delete all</span>
         </button>
-        <div class="vibe-toolbar-drag-handle" title="Drag to move"></div>
-        <button class="vibe-toolbar-btn vibe-tb-settings" title="Settings">
+        <div class="waypoint-toolbar-drag-handle" title="Drag to move"></div>
+        <button class="waypoint-toolbar-btn waypoint-tb-settings" title="Settings">
           ${ICONS.settings}
-          <span class="vibe-toolbar-tip">Settings</span>
+          <span class="waypoint-toolbar-tip">Settings</span>
         </button>
       </div>
     `;
@@ -135,20 +135,20 @@ var VibeToolbar = (() => {
 
   function wireButtons() {
     // Collapse/expand
-    toolbarEl.querySelector('.vibe-tb-collapse').addEventListener('click', toggleCollapse);
+    toolbarEl.querySelector('.waypoint-tb-collapse').addEventListener('click', toggleCollapse);
 
     // Annotate toggle
-    toolbarEl.querySelector('.vibe-tb-annotate').addEventListener('click', () => {
+    toolbarEl.querySelector('.waypoint-tb-annotate').addEventListener('click', () => {
       if (isAnnotating) {
-        VibeEvents.emit('inspection:stop');
+        WaypointEvents.emit('inspection:stop');
       } else {
-        VibeEvents.emit('inspection:start');
+        WaypointEvents.emit('inspection:start');
       }
     });
 
     // Copy all
-    toolbarEl.querySelector('.vibe-tb-copy').addEventListener('click', async () => {
-      const annotations = await VibeAPI.loadAnnotations();
+    toolbarEl.querySelector('.waypoint-tb-copy').addEventListener('click', async () => {
+      const annotations = await WaypointAPI.loadAnnotations();
       if (!annotations.length) return;
       const text = formatAnnotationsForClipboard(annotations);
       try {
@@ -169,31 +169,31 @@ var VibeToolbar = (() => {
         // Reset count immediately so UI stays consistent
         annotationCount = 0;
         styleAnnotationCount = 0;
-        VibeEvents.emit('annotations:cleared', { count: annotations.length });
-        await VibeAPI.deleteAnnotationsByUrl();
+        WaypointEvents.emit('annotations:cleared', { count: annotations.length });
+        await WaypointAPI.deleteAnnotationsByUrl();
       }
     });
 
     // Delete all
-    toolbarEl.querySelector('.vibe-tb-delete').addEventListener('click', async () => {
-      const root = VibeShadowHost.getRoot();
+    toolbarEl.querySelector('.waypoint-tb-delete').addEventListener('click', async () => {
+      const root = WaypointShadowHost.getRoot();
       if (!root) return;
 
-      const skip = await VibeAPI.getSkipDeleteConfirm();
+      const skip = await WaypointAPI.getSkipDeleteConfirm();
       if (!skip) {
         const confirmed = await showDeleteConfirm(root);
         if (!confirmed) return;
       }
 
-      const annotations = await VibeAPI.loadAnnotations();
+      const annotations = await WaypointAPI.loadAnnotations();
       annotationCount = 0;
       styleAnnotationCount = 0;
-      VibeEvents.emit('annotations:cleared', { count: annotations.length });
-      await VibeAPI.deleteAnnotationsByUrl();
+      WaypointEvents.emit('annotations:cleared', { count: annotations.length });
+      await WaypointAPI.deleteAnnotationsByUrl();
     });
 
     // Settings
-    toolbarEl.querySelector('.vibe-tb-settings').addEventListener('click', (e) => {
+    toolbarEl.querySelector('.waypoint-tb-settings').addEventListener('click', (e) => {
       e.stopPropagation();
       toggleSettings();
     });
@@ -213,89 +213,89 @@ var VibeToolbar = (() => {
     closeSettings();
 
     const version = chrome.runtime.getManifest().version;
-    const currentTheme = VibeThemeManager.getPreference();
+    const currentTheme = WaypointThemeManager.getPreference();
     const themeIcon = THEME_ICONS[currentTheme] || THEME_ICONS.system;
     const route = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
     settingsDropdown = document.createElement('div');
     const rect = toolbarEl.getBoundingClientRect();
     const inLowerHalf = rect.top > window.innerHeight / 2;
-    settingsDropdown.className = 'vibe-settings-dropdown' + (inLowerHalf ? ' above' : '');
+    settingsDropdown.className = 'waypoint-settings-dropdown' + (inLowerHalf ? ' above' : '');
 
     settingsDropdown.innerHTML = `
-      <div class="vibe-settings-header">
+      <div class="waypoint-settings-header">
         <div>
-          <span class="vibe-settings-title">${escapeHTML(route)}</span>
-          <a href="https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v${escapeHTML(version)}" target="_blank" rel="noopener" class="vibe-settings-version">v${escapeHTML(version)}</a>
+          <span class="waypoint-settings-title">${escapeHTML(route)}</span>
+          <a href="https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v${escapeHTML(version)}" target="_blank" rel="noopener" class="waypoint-settings-version">v${escapeHTML(version)}</a>
         </div>
-        <div class="vibe-settings-header-right">
-          <button class="vibe-theme-btn" title="${capitalize(currentTheme)} theme">
+        <div class="waypoint-settings-header-right">
+          <button class="waypoint-theme-btn" title="${capitalize(currentTheme)} theme">
             ${themeIcon}
           </button>
         </div>
       </div>
-      <div class="vibe-settings-body">
-        <button class="vibe-settings-link vibe-get-started-btn" type="button">
+      <div class="waypoint-settings-body">
+        <button class="waypoint-settings-link waypoint-get-started-btn" type="button">
           ${ICONS.book}
           <span>Documentation</span>
           <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
         </button>
-        <div class="vibe-settings-separator"></div>
-        <div class="vibe-settings-item">
-          <div class="vibe-settings-item-left">
+        <div class="waypoint-settings-separator"></div>
+        <div class="waypoint-settings-item">
+          <div class="waypoint-settings-item-left">
             ${ICONS.server}
             <span>MCP Server</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <span class="vibe-status-dot ${serverOnline ? 'online' : 'offline'}"></span>
-            <span class="vibe-server-status-text" style="font-size:12px;color:var(--v-text-secondary);">${escapeHTML(serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline'))}</span>
+            <span class="waypoint-status-dot ${serverOnline ? 'online' : 'offline'}"></span>
+            <span class="waypoint-server-status-text" style="font-size:12px;color:var(--v-text-secondary);">${escapeHTML(serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline'))}</span>
           </div>
         </div>
-        <div class="vibe-settings-separator"></div>
-        <div class="vibe-settings-item">
-          <div class="vibe-settings-item-left">
+        <div class="waypoint-settings-separator"></div>
+        <div class="waypoint-settings-item">
+          <div class="waypoint-settings-item-left">
             ${ICONS.palette}
             <span>Pin color</span>
           </div>
-          <div class="vibe-color-picker" style="display:flex;gap:6px;">
-            ${BADGE_COLORS.map(c => `<button class="vibe-color-dot${c === badgeColor ? ' active' : ''}" data-color="${c}" style="background:${c};" type="button"></button>`).join('')}
+          <div class="waypoint-color-picker" style="display:flex;gap:6px;">
+            ${BADGE_COLORS.map(c => `<button class="waypoint-color-dot${c === badgeColor ? ' active' : ''}" data-color="${c}" style="background:${c};" type="button"></button>`).join('')}
           </div>
         </div>
-        <div class="vibe-settings-item">
-          <div class="vibe-settings-item-left">
+        <div class="waypoint-settings-item">
+          <div class="waypoint-settings-item-left">
             ${ICONS.copy}
             <span>Clear after copy</span>
           </div>
-          <button class="vibe-toggle vibe-clear-on-copy-toggle ${clearOnCopy ? 'on' : ''}" type="button"></button>
+          <button class="waypoint-toggle waypoint-clear-on-copy-toggle ${clearOnCopy ? 'on' : ''}" type="button"></button>
         </div>
-        <div class="vibe-settings-item">
-          <div class="vibe-settings-item-left">
+        <div class="waypoint-settings-item">
+          <div class="waypoint-settings-item-left">
             ${ICONS.camera}
             <div>
               <span>Screenshots</span>
               <div style="font-size:11px;color:var(--v-text-secondary);margin-top:1px;">Only used via MCP server, not clipboard</div>
             </div>
           </div>
-          <button class="vibe-toggle vibe-screenshot-toggle ${screenshotEnabled ? 'on' : ''}" type="button"></button>
+          <button class="waypoint-toggle waypoint-screenshot-toggle ${screenshotEnabled ? 'on' : ''}" type="button"></button>
         </div>
-        <div class="vibe-settings-item">
-          <div class="vibe-settings-item-left">
+        <div class="waypoint-settings-item">
+          <div class="waypoint-settings-item-left">
             ${ICONS.keyboard}
             <span>Trigger hotkey</span>
           </div>
-          <button class="vibe-shortcut-btn" type="button">${escapeHTML(shortcutHint)}</button>
+          <button class="waypoint-shortcut-btn" type="button">${escapeHTML(shortcutHint)}</button>
         </div>
-        <div class="vibe-settings-separator"></div>
-        <button class="vibe-settings-link vibe-export-btn" type="button">
+        <div class="waypoint-settings-separator"></div>
+        <button class="waypoint-settings-link waypoint-export-btn" type="button">
           ${ICONS.upload}
           <span>Export annotations</span>
         </button>
-        <button class="vibe-settings-link vibe-import-btn" type="button">
+        <button class="waypoint-settings-link waypoint-import-btn" type="button">
           ${ICONS.download}
           <span>Import annotations</span>
         </button>
-        <div class="vibe-settings-separator"></div>
-        <button class="vibe-settings-link vibe-close-overlay" type="button">
+        <div class="waypoint-settings-separator"></div>
+        <button class="waypoint-settings-link waypoint-close-overlay" type="button">
           ${ICONS.power}
           <span>Close Logbook Waypoint</span>
         </button>
@@ -305,34 +305,34 @@ var VibeToolbar = (() => {
     toolbarEl.appendChild(settingsDropdown);
 
     // Theme toggle
-    settingsDropdown.querySelector('.vibe-theme-btn').addEventListener('click', () => {
-      const current = VibeThemeManager.getPreference();
+    settingsDropdown.querySelector('.waypoint-theme-btn').addEventListener('click', () => {
+      const current = WaypointThemeManager.getPreference();
       const idx = THEME_CYCLE.indexOf(current);
       const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length];
-      VibeThemeManager.setPreference(next);
+      WaypointThemeManager.setPreference(next);
 
       // Update icon
-      const btn = settingsDropdown.querySelector('.vibe-theme-btn');
+      const btn = settingsDropdown.querySelector('.waypoint-theme-btn');
       btn.innerHTML = THEME_ICONS[next];
       btn.title = `${capitalize(next)} theme`;
     });
 
     // Clear on copy toggle
-    settingsDropdown.querySelector('.vibe-clear-on-copy-toggle').addEventListener('click', async (e) => {
+    settingsDropdown.querySelector('.waypoint-clear-on-copy-toggle').addEventListener('click', async (e) => {
       clearOnCopy = !clearOnCopy;
       e.currentTarget.classList.toggle('on', clearOnCopy);
-      await VibeAPI.saveClearOnCopy(clearOnCopy);
+      await WaypointAPI.saveClearOnCopy(clearOnCopy);
     });
 
     // Screenshot toggle
-    settingsDropdown.querySelector('.vibe-screenshot-toggle').addEventListener('click', async (e) => {
+    settingsDropdown.querySelector('.waypoint-screenshot-toggle').addEventListener('click', async (e) => {
       screenshotEnabled = !screenshotEnabled;
       e.currentTarget.classList.toggle('on', screenshotEnabled);
-      await VibeAPI.saveScreenshotEnabled(screenshotEnabled);
+      await WaypointAPI.saveScreenshotEnabled(screenshotEnabled);
     });
 
     // Shortcut key recorder
-    const shortcutBtn = settingsDropdown.querySelector('.vibe-shortcut-btn');
+    const shortcutBtn = settingsDropdown.querySelector('.waypoint-shortcut-btn');
     let recording = false;
     shortcutBtn.addEventListener('click', () => {
       if (recording) {
@@ -367,7 +367,7 @@ var VibeToolbar = (() => {
         recording = false;
         document.removeEventListener('keydown', onKey, true);
         activeRecordingCleanup = null;
-        VibeAPI.saveCustomShortcut(sc);
+        WaypointAPI.saveCustomShortcut(sc);
       }
 
       document.addEventListener('keydown', onKey, true);
@@ -375,38 +375,38 @@ var VibeToolbar = (() => {
     });
 
     // Badge color picker
-    settingsDropdown.querySelectorAll('.vibe-color-dot').forEach(dot => {
+    settingsDropdown.querySelectorAll('.waypoint-color-dot').forEach(dot => {
       dot.addEventListener('click', async () => {
         badgeColor = dot.dataset.color;
-        settingsDropdown.querySelectorAll('.vibe-color-dot').forEach(d => d.classList.remove('active'));
+        settingsDropdown.querySelectorAll('.waypoint-color-dot').forEach(d => d.classList.remove('active'));
         dot.classList.add('active');
         applyBadgeColor(badgeColor);
-        await VibeAPI.saveBadgeColor(badgeColor);
+        await WaypointAPI.saveBadgeColor(badgeColor);
       });
     });
 
     // Documentation
-    settingsDropdown.querySelector('.vibe-get-started-btn').addEventListener('click', () => {
+    settingsDropdown.querySelector('.waypoint-get-started-btn').addEventListener('click', () => {
       showDocumentation();
     });
 
     // Export
-    settingsDropdown.querySelector('.vibe-export-btn').addEventListener('click', () => {
+    settingsDropdown.querySelector('.waypoint-export-btn').addEventListener('click', () => {
       closeSettings();
       showExportModal();
     });
 
     // Import
-    settingsDropdown.querySelector('.vibe-import-btn').addEventListener('click', () => {
+    settingsDropdown.querySelector('.waypoint-import-btn').addEventListener('click', () => {
       closeSettings();
       triggerImport();
     });
 
     // Close overlay — strip all visual changes from page
-    settingsDropdown.querySelector('.vibe-close-overlay').addEventListener('click', () => {
+    settingsDropdown.querySelector('.waypoint-close-overlay').addEventListener('click', () => {
       closeSettings();
-      VibeEvents.emit('overlay:closed');
-      VibeShadowHost.hide();
+      WaypointEvents.emit('overlay:closed');
+      WaypointShadowHost.hide();
     });
 
     // Prevent clicks inside dropdown from triggering outside-click close
@@ -422,15 +422,15 @@ var VibeToolbar = (() => {
 
   function showDocumentation() {
     if (!settingsDropdown) return;
-    const header = settingsDropdown.querySelector('.vibe-settings-header');
-    const body = settingsDropdown.querySelector('.vibe-settings-body');
+    const header = settingsDropdown.querySelector('.waypoint-settings-header');
+    const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
 
     const version = chrome.runtime.getManifest().version;
 
     // Replace header with back navigation
     header.innerHTML = `
-      <button class="vibe-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--v-text-secondary);font-family:var(--v-font);font-size:13px;padding:0;">
+      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--v-text-secondary);font-family:var(--v-font);font-size:13px;padding:0;">
         ${ICONS.back}
         <span style="color:var(--v-text-primary);font-weight:600;">Documentation</span>
       </button>
@@ -438,61 +438,61 @@ var VibeToolbar = (() => {
 
     // Replace body with documentation links
     body.innerHTML = `
-      <button class="vibe-settings-link vibe-get-started-guide-btn" type="button">
+      <button class="waypoint-settings-link waypoint-get-started-guide-btn" type="button">
         ${ICONS.rocket}
         <span>Get started</span>
         <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
       </button>
-      <div class="vibe-settings-separator"></div>
-      <button class="vibe-settings-link vibe-workflow-btn" data-workflow="single-page" type="button">
+      <div class="waypoint-settings-separator"></div>
+      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="single-page" type="button">
         ${ICONS.webpage}
         <span>Editing a single page</span>
         <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
       </button>
-      <button class="vibe-settings-link vibe-workflow-btn" data-workflow="multi-page" type="button">
+      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="multi-page" type="button">
         ${ICONS.globe}
         <span>Editing multiple pages</span>
         <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
       </button>
-      <button class="vibe-settings-link vibe-workflow-btn" data-workflow="collaborate" type="button">
+      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="collaborate" type="button">
         ${ICONS.users}
         <span>Collaborating</span>
         <span style="margin-left:auto;color:var(--v-text-secondary);">${ICONS.chevronRight}</span>
       </button>
-      <div class="vibe-settings-separator"></div>
-      <a href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noopener" class="vibe-settings-link">
+      <div class="waypoint-settings-separator"></div>
+      <a href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noopener" class="waypoint-settings-link">
         ${ICONS.github}
         <span>Contribute to Logbook Waypoint</span>
       </a>
-      <a href="https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v${escapeHTML(version)}" target="_blank" rel="noopener" class="vibe-settings-link">
+      <a href="https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v${escapeHTML(version)}" target="_blank" rel="noopener" class="waypoint-settings-link">
         ${ICONS.newspaper}
         <span>Release notes</span>
       </a>
     `;
 
     // Back button — restores full settings
-    header.querySelector('.vibe-guide-back-btn').addEventListener('click', () => {
+    header.querySelector('.waypoint-guide-back-btn').addEventListener('click', () => {
       closeSettings();
       openSettings();
     });
 
     // Get started guide
-    body.querySelector('.vibe-get-started-guide-btn').addEventListener('click', () => showGetStartedGuide());
+    body.querySelector('.waypoint-get-started-guide-btn').addEventListener('click', () => showGetStartedGuide());
 
     // Workflow navigation buttons
-    body.querySelectorAll('.vibe-workflow-btn').forEach(btn => {
+    body.querySelectorAll('.waypoint-workflow-btn').forEach(btn => {
       btn.addEventListener('click', () => showWorkflow(btn.dataset.workflow));
     });
   }
 
   function showGetStartedGuide() {
     if (!settingsDropdown) return;
-    const header = settingsDropdown.querySelector('.vibe-settings-header');
-    const body = settingsDropdown.querySelector('.vibe-settings-body');
+    const header = settingsDropdown.querySelector('.waypoint-settings-header');
+    const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
 
     header.innerHTML = `
-      <button class="vibe-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--v-text-secondary);font-family:var(--v-font);font-size:13px;padding:0;">
+      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--v-text-secondary);font-family:var(--v-font);font-size:13px;padding:0;">
         ${ICONS.back}
         <span style="color:var(--v-text-primary);font-weight:600;">Get started</span>
       </button>
@@ -500,76 +500,76 @@ var VibeToolbar = (() => {
 
     const agentSetup = globalThis.WaypointAgentSetup;
     body.innerHTML = `
-      <div class="vibe-guide">
-        <div class="vibe-guide-section">
-          <div class="vibe-guide-label">1. Start annotating</div>
-          <p class="vibe-guide-text">Click the <strong>pencil button</strong> or your configured hotkey to enter inspection mode. Click any element to add a comment or modify its design.</p>
+      <div class="waypoint-guide">
+        <div class="waypoint-guide-section">
+          <div class="waypoint-guide-label">1. Start annotating</div>
+          <p class="waypoint-guide-text">Click the <strong>pencil button</strong> or your configured hotkey to enter inspection mode. Click any element to add a comment or modify its design.</p>
         </div>
 
-        <div class="vibe-guide-section">
-          <div class="vibe-guide-label">2. Send to your agent</div>
-          <p class="vibe-guide-text">Hit <strong>Copy</strong> in the toolbar and paste into any AI chat, or <strong>Export</strong> to share a file. No server needed.</p>
+        <div class="waypoint-guide-section">
+          <div class="waypoint-guide-label">2. Send to your agent</div>
+          <p class="waypoint-guide-text">Hit <strong>Copy</strong> in the toolbar and paste into any AI chat, or <strong>Export</strong> to share a file. No server needed.</p>
         </div>
 
-        <div class="vibe-guide-section">
-          <div class="vibe-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--v-text-secondary);">(optional)</span></div>
-          <p class="vibe-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
-          <div class="vibe-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
+        <div class="waypoint-guide-section">
+          <div class="waypoint-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--v-text-secondary);">(optional)</span></div>
+          <p class="waypoint-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
+          <div class="waypoint-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
             <code>pnpm add --global @logbookfordevs/waypoint</code>
-            <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+            <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <div class="vibe-guide-cmd" data-cmd="waypoint start">
+          <div class="waypoint-guide-cmd" data-cmd="waypoint start">
             <code>waypoint start</code>
-            <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+            <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <p class="vibe-guide-text" style="margin-top:8px;">Then connect your agent:</p>
-          <div class="vibe-guide-tabs">
-            <button class="vibe-guide-tab active" data-tab="claude">Claude Code</button>
-            <button class="vibe-guide-tab" data-tab="cursor">Cursor</button>
-            <button class="vibe-guide-tab" data-tab="windsurf">Windsurf</button>
-            <button class="vibe-guide-tab" data-tab="codex">Codex</button>
-            <button class="vibe-guide-tab" data-tab="pi">Pi</button>
-            <button class="vibe-guide-tab" data-tab="opencode">OpenCode</button>
+          <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent:</p>
+          <div class="waypoint-guide-tabs">
+            <button class="waypoint-guide-tab active" data-tab="claude">Claude Code</button>
+            <button class="waypoint-guide-tab" data-tab="cursor">Cursor</button>
+            <button class="waypoint-guide-tab" data-tab="windsurf">Windsurf</button>
+            <button class="waypoint-guide-tab" data-tab="codex">Codex</button>
+            <button class="waypoint-guide-tab" data-tab="pi">Pi</button>
+            <button class="waypoint-guide-tab" data-tab="opencode">OpenCode</button>
           </div>
-          <div class="vibe-guide-panel active" data-panel="claude">
-            <div class="vibe-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
+          <div class="waypoint-guide-panel active" data-panel="claude">
+            <div class="waypoint-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
               <code>claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
-          <div class="vibe-guide-panel" data-panel="cursor">
-            <p class="vibe-guide-text">Add to <strong>.cursor/mcp.json</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}'>
+          <div class="waypoint-guide-panel" data-panel="cursor">
+            <p class="waypoint-guide-text">Add to <strong>.cursor/mcp.json</strong>:</p>
+            <div class="waypoint-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}'>
               <code>{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
-          <div class="vibe-guide-panel" data-panel="windsurf">
-            <p class="vibe-guide-text">Add to Windsurf MCP settings:</p>
-            <div class="vibe-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}'>
+          <div class="waypoint-guide-panel" data-panel="windsurf">
+            <p class="waypoint-guide-text">Add to Windsurf MCP settings:</p>
+            <div class="waypoint-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}'>
               <code>{"mcpServers":{"logbook-waypoint":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
-          <div class="vibe-guide-panel" data-panel="codex">
-            <p class="vibe-guide-text">${agentSetup.codex.introduction} <strong>${agentSetup.codex.path}</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.codex.command)}">
+          <div class="waypoint-guide-panel" data-panel="codex">
+            <p class="waypoint-guide-text">${agentSetup.codex.introduction} <strong>${agentSetup.codex.path}</strong>:</p>
+            <div class="waypoint-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.codex.command)}">
               <code>${agentSetup.codex.display}</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
-          <div class="vibe-guide-panel" data-panel="pi">
-            <p class="vibe-guide-text">${agentSetup.pi.introduction} <strong>${agentSetup.pi.path}</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.pi.command)}">
+          <div class="waypoint-guide-panel" data-panel="pi">
+            <p class="waypoint-guide-text">${agentSetup.pi.introduction} <strong>${agentSetup.pi.path}</strong>:</p>
+            <div class="waypoint-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.pi.command)}">
               <code>${agentSetup.pi.display}</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
-          <div class="vibe-guide-panel" data-panel="opencode">
-            <p class="vibe-guide-text">${agentSetup.opencode.introduction} <strong>${agentSetup.opencode.path}</strong>:</p>
-            <div class="vibe-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.opencode.command)}">
+          <div class="waypoint-guide-panel" data-panel="opencode">
+            <p class="waypoint-guide-text">${agentSetup.opencode.introduction} <strong>${agentSetup.opencode.path}</strong>:</p>
+            <div class="waypoint-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.opencode.command)}">
               <code>${agentSetup.opencode.display}</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
         </div>
@@ -577,22 +577,22 @@ var VibeToolbar = (() => {
     `;
 
     // Back → return to Documentation
-    header.querySelector('.vibe-guide-back-btn').addEventListener('click', () => showDocumentation());
+    header.querySelector('.waypoint-guide-back-btn').addEventListener('click', () => showDocumentation());
 
     // Tab switching
-    body.querySelectorAll('.vibe-guide-tab').forEach(tab => {
+    body.querySelectorAll('.waypoint-guide-tab').forEach(tab => {
       tab.addEventListener('click', () => {
-        body.querySelectorAll('.vibe-guide-tab').forEach(t => t.classList.remove('active'));
-        body.querySelectorAll('.vibe-guide-panel').forEach(p => p.classList.remove('active'));
+        body.querySelectorAll('.waypoint-guide-tab').forEach(t => t.classList.remove('active'));
+        body.querySelectorAll('.waypoint-guide-panel').forEach(p => p.classList.remove('active'));
         tab.classList.add('active');
         body.querySelector(`[data-panel="${tab.dataset.tab}"]`).classList.add('active');
       });
     });
 
     // Copy buttons
-    body.querySelectorAll('.vibe-guide-copy').forEach(btn => {
+    body.querySelectorAll('.waypoint-guide-copy').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const encodedCommand = btn.closest('.vibe-guide-cmd').dataset.cmd;
+        const encodedCommand = btn.closest('.waypoint-guide-cmd').dataset.cmd;
         const cmd = encodedCommand.includes('%') ? decodeURIComponent(encodedCommand) : encodedCommand;
         await navigator.clipboard.writeText(cmd);
         btn.innerHTML = ICONS.check;
@@ -603,79 +603,79 @@ var VibeToolbar = (() => {
 
   function showWorkflow(type) {
     if (!settingsDropdown) return;
-    const header = settingsDropdown.querySelector('.vibe-settings-header');
-    const body = settingsDropdown.querySelector('.vibe-settings-body');
+    const header = settingsDropdown.querySelector('.waypoint-settings-header');
+    const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
 
     const workflows = {
       'single-page': {
         title: 'Editing a single page',
         content: `
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Best for quick edits</div>
-            <p class="vibe-guide-text">For a few annotations on one page, <strong>copy & paste</strong> is the fastest option. No server, no setup.</p>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Best for quick edits</div>
+            <p class="waypoint-guide-text">For a few annotations on one page, <strong>copy & paste</strong> is the fastest option. No server, no setup.</p>
           </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Workflow</div>
-            <p class="vibe-guide-text">1. Annotate elements on the page (comments, CSS tweaks, text changes)</p>
-            <p class="vibe-guide-text">2. Click <strong>Copy</strong> in the toolbar</p>
-            <p class="vibe-guide-text">3. Paste into any AI chat (Claude, ChatGPT, Cursor...) and ask the agent to implement the changes</p>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Workflow</div>
+            <p class="waypoint-guide-text">1. Annotate elements on the page (comments, CSS tweaks, text changes)</p>
+            <p class="waypoint-guide-text">2. Click <strong>Copy</strong> in the toolbar</p>
+            <p class="waypoint-guide-text">3. Paste into any AI chat (Claude, ChatGPT, Cursor...) and ask the agent to implement the changes</p>
           </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Tips</div>
-            <p class="vibe-guide-text">Enable <strong>Clear on copy</strong> in settings to auto-delete annotations after copying. Keeps things clean between iterations.</p>
-            <p class="vibe-guide-text">Each annotation includes the selector, your comment, element context, and any pending changes. The agent gets everything it needs to locate and edit the right code.</p>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Tips</div>
+            <p class="waypoint-guide-text">Enable <strong>Clear on copy</strong> in settings to auto-delete annotations after copying. Keeps things clean between iterations.</p>
+            <p class="waypoint-guide-text">Each annotation includes the selector, your comment, element context, and any pending changes. The agent gets everything it needs to locate and edit the right code.</p>
           </div>
         `
       },
       'multi-page': {
         title: 'Editing multiple pages',
         content: `
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Best for cross-page changes</div>
-            <p class="vibe-guide-text">When you're annotating across multiple routes, the <strong>MCP server</strong> is preferable. Your coding agent can read and resolve annotations from all pages at once, without manual copy-paste per route.</p>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Best for cross-page changes</div>
+            <p class="waypoint-guide-text">When you're annotating across multiple routes, the <strong>MCP server</strong> is preferable. Your coding agent can read and resolve annotations from all pages at once, without manual copy-paste per route.</p>
           </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Setup</div>
-            <div class="vibe-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Setup</div>
+            <div class="waypoint-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
               <code>pnpm add --global @logbookfordevs/waypoint</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <div class="vibe-guide-cmd" data-cmd="waypoint start">
+            <div class="waypoint-guide-cmd" data-cmd="waypoint start">
               <code>waypoint start</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <p class="vibe-guide-text" style="margin-top:8px;">Then connect your agent (e.g. Claude Code):</p>
-            <div class="vibe-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
+            <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent (e.g. Claude Code):</p>
+            <div class="waypoint-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
               <code>claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp</code>
-              <button class="vibe-guide-copy" type="button">${ICONS.clipboard}</button>
+              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Workflow</div>
-            <p class="vibe-guide-text">1. Navigate your app and annotate elements across as many routes as needed</p>
-            <p class="vibe-guide-text">2. Tell your agent: <em>"read Logbook Waypoint annotations and implement the changes"</em></p>
-            <p class="vibe-guide-text">3. The agent pulls all pending annotations via MCP, edits your source files, and deletes each one when done</p>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Workflow</div>
+            <p class="waypoint-guide-text">1. Navigate your app and annotate elements across as many routes as needed</p>
+            <p class="waypoint-guide-text">2. Tell your agent: <em>"read Logbook Waypoint annotations and implement the changes"</em></p>
+            <p class="waypoint-guide-text">3. The agent pulls all pending annotations via MCP, edits your source files, and deletes each one when done</p>
           </div>
         `
       },
       collaborate: {
         title: 'Collaborating with annotations',
         content: `
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Annotations as a feedback tool</div>
-            <p class="vibe-guide-text">Anyone can annotate a website: add comments, tweak styles, edit text. Then <strong>export</strong> the annotations as a .json file and share it with a teammate.</p>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Annotations as a feedback tool</div>
+            <p class="waypoint-guide-text">Anyone can annotate a website: add comments, tweak styles, edit text. Then <strong>export</strong> the annotations as a .json file and share it with a teammate.</p>
           </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Workflow</div>
-            <p class="vibe-guide-text">1. A reviewer annotates the live site (staging, production, or localhost)</p>
-            <p class="vibe-guide-text">2. They click <strong>Export</strong> and share the .json file (Slack, email, etc.)</p>
-            <p class="vibe-guide-text">3. A developer clicks <strong>Import</strong> on their localhost. Annotations, badges, and style previews appear instantly.</p>
-            <p class="vibe-guide-text">4. The developer copies or uses MCP to send the annotations to their coding agent</p>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Workflow</div>
+            <p class="waypoint-guide-text">1. A reviewer annotates the live site (staging, production, or localhost)</p>
+            <p class="waypoint-guide-text">2. They click <strong>Export</strong> and share the .json file (Slack, email, etc.)</p>
+            <p class="waypoint-guide-text">3. A developer clicks <strong>Import</strong> on their localhost. Annotations, badges, and style previews appear instantly.</p>
+            <p class="waypoint-guide-text">4. The developer copies or uses MCP to send the annotations to their coding agent</p>
           </div>
-          <div class="vibe-guide-section">
-            <div class="vibe-guide-label">Cross-origin remap</div>
-            <p class="vibe-guide-text">Importing annotations from a public URL into localhost? The extension offers to <strong>remap URLs</strong> automatically so annotations anchor to your local dev server.</p>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Cross-origin remap</div>
+            <p class="waypoint-guide-text">Importing annotations from a public URL into localhost? The extension offers to <strong>remap URLs</strong> automatically so annotations anchor to your local dev server.</p>
           </div>
         `
       }
@@ -685,21 +685,21 @@ var VibeToolbar = (() => {
     if (!wf) return;
 
     header.innerHTML = `
-      <button class="vibe-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--v-text-secondary);font-family:var(--v-font);font-size:13px;padding:0;">
+      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--v-text-secondary);font-family:var(--v-font);font-size:13px;padding:0;">
         ${ICONS.back}
         <span style="color:var(--v-text-primary);font-weight:600;">${wf.title}</span>
       </button>
     `;
 
-    body.innerHTML = `<div class="vibe-guide">${wf.content}</div>`;
+    body.innerHTML = `<div class="waypoint-guide">${wf.content}</div>`;
 
     // Back → return to Documentation
-    header.querySelector('.vibe-guide-back-btn').addEventListener('click', () => showDocumentation());
+    header.querySelector('.waypoint-guide-back-btn').addEventListener('click', () => showDocumentation());
 
     // Copy buttons (for MCP workflow)
-    body.querySelectorAll('.vibe-guide-copy').forEach(btn => {
+    body.querySelectorAll('.waypoint-guide-copy').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const cmd = btn.closest('.vibe-guide-cmd').dataset.cmd;
+        const cmd = btn.closest('.waypoint-guide-cmd').dataset.cmd;
         await navigator.clipboard.writeText(cmd);
         btn.innerHTML = ICONS.check;
         setTimeout(() => { btn.innerHTML = ICONS.clipboard; }, 1500);
@@ -717,7 +717,7 @@ var VibeToolbar = (() => {
   }
 
   function onOutsideClick(e) {
-    if (settingsDropdown && !settingsDropdown.contains(e.target) && !e.target.closest('.vibe-tb-settings')) {
+    if (settingsDropdown && !settingsDropdown.contains(e.target) && !e.target.closest('.waypoint-tb-settings')) {
       closeSettings();
     }
   }
@@ -727,41 +727,41 @@ var VibeToolbar = (() => {
     toolbarEl.classList.toggle('collapsed', isCollapsed);
     closeSettings();
 
-    const btn = toolbarEl.querySelector('.vibe-tb-collapse');
+    const btn = toolbarEl.querySelector('.waypoint-tb-collapse');
     btn.innerHTML = (isCollapsed ? ICONS.logo : ICONS.collapse) +
-      `<span class="vibe-toolbar-tip">${isCollapsed ? 'Expand' : 'Collapse'}</span>`;
+      `<span class="waypoint-toolbar-tip">${isCollapsed ? 'Expand' : 'Collapse'}</span>`;
     btn.title = isCollapsed ? 'Expand' : 'Collapse';
 
-    VibeAPI.saveToolbarCollapsed(isCollapsed);
+    WaypointAPI.saveToolbarCollapsed(isCollapsed);
   }
 
   function updateUI() {
     if (!toolbarEl) return;
 
     // Annotate button active state
-    const annotateBtn = toolbarEl.querySelector('.vibe-tb-annotate');
+    const annotateBtn = toolbarEl.querySelector('.waypoint-tb-annotate');
     if (annotateBtn) {
       annotateBtn.classList.toggle('active', isAnnotating);
       annotateBtn.innerHTML = (isAnnotating ? ICONS.stop : ICONS.annotate) +
-        `<span class="vibe-toolbar-tip">${isAnnotating ? 'Stop' : 'Annotate'} (${shortcutHint})</span>`;
+        `<span class="waypoint-toolbar-tip">${isAnnotating ? 'Stop' : 'Annotate'} (${shortcutHint})</span>`;
     }
 
     // Enable/disable copy + delete, badge on copy
     const totalCount = annotationCount + styleAnnotationCount;
-    const copyBtn = toolbarEl.querySelector('.vibe-tb-copy');
-    const deleteBtn = toolbarEl.querySelector('.vibe-tb-delete');
+    const copyBtn = toolbarEl.querySelector('.waypoint-tb-copy');
+    const deleteBtn = toolbarEl.querySelector('.waypoint-tb-delete');
     if (copyBtn) {
       copyBtn.disabled = totalCount === 0;
       copyBtn.innerHTML = ICONS.copy +
-        (annotationCount > 0 ? `<span class="vibe-toolbar-count">${annotationCount}</span>` : '') +
-        (styleAnnotationCount > 0 ? `<span class="vibe-toolbar-style-count">${styleAnnotationCount}</span>` : '') +
-        '<span class="vibe-toolbar-tip">Copy all</span>';
+        (annotationCount > 0 ? `<span class="waypoint-toolbar-count">${annotationCount}</span>` : '') +
+        (styleAnnotationCount > 0 ? `<span class="waypoint-toolbar-style-count">${styleAnnotationCount}</span>` : '') +
+        '<span class="waypoint-toolbar-tip">Copy all</span>';
     }
     if (deleteBtn) deleteBtn.disabled = totalCount === 0;
   }
 
   async function refreshServerStatus() {
-    const status = await VibeAPI.checkServerStatus();
+    const status = await WaypointAPI.checkServerStatus();
     const changed = serverOnline !== status.connected || serverCompatibilityMessage !== status.compatibility_message;
     serverOnline = status.connected;
     serverCompatibilityMessage = status.compatibility_message || null;
@@ -769,16 +769,16 @@ var VibeToolbar = (() => {
       updateUI();
       // Update settings dropdown if open
       if (settingsDropdown) {
-        const dot = settingsDropdown.querySelector('.vibe-status-dot');
-        if (dot) dot.className = `vibe-status-dot ${serverOnline ? 'online' : 'offline'}`;
-        const text = settingsDropdown.querySelector('.vibe-server-status-text');
+        const dot = settingsDropdown.querySelector('.waypoint-status-dot');
+        if (dot) dot.className = `waypoint-status-dot ${serverOnline ? 'online' : 'offline'}`;
+        const text = settingsDropdown.querySelector('.waypoint-server-status-text');
         if (text) text.textContent = serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline');
       }
     }
   }
 
   function showCopyFeedback() {
-    const btn = toolbarEl.querySelector('.vibe-tb-copy');
+    const btn = toolbarEl.querySelector('.waypoint-tb-copy');
     if (!btn) return;
     btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
     setTimeout(() => { updateUI(); }, 1200);
@@ -793,7 +793,7 @@ var VibeToolbar = (() => {
     const DRAG_THRESHOLD = 4;
 
     toolbarEl.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.vibe-toolbar-btn') && !e.target.closest('.vibe-tb-collapse')) return;
+      if (e.target.closest('.waypoint-toolbar-btn') && !e.target.closest('.waypoint-tb-collapse')) return;
 
       isDragging = true;
       didDrag = false;
@@ -832,7 +832,7 @@ var VibeToolbar = (() => {
       toolbarEl.classList.remove('dragging');
 
       if (didDrag) {
-        VibeAPI.saveToolbarPosition({
+        WaypointAPI.saveToolbarPosition({
           right: toolbarEl.style.right,
           top: toolbarEl.style.top
         });
@@ -840,7 +840,7 @@ var VibeToolbar = (() => {
     });
 
     // Suppress click on collapse button if it was actually a drag
-    toolbarEl.querySelector('.vibe-tb-collapse').addEventListener('click', (e) => {
+    toolbarEl.querySelector('.waypoint-tb-collapse').addEventListener('click', (e) => {
       if (didDrag) {
         e.stopImmediatePropagation();
         didDrag = false;
@@ -849,7 +849,7 @@ var VibeToolbar = (() => {
   }
 
   async function restorePosition() {
-    const pos = await VibeAPI.getToolbarPosition();
+    const pos = await WaypointAPI.getToolbarPosition();
     if (pos && toolbarEl) {
       toolbarEl.style.right = pos.right;
       toolbarEl.style.top = pos.top;
@@ -861,28 +861,28 @@ var VibeToolbar = (() => {
   function showDeleteConfirm(root) {
     return new Promise(resolve => {
       const backdrop = document.createElement('div');
-      backdrop.className = 'vibe-confirm-backdrop';
+      backdrop.className = 'waypoint-confirm-backdrop';
       backdrop.innerHTML = `
-        <div class="vibe-confirm">
-          <div class="vibe-confirm-title">Delete all annotations?</div>
-          <div class="vibe-confirm-msg">All annotations on this page will be permanently deleted.</div>
-          <label class="vibe-confirm-skip" style="display:flex;align-items:center;gap:6px;margin:8px 0 4px;font-size:12px;color:var(--v-text-secondary,#6b7280);cursor:pointer;user-select:none;">
-            <input type="checkbox" class="vibe-confirm-skip-cb" style="margin:0;">
+        <div class="waypoint-confirm">
+          <div class="waypoint-confirm-title">Delete all annotations?</div>
+          <div class="waypoint-confirm-msg">All annotations on this page will be permanently deleted.</div>
+          <label class="waypoint-confirm-skip" style="display:flex;align-items:center;gap:6px;margin:8px 0 4px;font-size:12px;color:var(--v-text-secondary,#6b7280);cursor:pointer;user-select:none;">
+            <input type="checkbox" class="waypoint-confirm-skip-cb" style="margin:0;">
             Don't ask again
           </label>
-          <div class="vibe-confirm-actions">
-            <button class="vibe-btn vibe-btn-secondary vibe-confirm-no">Cancel</button>
-            <button class="vibe-btn vibe-btn-danger vibe-confirm-yes">Delete All</button>
+          <div class="waypoint-confirm-actions">
+            <button class="waypoint-btn waypoint-btn-secondary waypoint-confirm-no">Cancel</button>
+            <button class="waypoint-btn waypoint-btn-danger waypoint-confirm-yes">Delete All</button>
           </div>
         </div>
       `;
       root.appendChild(backdrop);
 
-      backdrop.querySelector('.vibe-confirm-no').addEventListener('click', () => { backdrop.remove(); resolve(false); });
-      backdrop.querySelector('.vibe-confirm-yes').addEventListener('click', () => {
-        const skipCb = backdrop.querySelector('.vibe-confirm-skip-cb');
+      backdrop.querySelector('.waypoint-confirm-no').addEventListener('click', () => { backdrop.remove(); resolve(false); });
+      backdrop.querySelector('.waypoint-confirm-yes').addEventListener('click', () => {
+        const skipCb = backdrop.querySelector('.waypoint-confirm-skip-cb');
         if (skipCb && skipCb.checked) {
-          VibeAPI.saveSkipDeleteConfirm(true);
+          WaypointAPI.saveSkipDeleteConfirm(true);
         }
         backdrop.remove();
         resolve(true);
@@ -894,31 +894,31 @@ var VibeToolbar = (() => {
   // --- Import / Export ---
 
   function showExportModal() {
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
     const backdrop = document.createElement('div');
-    backdrop.className = 'vibe-confirm-backdrop';
+    backdrop.className = 'waypoint-confirm-backdrop';
     backdrop.innerHTML = `
-      <div class="vibe-confirm">
-        <div class="vibe-confirm-title">Export annotations</div>
-        <div class="vibe-confirm-msg">Choose what to include in the export file.</div>
-        <div class="vibe-export-options">
-          <button class="vibe-export-option vibe-export-page" type="button">This page only</button>
-          <button class="vibe-export-option vibe-export-project" type="button">All from this site</button>
+      <div class="waypoint-confirm">
+        <div class="waypoint-confirm-title">Export annotations</div>
+        <div class="waypoint-confirm-msg">Choose what to include in the export file.</div>
+        <div class="waypoint-export-options">
+          <button class="waypoint-export-option waypoint-export-page" type="button">This page only</button>
+          <button class="waypoint-export-option waypoint-export-project" type="button">All from this site</button>
         </div>
-        <div class="vibe-confirm-actions" style="margin-top:12px;justify-content:flex-start;">
-          <button class="vibe-btn vibe-btn-secondary vibe-export-cancel">Cancel</button>
+        <div class="waypoint-confirm-actions" style="margin-top:12px;justify-content:flex-start;">
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-export-cancel">Cancel</button>
         </div>
       </div>
     `;
     root.appendChild(backdrop);
 
-    backdrop.querySelector('.vibe-export-cancel').addEventListener('click', () => backdrop.remove());
+    backdrop.querySelector('.waypoint-export-cancel').addEventListener('click', () => backdrop.remove());
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
 
-    backdrop.querySelector('.vibe-export-page').addEventListener('click', async () => {
-      const annotations = await VibeAPI.loadAnnotations();
+    backdrop.querySelector('.waypoint-export-page').addEventListener('click', async () => {
+      const annotations = await WaypointAPI.loadAnnotations();
       if (!annotations.length) {
         backdrop.remove();
         showInfoModal('Nothing to export', 'No annotations on this page.');
@@ -928,8 +928,8 @@ var VibeToolbar = (() => {
       backdrop.remove();
     });
 
-    backdrop.querySelector('.vibe-export-project').addEventListener('click', async () => {
-      const annotations = await VibeAPI.loadProjectAnnotations();
+    backdrop.querySelector('.waypoint-export-project').addEventListener('click', async () => {
+      const annotations = await WaypointAPI.loadProjectAnnotations();
       if (!annotations.length) {
         backdrop.remove();
         showInfoModal('Nothing to export', 'No annotations for this site.');
@@ -943,7 +943,7 @@ var VibeToolbar = (() => {
   function doExport(annotations, scope) {
     const loc = window.location;
     const exportData = {
-      vibe_annotations_export: true,
+      waypoint_annotations_export: true,
       version: '1.0',
       exported_at: new Date().toISOString(),
       source: {
@@ -1001,12 +1001,17 @@ var VibeToolbar = (() => {
   }
 
   async function processImport(data) {
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
     // Validate envelope
-    if (!data || data.vibe_annotations_export !== true || !Array.isArray(data.annotations)) {
+    if (!data || data.waypoint_annotations_export !== true || !Array.isArray(data.annotations)) {
       showInfoModal('Invalid format', 'This file is not a Logbook Waypoint export.');
+      return;
+    }
+
+    if (!data.annotations.every(annotation => WaypointAnnotationId.isValid(annotation?.id))) {
+      showInfoModal('Invalid format', 'This export contains a non-Waypoint annotation ID.');
       return;
     }
 
@@ -1036,7 +1041,7 @@ var VibeToolbar = (() => {
     }
 
     // Deduplicate against existing
-    const existing = await VibeAPI.loadProjectAnnotations();
+    const existing = await WaypointAPI.loadProjectAnnotations();
     const existingIds = new Set(existing.map(a => a.id));
     const newAnnotations = data.annotations.filter(a => !existingIds.has(a.id));
     const skipped = data.annotations.length - newAnnotations.length;
@@ -1062,22 +1067,22 @@ var VibeToolbar = (() => {
   function showImportConfirm(root, { total, newCount, skipped }) {
     return new Promise(resolve => {
       const backdrop = document.createElement('div');
-      backdrop.className = 'vibe-confirm-backdrop';
+      backdrop.className = 'waypoint-confirm-backdrop';
       const skipText = skipped > 0 ? `<br>${skipped} already exist and will be skipped.` : '';
       backdrop.innerHTML = `
-        <div class="vibe-confirm">
-          <div class="vibe-confirm-title">Import annotations</div>
-          <div class="vibe-confirm-msg">${newCount} annotation${newCount !== 1 ? 's' : ''} will be imported.${skipText}</div>
-          <div class="vibe-confirm-actions">
-            <button class="vibe-btn vibe-btn-secondary vibe-confirm-no">Cancel</button>
-            <button class="vibe-btn vibe-btn-primary vibe-confirm-yes">Import</button>
+        <div class="waypoint-confirm">
+          <div class="waypoint-confirm-title">Import annotations</div>
+          <div class="waypoint-confirm-msg">${newCount} annotation${newCount !== 1 ? 's' : ''} will be imported.${skipText}</div>
+          <div class="waypoint-confirm-actions">
+            <button class="waypoint-btn waypoint-btn-secondary waypoint-confirm-no">Cancel</button>
+            <button class="waypoint-btn waypoint-btn-primary waypoint-confirm-yes">Import</button>
           </div>
         </div>
       `;
       root.appendChild(backdrop);
 
-      backdrop.querySelector('.vibe-confirm-no').addEventListener('click', () => { backdrop.remove(); resolve(false); });
-      backdrop.querySelector('.vibe-confirm-yes').addEventListener('click', () => { backdrop.remove(); resolve(true); });
+      backdrop.querySelector('.waypoint-confirm-no').addEventListener('click', () => { backdrop.remove(); resolve(false); });
+      backdrop.querySelector('.waypoint-confirm-yes').addEventListener('click', () => { backdrop.remove(); resolve(true); });
       backdrop.addEventListener('click', (e) => { if (e.target === backdrop) { backdrop.remove(); resolve(false); } });
     });
   }
@@ -1091,49 +1096,49 @@ var VibeToolbar = (() => {
   function showRemapConfirm(root, sourceOrigin, currentOrigin) {
     return new Promise(resolve => {
       const backdrop = document.createElement('div');
-      backdrop.className = 'vibe-confirm-backdrop';
+      backdrop.className = 'waypoint-confirm-backdrop';
       backdrop.innerHTML = `
-        <div class="vibe-confirm">
-          <div class="vibe-confirm-title">Remap annotations?</div>
-          <div class="vibe-confirm-msg">
+        <div class="waypoint-confirm">
+          <div class="waypoint-confirm-title">Remap annotations?</div>
+          <div class="waypoint-confirm-msg">
             These annotations were exported from <strong>${escapeHTML(sourceOrigin)}</strong>.
             Remap URLs to <strong>${escapeHTML(currentOrigin)}</strong> for local development?
           </div>
           <div style="font-size:12px;color:var(--v-text-secondary);margin-top:8px;margin-bottom:4px;line-height:1.5;">
             Important: Annotations might not perfectly anchor or apply the styling changes if the selectors aren't identical.
           </div>
-          <div class="vibe-confirm-actions">
-            <button class="vibe-btn vibe-btn-secondary vibe-confirm-no">Cancel</button>
-            <button class="vibe-btn vibe-btn-primary vibe-confirm-yes">Remap & Import</button>
+          <div class="waypoint-confirm-actions">
+            <button class="waypoint-btn waypoint-btn-secondary waypoint-confirm-no">Cancel</button>
+            <button class="waypoint-btn waypoint-btn-primary waypoint-confirm-yes">Remap & Import</button>
           </div>
         </div>
       `;
       root.appendChild(backdrop);
 
-      backdrop.querySelector('.vibe-confirm-no').addEventListener('click', () => { backdrop.remove(); resolve(false); });
-      backdrop.querySelector('.vibe-confirm-yes').addEventListener('click', () => { backdrop.remove(); resolve(true); });
+      backdrop.querySelector('.waypoint-confirm-no').addEventListener('click', () => { backdrop.remove(); resolve(false); });
+      backdrop.querySelector('.waypoint-confirm-yes').addEventListener('click', () => { backdrop.remove(); resolve(true); });
       backdrop.addEventListener('click', (e) => { if (e.target === backdrop) { backdrop.remove(); resolve(false); } });
     });
   }
 
   function showInfoModal(title, message) {
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
     const backdrop = document.createElement('div');
-    backdrop.className = 'vibe-confirm-backdrop';
+    backdrop.className = 'waypoint-confirm-backdrop';
     backdrop.innerHTML = `
-      <div class="vibe-confirm">
-        <div class="vibe-confirm-title">${escapeHTML(title)}</div>
-        <div class="vibe-confirm-msg">${escapeHTML(message)}</div>
-        <div class="vibe-confirm-actions">
-          <button class="vibe-btn vibe-btn-secondary vibe-confirm-no">OK</button>
+      <div class="waypoint-confirm">
+        <div class="waypoint-confirm-title">${escapeHTML(title)}</div>
+        <div class="waypoint-confirm-msg">${escapeHTML(message)}</div>
+        <div class="waypoint-confirm-actions">
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-confirm-no">OK</button>
         </div>
       </div>
     `;
     root.appendChild(backdrop);
 
-    backdrop.querySelector('.vibe-confirm-no').addEventListener('click', () => backdrop.remove());
+    backdrop.querySelector('.waypoint-confirm-no').addEventListener('click', () => backdrop.remove());
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
   }
 
@@ -1295,7 +1300,7 @@ var VibeToolbar = (() => {
   }
 
   function applyBadgeColor(color) {
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (root) root.host.style.setProperty('--v-badge-bg', color);
   }
 

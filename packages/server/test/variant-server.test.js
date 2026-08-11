@@ -9,7 +9,7 @@ import { LocalAnnotationsServer } from '../lib/server.js';
 
 function createServer() {
   const server = new LocalAnnotationsServer();
-  let annotations = [{ id: 'vibe_1750000000000_abc123xyz', url: 'http://localhost:3000', comment: 'Compare', status: 'pending' }];
+  let annotations = [{ id: 'waypoint_1750000000000_abc123xyz', url: 'http://localhost:3000', comment: 'Compare', status: 'pending' }];
   server.loadAnnotations = async () => structuredClone(annotations);
   server.saveAnnotations = async next => { annotations = structuredClone(next); };
   server.applyAnnotationsUpdate = async mutator => {
@@ -43,24 +43,24 @@ const candidates = [
 test('server persists request, activation, reopen, discard, and finalization through the Variant seam', async () => {
   const { server, read } = createServer();
 
-  await server.requestVariants({ id: 'vibe_1750000000000_abc123xyz', variants: candidates });
-  await server.activateVariant({ id: 'vibe_1750000000000_abc123xyz', key: 'b' });
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+  await server.activateVariant({ id: 'waypoint_1750000000000_abc123xyz', key: 'b' });
   assert.equal(read()[0].variant_request.active_variant_key, 'b');
 
-  await server.discardVariant({ id: 'vibe_1750000000000_abc123xyz', key: 'a' });
-  const finalized = await server.finalizeVariant({ id: 'vibe_1750000000000_abc123xyz', key: 'b' });
+  await server.discardVariant({ id: 'waypoint_1750000000000_abc123xyz', key: 'a' });
+  const finalized = await server.finalizeVariant({ id: 'waypoint_1750000000000_abc123xyz', key: 'b' });
   assert.equal(finalized.variant_request.status, 'finalized');
   assert.deepEqual(read()[0].variant_request.scaffold, []);
 });
 
 test('server leaves persisted state untouched when cleanup is incomplete', async () => {
   const { server, read, write } = createServer();
-  await server.requestVariants({ id: 'vibe_1750000000000_abc123xyz', variants: candidates });
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
   const inconsistent = read();
   inconsistent[0].variant_request.scaffold = [];
   write(inconsistent);
 
-  await assert.rejects(() => server.finalizeVariant({ id: 'vibe_1750000000000_abc123xyz', key: 'a' }), error => {
+  await assert.rejects(() => server.finalizeVariant({ id: 'waypoint_1750000000000_abc123xyz', key: 'a' }), error => {
     assert.deepEqual(error.remaining_cleanup, [{ kind: 'scaffold_missing', key: 'switcher' }]);
     return true;
   });
@@ -85,8 +85,8 @@ test('serialized writes recover after an expected Variant failure', async () => 
 test('confirmed project deletion rechecks URL scope inside the serialized mutation', async () => {
   const server = new LocalAnnotationsServer();
   const initial = [
-    { id: 'vibe_1_abcdefghi', url: 'http://localhost:3000/one', comment: 'Moved later' },
-    { id: 'vibe_2_abcdefghi', url: 'http://localhost:3000/two', comment: 'Still matches' },
+    { id: 'waypoint_1750000000001_abcdefghi', url: 'http://localhost:3000/one', comment: 'Moved later' },
+    { id: 'waypoint_1750000000002_abcdefghi', url: 'http://localhost:3000/two', comment: 'Still matches' },
   ];
   const current = [
     { ...initial[0], url: 'http://localhost:4000/one' },
@@ -100,16 +100,16 @@ test('confirmed project deletion rechecks URL scope inside the serialized mutati
   const result = await server.deleteProjectAnnotations({ url_pattern: 'http://localhost:3000/*', confirm: true });
 
   assert.equal(result.count, 1);
-  assert.deepEqual(persisted.map(annotation => annotation.id), ['vibe_1_abcdefghi']);
+  assert.deepEqual(persisted.map(annotation => annotation.id), ['waypoint_1750000000001_abcdefghi']);
   assert.equal(persisted[0].url, 'http://localhost:4000/one');
 });
 
 test('project deletion wildcard respects URL path and port boundaries', async () => {
   const server = new LocalAnnotationsServer();
   const stored = [
-    { id: 'vibe_1_abcdefghi', url: 'http://localhost:3000/app/one', comment: 'Match' },
-    { id: 'vibe_2_abcdefghi', url: 'http://localhost:3000/apple', comment: 'Path collision' },
-    { id: 'vibe_3_abcdefghi', url: 'http://localhost:30000/app/two', comment: 'Port collision' },
+    { id: 'waypoint_1750000000001_abcdefghi', url: 'http://localhost:3000/app/one', comment: 'Match' },
+    { id: 'waypoint_1750000000002_abcdefghi', url: 'http://localhost:3000/apple', comment: 'Path collision' },
+    { id: 'waypoint_1750000000003_abcdefghi', url: 'http://localhost:30000/app/two', comment: 'Port collision' },
   ];
   let persisted;
   server.loadAnnotations = async () => structuredClone(stored);
@@ -118,26 +118,26 @@ test('project deletion wildcard respects URL path and port boundaries', async ()
   const result = await server.deleteProjectAnnotations({ url_pattern: 'http://localhost:3000/app/*', confirm: true });
 
   assert.equal(result.count, 1);
-  assert.deepEqual(persisted.map(annotation => annotation.id), ['vibe_2_abcdefghi', 'vibe_3_abcdefghi']);
+  assert.deepEqual(persisted.map(annotation => annotation.id), ['waypoint_1750000000002_abcdefghi', 'waypoint_1750000000003_abcdefghi']);
 });
 
 test('Annotation reads share safe URL wildcard boundaries', async () => {
   const server = new LocalAnnotationsServer();
   server.loadAnnotations = async () => [
-    { id: 'vibe_1_abcdefghi', url: 'http://localhost:3000/app/one', comment: 'Match', status: 'pending' },
-    { id: 'vibe_2_abcdefghi', url: 'http://localhost:3000/apple', comment: 'Path collision', status: 'pending' },
-    { id: 'vibe_3_abcdefghi', url: 'http://localhost:30000/app/two', comment: 'Port collision', status: 'pending' },
+    { id: 'waypoint_1750000000001_abcdefghi', url: 'http://localhost:3000/app/one', comment: 'Match', status: 'pending' },
+    { id: 'waypoint_1750000000002_abcdefghi', url: 'http://localhost:3000/apple', comment: 'Path collision', status: 'pending' },
+    { id: 'waypoint_1750000000003_abcdefghi', url: 'http://localhost:30000/app/two', comment: 'Port collision', status: 'pending' },
   ];
 
   const result = await server.readAnnotations({ url: 'http://localhost:3000/app/*' });
 
-  assert.deepEqual(result.annotations.map(annotation => annotation.id), ['vibe_1_abcdefghi']);
+  assert.deepEqual(result.annotations.map(annotation => annotation.id), ['waypoint_1750000000001_abcdefghi']);
 });
 
 test('a persistence failure cannot partially finalize record-owned cleanup', async () => {
   const server = new LocalAnnotationsServer();
   const requested = await createServer().server.requestVariants({
-    id: 'vibe_1750000000000_abc123xyz',
+    id: 'waypoint_1750000000000_abc123xyz',
     variants: candidates,
   });
   const persisted = [structuredClone(requested)];
@@ -157,28 +157,28 @@ test('HTTP generic writes cannot create, replace, resolve, or sync Variant-owned
   const address = listener.address();
   const baseUrl = `http://127.0.0.1:${address.port}`;
   try {
-    const request = await fetch(`${baseUrl}/api/annotations/vibe_1750000000000_abc123xyz/variants/request`, {
+    const request = await fetch(`${baseUrl}/api/annotations/waypoint_1750000000000_abc123xyz/variants/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ variants: candidates }),
     });
     assert.equal(request.status, 200);
 
-    const replace = await fetch(`${baseUrl}/api/annotations/vibe_1750000000000_abc123xyz`, {
+    const replace = await fetch(`${baseUrl}/api/annotations/waypoint_1750000000000_abc123xyz`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ variant_request: null }),
     });
     assert.equal(replace.status, 409);
 
-    const resolve = await fetch(`${baseUrl}/api/annotations/vibe_1750000000000_abc123xyz`, {
+    const resolve = await fetch(`${baseUrl}/api/annotations/waypoint_1750000000000_abc123xyz`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'completed' }),
     });
     assert.equal(resolve.status, 409);
 
-    const remove = await fetch(`${baseUrl}/api/annotations/vibe_1750000000000_abc123xyz`, {
+    const remove = await fetch(`${baseUrl}/api/annotations/waypoint_1750000000000_abc123xyz`, {
       method: 'DELETE',
     });
     assert.equal(remove.status, 409);
@@ -200,7 +200,7 @@ test('HTTP generic writes cannot create, replace, resolve, or sync Variant-owned
 
 test('MCP Variant failures retain structured remaining cleanup work', async () => {
   const { server, read, write } = createServer();
-  await server.requestVariants({ id: 'vibe_1750000000000_abc123xyz', variants: candidates });
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
   const inconsistent = read();
   inconsistent[0].variant_request.variants[0].scaffold = ['<malicious-cleanup-key>'];
   inconsistent[0].variant_request.variants[1].scaffold = ['<malicious-cleanup-key>'];
@@ -217,7 +217,7 @@ test('MCP Variant failures retain structured remaining cleanup work', async () =
   const response = await callTool({
     params: {
       name: 'finalize_variant',
-      arguments: { id: 'vibe_1750000000000_abc123xyz', key: 'a' },
+      arguments: { id: 'waypoint_1750000000000_abc123xyz', key: 'a' },
     },
   });
   const payload = JSON.parse(response.content[0].text);
@@ -257,7 +257,7 @@ test('committed Variant mutations publish safe Watch activity and survive Watch 
 
 test('explicit reads retain selected Variant presentation while Watch stays portable', async () => {
   const { server } = createServer();
-  const requested = await server.requestVariants({ id: 'vibe_1750000000000_abc123xyz', variants: candidates });
+  const requested = await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
   server.loadAnnotations = async () => [requested];
 
   const read = await server.readAnnotations({ status: 'pending' });

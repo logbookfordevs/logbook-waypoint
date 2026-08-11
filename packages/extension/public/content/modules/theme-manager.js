@@ -1,7 +1,7 @@
 // Applies --v-* theme tokens on the shadow host
 // Reads preference from chrome.storage, listens for system + storage changes
 
-var VibeThemeManager = (() => {
+var WaypointThemeManager = (() => {
   const themes = {
     light: {
       'v-surface': '#f8f9fc',
@@ -59,7 +59,7 @@ var VibeThemeManager = (() => {
   }
 
   function apply() {
-    const root = VibeShadowHost.getRoot();
+    const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
     const host = root.host;
@@ -68,14 +68,14 @@ var VibeThemeManager = (() => {
       host.style.setProperty(`--${key}`, value);
     }
 
-    VibeEvents.emit('theme:changed', getEffective());
+    WaypointEvents.emit('theme:changed', getEffective());
   }
 
   async function init() {
     // Load preference
     try {
-      const result = await chrome.storage.local.get(['themePreference']);
-      preference = result.themePreference || 'system';
+      const result = await chrome.storage.local.get(['waypointThemePreference']);
+      preference = result.waypointThemePreference || 'system';
     } catch (e) {
       preference = 'system';
     }
@@ -84,8 +84,8 @@ var VibeThemeManager = (() => {
 
     // Listen for storage changes (user changes theme in popup)
     chrome.storage.onChanged.addListener((changes, ns) => {
-      if (ns === 'local' && changes.themePreference) {
-        preference = changes.themePreference.newValue || 'system';
+      if (ns === 'local' && changes.waypointThemePreference) {
+        preference = changes.waypointThemePreference.newValue || 'system';
         apply();
       }
     });
@@ -102,7 +102,7 @@ var VibeThemeManager = (() => {
 
   async function setPreference(pref) {
     preference = pref;
-    await chrome.storage.local.set({ themePreference: pref });
+    await chrome.storage.local.set({ waypointThemePreference: pref });
     apply();
   }
 

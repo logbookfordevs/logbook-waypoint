@@ -1,6 +1,6 @@
-// Creates and manages the shadow DOM host for all Vibe UI
+// Creates and manages the shadow DOM host for all Waypoint UI
 
-var VibeShadowHost = (() => {
+var WaypointShadowHost = (() => {
   let hostEl = null;
   let shadowRoot = null;
 
@@ -24,11 +24,11 @@ var VibeShadowHost = (() => {
 
     // Inject styles synchronously
     const styleEl = document.createElement('style');
-    styleEl.textContent = VIBE_STYLES;
+    styleEl.textContent = WAYPOINT_STYLES;
     shadowRoot.appendChild(styleEl);
 
     // Restore hidden state before appending to avoid flash
-    if (VibeAPI.getOverlayHidden()) {
+    if (WaypointAPI.getOverlayHidden()) {
       hostEl.style.display = 'none';
     }
 
@@ -61,12 +61,12 @@ var VibeShadowHost = (() => {
 
   function hide() {
     if (hostEl) hostEl.style.display = 'none';
-    VibeAPI.saveOverlayHidden(true);
+    WaypointAPI.saveOverlayHidden(true);
   }
 
   function show() {
     if (hostEl) hostEl.style.display = '';
-    VibeAPI.saveOverlayHidden(false);
+    WaypointAPI.saveOverlayHidden(false);
   }
 
   function isVisible() {

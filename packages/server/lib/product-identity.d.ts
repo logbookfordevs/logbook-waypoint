@@ -6,7 +6,7 @@ export interface ProductIdentity {
   readonly cliCommand: 'waypoint';
   readonly mcpConfigKey: 'logbook-waypoint';
   readonly dataDirectory: '.logbook-waypoint';
-  readonly futureAnnotationIdPrefix: 'waypoint_';
+  readonly annotationIdPrefix: 'waypoint_';
   readonly repositoryUrl: 'https://github.com/logbookfordevs/logbook-waypoint';
   readonly supportUrl: 'https://github.com/logbookfordevs/logbook-waypoint/issues';
   readonly homepageUrl: 'https://github.com/logbookfordevs/logbook-waypoint#readme';

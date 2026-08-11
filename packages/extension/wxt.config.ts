@@ -19,6 +19,7 @@ const LOCAL_MATCHES = [
 ];
 
 const CONTENT_MODULES = [
+  'annotation-id.js',
   'agent-setup-config.js',
   'content/modules/event-bus.js',
   'content/modules/styles.js',

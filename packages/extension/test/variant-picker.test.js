@@ -12,9 +12,9 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
   const context = vm.createContext({ window, document: window.document, globalThis: null });
   context.globalThis = context;
-  context.VibeShadowHost = { getRoot: () => context.document.querySelector('#root') };
-  context.VibeEvents = { emit() {} };
-  context.VibeAPI = {};
+  context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#root') };
+  context.WaypointEvents = { emit() {} };
+  context.WaypointAPI = {};
   const source = await readFile(new URL('../.output/chrome-mv3/content/modules/variant-picker.js', import.meta.url), 'utf8');
   vm.runInContext(source, context);
   const errorSource = await readFile(new URL('../.output/chrome-mv3/background/variant-errors.js', import.meta.url), 'utf8');
@@ -22,9 +22,9 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   const policySource = await readFile(new URL('../.output/chrome-mv3/background/variant-policy.js', import.meta.url), 'utf8');
   vm.runInContext(policySource, context);
 
-  const ordinary = { id: 'vibe_1_abcdefghi', comment: 'Just a comment' };
+  const ordinary = { id: 'waypoint_1_abcdefghi', comment: 'Just a comment' };
   const variants = {
-    id: 'vibe_2_abcdefghi',
+    id: 'waypoint_2_abcdefghi',
     comment: 'Compare these',
     variant_request: {
       status: 'unresolved',
@@ -46,7 +46,7 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   );
   assert.equal(context.document.querySelector('[data-variant-key="calm"] .waypoint-variant-discard').disabled, true);
 
-  context.VibeAPI.activateVariant = async () => {
+  context.WaypointAPI.activateVariant = async () => {
     throw new Error('Cleanup incomplete: scaffold switcher remains');
   };
   context.document.querySelector('[data-variant-key="bold"] .waypoint-variant-activate').click();

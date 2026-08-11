@@ -1,7 +1,7 @@
 // Lightweight pub/sub event bus for inter-module communication
-console.log('[Vibe V2] event-bus.js loaded');
+console.log('[Waypoint V2] event-bus.js loaded');
 
-var VibeEvents = (() => {
+var WaypointEvents = (() => {
   const listeners = new Map();
 
   return {

@@ -2,7 +2,7 @@
 // screenshot capture, source mapping, parent chain.
 // Operates on host page DOM. No UI.
 
-var VibeElementContext = (() => {
+var WaypointElementContext = (() => {
 
   // --- Main entry point ---
 
@@ -72,7 +72,7 @@ var VibeElementContext = (() => {
 
     // Screenshot
     try {
-      const enabled = await VibeAPI.getScreenshotEnabled();
+      const enabled = await WaypointAPI.getScreenshotEnabled();
       if (enabled) context.screenshot = captureElementScreenshot(element);
     } catch { /* skip */ }
 
@@ -108,12 +108,12 @@ var VibeElementContext = (() => {
 
   // Build "host >> host >> innerSelector" for elements inside shadow DOM
   function generateShadowAwareSelector(element) {
-    if (!VibeShadowDOMUtils.isInShadowDOM(element)) return null;
+    if (!WaypointShadowDOMUtils.isInShadowDOM(element)) return null;
 
     const root = element.getRootNode();
-    if (!VibeShadowDOMUtils.isShadowRoot(root)) return null;
+    if (!WaypointShadowDOMUtils.isShadowRoot(root)) return null;
 
-    const shadowHosts = VibeShadowDOMUtils.getShadowPath(element);
+    const shadowHosts = WaypointShadowDOMUtils.getShadowPath(element);
     if (!shadowHosts.length) return null;
 
     const hostSelectors = [];
@@ -126,7 +126,7 @@ var VibeElementContext = (() => {
     }
 
     const innerSelector = generateSelectorInRoot(element, root);
-    return VibeShadowDOMUtils.buildShadowSelector(hostSelectors, innerSelector);
+    return WaypointShadowDOMUtils.buildShadowSelector(hostSelectors, innerSelector);
   }
 
   // Generate a selector for `element` scoped to `root` (document or ShadowRoot)
@@ -145,7 +145,7 @@ var VibeElementContext = (() => {
     // Path-based fallback within this root
     const pathParts = [];
     let current = element;
-    while (current && current !== root && !(VibeShadowDOMUtils.isShadowRoot(current))) {
+    while (current && current !== root && !(WaypointShadowDOMUtils.isShadowRoot(current))) {
       const tag = current.tagName.toLowerCase();
       let part = tag;
       const parent = current.parentElement || (current.parentNode === root ? root : null);
@@ -186,7 +186,7 @@ var VibeElementContext = (() => {
     }
 
     // Second pass: check nearest ancestor with a stable attribute (scoped selector)
-    let parent = VibeShadowDOMUtils.getParentElement(element);
+    let parent = WaypointShadowDOMUtils.getParentElement(element);
     let depth = 0;
     while (parent && parent.tagName !== 'BODY' && depth < 5) {
       for (const attr of stableAttrs.slice(0, 8)) { // test attrs only
@@ -196,7 +196,7 @@ var VibeElementContext = (() => {
           // Build child selector relative to this stable parent
           const childTag = tag;
           // Check if element is a direct child — use child combinator only if so
-          const isDirectChild = VibeShadowDOMUtils.getParentElement(element) === parent;
+          const isDirectChild = WaypointShadowDOMUtils.getParentElement(element) === parent;
           if (isDirectChild) {
             const directChildren = Array.from(parent.querySelectorAll(`:scope > ${childTag}`));
             if (directChildren.length === 1 && directChildren[0] === element) {
@@ -213,7 +213,7 @@ var VibeElementContext = (() => {
           }
         }
       }
-      parent = VibeShadowDOMUtils.getParentElement(parent);
+      parent = WaypointShadowDOMUtils.getParentElement(parent);
       depth++;
     }
 
@@ -223,7 +223,7 @@ var VibeElementContext = (() => {
   function generateClassSelector(element) {
     if (!element.className) return null;
     const classes = Array.from(element.classList)
-      .filter(c => !c.startsWith('vibe-'))
+      .filter(c => !c.startsWith('waypoint-'))
       .filter(isStableClass)
       .slice(0, 4);
     if (!classes.length) return null;
@@ -233,10 +233,10 @@ var VibeElementContext = (() => {
   function generateLimitedContextSelector(element) {
     const classSel = generateClassSelector(element);
     if (!classSel) return null;
-    const parent = VibeShadowDOMUtils.getParentElement(element);
+    const parent = WaypointShadowDOMUtils.getParentElement(element);
     if (!parent || parent.tagName === 'BODY') return null;
     const pClasses = Array.from(parent.classList)
-      .filter(c => !c.startsWith('vibe-'))
+      .filter(c => !c.startsWith('waypoint-'))
       .filter(isStableClass)
       .slice(0, 2);
     if (!pClasses.length) return null;
@@ -245,7 +245,7 @@ var VibeElementContext = (() => {
 
   function generateFallbackSelector(element) {
     const tag = element.tagName.toLowerCase();
-    const parent = VibeShadowDOMUtils.getParentElement(element);
+    const parent = WaypointShadowDOMUtils.getParentElement(element);
     if (!parent) return null;
 
     // Build qualified parent selector — require classes or ID to avoid fragile bare-tag selectors
@@ -254,7 +254,7 @@ var VibeElementContext = (() => {
       parentSel += `#${CSS.escape(parent.id)}`;
     } else {
       const pClasses = Array.from(parent.classList)
-        .filter(c => !c.startsWith('vibe-'))
+        .filter(c => !c.startsWith('waypoint-'))
         .filter(isStableClass)
         .slice(0, 3);
       if (pClasses.length) {
@@ -283,7 +283,7 @@ var VibeElementContext = (() => {
       let id = tag;
 
       const stable = Array.from(current.classList)
-        .filter(c => !c.startsWith('vibe-'))
+        .filter(c => !c.startsWith('waypoint-'))
         .filter(isStableClass)
         .slice(0, 2);
 
@@ -294,7 +294,7 @@ var VibeElementContext = (() => {
       } else if (current.getAttribute('role')) {
         id = `${tag}[role="${current.getAttribute('role')}"]`;
       } else {
-        const siblings = Array.from(VibeShadowDOMUtils.getParentElement(current)?.children || []);
+        const siblings = Array.from(WaypointShadowDOMUtils.getParentElement(current)?.children || []);
         const same = siblings.filter(s => s.tagName.toLowerCase() === tag);
         if (same.length > 1) {
           id = `${tag}:nth-of-type(${same.indexOf(current) + 1})`;
@@ -302,7 +302,7 @@ var VibeElementContext = (() => {
       }
 
       path.unshift(id);
-      current = VibeShadowDOMUtils.getParentElement(current);
+      current = WaypointShadowDOMUtils.getParentElement(current);
       depth++;
     }
     return path.length ? path.join(' > ') : null;
@@ -345,7 +345,7 @@ var VibeElementContext = (() => {
   }
 
   function isUnique(selector) {
-    try { return VibeShadowDOMUtils.querySelectorCountDeep(document, selector, 1) === 1; }
+    try { return WaypointShadowDOMUtils.querySelectorCountDeep(document, selector, 1) === 1; }
     catch { return false; }
   }
 
@@ -424,7 +424,7 @@ var VibeElementContext = (() => {
     let current = el;
     while (current) {
       try { if (current.matches && current.matches(selector)) return current; } catch { /* skip */ }
-      current = VibeShadowDOMUtils.getParentElement(current);
+      current = WaypointShadowDOMUtils.getParentElement(current);
     }
     return null;
   }
@@ -446,13 +446,13 @@ var VibeElementContext = (() => {
   }
 
   function getComponentDepth(el) {
-    let depth = 0, current = VibeShadowDOMUtils.getParentElement(el);
+    let depth = 0, current = WaypointShadowDOMUtils.getParentElement(el);
     while (current && depth < 10 && current.tagName !== 'BODY') {
       const cls = Array.from(current.classList);
       if (cls.some(c => /^[A-Z][a-zA-Z0-9]*/.test(c) || c.includes('component') || c.includes('container') || c.includes('wrapper'))) {
         depth++;
       }
-      current = VibeShadowDOMUtils.getParentElement(current);
+      current = WaypointShadowDOMUtils.getParentElement(current);
     }
     return depth;
   }
@@ -518,7 +518,7 @@ var VibeElementContext = (() => {
 
   function getParentChainContext(element, maxDepth = 3) {
     const chain = [];
-    let current = VibeShadowDOMUtils.getParentElement(element);
+    let current = WaypointShadowDOMUtils.getParentElement(element);
     let depth = 0;
     while (current && depth < maxDepth && current.tagName !== 'BODY') {
       const info = {
@@ -532,7 +532,7 @@ var VibeElementContext = (() => {
         ['nav', 'header', 'footer', 'main', 'section', 'article', 'aside'].includes(info.tag)) {
         chain.push(info);
       }
-      current = VibeShadowDOMUtils.getParentElement(current);
+      current = WaypointShadowDOMUtils.getParentElement(current);
       depth++;
     }
     return chain.length ? chain : null;
@@ -543,19 +543,19 @@ var VibeElementContext = (() => {
   function resolveSelector(selector) {
     if (!selector) return null;
     // Shadow compound selector: host >> host >> inner
-    if (VibeShadowDOMUtils.isShadowSelector(selector)) {
-      return VibeShadowDOMUtils.findByShadowSelector(document, selector);
+    if (WaypointShadowDOMUtils.isShadowSelector(selector)) {
+      return WaypointShadowDOMUtils.findByShadowSelector(document, selector);
     }
     // Regular selector — try deep (covers elements inside shadow roots)
-    return VibeShadowDOMUtils.querySelectorDeep(document, selector);
+    return WaypointShadowDOMUtils.querySelectorDeep(document, selector);
   }
 
   // For shadow selectors, try to resolve the host chain even when the full
   // selector fails — this lets us scope text/class fallbacks to the correct
   // shadow root instead of searching the entire document.
   function resolveShadowRoot(selector) {
-    if (!VibeShadowDOMUtils.isShadowSelector(selector)) return null;
-    const parts = selector.split(VibeShadowDOMUtils.SHADOW_SEPARATOR).map(s => s.trim()).filter(Boolean);
+    if (!WaypointShadowDOMUtils.isShadowSelector(selector)) return null;
+    const parts = selector.split(WaypointShadowDOMUtils.SHADOW_SEPARATOR).map(s => s.trim()).filter(Boolean);
     if (parts.length < 2) return null;
     // Walk the host chain (all parts except the last)
     let currentRoot = document;
@@ -587,15 +587,15 @@ var VibeElementContext = (() => {
   function matchesParentChain(element, parentChain) {
     if (!parentChain?.length) return true;
 
-    let current = VibeShadowDOMUtils.getParentElement(element);
+    let current = WaypointShadowDOMUtils.getParentElement(element);
     for (const context of parentChain) {
       let depth = 0;
       while (current && depth < 20 && !matchesParentContext(current, context)) {
-        current = VibeShadowDOMUtils.getParentElement(current);
+        current = WaypointShadowDOMUtils.getParentElement(current);
         depth++;
       }
       if (!current || depth >= 20) return false;
-      current = VibeShadowDOMUtils.getParentElement(current);
+      current = WaypointShadowDOMUtils.getParentElement(current);
     }
     return true;
   }
@@ -635,7 +635,7 @@ var VibeElementContext = (() => {
       // Search scoped root first, fall back to deep search
       let candidates = scopeRoot !== document
         ? Array.from(scopeRoot.querySelectorAll(tag))
-        : VibeShadowDOMUtils.querySelectorAllDeep(document, tag);
+        : WaypointShadowDOMUtils.querySelectorAllDeep(document, tag);
 
       let matches = candidates.filter(el => normalizeText(el.textContent) === sanitized);
 
@@ -679,7 +679,7 @@ var VibeElementContext = (() => {
           // Scope to shadow root if available
           const candidates = scopeRoot !== document
             ? Array.from(scopeRoot.querySelectorAll(sel))
-            : VibeShadowDOMUtils.querySelectorAllDeep(document, sel);
+            : WaypointShadowDOMUtils.querySelectorAllDeep(document, sel);
           const matches = narrowByParentChain(candidates, annotation.parent_chain);
           if (matches.length === 1) return matches[0];
         } catch { /* continue */ }

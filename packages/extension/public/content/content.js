@@ -1,9 +1,9 @@
 // Logbook Waypoint V2 — Entry Point
 // Orchestrates all modules loaded via manifest.json content_scripts
 // Modules are loaded in order and share execution context (no build step)
-console.log('[Vibe] content.js loaded');
+console.log('[Waypoint] content.js loaded');
 
-(async function VibeAnnotationsV2() {
+(async function WaypointAnnotationsV2() {
   'use strict';
 
   // --- State ---
@@ -12,9 +12,9 @@ console.log('[Vibe] content.js loaded');
 
   // --- Font injection (on main document — fonts cascade into shadow DOM) ---
   function injectFontFace() {
-    if (document.querySelector('[data-vibe-font]')) return;
+    if (document.querySelector('[data-waypoint-font]')) return;
     const style = document.createElement('style');
-    style.setAttribute('data-vibe-font', 'true');
+    style.setAttribute('data-waypoint-font', 'true');
     const fontUrl = chrome.runtime.getURL('assets/fonts/InterVariable.woff2');
     style.textContent = `
       @font-face {
@@ -32,22 +32,22 @@ console.log('[Vibe] content.js loaded');
     injectFontFace();
 
     // 1. Shadow host + styles
-    VibeShadowHost.init();
+    WaypointShadowHost.init();
 
-    // 1b. Overlay hidden state is restored synchronously in VibeShadowHost.init()
-    const overlayClosed = VibeAPI.getOverlayHidden();
+    // 1b. Overlay hidden state is restored synchronously in WaypointShadowHost.init()
+    const overlayClosed = WaypointAPI.getOverlayHidden();
 
     // 2. Theme
-    await VibeThemeManager.init();
+    await WaypointThemeManager.init();
 
     // 3. Load annotations
-    annotations = await VibeAPI.loadAnnotations();
+    annotations = await WaypointAPI.loadAnnotations();
 
     // 4. Initialize modules
-    VibeBadgeManager.init();
-    VibeInspectionMode.init();
-    VibeAnnotationPopover.init();
-    await VibeToolbar.init();
+    WaypointBadgeManager.init();
+    WaypointInspectionMode.init();
+    WaypointAnnotationPopover.init();
+    await WaypointToolbar.init();
 
     // 5. Set up message listener (popup ↔ content)
     setupMessageListener();
@@ -75,58 +75,58 @@ console.log('[Vibe] content.js loaded');
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       switch (request.action) {
         case 'startAnnotationMode':
-          VibeEvents.emit('inspection:start');
+          WaypointEvents.emit('inspection:start');
           sendResponse({ success: true });
           break;
 
         case 'stopAnnotationMode':
-          VibeEvents.emit('inspection:stop');
+          WaypointEvents.emit('inspection:stop');
           sendResponse({ success: true });
           break;
 
         case 'getAnnotationModeStatus':
-          sendResponse({ success: true, isAnnotationMode: VibeInspectionMode.isActive() });
+          sendResponse({ success: true, isAnnotationMode: WaypointInspectionMode.isActive() });
           break;
 
         case 'toggleOverlay':
-          VibeShadowHost.toggle();
-          if (VibeShadowHost.isVisible()) {
-            VibeEvents.emit('overlay:opened');
+          WaypointShadowHost.toggle();
+          if (WaypointShadowHost.isVisible()) {
+            WaypointEvents.emit('overlay:opened');
           } else {
-            VibeEvents.emit('overlay:closed');
+            WaypointEvents.emit('overlay:closed');
           }
-          sendResponse({ success: true, visible: VibeShadowHost.isVisible() });
+          sendResponse({ success: true, visible: WaypointShadowHost.isVisible() });
           break;
 
         case 'getOverlayState':
-          sendResponse({ success: true, visible: VibeShadowHost.isVisible() });
+          sendResponse({ success: true, visible: WaypointShadowHost.isVisible() });
           break;
 
         case 'toggleAnnotate':
-          if (VibeInspectionMode.isActive()) {
-            VibeEvents.emit('inspection:stop');
+          if (WaypointInspectionMode.isActive()) {
+            WaypointEvents.emit('inspection:stop');
           } else {
-            VibeEvents.emit('inspection:start');
+            WaypointEvents.emit('inspection:start');
           }
           sendResponse({ success: true });
           break;
 
         case 'highlightAnnotation':
-          VibeBadgeManager.highlightElement(request.annotation);
+          WaypointBadgeManager.highlightElement(request.annotation);
           sendResponse({ success: true });
           break;
 
         case 'targetAnnotationElement':
-          VibeBadgeManager.targetBadge(request.annotation?.id);
+          WaypointBadgeManager.targetBadge(request.annotation?.id);
           sendResponse({ success: true });
           break;
 
         case 'annotationsUpdated':
           // Server sync detected changes (e.g. MCP deletion) — reload from storage
-          VibeAPI.loadAnnotations().then(fresh => {
+          WaypointAPI.loadAnnotations().then(fresh => {
             annotations = fresh;
-            if (VibeShadowHost.isVisible()) {
-              VibeEvents.emit('annotations:render', annotations);
+            if (WaypointShadowHost.isVisible()) {
+              WaypointEvents.emit('annotations:render', annotations);
             }
           });
           sendResponse({ success: true });
@@ -147,7 +147,7 @@ console.log('[Vibe] content.js loaded');
       const newURL = window.location.href;
       if (newURL === currentURL) return;
       currentURL = newURL;
-      console.log('[Vibe] SPA route change detected:', newURL);
+      console.log('[Waypoint] SPA route change detected:', newURL);
       reloadAnnotationsForCurrentRoute();
     }
 
@@ -165,12 +165,12 @@ console.log('[Vibe] content.js loaded');
   }
 
   async function reloadAnnotationsForCurrentRoute() {
-    annotations = await VibeAPI.loadAnnotations();
+    annotations = await WaypointAPI.loadAnnotations();
     badgesShown = false;
-    if (VibeShadowHost.isVisible()) {
-      VibeBadgeManager.clearAll();
+    if (WaypointShadowHost.isVisible()) {
+      WaypointBadgeManager.clearAll();
       // Immediately update toolbar count so it doesn't show stale numbers
-      VibeEvents.emit('badges:rendered', { count: 0, total: annotations.length });
+      WaypointEvents.emit('badges:rendered', { count: 0, total: annotations.length });
 
       // Wait briefly for new route's DOM to render, then show badges
       waitForDOMStability(() => {
@@ -182,15 +182,15 @@ console.log('[Vibe] content.js loaded');
 
   // --- Storage listener ---
   function setupStorageListener() {
-    VibeAPI.onAnnotationsChanged((allAnnotations) => {
+    WaypointAPI.onAnnotationsChanged((allAnnotations) => {
       if (localSaveCount > 0) {
         localSaveCount--;
         return;
       }
       annotations = (allAnnotations || []).filter(a => a.url === window.location.href);
       // Don't re-render if overlay is closed (styles should stay stripped)
-      if (VibeShadowHost.isVisible()) {
-        VibeEvents.emit('annotations:render', annotations);
+      if (WaypointShadowHost.isVisible()) {
+        WaypointEvents.emit('annotations:render', annotations);
       }
     });
   }
@@ -200,31 +200,31 @@ console.log('[Vibe] content.js loaded');
     let customShortcut = null;
 
     // Load custom shortcut from storage
-    VibeAPI.getCustomShortcut().then(s => { customShortcut = s; });
+    WaypointAPI.getCustomShortcut().then(s => { customShortcut = s; });
 
     // Listen for storage changes to update live
     chrome.storage.onChanged.addListener((changes, ns) => {
-      if (ns === 'local' && changes.vibeCustomShortcut) {
-        customShortcut = changes.vibeCustomShortcut.newValue || null;
+      if (ns === 'local' && changes.waypointCustomShortcut) {
+        customShortcut = changes.waypointCustomShortcut.newValue || null;
       }
     });
 
     document.addEventListener('keydown', (e) => {
-      if (VibeKeyboardTarget.isEditableEvent(e)) return;
+      if (WaypointKeyboardTarget.isEditableEvent(e)) return;
 
       // ESC — stop annotation mode
-      if (e.key === 'Escape' && VibeInspectionMode.isActive()) {
-        VibeEvents.emit('inspection:stop');
+      if (e.key === 'Escape' && WaypointInspectionMode.isActive()) {
+        WaypointEvents.emit('inspection:stop');
         return;
       }
 
       // Custom shortcut — toggle annotation mode
       if (customShortcut && matchesShortcut(e, customShortcut)) {
         e.preventDefault();
-        if (VibeInspectionMode.isActive()) {
-          VibeEvents.emit('inspection:stop');
+        if (WaypointInspectionMode.isActive()) {
+          WaypointEvents.emit('inspection:stop');
         } else {
-          VibeEvents.emit('inspection:start');
+          WaypointEvents.emit('inspection:start');
         }
       }
     });
@@ -241,18 +241,18 @@ console.log('[Vibe] content.js loaded');
   // --- Annotation lifecycle ---
   function setupAnnotationEvents() {
     // New annotation saved
-    VibeEvents.on('annotation:saved', ({ annotation, element }) => {
+    WaypointEvents.on('annotation:saved', ({ annotation, element }) => {
       localSaveCount++;
       // Deduplicate — storage listener may have already added it
       if (!annotations.some(a => a.id === annotation.id)) {
         annotations.push(annotation);
       }
       // Re-render all badges to get consistent numbering
-      VibeEvents.emit('annotations:render', annotations);
+      WaypointEvents.emit('annotations:render', annotations);
     });
 
     // Annotation updated
-    VibeEvents.on('annotation:updated', ({ id, comment, pending_changes, css }) => {
+    WaypointEvents.on('annotation:updated', ({ id, comment, pending_changes, css }) => {
       localSaveCount++;
       const idx = annotations.findIndex(a => a.id === id);
       if (idx !== -1) {
@@ -263,39 +263,39 @@ console.log('[Vibe] content.js loaded');
       }
     });
 
-    VibeEvents.on('annotation:variant-updated', ({ annotation }) => {
+    WaypointEvents.on('annotation:variant-updated', ({ annotation }) => {
       localSaveCount++;
       const index = annotations.findIndex(candidate => candidate.id === annotation.id);
       if (index !== -1) annotations[index] = annotation;
-      VibeEvents.emit('annotations:render', annotations);
+      WaypointEvents.emit('annotations:render', annotations);
     });
 
     // Annotation deleted
-    VibeEvents.on('annotation:deleted', ({ id }) => {
+    WaypointEvents.on('annotation:deleted', ({ id }) => {
       localSaveCount++;
       annotations = annotations.filter(a => a.id !== id);
       // Re-render to update numbering
-      VibeEvents.emit('annotations:render', annotations);
+      WaypointEvents.emit('annotations:render', annotations);
     });
 
     // Overlay closed — strip all visual changes from page
-    VibeEvents.on('overlay:closed', () => {
-      VibeBadgeManager.clearAll(annotations);
+    WaypointEvents.on('overlay:closed', () => {
+      WaypointBadgeManager.clearAll(annotations);
     });
 
     // Overlay opened — re-apply visual changes
-    VibeEvents.on('overlay:opened', () => {
+    WaypointEvents.on('overlay:opened', () => {
       badgesShown = false;
       showAnnotationsWithRetry();
     });
 
     // All annotations cleared
-    VibeEvents.on('annotations:cleared', ({ count } = {}) => {
+    WaypointEvents.on('annotations:cleared', ({ count } = {}) => {
       // Each delete triggers a storage change; suppress all of them
       localSaveCount += count || annotations.length || 1;
-      VibeBadgeManager.clearAll(annotations);
+      WaypointBadgeManager.clearAll(annotations);
       annotations = [];
-      VibeEvents.emit('badges:rendered', { count: 0, total: 0 });
+      WaypointEvents.emit('badges:rendered', { count: 0, total: 0 });
     });
   }
 
@@ -348,8 +348,8 @@ console.log('[Vibe] content.js loaded');
     let attempts = 0;
     const tryShow = () => {
       attempts++;
-      VibeEvents.emit('annotations:render', annotations);
-      const found = VibeBadgeManager.getCount();
+      WaypointEvents.emit('annotations:render', annotations);
+      const found = WaypointBadgeManager.getCount();
       if (found < elementAnnotations.length && attempts < maxAttempts) {
         setTimeout(tryShow, delay);
       }
@@ -370,13 +370,13 @@ console.log('[Vibe] content.js loaded');
     lazyObserver = new MutationObserver(() => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        VibeEvents.emit('annotations:render', annotations);
-        const found = VibeBadgeManager.getCount();
+        WaypointEvents.emit('annotations:render', annotations);
+        const found = WaypointBadgeManager.getCount();
         // All badges found — stop watching
         if (found >= elementCount) {
           lazyObserver.disconnect();
           lazyObserver = null;
-          console.log('[Vibe] All badges resolved via lazy observer');
+          console.log('[Waypoint] All badges resolved via lazy observer');
         }
       }, 300);
     });
@@ -394,7 +394,7 @@ console.log('[Vibe] content.js loaded');
 
   // --- Boot ---
   function safeBoot() {
-    init().catch(err => console.error('[Vibe] Init failed:', err));
+    init().catch(err => console.error('[Waypoint] Init failed:', err));
   }
 
   if (document.readyState === 'loading') {

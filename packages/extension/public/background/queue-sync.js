@@ -1,4 +1,4 @@
-var VibeQueueSync = (() => {
+var WaypointQueueSync = (() => {
   function hasVariantOwnedState(annotation) {
     return Boolean(annotation?.variant_request || annotation?.variant_presentation);
   }

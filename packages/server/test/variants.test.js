@@ -14,7 +14,7 @@ import {
 } from '../lib/variants.js';
 
 const annotation = () => ({
-  id: 'vibe_1750000000000_abc123xyz',
+  id: 'waypoint_1750000000000_abc123xyz',
   comment: 'Show me two approaches',
   status: 'pending',
 });
