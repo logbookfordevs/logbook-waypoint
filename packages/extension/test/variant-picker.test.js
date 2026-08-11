@@ -41,4 +41,15 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
     ['Calm · Active', 'Bold'],
   );
   assert.equal(context.document.querySelector('[data-variant-key="calm"] .waypoint-variant-discard').disabled, true);
+
+  context.VibeAPI.activateVariant = async () => {
+    throw new Error('Cleanup incomplete: scaffold switcher remains');
+  };
+  context.document.querySelector('[data-variant-key="bold"] .waypoint-variant-activate').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const status = context.document.querySelector('.waypoint-variant-status');
+  assert.equal(status.getAttribute('role'), 'alert');
+  assert.match(status.textContent, /scaffold switcher remains/);
+  assert.notEqual(context.document.querySelector('.waypoint-variant-picker'), null);
 });

@@ -20,6 +20,10 @@ function unique(values) {
   return [...new Set(values)];
 }
 
+function cleanupTarget(kind, key) {
+  return { kind, key };
+}
+
 function validateCandidates(candidates) {
   if (!Array.isArray(candidates) || candidates.length === 0) fail('A variant request requires at least one Variant');
 
@@ -55,6 +59,22 @@ function assertSingleActive(request) {
   }
 }
 
+function expectedScaffold(request) {
+  return unique(request.variants.flatMap(variant => variant.scaffold));
+}
+
+function assertScaffoldReconciled(request) {
+  const expected = expectedScaffold(request);
+  const recorded = unique(request.scaffold);
+  const missing = expected.filter(key => !recorded.includes(key));
+  const unexpected = recorded.filter(key => !expected.includes(key));
+  const remaining = [
+    ...missing.map(key => cleanupTarget('scaffold_missing', key)),
+    ...unexpected.map(key => cleanupTarget('scaffold_unexpected', key)),
+  ];
+  if (remaining.length) fail('Variant Scaffold could not be reconciled', remaining);
+}
+
 function present(annotation, variant) {
   annotation.variant_presentation = clone(variant.implementation);
   for (const field of ['pending_changes', 'css']) {
@@ -66,6 +86,9 @@ function present(annotation, variant) {
 
 export function createVariantRequest(annotation, candidates) {
   if (!annotation?.id) fail('A variant request requires an Annotation');
+  if (['resolved', 'completed', 'discarded', 'archived'].includes(annotation.status)) {
+    fail('A terminal Annotation cannot begin a Variant request');
+  }
   if (annotation.variant_request) fail('Annotation already has explicit Variant state');
   validateCandidates(candidates);
 
@@ -114,42 +137,27 @@ export function activateVariant(annotation, key) {
   return present(next, requireVariant(next.variant_request, key));
 }
 
-async function removeCleanup(operations, targets) {
-  if (!operations?.remove) fail('Variant Scaffold operations are unavailable', targets);
-  let result;
-  try {
-    result = await operations.remove(targets);
-  } catch (error) {
-    fail(`Variant cleanup failed: ${error.message}`, targets);
-  }
-  const remaining = unique(result?.remaining ?? targets);
-  if (remaining.length > 0) fail('Variant cleanup is incomplete', remaining);
-}
-
-export async function discardVariant(annotation, key, operations) {
+export function discardVariant(annotation, key) {
   const request = requireUnresolved(annotation);
+  assertScaffoldReconciled(request);
   const discarded = requireVariant(request, key);
   if (discarded.state === 'active') fail('Activate another surviving Variant before discarding the Active Variant');
 
   const survivors = request.variants.filter(variant => variant.key !== key);
   const survivorScaffold = new Set(survivors.flatMap(variant => variant.scaffold));
   const exclusiveScaffold = discarded.scaffold.filter(scaffoldKey => !survivorScaffold.has(scaffoldKey));
-  await removeCleanup(operations, [`implementation:${key}`, ...exclusiveScaffold]);
-
   const next = clone(annotation);
   next.variant_request.variants = next.variant_request.variants.filter(variant => variant.key !== key);
   next.variant_request.scaffold = next.variant_request.scaffold.filter(scaffoldKey => !exclusiveScaffold.includes(scaffoldKey));
+  assertScaffoldReconciled(next.variant_request);
   assertSingleActive(next.variant_request);
   return next;
 }
 
-export async function finalizeVariant(annotation, key, operations) {
+export function finalizeVariant(annotation, key) {
   const request = requireUnresolved(annotation);
+  assertScaffoldReconciled(request);
   const chosen = requireVariant(request, key);
-  const discardedImplementationKeys = request.variants
-    .filter(variant => variant.key !== key)
-    .map(variant => `implementation:${variant.key}`);
-  await removeCleanup(operations, [...discardedImplementationKeys, ...request.scaffold]);
 
   const next = clone(annotation);
   next.variant_request = {
@@ -166,6 +174,36 @@ export function assertAnnotationResolvable(annotation) {
   if (!request) return;
   if (request.status !== 'finalized') fail('Variant request must be finalized before the Annotation can be Resolved');
   if (request.scaffold?.length || request.variants?.some(variant => variant.scaffold?.length)) {
-    fail('Annotation cannot be Resolved while Variant Scaffold remains', request.scaffold ?? []);
+    const remaining = unique([
+      ...(request.scaffold ?? []),
+      ...(request.variants ?? []).flatMap(variant => variant.scaffold ?? []),
+    ]).map(key => cleanupTarget('scaffold', key));
+    fail('Annotation cannot be Resolved while Variant Scaffold remains', remaining);
   }
+}
+
+export function hasVariantOwnedFields(value) {
+  return value && typeof value === 'object' && ['variant_request', 'variant_presentation'].some(field => field in value);
+}
+
+export function assertGenericAnnotationUpdateAllowed(current, updates) {
+  if (hasVariantOwnedFields(updates)) fail('Variant-owned fields can only be changed through the Variant module');
+  if (current?.variant_request?.status === 'unresolved' && ['pending_changes', 'css'].some(field => field in updates)) {
+    fail('The Active Variant presentation can only be changed through the Variant module');
+  }
+  const merged = { ...current, ...updates };
+  if (['resolved', 'completed'].includes(merged.status)) assertAnnotationResolvable(merged);
+}
+
+export function assertSyncedAnnotationAllowed(current, incoming) {
+  if (!current && hasVariantOwnedFields(incoming)) fail('Create Variant state through the Variant module before synchronization');
+  if (!current) return;
+  if (current.variant_request) {
+    for (const field of ['variant_request', 'variant_presentation', 'pending_changes', 'css']) {
+      if (JSON.stringify(current[field] ?? null) !== JSON.stringify(incoming[field] ?? null)) {
+        fail('Synchronization cannot change Variant-owned state or presentation');
+      }
+    }
+  }
+  if (['resolved', 'completed'].includes(incoming.status)) assertAnnotationResolvable(incoming);
 }

@@ -1,6 +1,6 @@
 # Variants
 
-Status: Accepted Phase 0 contract. Variants are not present in the current implementation.
+Status: Implemented in Phase 4.
 
 ## Interface
 

@@ -22,8 +22,9 @@ describe('local HTTP security boundary', () => {
 
   before(async () => {
     instance = new LocalAnnotationsServer();
-    instance.loadAnnotations = async () => [];
-    instance.saveAnnotations = async () => {};
+    let annotations = [];
+    instance.loadAnnotations = async () => structuredClone(annotations);
+    instance._saveAnnotationsInternal = async next => { annotations = structuredClone(next); };
 
     listener = await new Promise((resolve) => {
       const server = instance.app.listen(0, '127.0.0.1', () => resolve(server));

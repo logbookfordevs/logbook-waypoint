@@ -41,24 +41,41 @@ globalThis.WaypointVariantPicker = (() => {
       </section>`;
     root.appendChild(anchor);
 
+    const status = anchor.querySelector('.waypoint-variant-status');
+    const showError = error => {
+      status.textContent = error.message;
+      status.setAttribute('role', 'alert');
+    };
+    const applyOperation = async operation => {
+      try {
+        return await operation();
+      } catch (error) {
+        showError(error);
+        return null;
+      }
+    };
+
     anchor.querySelector('.waypoint-variant-close').addEventListener('click', () => anchor.remove());
     anchor.querySelectorAll('.waypoint-variant-activate').forEach(button => button.addEventListener('click', async () => {
       const key = button.closest('[data-variant-key]').dataset.variantKey;
       if (key === request.active_variant_key) return;
-      const updated = await VibeAPI.activateVariant(annotation.id, key);
+      const updated = await applyOperation(() => VibeAPI.activateVariant(annotation.id, key));
+      if (!updated) return;
       VibeEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
       anchor.remove();
       show(updated, targetElement);
     }));
     anchor.querySelectorAll('.waypoint-variant-discard').forEach(button => button.addEventListener('click', async () => {
       const key = button.closest('[data-variant-key]').dataset.variantKey;
-      const updated = await VibeAPI.discardVariant(annotation.id, key);
+      const updated = await applyOperation(() => VibeAPI.discardVariant(annotation.id, key));
+      if (!updated) return;
       VibeEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
       anchor.remove();
       show(updated, targetElement);
     }));
     anchor.querySelector('.waypoint-variant-finalize').addEventListener('click', async () => {
-      const updated = await VibeAPI.finalizeVariant(annotation.id, request.active_variant_key);
+      const updated = await applyOperation(() => VibeAPI.finalizeVariant(annotation.id, request.active_variant_key));
+      if (!updated) return;
       VibeEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
       anchor.remove();
     });

@@ -27,7 +27,8 @@ import {
   VariantContractError,
   activateVariant as activateVariantRecord,
   addVariant as addVariantRecord,
-  assertAnnotationResolvable,
+  assertGenericAnnotationUpdateAllowed,
+  assertSyncedAnnotationAllowed,
   createVariantRequest,
   discardVariant as discardVariantRecord,
   finalizeVariant as finalizeVariantRecord,
@@ -77,9 +78,6 @@ export class LocalAnnotationsServer {
     this.transports = {}; // Track transport sessions
     this.connections = new Set(); // Track HTTP connections
     this.saveLock = Promise.resolve(); // Serialize save operations to prevent race conditions
-    this.variantScaffoldOperations = {
-      remove: async keys => ({ removed: keys, remaining: [] }),
-    };
     
     this.setupExpress();
     this.setupMCP();
@@ -154,24 +152,27 @@ export class LocalAnnotationsServer {
           return res.status(400).json({ error: 'Invalid annotation ID' });
         }
 
-        const annotations = await this.loadAnnotations();
-        const existingIndex = annotations.findIndex(a => a.id === annotation.id);
-        
-        if (existingIndex >= 0) {
-          annotations[existingIndex] = { ...annotations[existingIndex], ...annotation, updated_at: new Date().toISOString() };
-        } else {
-          annotations.push({
+        const saved = await this.applyAnnotationsUpdate(annotations => {
+          const existingIndex = annotations.findIndex(candidate => candidate.id === annotation.id);
+          if (existingIndex >= 0) {
+            assertGenericAnnotationUpdateAllowed(annotations[existingIndex], annotation);
+            annotations[existingIndex] = { ...annotations[existingIndex], ...annotation, updated_at: new Date().toISOString() };
+            return annotations[existingIndex];
+          }
+          assertSyncedAnnotationAllowed(null, annotation);
+          const created = {
             ...annotation,
             created_at: annotation.created_at || new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-        }
-        
-        await this.saveAnnotations(annotations);
-        res.json({ success: true, annotation });
+            updated_at: new Date().toISOString(),
+          };
+          annotations.push(created);
+          return created;
+        });
+        res.json({ success: true, annotation: saved });
       } catch (error) {
         console.error('Error saving annotation:', error);
-        res.status(500).json({ error: 'Failed to save annotation' });
+        const status = error instanceof VariantContractError ? 409 : 500;
+        res.status(status).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
       }
     });
 
@@ -196,27 +197,23 @@ export class LocalAnnotationsServer {
           return res.status(400).json({ error: 'Duplicate annotation ID in sync payload' });
         }
 
-        // Get current annotations for comparison
-        const currentAnnotations = await this.loadAnnotations();
-        console.log(`Sync request: replacing ${currentAnnotations.length} annotations with ${annotations.length} annotations`);
-
-        // Check if data is actually different to avoid redundant saves
-        const currentJson = JSON.stringify(currentAnnotations.sort((a, b) => a.id.localeCompare(b.id)));
-        const newJson = JSON.stringify(annotations.sort((a, b) => a.id.localeCompare(b.id)));
-        
-        if (currentJson === newJson) {
-          console.log(`Sync skipped: data is identical`);
-          res.json({ success: true, count: annotations.length, skipped: true });
-          return;
-        }
-
-        // Replace all annotations with the new set
-        await this.saveAnnotations(annotations);
-        console.log(`Sync completed: now have ${annotations.length} annotations`);
-        res.json({ success: true, count: annotations.length });
+        const result = await this.applyAnnotationsUpdate(current => {
+          const currentById = new Map(current.map(annotation => [annotation.id, annotation]));
+          for (const incoming of annotations) assertSyncedAnnotationAllowed(currentById.get(incoming.id), incoming);
+          const incomingIds = new Set(annotations.map(annotation => annotation.id));
+          if (current.some(annotation => annotation.variant_request && !incomingIds.has(annotation.id))) {
+            throw new VariantContractError('Synchronization cannot remove an Annotation with Variant state');
+          }
+          const currentJson = JSON.stringify([...current].sort((a, b) => a.id.localeCompare(b.id)));
+          const newJson = JSON.stringify([...annotations].sort((a, b) => a.id.localeCompare(b.id)));
+          current.splice(0, current.length, ...structuredClone(annotations));
+          return { count: annotations.length, skipped: currentJson === newJson };
+        });
+        res.json({ success: true, ...result });
       } catch (error) {
         console.error('Error syncing annotations:', error);
-        res.status(500).json({ error: 'Failed to sync annotations' });
+        const status = error instanceof VariantContractError ? 409 : 500;
+        res.status(status).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
       }
     });
 
@@ -263,32 +260,18 @@ export class LocalAnnotationsServer {
           return res.status(400).json({ error: 'Annotation ID cannot be changed' });
         }
         
-        const annotations = await this.loadAnnotations();
-        const index = annotations.findIndex(a => a.id === id);
-        
-        if (index === -1) {
-          return res.status(404).json({ error: 'Annotation not found' });
-        }
-
-        if (updates.status === 'resolved' || updates.status === 'completed') {
-          try {
-            assertAnnotationResolvable(annotations[index]);
-          } catch (error) {
-            return res.status(409).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
-          }
-        }
-        
-        annotations[index] = {
-          ...annotations[index],
-          ...updates,
-          updated_at: new Date().toISOString()
-        };
-        
-        await this.saveAnnotations(annotations);
-        res.json({ success: true, annotation: annotations[index] });
+        const annotation = await this.applyAnnotationsUpdate(annotations => {
+          const index = annotations.findIndex(candidate => candidate.id === id);
+          if (index === -1) throw new Error('Annotation not found');
+          assertGenericAnnotationUpdateAllowed(annotations[index], updates);
+          annotations[index] = { ...annotations[index], ...updates, updated_at: new Date().toISOString() };
+          return annotations[index];
+        });
+        res.json({ success: true, annotation });
       } catch (error) {
         console.error('Error updating annotation:', error);
-        res.status(500).json({ error: 'Failed to update annotation' });
+        const status = error instanceof VariantContractError ? 409 : error.message === 'Annotation not found' ? 404 : 500;
+        res.status(status).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
       }
     });
 
@@ -300,17 +283,11 @@ export class LocalAnnotationsServer {
           return res.status(400).json({ error: 'Invalid annotation ID' });
         }
         
-        const annotations = await this.loadAnnotations();
-        const index = annotations.findIndex(a => a.id === id);
-        
-        if (index === -1) {
-          return res.status(404).json({ error: 'Annotation not found' });
-        }
-        
-        const deletedAnnotation = annotations[index];
-        annotations.splice(index, 1);
-        
-        await this.saveAnnotations(annotations);
+        const deletedAnnotation = await this.applyAnnotationsUpdate(annotations => {
+          const index = annotations.findIndex(annotation => annotation.id === id);
+          if (index === -1) throw new Error('Annotation not found');
+          return annotations.splice(index, 1)[0];
+        });
         res.json({ 
           success: true, 
           deleted: true,
@@ -319,7 +296,7 @@ export class LocalAnnotationsServer {
         });
       } catch (error) {
         console.error('Error deleting annotation:', error);
-        res.status(500).json({ error: 'Failed to delete annotation' });
+        res.status(error.message === 'Annotation not found' ? 404 : 500).json({ error: error.message });
       }
     });
 
@@ -733,6 +710,19 @@ export class LocalAnnotationsServer {
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
+        if (error instanceof VariantContractError) {
+          return {
+            isError: true,
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                status: 'error',
+                error: error.message,
+                remaining_cleanup: error.remaining_cleanup,
+              }, null, 2),
+            }],
+          };
+        }
         throw new Error(`Tool execution failed: ${error.message}`);
       }
     });
@@ -752,8 +742,7 @@ export class LocalAnnotationsServer {
       
       // Handle empty or corrupted file
       if (!data || data.trim() === '') {
-        console.warn('Empty annotations file, initializing with empty array');
-        await this.saveAnnotations([]);
+        console.warn('Empty annotations file, treating it as an empty Queue');
         return [];
       }
       
@@ -766,8 +755,7 @@ export class LocalAnnotationsServer {
         await writeFile(backupFile, data);
         console.log(`Corrupted file backed up to: ${backupFile}`);
         
-        // Reinitialize with empty array
-        await this.saveAnnotations([]);
+        // The next serialized mutation will replace the corrupted file atomically.
         return [];
       }
     } catch (error) {
@@ -777,12 +765,7 @@ export class LocalAnnotationsServer {
   }
 
   async saveAnnotations(annotations) {
-    // Serialize all save operations to prevent race conditions
-    this.saveLock = this.saveLock.then(async () => {
-      return this._saveAnnotationsInternal(annotations);
-    });
-    
-    return this.saveLock;
+    return this.enqueueAnnotationOperation(() => this._saveAnnotationsInternal(annotations));
   }
 
   async _saveAnnotationsInternal(annotations) {
@@ -824,16 +807,6 @@ export class LocalAnnotationsServer {
         console.warn(`Failed to clean up temp file: ${cleanupError.message}`);
       }
       
-      // Fallback: try direct write without atomic operation
-      console.log('Attempting fallback direct write...');
-      try {
-        await writeFile(DATA_FILE, jsonData);
-        console.log(`Fallback write successful: ${DATA_FILE}`);
-        return;
-      } catch (fallbackError) {
-        console.error('Fallback write also failed:', fallbackError);
-      }
-      
       throw error;
     }
   }
@@ -847,14 +820,18 @@ export class LocalAnnotationsServer {
    * @returns {Promise} Promise that resolves with the mutator's return value
    */
   async applyAnnotationsUpdate(mutator) {
-    // Chain onto saveLock to serialize read→mutate→save
-    this.saveLock = this.saveLock.then(async () => {
+    return this.enqueueAnnotationOperation(async () => {
       const current = await this.loadAnnotations();
       const result = await mutator(current);
       await this._saveAnnotationsInternal(current);
       return result;
     });
-    return this.saveLock;
+  }
+
+  enqueueAnnotationOperation(operation) {
+    const result = this.saveLock.then(operation);
+    this.saveLock = result.then(() => undefined, () => undefined);
+    return result;
   }
 
   async ensureDataFile() {
@@ -904,11 +881,11 @@ export class LocalAnnotationsServer {
   }
 
   async discardVariant(args) {
-    return this.updateVariantAnnotation(args?.id, annotation => discardVariantRecord(annotation, args?.key, this.variantScaffoldOperations));
+    return this.updateVariantAnnotation(args?.id, annotation => discardVariantRecord(annotation, args?.key));
   }
 
   async finalizeVariant(args) {
-    return this.updateVariantAnnotation(args?.id, annotation => finalizeVariantRecord(annotation, args?.key, this.variantScaffoldOperations));
+    return this.updateVariantAnnotation(args?.id, annotation => finalizeVariantRecord(annotation, args?.key));
   }
 
   async readAnnotations(args) {
@@ -1018,17 +995,11 @@ export class LocalAnnotationsServer {
       throw new Error('Invalid annotation ID');
     }
     
-    const annotations = await this.loadAnnotations();
-    const index = annotations.findIndex(a => a.id === id);
-    
-    if (index === -1) {
-      throw new Error(`Annotation with id ${id} not found`);
-    }
-    
-    const deletedAnnotation = annotations[index];
-    annotations.splice(index, 1); // Remove the annotation completely
-    
-    await this.saveAnnotations(annotations);
+    const deletedAnnotation = await this.applyAnnotationsUpdate(annotations => {
+      const index = annotations.findIndex(annotation => annotation.id === id);
+      if (index === -1) throw new Error(`Annotation with id ${id} not found`);
+      return annotations.splice(index, 1)[0];
+    });
     
     return {
       id,
@@ -1149,14 +1120,17 @@ export class LocalAnnotationsServer {
       };
     }
     
-    // Proceed with deletion
-    const remainingAnnotations = annotations.filter(a => !matchingAnnotations.find(m => m.id === a.id));
-    await this.saveAnnotations(remainingAnnotations);
-    
-    const deletedInfo = matchingAnnotations.map(a => ({
-      id: a.id,
-      url: a.url,
-      comment: a.comment.substring(0, 100) + (a.comment.length > 100 ? '...' : '')
+    const deletion = await this.applyAnnotationsUpdate(current => {
+      const matchingIds = new Set(matchingAnnotations.map(annotation => annotation.id));
+      const removed = current.filter(annotation => matchingIds.has(annotation.id));
+      const remaining = current.filter(annotation => !matchingIds.has(annotation.id));
+      current.splice(0, current.length, ...remaining);
+      return { removed, remainingTotal: remaining.length };
+    });
+    const deletedInfo = deletion.removed.map(annotation => ({
+      id: annotation.id,
+      url: annotation.url,
+      comment: annotation.comment.substring(0, 100) + (annotation.comment.length > 100 ? '...' : '')
     }));
     
     return {
@@ -1165,7 +1139,7 @@ export class LocalAnnotationsServer {
       deleted: true,
       message: `Successfully deleted ${matchingAnnotations.length} annotation(s) for project ${url_pattern}`,
       deleted_annotations: deletedInfo,
-      remaining_total: remainingAnnotations.length
+      remaining_total: deletion.remainingTotal
     };
   }
 

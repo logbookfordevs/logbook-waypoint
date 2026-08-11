@@ -60,26 +60,22 @@ test('create adds a uniquely named stable candidate without changing the Active 
   assert.equal(created.variant_request.variants.filter(variant => variant.state === 'active').length, 1);
 });
 
-test('discard removes a candidate and its exclusive Scaffold but protects the Active Variant', async () => {
+test('discard removes a candidate and its exclusive Scaffold but protects the Active Variant', () => {
   const requested = createVariantRequest(annotation(), [
     { ...candidates[0], scaffold: ['compact-only'] },
     { ...candidates[1], scaffold: ['shared', 'spacious-only'] },
   ]);
 
-  await assert.rejects(() => discardVariant(requested, 'compact'), /activate another/i);
-  const discarded = await discardVariant(requested, 'spacious', {
-    remove: async keys => ({ removed: keys, remaining: [] }),
-  });
+  assert.throws(() => discardVariant(requested, 'compact'), /activate another/i);
+  const discarded = discardVariant(requested, 'spacious');
 
   assert.deepEqual(discarded.variant_request.variants.map(variant => variant.key), ['compact']);
   assert.deepEqual(discarded.variant_request.scaffold, ['compact-only']);
 });
 
-test('finalization preserves one implementation and removes all Scaffold', async () => {
+test('finalization preserves one implementation and removes all Scaffold', () => {
   const requested = activateVariant(createVariantRequest(annotation(), candidates), 'spacious');
-  const finalized = await finalizeVariant(requested, 'spacious', {
-    remove: async keys => ({ removed: keys, remaining: [] }),
-  });
+  const finalized = finalizeVariant(requested, 'spacious');
 
   assert.equal(finalized.variant_request.status, 'finalized');
   assert.deepEqual(finalized.variant_request.variants.map(variant => variant.key), ['spacious']);
@@ -87,29 +83,26 @@ test('finalization preserves one implementation and removes all Scaffold', async
   assert.deepEqual(finalized.variant_request.variants[0].scaffold, []);
 });
 
-test('cleanup failure leaves the input unresolved and reports remaining cleanup', async () => {
+test('cleanup failure leaves the input unresolved and reports remaining cleanup', () => {
   const requested = createVariantRequest(annotation(), candidates);
+  requested.variant_request.scaffold = [];
+  const beforeAttempt = structuredClone(requested);
 
-  await assert.rejects(
-    () => finalizeVariant(requested, 'compact', {
-      remove: async () => ({ removed: [], remaining: ['variant-shell'] }),
-    }),
+  assert.throws(
+    () => finalizeVariant(requested, 'compact'),
     error => {
       assert.equal(error instanceof VariantContractError, true);
-      assert.deepEqual(error.remaining_cleanup, ['variant-shell']);
+      assert.deepEqual(error.remaining_cleanup, [{ kind: 'scaffold_missing', key: 'variant-shell' }]);
       return true;
     },
   );
-  assert.equal(requested.variant_request.status, 'unresolved');
-  assert.deepEqual(requested.variant_request.scaffold, ['variant-shell']);
+  assert.deepEqual(requested, beforeAttempt);
 });
 
-test('resolution is gated until finalization leaves no Scaffold', async () => {
+test('resolution is gated until finalization leaves no Scaffold', () => {
   const requested = createVariantRequest(annotation(), candidates);
   assert.throws(() => assertAnnotationResolvable(requested), /finalized/i);
 
-  const finalized = await finalizeVariant(requested, 'compact', {
-    remove: async keys => ({ removed: keys, remaining: [] }),
-  });
+  const finalized = finalizeVariant(requested, 'compact');
   assert.doesNotThrow(() => assertAnnotationResolvable(finalized));
 });
