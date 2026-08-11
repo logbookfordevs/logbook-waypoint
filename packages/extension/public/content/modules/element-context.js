@@ -755,13 +755,6 @@ var VibeElementContext = (() => {
 
       matches = narrowByParentChain(matches, annotation.parent_chain);
 
-      // If scoped search found nothing, try deep search as last resort
-      if (matches.length === 0 && scopeRoot !== document) {
-        candidates = VibeShadowDOMUtils.querySelectorAllDeep(document, tag);
-        matches = candidates.filter(el => normalizeText(el.textContent) === sanitized);
-        matches = narrowByParentChain(matches, annotation.parent_chain);
-      }
-
       if (matches.length === 1) return matches[0];
 
       // Narrow by classes

@@ -72,6 +72,17 @@ test('portable Target fallback respects parent context and open shadow roots', a
   const shadowSelector = context.VibeElementContext.generateSelector(shadowButton);
   assert.match(shadowSelector, /\s>>\s/);
   assert.equal(context.VibeElementContext.findElementBySelector({ selector: shadowSelector }), shadowButton);
+
+  shadowButton.remove();
+  const lightDomDecoy = context.document.createElement('button');
+  lightDomDecoy.textContent = 'Shadow save';
+  context.document.body.appendChild(lightDomDecoy);
+  const missingShadowTarget = context.VibeElementContext.findElementBySelector({
+    selector: shadowSelector,
+    element_context: { tag: 'button', text: 'Shadow save', classes: [] },
+    parent_chain: null,
+  });
+  assert.equal(missingShadowTarget, null);
 });
 
 test('keyboard shortcuts ignore editable controls across composed paths', async () => {
