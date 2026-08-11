@@ -5,7 +5,7 @@
 
 **Pin the point. Chart the change.**
 
-Logbook Waypoint is a local-first visual feedback tool for developers and coding agents. Place waypoints directly on a development interface, preserve the surrounding element context, and let an MCP-compatible agent read and resolve the resulting log.
+Logbook Waypoint is a local-first visual feedback tool for developers and coding agents. Place annotations directly on a development interface, preserve the surrounding element context, and let an MCP-compatible agent read and resolve the resulting queue.
 
 > [!IMPORTANT]
 > Logbook Waypoint is at the beginning of its independent development. The npm package and browser extension are not published yet. Use the development setup below.
@@ -22,16 +22,22 @@ The initial MIT foundation already provides:
 - Tools for reading, deleting, grouping, and inspecting annotations
 - A Chrome-compatible unpacked extension
 
-The next route adds Logbook-native waypoints, a clearer work queue, watch mode, variants, and Impeccable workflows without importing post-MIT Vibe Annotations code.
+The next route adds a Logbook-native experience, a clearer work queue, watch mode, variants, and Impeccable workflows without importing post-MIT Vibe Annotations code.
 
 ## Architecture
 
 Logbook Waypoint currently has two parts:
 
-1. **Browser extension** (`extension/`) — captures and manages visual waypoints.
-2. **Local MCP server** (`annotations-server/`) — persists entries and exposes them to coding agents on `127.0.0.1:3846`.
+1. **Browser extension** (`extension/`) — captures and manages visual annotations.
+2. **Local MCP server** (`annotations-server/`) — persists annotations and exposes them to coding agents on `127.0.0.1:3846`.
 
 Some internal `vibe_*` identifiers remain intentionally unchanged in this first checkpoint. They are implementation details inherited from the MIT foundation and will be migrated only with tests around the browser/server protocol.
+
+## Design foundations
+
+- [Domain language](CONTEXT.md)
+- [Architectural decisions](docs/adr/)
+- [Behavioral contracts](docs/contracts/)
 
 ## Development setup
 
