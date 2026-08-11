@@ -5,9 +5,59 @@ var WaypointAPI = (() => {
   let statusCache = null;
   let statusCacheTime = 0;
   const CACHE_TTL = 2000;
+  const MAX_IMAGE_ATTACHMENT_BYTES = 1024 * 1024;
+  const MAX_IMAGE_ATTACHMENT_DATA_URL_LENGTH = 1_400_000;
+  const MAX_IMAGE_ATTACHMENTS = 3;
+  const IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 
   function isFileProtocol() {
     return window.location.protocol === 'file:';
+  }
+
+  function validateAnnotationAttachments(annotation) {
+    const attachments = annotation?.attachments;
+    if (attachments === undefined) return;
+    if (!Array.isArray(attachments) || attachments.length > MAX_IMAGE_ATTACHMENTS) {
+      throw new Error('An annotation can include up to three image attachments');
+    }
+
+    let totalDataUrlLength = 0;
+    for (const attachment of attachments) {
+      if (!attachment || typeof attachment !== 'object') throw new Error('Invalid image attachment');
+      const mimeType = attachment.mime_type;
+      if (!IMAGE_MIME_TYPES.has(mimeType)) throw new Error('Unsupported image attachment type');
+
+      if (attachment.data_url === undefined) continue;
+      if (typeof attachment.data_url !== 'string' || !attachment.data_url.startsWith(`data:${mimeType};base64,`)) {
+        throw new Error('Invalid image attachment payload');
+      }
+      if (!Number.isInteger(attachment.size_bytes) || attachment.size_bytes < 0 || attachment.size_bytes > MAX_IMAGE_ATTACHMENT_BYTES) {
+        throw new Error('Image attachment exceeds the 1 MB limit');
+      }
+      if (attachment.data_url.length > MAX_IMAGE_ATTACHMENT_DATA_URL_LENGTH) {
+        throw new Error('Image attachment payload exceeds the limit');
+      }
+      totalDataUrlLength += attachment.data_url.length;
+    }
+    if (totalDataUrlLength > MAX_IMAGE_ATTACHMENT_DATA_URL_LENGTH * MAX_IMAGE_ATTACHMENTS) {
+      throw new Error('Combined image attachment payload exceeds the limit');
+    }
+  }
+
+  async function requestOptionalSitePermission() {
+    try {
+      const origin = window.location?.origin;
+      if (!origin || origin === 'null') return false;
+      const url = new URL(origin);
+      if (!['http:', 'https:'].includes(url.protocol)) return false;
+      const response = await chrome.runtime.sendMessage({
+        action: 'requestOptionalSitePermission',
+        originPattern: `${url.origin}/*`,
+      });
+      return response?.success === true && response.granted === true;
+    } catch {
+      return false;
+    }
   }
 
   // --- Server status ---
@@ -66,6 +116,7 @@ var WaypointAPI = (() => {
   }
 
   async function saveAnnotation(annotation) {
+    validateAnnotationAttachments(annotation);
     try {
       const r = await chrome.runtime.sendMessage({ action: 'saveAnnotation', annotation });
       if (!r || !r.success) throw new Error(r?.error || 'save failed');
@@ -301,6 +352,7 @@ var WaypointAPI = (() => {
     checkServerStatus,
     clearStatusCache,
     isFileProtocol,
+    requestOptionalSitePermission,
     loadAnnotations,
     loadProjectAnnotations,
     saveAnnotation,

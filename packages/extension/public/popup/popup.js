@@ -222,6 +222,19 @@ class AnnotationsPopup {
     // Initialize screenshot toggle with current setting
     this.updateScreenshotToggle();
 
+    const clearOnCopyToggle = document.getElementById('clear-on-copy-toggle');
+    clearOnCopyToggle.addEventListener('change', (e) => {
+      this.updateClearOnCopySetting(e.target.checked);
+    });
+    this.updateClearOnCopyToggle();
+
+    document.querySelectorAll('input[name="badge-color"]').forEach(input => {
+      input.addEventListener('change', (e) => {
+        if (e.target.checked) this.updateBadgeColorSetting(e.target.value);
+      });
+    });
+    this.updateBadgeColorSettingControl();
+
     // Refresh status button
     const refreshStatusBtn = document.getElementById('refresh-status-btn');
     if (refreshStatusBtn) {
@@ -463,7 +476,7 @@ class AnnotationsPopup {
     
     // Auto-resize function
     const autoResize = () => {
-      textarea.style.height = '0px';
+      textarea.style.height = 'auto';
       textarea.style.height = textarea.scrollHeight + 'px';
     };
     
@@ -917,6 +930,42 @@ class AnnotationsPopup {
       // Default to enabled on error
       const screenshotToggle = document.getElementById('screenshot-toggle');
       screenshotToggle.checked = true;
+    }
+  }
+
+  async updateClearOnCopySetting(enabled) {
+    try {
+      await chrome.storage.local.set({ waypointClearOnCopy: enabled });
+    } catch (error) {
+      console.error('Error saving clear-on-copy setting:', error);
+    }
+  }
+
+  async updateClearOnCopyToggle() {
+    try {
+      const result = await chrome.storage.local.get(['waypointClearOnCopy']);
+      document.getElementById('clear-on-copy-toggle').checked = Boolean(result.waypointClearOnCopy);
+    } catch (error) {
+      console.error('Error loading clear-on-copy setting:', error);
+    }
+  }
+
+  async updateBadgeColorSetting(color) {
+    try {
+      await chrome.storage.local.set({ waypointBadgeColor: color });
+    } catch (error) {
+      console.error('Error saving pin color:', error);
+    }
+  }
+
+  async updateBadgeColorSettingControl() {
+    try {
+      const result = await chrome.storage.local.get(['waypointBadgeColor']);
+      const color = result.waypointBadgeColor || '#4b5563';
+      const input = document.querySelector(`input[name="badge-color"][value="${color}"]`);
+      if (input) input.checked = true;
+    } catch (error) {
+      console.error('Error loading pin color:', error);
     }
   }
 

@@ -775,6 +775,7 @@ var WAYPOINT_STYLES = `
   box-shadow: 0 10px 28px rgba(35, 46, 40, 0.14), 0 2px 5px rgba(35, 46, 40, 0.08);
   z-index: 50;
   user-select: none;
+  touch-action: none;
   cursor: default;
   transition: box-shadow 0.2s ease;
 }
@@ -810,6 +811,14 @@ var WAYPOINT_STYLES = `
 .waypoint-toolbar-btn:hover {
   background: #efe2c5;
   color: #17231f;
+}
+
+.waypoint-toolbar-btn:focus-visible,
+.waypoint-theme-btn:focus-visible,
+.waypoint-settings-link:focus-visible,
+.waypoint-site-permission-btn:focus-visible {
+  outline: 2px solid var(--waypoint-accent);
+  outline-offset: 2px;
 }
 
 .waypoint-toolbar-btn.active {
@@ -1086,6 +1095,18 @@ var WAYPOINT_STYLES = `
   flex-shrink: 0;
 }
 
+.waypoint-setting-description,
+.waypoint-site-permission-status {
+  color: var(--waypoint-text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.waypoint-site-permission-status {
+  min-height: 15px;
+  margin: -2px 14px 6px 38px;
+}
+
 .waypoint-settings-link {
   display: flex;
   align-items: center;
@@ -1342,29 +1363,42 @@ var WAYPOINT_STYLES = `
   opacity: 0.9;
 }
 
-/* Export modal scope buttons */
-.waypoint-export-options {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-.waypoint-export-option {
-  flex: 1;
-  padding: 10px 12px;
+/* Export controls */
+.waypoint-export-field {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
   font-family: var(--waypoint-font);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--waypoint-text-primary);
-  background: var(--waypoint-surface-hover);
-  border: 1px solid var(--waypoint-outline);
-  border-radius: var(--waypoint-radius-md, 8px);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: center;
-  line-height: 1.3;
 }
-.waypoint-export-option:hover {
-  border-color: var(--waypoint-text-secondary);
+.waypoint-export-field select {
+  min-height: 34px;
+  border: 1px solid var(--waypoint-outline);
+  border-radius: var(--waypoint-radius-sm);
+  background: var(--waypoint-textarea-bg);
+  color: var(--waypoint-text-primary);
+  font: inherit;
+  padding: 0 8px;
+}
+.waypoint-export-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-top: 14px;
+}
+
+@media (max-width: 480px) {
+  .waypoint-toolbar {
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+  }
+  .waypoint-settings-dropdown {
+    width: min(320px, calc(100vw - 16px));
+  }
+  .waypoint-export-actions .waypoint-btn {
+    flex: 1 1 100%;
+  }
 }
 
 /* Primary button */

@@ -49,7 +49,11 @@ function portableAnnotation(annotation, hasScreenshot) {
 }
 
 export function toWatchAnnotation(annotation) {
-  return portableAnnotation(annotation, Boolean(annotation.screenshot?.data_url));
+  return portableAnnotation(annotation, Boolean(
+    annotation.has_screenshot
+    || annotation.screenshot?.data_url
+    || annotation.screenshot?.attachment_id,
+  ));
 }
 
 export function toReadAnnotation(annotation) {
@@ -64,7 +68,11 @@ export function toReadAnnotation(annotation) {
 }
 
 function normalizeJournalAnnotation(annotation) {
-  return portableAnnotation(annotation, Boolean(annotation.has_screenshot || annotation.screenshot?.data_url));
+  return portableAnnotation(annotation, Boolean(
+    annotation.has_screenshot
+    || annotation.screenshot?.data_url
+    || annotation.screenshot?.attachment_id,
+  ));
 }
 
 function validateSavedQueue(saved) {

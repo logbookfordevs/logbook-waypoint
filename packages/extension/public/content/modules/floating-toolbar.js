@@ -251,6 +251,17 @@ var WaypointToolbar = (() => {
             <span class="waypoint-server-status-text" style="font-size:12px;color:var(--waypoint-text-secondary);">${escapeHTML(serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline'))}</span>
           </div>
         </div>
+        <div class="waypoint-settings-item waypoint-site-permission">
+          <div class="waypoint-settings-item-left">
+            ${ICONS.globe}
+            <div>
+              <span>Site access</span>
+              <div class="waypoint-setting-description">Enable annotation access for this site</div>
+            </div>
+          </div>
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-site-permission-btn" type="button">Enable</button>
+        </div>
+        <p class="waypoint-site-permission-status" aria-live="polite"></p>
         <div class="waypoint-settings-separator"></div>
         <div class="waypoint-settings-item">
           <div class="waypoint-settings-item-left">
@@ -329,6 +340,27 @@ var WaypointToolbar = (() => {
       screenshotEnabled = !screenshotEnabled;
       e.currentTarget.classList.toggle('on', screenshotEnabled);
       await WaypointAPI.saveScreenshotEnabled(screenshotEnabled);
+    });
+
+    const permissionButton = settingsDropdown.querySelector('.waypoint-site-permission-btn');
+    const permissionStatus = settingsDropdown.querySelector('.waypoint-site-permission-status');
+    permissionButton.addEventListener('click', async () => {
+      const origin = `${location.protocol}//${location.host}/*`;
+      permissionButton.disabled = true;
+      permissionStatus.textContent = 'Requesting site access…';
+      try {
+        const result = await chrome.runtime.sendMessage({ action: 'requestOptionalSitePermission', origin });
+        if (result?.success && result.granted) {
+          permissionButton.textContent = 'Enabled';
+          permissionStatus.textContent = 'Site access enabled. Refresh this page to start annotating.';
+        } else {
+          permissionButton.disabled = false;
+          permissionStatus.textContent = result?.error || 'Site access was not granted.';
+        }
+      } catch {
+        permissionButton.disabled = false;
+        permissionStatus.textContent = 'Could not request site access. Try again from the extension popup.';
+      }
     });
 
     // Shortcut key recorder
@@ -902,12 +934,27 @@ var WaypointToolbar = (() => {
     backdrop.innerHTML = `
       <div class="waypoint-confirm">
         <div class="waypoint-confirm-title">Export annotations</div>
-        <div class="waypoint-confirm-msg">Choose what to include in the export file.</div>
-        <div class="waypoint-export-options">
-          <button class="waypoint-export-option waypoint-export-page" type="button">This page only</button>
-          <button class="waypoint-export-option waypoint-export-project" type="button">All from this site</button>
+        <div class="waypoint-confirm-msg">Choose the scope, status, and share format.</div>
+        <label class="waypoint-export-field">Scope
+          <select class="waypoint-export-scope">
+            <option value="page">This page only</option>
+            <option value="project">All from this site</option>
+          </select>
+        </label>
+        <label class="waypoint-export-field">Status
+          <select class="waypoint-export-status">
+            <option value="all">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="resolved">Resolved</option>
+            <option value="discarded">Discarded</option>
+          </select>
+        </label>
+        <div class="waypoint-confirm-actions waypoint-export-actions">
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-export-json" type="button">Download JSON</button>
+          <button class="waypoint-btn waypoint-btn-primary waypoint-export-markdown" type="button">Download Markdown</button>
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-export-share" type="button">Share Markdown</button>
         </div>
-        <div class="waypoint-confirm-actions" style="margin-top:12px;justify-content:flex-start;">
+        <div class="waypoint-confirm-actions" style="margin-top:8px;justify-content:flex-start;">
           <button class="waypoint-btn waypoint-btn-secondary waypoint-export-cancel">Cancel</button>
         </div>
       </div>
@@ -917,30 +964,28 @@ var WaypointToolbar = (() => {
     backdrop.querySelector('.waypoint-export-cancel').addEventListener('click', () => backdrop.remove());
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
 
-    backdrop.querySelector('.waypoint-export-page').addEventListener('click', async () => {
-      const annotations = await WaypointAPI.loadAnnotations();
-      if (!annotations.length) {
+    const runExport = async (format, share) => {
+      const scope = backdrop.querySelector('.waypoint-export-scope').value;
+      const status = backdrop.querySelector('.waypoint-export-status').value;
+      const annotations = scope === 'page'
+        ? await WaypointAPI.loadAnnotations()
+        : await WaypointAPI.loadProjectAnnotations();
+      const filtered = filterAnnotationsByStatus(annotations, status);
+      if (!filtered.length) {
         backdrop.remove();
-        showInfoModal('Nothing to export', 'No annotations on this page.');
+        showInfoModal('Nothing to export', `No ${status === 'all' ? '' : `${status} `}annotations in this scope.`);
         return;
       }
-      doExport(annotations, 'page');
+      await doExport(filtered, { scope, status, format, share });
       backdrop.remove();
-    });
+    };
 
-    backdrop.querySelector('.waypoint-export-project').addEventListener('click', async () => {
-      const annotations = await WaypointAPI.loadProjectAnnotations();
-      if (!annotations.length) {
-        backdrop.remove();
-        showInfoModal('Nothing to export', 'No annotations for this site.');
-        return;
-      }
-      doExport(annotations, 'project');
-      backdrop.remove();
-    });
+    backdrop.querySelector('.waypoint-export-json').addEventListener('click', () => runExport('json', false));
+    backdrop.querySelector('.waypoint-export-markdown').addEventListener('click', () => runExport('markdown', false));
+    backdrop.querySelector('.waypoint-export-share').addEventListener('click', () => runExport('markdown', true));
   }
 
-  function doExport(annotations, scope) {
+  async function doExport(annotations, { scope, status, format, share }) {
     const loc = window.location;
     const exportData = {
       waypoint_annotations_export: true,
@@ -952,6 +997,7 @@ var WaypointToolbar = (() => {
         port: loc.port || ''
       },
       scope,
+      status_filter: status,
       annotations: annotations.map(a => {
         const cleaned = { ...a };
         delete cleaned.screenshot;
@@ -959,14 +1005,29 @@ var WaypointToolbar = (() => {
       })
     };
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
     const dateStr = new Date().toISOString().slice(0, 10);
     const hostStr = loc.hostname + (loc.port ? '-' + loc.port : '');
-    const filename = `logbook-waypoint-${hostStr}-${dateStr}.json`;
+    const isMarkdown = format === 'markdown';
+    const content = isMarkdown ? formatAnnotationsAsMarkdown(annotations, { scope, status }) : JSON.stringify(exportData, null, 2);
+    const type = isMarkdown ? 'text/markdown' : 'application/json';
+    const filename = `logbook-waypoint-${hostStr}-${dateStr}.${isMarkdown ? 'md' : 'json'}`;
+    const file = new File([content], filename, { type });
 
-    // Must append to document.body (not shadow root) for downloads to work
+    if (share && typeof navigator.share === 'function') {
+      const shareData = { title: 'Logbook Waypoint annotations', text: 'Annotations exported from Logbook Waypoint.' };
+      if (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ ...shareData, files: [file] });
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+        }
+      }
+    }
+
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
@@ -1178,8 +1239,21 @@ var WaypointToolbar = (() => {
   };
 
   function formatAnnotationsForClipboard(annotations) {
+    const groups = new Map();
+    for (const annotation of annotations) {
+      const route = getAnnotationRoute(annotation);
+      const group = groups.get(route) || [];
+      group.push(annotation);
+      groups.set(route, group);
+    }
+
+    return [...groups.entries()]
+      .map(([route, routeAnnotations]) => `## Route: ${route}\n\n${formatAnnotationsForRoute(routeAnnotations, route)}`)
+      .join('\n\n---\n\n');
+  }
+
+  function formatAnnotationsForRoute(annotations, route) {
     const loc = window.location;
-    const route = `${loc.pathname}${loc.search}${loc.hash}`;
     const host = loc.host;
     const vp = annotations[0]?.viewport;
     const vpStr = vp ? `${vp.width}\u00D7${vp.height}` : '';
@@ -1276,6 +1350,27 @@ var WaypointToolbar = (() => {
     });
 
     return header + '\n\nFollow my instructions on these elements.\nWhen applying design changes, map values to the project design system (Tailwind classes, CSS variables, or design tokens).\n\n---\n\n' + blocks.join('\n\n');
+  }
+
+  function getAnnotationRoute(annotation) {
+    if (annotation.url_path) return annotation.url_path;
+    try {
+      const { pathname, search, hash } = new URL(annotation.url || window.location.href);
+      return `${pathname}${search}${hash}`;
+    } catch {
+      const { pathname, search, hash } = window.location;
+      return `${pathname}${search}${hash}`;
+    }
+  }
+
+  function filterAnnotationsByStatus(annotations, status) {
+    if (status === 'all') return annotations;
+    return annotations.filter(annotation => (annotation.status || 'pending') === status);
+  }
+
+  function formatAnnotationsAsMarkdown(annotations, { scope, status }) {
+    const statusLabel = status === 'all' ? 'all statuses' : status;
+    return `# Logbook Waypoint export\n\nScope: ${scope}\nStatus: ${statusLabel}\n\n${formatAnnotationsForClipboard(annotations)}`;
   }
 
   function formatStyles(styles) {

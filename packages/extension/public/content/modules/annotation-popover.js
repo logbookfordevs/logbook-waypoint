@@ -109,6 +109,10 @@ var WaypointAnnotationPopover = (() => {
 
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const kbdHint = isMac ? '\u2318\u21A9' : 'Ctrl+Enter';
+  const MAX_IMAGE_ATTACHMENT_BYTES = 1024 * 1024;
+  const MAX_IMAGE_ATTACHMENT_DATA_URL_LENGTH = 1_400_000;
+  const MAX_IMAGE_ATTACHMENTS = 3;
+  const IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 
   // --- Prop configs per element type ---
 
@@ -345,6 +349,17 @@ var WaypointAnnotationPopover = (() => {
           <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000">${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
           <span class="waypoint-kbd-hint">${kbdHint} to save</span>
         </div>
+        <div class="waypoint-annotation-attachments">
+          <label class="waypoint-attachment-button">
+            <input class="waypoint-image-attachment-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple>
+            Add image
+          </label>
+          <span class="waypoint-attachment-status" aria-live="polite"></span>
+        </div>
+        <label class="waypoint-variant-intent-label">
+          <input class="waypoint-variant-intent" type="checkbox">
+          Request Variants
+        </label>
       </div>
       <div class="waypoint-popover-footer">
         <div class="waypoint-footer-left">
@@ -374,6 +389,12 @@ var WaypointAnnotationPopover = (() => {
     const cancelBtn = popover.querySelector('.waypoint-cancel-btn');
     const deleteBtn = popover.querySelector('.waypoint-delete-btn');
     const resetBtn = popover.querySelector('.waypoint-design-reset');
+    const imageInput = popover.querySelector('.waypoint-image-attachment-input');
+    const attachmentStatus = popover.querySelector('.waypoint-attachment-status');
+    const variantIntentInput = popover.querySelector('.waypoint-variant-intent');
+    let attachments = Array.isArray(existingAnnotation?.attachments)
+      ? existingAnnotation.attachments.filter(isImageAttachmentMetadata)
+      : [];
 
     // Track active element for revert-on-dismiss
     activeElement = targetElement;
@@ -551,6 +572,30 @@ var WaypointAnnotationPopover = (() => {
       resetBtn.style.visibility = buildPendingChanges() ? 'visible' : 'hidden';
     }
 
+    function updateAttachmentStatus(message = '') {
+      attachmentStatus.textContent = message || (attachments.length ? `${attachments.length} image${attachments.length === 1 ? '' : 's'} attached` : '');
+      if (message) attachmentStatus.setAttribute('role', 'alert');
+      else attachmentStatus.removeAttribute('role');
+    }
+
+    async function addImageAttachments(files) {
+      const available = MAX_IMAGE_ATTACHMENTS - attachments.length;
+      if (available <= 0) {
+        updateAttachmentStatus('Up to three images can be attached.');
+        return;
+      }
+      const selected = [...files].slice(0, available);
+      if (!selected.length) return;
+      try {
+        const nextAttachments = await Promise.all(selected.map(readImageAttachment));
+        attachments = [...attachments, ...nextAttachments];
+        updateAttachmentStatus();
+        updateSave();
+      } catch (error) {
+        updateAttachmentStatus(error.message || 'Unable to add this image.');
+      }
+    }
+
     // Apply saved pending_changes on open (edit mode)
     if (pc) {
       for (const prop of ALL_DESIGN_PROPS) {
@@ -563,8 +608,6 @@ var WaypointAnnotationPopover = (() => {
     // Enable/disable save
     const updateSave = () => {
       const text = textarea.value.trim();
-      const hasDesignChanges = !!buildPendingChanges();
-      const hasContent = text || hasDesignChanges;
 
       // Server status is informational only — annotations save to chrome.storage
       // regardless of MCP server state, so never block the save button.
@@ -577,16 +620,32 @@ var WaypointAnnotationPopover = (() => {
         saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged;
         saveBtn.textContent = 'Save';
       } else {
-        saveBtn.disabled = false;
-        saveBtn.textContent = hasContent ? 'Save annotation' : 'Save as pointer';
+        const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value.trim() : '';
+        saveBtn.disabled = !hasMeaningfulAnnotationContent(text, buildPendingChanges(), cssRulesVal, attachments);
+        saveBtn.textContent = 'Save annotation';
       }
     };
-    textarea.addEventListener('input', updateSave);
+    textarea.addEventListener('input', () => {
+      autoResizeCommentInput(textarea);
+      updateSave();
+    });
+    textarea.addEventListener('paste', event => {
+      const files = getPastedImageFiles(event.clipboardData);
+      if (!files.length) return;
+      event.preventDefault();
+      addImageAttachments(files);
+    });
+    imageInput.addEventListener('change', () => {
+      addImageAttachments(imageInput.files || []);
+      imageInput.value = '';
+    });
 
     // Expose updateSave and updateResetVisibility to toolbar wiring
     popover._updateSave = updateSave;
     popover._updateResetVisibility = updateResetVisibility;
+    updateAttachmentStatus();
     updateSave();
+    requestAnimationFrame(() => autoResizeCommentInput(textarea));
 
     // Focus textarea ASAP — temporarily block blur/focusout so framework doesn't react
     const prevActive = document.activeElement;
@@ -655,6 +714,8 @@ var WaypointAnnotationPopover = (() => {
       const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value.trim() : '';
       const cssField = cssRulesVal || null;
 
+      if (!isEdit && !hasMeaningfulAnnotationContent(comment, pendingChanges, cssField, attachments)) return;
+
       if (isEdit) {
         const updates = WaypointVariantPicker.buildAnnotationUpdates(existingAnnotation, comment, pendingChanges, cssField);
         await WaypointAPI.updateAnnotation(existingAnnotation.id, updates);
@@ -667,6 +728,9 @@ var WaypointAnnotationPopover = (() => {
       } else {
         const annotation = buildAnnotation(context, comment, pendingChanges);
         if (cssField) annotation.css = cssField;
+        if (attachments.length) annotation.attachments = attachments;
+        const variantIntent = getExplicitVariantIntent(variantIntentInput);
+        if (variantIntent) annotation.variant_intent = variantIntent;
         if (clickX != null) {
           const r = targetElement.getBoundingClientRect();
           annotation.badge_offset = { x: clickX - r.left, y: clickY - r.top };
@@ -693,6 +757,70 @@ var WaypointAnnotationPopover = (() => {
   function autoResizeContentInput(el) {
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
+  }
+
+  function autoResizeCommentInput(el) {
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(el.scrollHeight, 48)}px`;
+  }
+
+  function hasMeaningfulAnnotationContent(comment, pendingChanges, css, attachments) {
+    if (comment) return true;
+    if (pendingChanges && Object.keys(pendingChanges).length > 0) return true;
+    if (css) return true;
+    return attachments.length > 0;
+  }
+
+  function isImageAttachmentMetadata(attachment) {
+    return attachment
+      && typeof attachment === 'object'
+      && IMAGE_MIME_TYPES.has(attachment.mime_type)
+      && (typeof attachment.data_url === 'string' || typeof attachment.id === 'string');
+  }
+
+  function getPastedImageFiles(clipboardData) {
+    if (!clipboardData) return [];
+    const items = [...(clipboardData.items || [])]
+      .filter(item => item.kind === 'file' && IMAGE_MIME_TYPES.has(item.type))
+      .map(item => item.getAsFile())
+      .filter(Boolean);
+    if (items.length) return items;
+    return [...(clipboardData.files || [])].filter(file => IMAGE_MIME_TYPES.has(file.type));
+  }
+
+  function readImageAttachment(file) {
+    if (!file || !IMAGE_MIME_TYPES.has(file.type)) {
+      return Promise.reject(new Error('Choose a PNG, JPEG, GIF, or WebP image.'));
+    }
+    if (!Number.isFinite(file.size) || file.size > MAX_IMAGE_ATTACHMENT_BYTES) {
+      return Promise.reject(new Error('Images must be 1 MB or smaller.'));
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Unable to read this image.'));
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        if (typeof dataUrl !== 'string' || !dataUrl.startsWith(`data:${file.type};base64,`)) {
+          reject(new Error('Unable to encode this image.'));
+          return;
+        }
+        if (dataUrl.length > MAX_IMAGE_ATTACHMENT_DATA_URL_LENGTH) {
+          reject(new Error('Encoded image payload exceeds the limit.'));
+          return;
+        }
+        resolve({
+          name: String(file.name || 'image').slice(0, 160),
+          mime_type: file.type,
+          size_bytes: file.size,
+          data_url: dataUrl,
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function getExplicitVariantIntent(input) {
+    return input?.checked === true ? { kind: 'variant_request', source: 'annotation_popover' } : null;
   }
 
   function wireContentToolbar(popover, targetElement, pc, resetBtn) {

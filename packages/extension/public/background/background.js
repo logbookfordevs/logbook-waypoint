@@ -6,6 +6,11 @@ importScripts('source-identity-probe.js');
 importScripts('variant-errors.js');
 importScripts('variant-policy.js');
 
+const MAX_IMAGE_ATTACHMENT_BYTES = 1024 * 1024;
+const MAX_IMAGE_ATTACHMENT_DATA_URL_LENGTH = 1_400_000;
+const MAX_IMAGE_ATTACHMENTS = 3;
+const IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+
 class WaypointAnnotationsBackground {
   constructor() {
     this.apiServerUrl = 'http://127.0.0.1:3846'; // Updated to match external server
@@ -181,6 +186,12 @@ class WaypointAnnotationsBackground {
           this.enableSite(request.originPattern, request.tabId)
             .then(() => sendResponse({ success: true }))
             .catch(error => sendResponse({ success: false, error: error.message }));
+          break;
+
+        case 'requestOptionalSitePermission':
+          this.requestOptionalSitePermission(request.originPattern, sender?.tab?.url)
+            .then(granted => sendResponse({ success: true, granted }))
+            .catch(error => sendResponse({ success: false, granted: false, error: error.message }));
           break;
 
         case 'openPopupWithFocus':
@@ -383,6 +394,7 @@ class WaypointAnnotationsBackground {
         if (!WaypointAnnotationId.isValid(annotation?.id)) {
           throw new Error('Invalid Waypoint annotation ID');
         }
+        this.validateAnnotationAttachments(annotation);
         const result = await chrome.storage.local.get(['waypointAnnotations']);
         const annotations = WaypointAnnotationId.filterValid(result.waypointAnnotations);
 
@@ -399,13 +411,16 @@ class WaypointAnnotationsBackground {
 
         // Then try API server — mark as synced on success
         try {
-          await this.saveAnnotationToAPI(annotation);
+          const savedAnnotation = await this.saveAnnotationToAPI(annotation);
           // Re-read and update _synced flag
           const fresh = await chrome.storage.local.get(['waypointAnnotations']);
           const arr = WaypointAnnotationId.filterValid(fresh.waypointAnnotations);
-          const target = arr.find(a => a.id === annotation.id);
+          const targetIndex = arr.findIndex(a => a.id === annotation.id);
+          const target = arr[targetIndex];
           if (target && !target._synced) {
-            target._synced = true;
+            arr[targetIndex] = savedAnnotation && WaypointAnnotationId.isValid(savedAnnotation.id)
+              ? { ...savedAnnotation, _synced: true }
+              : { ...target, _synced: true };
             await chrome.storage.local.set({ waypointAnnotations: arr });
           }
         } catch (apiErr) {
@@ -424,6 +439,7 @@ class WaypointAnnotationsBackground {
 
   async saveAnnotationToAPI(annotation) {
     try {
+      this.validateAnnotationAttachments(annotation);
       const response = await fetch(`${this.apiServerUrl}/api/annotations`, {
         method: 'POST',
         headers: {
@@ -441,7 +457,7 @@ class WaypointAnnotationsBackground {
       if (!result.success) {
         throw new Error(result.error || 'Failed to save annotation to API');
       }
-      
+      return result.annotation;
       
     } catch (error) {
       console.warn('Failed to save to API server, annotation saved locally:', error.message);
@@ -961,6 +977,61 @@ class WaypointAnnotationsBackground {
     } catch {
       return false;
     }
+  }
+
+  validateAnnotationAttachments(annotation) {
+    const attachments = annotation?.attachments;
+    if (attachments === undefined) return;
+    if (!Array.isArray(attachments) || attachments.length > MAX_IMAGE_ATTACHMENTS) {
+      throw new Error('An annotation can include up to three image attachments');
+    }
+
+    let totalDataUrlLength = 0;
+    for (const attachment of attachments) {
+      if (!attachment || typeof attachment !== 'object') throw new Error('Invalid image attachment');
+      const mimeType = attachment.mime_type;
+      if (!IMAGE_MIME_TYPES.has(mimeType)) throw new Error('Unsupported image attachment type');
+
+      if (attachment.data_url === undefined) continue;
+      if (typeof attachment.data_url !== 'string' || !attachment.data_url.startsWith(`data:${mimeType};base64,`)) {
+        throw new Error('Invalid image attachment payload');
+      }
+      if (!Number.isInteger(attachment.size_bytes) || attachment.size_bytes < 0 || attachment.size_bytes > MAX_IMAGE_ATTACHMENT_BYTES) {
+        throw new Error('Image attachment exceeds the 1 MB limit');
+      }
+      if (attachment.data_url.length > MAX_IMAGE_ATTACHMENT_DATA_URL_LENGTH) {
+        throw new Error('Image attachment payload exceeds the limit');
+      }
+      totalDataUrlLength += attachment.data_url.length;
+    }
+    if (totalDataUrlLength > MAX_IMAGE_ATTACHMENT_DATA_URL_LENGTH * MAX_IMAGE_ATTACHMENTS) {
+      throw new Error('Combined image attachment payload exceeds the limit');
+    }
+  }
+
+  async requestOptionalSitePermission(originPattern, senderUrl) {
+    const url = new URL(originPattern);
+    const sender = new URL(senderUrl);
+    if (
+      !['http:', 'https:'].includes(url.protocol)
+      || url.pathname !== '/*'
+      || url.search
+      || url.hash
+      || originPattern !== `${url.origin}/*`
+      || url.origin !== sender.origin
+    ) {
+      throw new Error('Invalid optional site origin');
+    }
+
+    const granted = await chrome.permissions.request({ origins: [originPattern] });
+    if (!granted) return false;
+    const result = await chrome.storage.local.get(['waypointEnabledSites']);
+    const sites = result.waypointEnabledSites || [];
+    if (!sites.includes(originPattern)) {
+      await chrome.storage.local.set({ waypointEnabledSites: [...sites, originPattern] });
+    }
+    await this.enableSite(originPattern, null);
+    return true;
   }
 
   async isSupportedUrl(url) {
