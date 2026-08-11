@@ -171,8 +171,7 @@ export class LocalAnnotationsServer {
     // API endpoints for Chrome extension
     this.app.get('/api/annotations', async (req, res) => {
       try {
-        await this.expireClaims();
-        const annotations = await this.loadAnnotations();
+        const annotations = await this.loadCurrentAnnotations();
         const { status, url, limit = 50 } = req.query;
         
         let filtered = annotations;
@@ -1106,7 +1105,7 @@ export class LocalAnnotationsServer {
       throw new Error('timeout_ms must be an integer between 0 and 30000');
     }
 
-    await this.expireClaims();
+    await this.loadCurrentAnnotations();
     const result = await this.watchQueue.watch(
       { cursor: args.cursor, timeoutMs },
       () => this.loadAnnotations(),
@@ -1294,8 +1293,7 @@ export class LocalAnnotationsServer {
   async exportAnnotations(args = {}) {
     const { format = 'json', status = 'all', url } = args;
     const scope = url ? createProjectScope(url) : null;
-    await this.expireClaims();
-    const annotations = await this.loadAnnotations();
+    const annotations = await this.loadCurrentAnnotations();
     const scoped = scope
       ? annotations.filter(annotation => annotationMatchesProjectScope(annotation, scope))
       : annotations;
@@ -1318,8 +1316,7 @@ export class LocalAnnotationsServer {
   }
 
   async readAnnotations(args) {
-    await this.expireClaims();
-    const annotations = await this.loadAnnotations();
+    const annotations = await this.loadCurrentAnnotations();
     const { status = 'pending', limit = 50, offset = 0, url } = args;
     const scope = url ? createProjectScope(url) : null;
 
@@ -1415,6 +1412,11 @@ export class LocalAnnotationsServer {
     });
   }
 
+  async loadCurrentAnnotations() {
+    await this.expireClaims();
+    return this.loadAnnotations();
+  }
+
   async changeAnnotationLifecycle(args) {
     const id = args?.id;
     if (!isValidAnnotationId(id)) throw new TypeError('Invalid annotation ID');
@@ -1474,8 +1476,7 @@ export class LocalAnnotationsServer {
 
     try {
       // Load annotations - we only need to find the specific one
-      await this.expireClaims();
-      const annotations = await this.loadAnnotations();
+      const annotations = await this.loadCurrentAnnotations();
 
       // Find annotation by ID
       const annotation = annotations.find(a => a.id === id);
@@ -1540,8 +1541,7 @@ export class LocalAnnotationsServer {
   async deleteProjectAnnotations(args) {
     const { url_pattern, confirm = false } = args;
     
-    await this.expireClaims();
-    const annotations = await this.loadAnnotations();
+    const annotations = await this.loadCurrentAnnotations();
     
     // Filter annotations matching the URL pattern
     const scope = createProjectScope(url_pattern);
