@@ -185,6 +185,16 @@ export function assertAnnotationResolvable(annotation) {
   }
 }
 
+export function assertAnnotationDeletable(annotation) {
+  if (annotation?.variant_request?.status === 'unresolved') {
+    const remaining = [
+      ...unique(annotation.variant_request.scaffold ?? []).map(key => cleanupTarget('scaffold', key)),
+      ...annotation.variant_request.variants.map(variant => cleanupTarget('implementation', variant.key)),
+    ];
+    fail('Finalize or discard the unresolved Variant request before deleting its Annotation', remaining);
+  }
+}
+
 export function hasVariantOwnedFields(value) {
   return value && typeof value === 'object' && ['variant_request', 'variant_presentation'].some(field => field in value);
 }

@@ -24,5 +24,11 @@ globalThis.WaypointVariantPolicy = (() => {
     }
   }
 
-  return { assertSaveAllowed, assertUpdateAllowed };
+  function assertDeleteAllowed(annotation) {
+    if (annotation?.variant_request?.status === 'unresolved') {
+      throw new Error('Finalize or discard the unresolved Variant request before deleting its Annotation');
+    }
+  }
+
+  return { assertDeleteAllowed, assertSaveAllowed, assertUpdateAllowed };
 })();

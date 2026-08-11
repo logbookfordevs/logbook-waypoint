@@ -27,6 +27,7 @@ import {
   VariantContractError,
   activateVariant as activateVariantRecord,
   addVariant as addVariantRecord,
+  assertAnnotationDeletable,
   assertGenericAnnotationUpdateAllowed,
   assertSyncedAnnotationAllowed,
   createVariantRequest,
@@ -306,6 +307,7 @@ export class LocalAnnotationsServer {
         const deletedAnnotation = await this.applyAnnotationsUpdate(annotations => {
           const index = annotations.findIndex(annotation => annotation.id === id);
           if (index === -1) throw new Error('Annotation not found');
+          assertAnnotationDeletable(annotations[index]);
           return annotations.splice(index, 1)[0];
         });
         res.json({ 
@@ -316,7 +318,8 @@ export class LocalAnnotationsServer {
         });
       } catch (error) {
         console.error('Error deleting annotation:', error);
-        res.status(error.message === 'Annotation not found' ? 404 : 500).json({ error: error.message });
+        const status = error instanceof VariantContractError ? 409 : error.message === 'Annotation not found' ? 404 : 500;
+        res.status(status).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
       }
     });
 
@@ -1006,6 +1009,7 @@ export class LocalAnnotationsServer {
     const deletedAnnotation = await this.applyAnnotationsUpdate(annotations => {
       const index = annotations.findIndex(annotation => annotation.id === id);
       if (index === -1) throw new Error(`Annotation with id ${id} not found`);
+      assertAnnotationDeletable(annotations[index]);
       return annotations.splice(index, 1)[0];
     });
     
@@ -1123,6 +1127,7 @@ export class LocalAnnotationsServer {
     
     const deletion = await this.applyAnnotationsUpdate(current => {
       const removed = current.filter(annotation => annotationMatchesUrlPattern(annotation, url_pattern));
+      for (const annotation of removed) assertAnnotationDeletable(annotation);
       const removedIds = new Set(removed.map(annotation => annotation.id));
       const remaining = current.filter(annotation => !removedIds.has(annotation.id));
       current.splice(0, current.length, ...remaining);

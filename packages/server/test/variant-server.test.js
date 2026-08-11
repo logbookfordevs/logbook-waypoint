@@ -175,6 +175,12 @@ test('HTTP generic writes cannot create, replace, resolve, or sync Variant-owned
     });
     assert.equal(resolve.status, 409);
 
+    const remove = await fetch(`${baseUrl}/api/annotations/vibe_1750000000000_abc123xyz`, {
+      method: 'DELETE',
+    });
+    assert.equal(remove.status, 409);
+    assert.equal(read()[0].variant_request.status, 'unresolved');
+
     const [incoming] = read();
     incoming.variant_request.active_variant_key = 'b';
     const sync = await fetch(`${baseUrl}/api/annotations/sync`, {

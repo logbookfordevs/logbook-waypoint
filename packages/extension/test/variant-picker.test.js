@@ -86,8 +86,13 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
     () => context.WaypointVariantPolicy.assertSaveAllowed(null, variants),
     /Variant-owned state/,
   );
+  assert.throws(
+    () => context.WaypointVariantPolicy.assertDeleteAllowed(variants),
+    /before deleting/,
+  );
   const backgroundSource = await readFile(new URL('../.output/chrome-mv3/background/background.js', import.meta.url), 'utf8');
   assert.match(backgroundSource, /WaypointVariantPolicy\.assertUpdateAllowed/);
+  assert.match(backgroundSource, /WaypointVariantPolicy\.assertDeleteAllowed/);
   assert.equal(backgroundSource.match(/WaypointVariantPolicy\.assertSaveAllowed/g).length >= 2, true);
   assert.match(
     backgroundSource,

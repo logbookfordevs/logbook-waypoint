@@ -110,6 +110,7 @@ var VibeAPI = (() => {
       console.warn('deleteAnnotation bg failed, using storage fallback', e);
       const result = await chrome.storage.local.get(['annotations']);
       const all = result.annotations || [];
+      WaypointVariantPolicy.assertDeleteAllowed(all.find(annotation => annotation.id === id));
       const filtered = all.filter(a => a.id !== id);
       await chrome.storage.local.set({ annotations: filtered });
       return true;
@@ -143,6 +144,9 @@ var VibeAPI = (() => {
       console.warn('deleteAnnotationsByUrl bg failed, using storage fallback', e);
       const result = await chrome.storage.local.get(['annotations']);
       const all = result.annotations || [];
+      for (const annotation of all.filter(candidate => candidate.url === window.location.href)) {
+        WaypointVariantPolicy.assertDeleteAllowed(annotation);
+      }
       const remaining = all.filter(a => a.url !== window.location.href);
       await chrome.storage.local.set({ annotations: remaining });
       return all.length - remaining.length;

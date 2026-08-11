@@ -451,6 +451,8 @@ class VibeAnnotationsBackground {
         const result = await chrome.storage.local.get(['annotations', 'deletedAnnotationIds']);
         const annotations = result.annotations || [];
         const deletedIds = result.deletedAnnotationIds || [];
+        const deletedAnnotation = annotations.find(annotation => annotation.id === id);
+        WaypointVariantPolicy.assertDeleteAllowed(deletedAnnotation);
 
         const filteredAnnotations = annotations.filter(annotation => annotation.id !== id);
 
@@ -470,7 +472,6 @@ class VibeAnnotationsBackground {
         }
 
         // Find the deleted annotation's URL to update badge
-        const deletedAnnotation = annotations.find(a => a.id === id);
         if (deletedAnnotation) {
           await this.updateBadgeForUrl(deletedAnnotation.url);
         }
@@ -491,6 +492,7 @@ class VibeAnnotationsBackground {
       const deletedIds = result.deletedAnnotationIds || [];
 
       const toDelete = all.filter(a => a.url === url);
+      for (const annotation of toDelete) WaypointVariantPolicy.assertDeleteAllowed(annotation);
       const remaining = all.filter(a => a.url !== url);
 
       for (const a of toDelete) {
