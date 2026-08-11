@@ -14,12 +14,17 @@ const allowedHistoricalFiles = new Set([
   'TERMS.md',
   'packages/server/LICENSE',
   'packages/server/CHANGELOG.md',
-  'docs/adr/0001-build-from-the-last-mit-foundation.md',
-  'docs/adr/0004-start-without-vibe-data-migration.md',
   'packages/extension/public/popup/iconify-icon.min.js',
 ]);
 const legacyIdentifier = /\bopenclaw\b|\braphael(?: regnier)?\b|\bspellbind(?: creative studio)?\b|github\.com\/raphaelregnier\/vibe-annotations|\bvibe[ _-]annotations(?:-(?:server|extension|mcp))?\b|\bvibe_|(?:__)?vibeAnnotations\b|\bVIBE_[A-Z_]+\b/i;
 const allowedHistoricalLines = new Map([
+  ['docs/adr/0001-build-from-the-last-mit-foundation.md', new Set([
+    'Logbook Waypoint begins at Vibe Annotations commit `8864e12cfb28c6825ef6ccf996d291fc2b0ebcd4`, the final upstream commit released under the MIT License. We chose this legally clear foundation and independent evolution over inheriting later upstream implementation because Waypoint is becoming a distinct product and the upstream license changed after that commit. Post-MIT source is not copied or cherry-picked, while the original MIT copyright and project lineage remain preserved.',
+  ])],
+  ['docs/adr/0004-start-without-vibe-data-migration.md', new Set([
+    '# Start without Vibe data migration',
+    'Waypoint starts with its own empty data and configuration rather than importing or continuously supporting Vibe Annotations storage. This accepts a clean break for the new product in exchange for simpler identifiers, lifecycle rules, security guarantees, and future maintenance.',
+  ])],
   ['docs/UPDATE_SYSTEM.md', new Set([
     "      'Initial release of Vibe Annotations (MIT foundation)',",
   ])],
