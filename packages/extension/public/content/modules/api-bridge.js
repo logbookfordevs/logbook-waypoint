@@ -117,6 +117,9 @@ var WaypointAPI = (() => {
       return true;
     } catch (e) {
       console.warn('deleteAnnotation bg failed, using storage fallback', e);
+      if (!WaypointAnnotationId.isValid(id)) {
+        throw new Error('Invalid Waypoint annotation ID');
+      }
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const all = result.waypointAnnotations || [];
       WaypointVariantPolicy.assertDeleteAllowed(all.find(annotation => annotation.id === id));
