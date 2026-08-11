@@ -16,6 +16,12 @@ globalThis.WaypointVariantPolicy = (() => {
     if (hasAny(updates, ownedFields) || (current?.variant_request && hasAny(updates, presentationFields))) {
       throw new Error('Variant-owned state can only be changed through a Variant operation');
     }
+    if (
+      current?.variant_request?.status === 'unresolved'
+      && ['resolved', 'completed'].includes(updates?.status)
+    ) {
+      throw new Error('An unresolved Variant request cannot become Resolved');
+    }
   }
 
   return { assertSaveAllowed, assertUpdateAllowed };

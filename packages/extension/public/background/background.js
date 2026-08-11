@@ -1058,6 +1058,7 @@ class VibeAnnotationsBackground {
       const importedIds = [];
       for (const a of newAnnotations) {
         if (!existingIds.has(a.id)) {
+          WaypointVariantPolicy.assertSaveAllowed(null, a);
           all.push(a);
           existingIds.add(a.id);
           importedIds.push(a.id);
