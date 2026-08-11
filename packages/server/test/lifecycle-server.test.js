@@ -69,6 +69,10 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
         .filter(name => !listed.tools.some(tool => tool.name === name)),
       [],
     );
+    assert.deepEqual(
+      listed.tools.find(tool => tool.name === 'export_annotations').inputSchema.properties.status.enum,
+      ['pending', 'claimed', 'resolved', 'discarded', 'all'],
+    );
     const resolved = await callTool({
       params: { name: 'resolve_annotation', arguments: { id, owner: 'agent-one', url: 'http://localhost:3000/*' } },
     });
@@ -81,6 +85,24 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
     await assert.rejects(() => server.changeAnnotationLifecycle({ id, operation: 'discard' }), /terminal/i);
     await server.deleteAnnotation({ id });
     assert.equal((await server.readAnnotations({ status: 'all' })).annotations.length, 0);
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('HTTP Queue reads reject non-canonical lifecycle status filters', async () => {
+  const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
+  const { directory, server } = await fixture(now);
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+
+  try {
+    const response = await fetch(`${baseUrl}/api/annotations?status=completed`);
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /invalid status/i);
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));

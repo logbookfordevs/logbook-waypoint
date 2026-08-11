@@ -21,7 +21,12 @@ import {
 } from './security.js';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertValidAnnotation } from './annotation-validation.js';
-import { AnnotationLifecycle, LifecycleError } from './annotation-lifecycle.js';
+import {
+  ANNOTATION_STATUSES,
+  AnnotationLifecycle,
+  LifecycleError,
+  assertAnnotationStatusFilter,
+} from './annotation-lifecycle.js';
 import { ALLOWED_IMAGE_MIME_TYPES, AttachmentStore } from './attachment-store.js';
 import { encodeAnnotationsExport } from './export-codec.js';
 import { createProjectScope, matchesProjectScope } from './project-scope.js';
@@ -173,6 +178,7 @@ export class LocalAnnotationsServer {
       try {
         const annotations = await this.loadCurrentAnnotations();
         const { status, url, limit = 50 } = req.query;
+        if (status !== undefined) assertAnnotationStatusFilter(status);
         
         let filtered = annotations;
         
@@ -197,7 +203,7 @@ export class LocalAnnotationsServer {
         });
       } catch (error) {
         console.error('Error loading annotations:', error);
-        res.status(500).json({ error: 'Failed to load annotations' });
+        res.status(requestErrorStatus(error)).json({ error: error.message });
       }
     });
 
@@ -645,7 +651,7 @@ export class LocalAnnotationsServer {
               type: 'object',
               properties: {
                 format: { type: 'string', enum: ['json', 'markdown'], default: 'json' },
-                status: { type: 'string', default: 'all' },
+                status: { type: 'string', enum: [...ANNOTATION_STATUSES, 'all'], default: 'all' },
                 url: { type: 'string', description: 'Optional loopback project URL scope' },
               },
               additionalProperties: false,
@@ -1318,6 +1324,7 @@ export class LocalAnnotationsServer {
   async readAnnotations(args) {
     const annotations = await this.loadCurrentAnnotations();
     const { status = 'pending', limit = 50, offset = 0, url } = args;
+    assertAnnotationStatusFilter(status);
     const scope = url ? createProjectScope(url) : null;
 
     let filtered = annotations;

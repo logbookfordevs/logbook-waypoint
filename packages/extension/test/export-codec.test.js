@@ -74,6 +74,14 @@ test('codec creates the portable v1.0 envelope with status-filtered full route g
   });
 });
 
+test('codec rejects non-canonical lifecycle status filters', async () => {
+  const codec = await loadCodec();
+  assert.throws(
+    () => codec.createExportEnvelope([], { status: 'completed' }),
+    /invalid export status/i,
+  );
+});
+
 test('codec strips media data and filesystem hints while retaining safe media presence', async () => {
   const codec = await loadCodec();
   const payload = codec.createExportEnvelope([{

@@ -6,6 +6,7 @@ import vm from 'node:vm';
 async function loadScript(context, relativePath) {
   if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationStatus) {
     await loadScript(context, 'annotation-status.js');
+    await loadScript(context, 'annotation-collection.js');
   }
   const source = await readFile(new URL(`../.output/chrome-mv3/${relativePath}`, import.meta.url), 'utf8');
   vm.runInContext(source, context, { filename: relativePath });
@@ -49,12 +50,14 @@ test('content rejects non-image or oversized attachment payloads before they rea
 
   await assert.rejects(
     context.WaypointAPI.saveAnnotation({
+      status: 'pending',
       attachments: [{ mime_type: 'text/plain', size_bytes: 2, data_url: 'data:text/plain;base64,b2s=' }],
     }),
     /Unsupported image attachment type/,
   );
   await assert.rejects(
     context.WaypointAPI.saveAnnotation({
+      status: 'pending',
       attachments: [{ mime_type: 'image/png', size_bytes: 1_048_577, data_url: 'data:image/png;base64,AAAA' }],
     }),
     /1 MB limit/,

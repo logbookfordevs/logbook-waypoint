@@ -65,7 +65,7 @@ globalThis.WaypointExportCodec = (() => {
 
   function filterAnnotationsByStatus(annotations, status = 'all') {
     if (!Array.isArray(annotations)) throw new TypeError('Annotations must be an array');
-    if (typeof status !== 'string' || status.length === 0) throw new TypeError('Export status must be a string');
+    WaypointAnnotationStatus.assertFilter(status);
     const normalized = WaypointAnnotationStatus.normalizeAll(annotations);
     return status === 'all' ? normalized : normalized.filter(annotation => annotation.status === status);
   }

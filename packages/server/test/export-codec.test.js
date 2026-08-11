@@ -37,6 +37,13 @@ test('JSON exports filter by status and group annotations by full route', () => 
   assert.equal(payload.routes[0].annotations[0].id, annotations[0].id);
 });
 
+test('exports reject non-canonical lifecycle status filters', () => {
+  assert.throws(
+    () => encodeAnnotationsExport(annotations, { status: 'completed' }),
+    /invalid export status/i,
+  );
+});
+
 test('portable JSON and Markdown never expose media bytes or source filesystem hints', () => {
   const result = encodeAnnotationsExport([{
     ...annotations[0],

@@ -1,6 +1,12 @@
 export const ANNOTATION_STATUSES = Object.freeze(['pending', 'claimed', 'resolved', 'discarded']);
 export const DEFAULT_CLAIM_TTL_MS = 5 * 60 * 1000;
 
+export function assertAnnotationStatusFilter(status, { allowAll = true } = {}) {
+  const allowed = allowAll ? [...ANNOTATION_STATUSES, 'all'] : ANNOTATION_STATUSES;
+  if (!allowed.includes(status)) throw new TypeError('Invalid status filter');
+  return status;
+}
+
 const OWNER_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} ._:@/-]{0,199}$/u;
 
 export class LifecycleError extends Error {

@@ -47,6 +47,13 @@ globalThis.WaypointAnnotationStatus = (() => {
     return { ...updates };
   }
 
+  function assertFilter(status) {
+    if (status !== 'all' && !CANONICAL_STATUSES.includes(status)) {
+      throw new TypeError('Invalid export status');
+    }
+    return status;
+  }
+
   function isActionable(annotation) {
     return ACTIONABLE_STATUSES.has(normalizeStatus(annotation?.status));
   }
@@ -65,6 +72,7 @@ globalThis.WaypointAnnotationStatus = (() => {
   return {
     ACTIONABLE_STATUSES: Object.freeze([...ACTIONABLE_STATUSES]),
     CANONICAL_STATUSES,
+    assertFilter,
     countActionable,
     filterActionable,
     isActionable,

@@ -52,7 +52,11 @@ function exportedAnnotation(annotation) {
 
 export function filterAnnotationsForExport(annotations, status = 'all') {
   if (!Array.isArray(annotations)) throw new TypeError('Annotations must be an array');
-  if (typeof status !== 'string' || status.length === 0) throw new TypeError('Export status must be a string');
+  try {
+    assertAnnotationStatusFilter(status);
+  } catch {
+    throw new TypeError('Invalid export status');
+  }
   return status === 'all' ? annotations : annotations.filter(annotation => annotation.status === status);
 }
 
@@ -125,3 +129,4 @@ export function encodeAnnotationsExport(annotations, {
       : markdownFor(routes),
   };
 }
+import { assertAnnotationStatusFilter } from './annotation-lifecycle.js';

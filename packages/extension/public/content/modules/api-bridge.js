@@ -95,7 +95,7 @@ var WaypointAPI = (() => {
   async function loadAnnotations() {
     try {
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const all = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
+      const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       return all.filter(a => a.url === window.location.href);
     } catch {
       return [];
@@ -105,7 +105,7 @@ var WaypointAPI = (() => {
   async function loadProjectAnnotations() {
     try {
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const all = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
+      const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       const origin = window.location.origin;
       return all.filter(a => {
         try { return new URL(a.url).origin === origin; } catch { return false; }
@@ -129,7 +129,7 @@ var WaypointAPI = (() => {
         throw new Error('Invalid Waypoint annotation ID');
       }
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const all = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
+      const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       WaypointVariantPolicy.assertSaveAllowed(null, annotation);
       all.push(annotation);
       await chrome.storage.local.set({ waypointAnnotations: all });
@@ -152,7 +152,7 @@ var WaypointAPI = (() => {
         throw new Error('Annotation ID cannot be changed');
       }
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const all = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
+      const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       const idx = all.findIndex(a => a.id === id);
       if (idx !== -1) {
         WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
@@ -174,7 +174,7 @@ var WaypointAPI = (() => {
         throw new Error('Invalid Waypoint annotation ID');
       }
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const all = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
+      const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       WaypointVariantPolicy.assertDeleteAllowed(all.find(annotation => annotation.id === id));
       const filtered = all.filter(a => a.id !== id);
       await chrome.storage.local.set({ waypointAnnotations: filtered });
@@ -233,7 +233,7 @@ var WaypointAPI = (() => {
     } catch (e) {
       console.warn('deleteAnnotationsByUrl bg failed, using storage fallback', e);
       const result = await chrome.storage.local.get(['waypointAnnotations']);
-      const all = WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(result.waypointAnnotations));
+      const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       for (const annotation of all.filter(candidate => candidate.url === window.location.href)) {
         WaypointVariantPolicy.assertDeleteAllowed(annotation);
       }
@@ -248,7 +248,7 @@ var WaypointAPI = (() => {
   function onAnnotationsChanged(cb) {
     chrome.storage.onChanged.addListener((changes, ns) => {
       if (ns === 'local' && changes.waypointAnnotations) {
-        cb(WaypointAnnotationStatus.normalizeAll(WaypointAnnotationId.filterValid(changes.waypointAnnotations.newValue)));
+        cb(WaypointAnnotationCollection.canonicalize(changes.waypointAnnotations.newValue));
       }
     });
   }

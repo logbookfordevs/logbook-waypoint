@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const statusUrl = new URL('../public/annotation-status.js', import.meta.url);
+const collectionUrl = new URL('../public/annotation-collection.js', import.meta.url);
 const codecUrl = new URL('../public/export-codec.js', import.meta.url);
 const syncUrl = new URL('../public/background/queue-sync.js', import.meta.url);
 
@@ -48,6 +49,7 @@ test('export, import, and Queue sync reject legacy statuses after one-time migra
     filterValid: annotations => Array.isArray(annotations) ? annotations : [],
     isValid: () => true,
   };
+  vm.runInContext(await readFile(collectionUrl, 'utf8'), context, { filename: 'annotation-collection.js' });
   vm.runInContext(await readFile(syncUrl, 'utf8'), context, { filename: 'queue-sync.js' });
 
   const exported = context.WaypointExportCodec.createExportEnvelope([
@@ -112,5 +114,24 @@ test('generic extension updates reject lifecycle state and Claim changes', async
   assert.throws(
     () => context.WaypointAnnotationStatus.normalizeUpdate({ claim: { owner: 'agent-one' } }),
     /lifecycle operations/i,
+  );
+});
+
+test('annotation collection adapter combines canonical ID and lifecycle validation', async () => {
+  const context = await loadStatus();
+  context.WaypointAnnotationId = {
+    filterValid: annotations => annotations.filter(annotation => annotation.id.startsWith('waypoint_')),
+  };
+  vm.runInContext(await readFile(collectionUrl, 'utf8'), context, { filename: 'annotation-collection.js' });
+
+  const annotations = context.WaypointAnnotationCollection.canonicalize([
+    { id: 'waypoint_valid', status: 'pending' },
+    { id: 'vibe_invalid', status: 'pending' },
+  ]);
+
+  assert.deepEqual(JSON.parse(JSON.stringify(annotations)), [{ id: 'waypoint_valid', status: 'pending' }]);
+  assert.throws(
+    () => context.WaypointAnnotationCollection.canonicalize([{ id: 'waypoint_invalid', status: 'completed' }]),
+    /invalid annotation status/i,
   );
 });

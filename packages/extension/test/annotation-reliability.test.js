@@ -11,6 +11,7 @@ const { parseHTML } = requireFromWxt('linkedom');
 async function loadScript(context, relativePath) {
   if ((relativePath === 'content/modules/api-bridge.js' || relativePath === 'background/queue-sync.js') && !context.WaypointAnnotationStatus) {
     await loadScript(context, 'annotation-status.js');
+    await loadScript(context, 'annotation-collection.js');
   }
   const source = await readFile(new URL(`../.output/chrome-mv3/${relativePath}`, import.meta.url), 'utf8');
   vm.runInContext(source, context, { filename: relativePath });
@@ -143,7 +144,7 @@ test('direct storage fallback rejects non-Waypoint Annotation IDs', async () => 
   await loadScript(context, 'content/modules/api-bridge.js');
 
   await assert.rejects(
-    context.WaypointAPI.saveAnnotation({ id: 'vibe_1750000000000_abc123xyz' }),
+    context.WaypointAPI.saveAnnotation({ id: 'vibe_1750000000000_abc123xyz', status: 'pending' }),
     /Invalid Waypoint annotation ID/,
   );
   assert.deepEqual(writes, []);
@@ -157,7 +158,7 @@ test('direct storage fallback keeps Annotation identity immutable', async () => 
     storage: {
       local: {
         get: async () => ({
-          waypointAnnotations: [{ id: 'waypoint_1750000000000_abc123xyz', comment: 'Original' }],
+          waypointAnnotations: [{ id: 'waypoint_1750000000000_abc123xyz', comment: 'Original', status: 'pending' }],
         }),
         set: async value => { writes.push(value); },
       },
@@ -216,8 +217,8 @@ test('storage reads ignore predecessor Annotation IDs', async () => {
       local: {
         get: async () => ({
           waypointAnnotations: [
-            { id: 'vibe_1750000000000_abc123xyz', url: context.window.location.href },
-            { id: 'waypoint_1750000000000_abc123xyz', url: context.window.location.href },
+            { id: 'vibe_1750000000000_abc123xyz', url: context.window.location.href, status: 'pending' },
+            { id: 'waypoint_1750000000000_abc123xyz', url: context.window.location.href, status: 'pending' },
           ],
         }),
       },
@@ -240,6 +241,7 @@ test('full Queue sync preserves more than 50 annotations in both directions', as
   const annotations = Array.from({ length: 75 }, (_, index) => ({
     id: `waypoint_${1750000000000 + index}_abcdefghi`,
     created_at: '2026-01-01T00:00:00.000Z',
+    status: 'pending',
   }));
 
   const pulled = context.WaypointQueueSync.merge([], annotations, []);
@@ -248,7 +250,7 @@ test('full Queue sync preserves more than 50 annotations in both directions', as
 
   const withPredecessorData = context.WaypointQueueSync.merge(
     [],
-    [...annotations, { id: 'vibe_1750000000000_abc123xyz' }],
+    [...annotations, { id: 'vibe_1750000000000_abc123xyz', status: 'pending' }],
     ['vibe_1750000000000_deleted'],
   );
   assert.equal(withPredecessorData.annotations.length, 75);
@@ -266,6 +268,7 @@ test('Queue conflict resolution preserves Variant-owned state from ordinary reco
   await loadScript(context, 'background/queue-sync.js');
   const unresolved = {
     id: 'waypoint_1750000000001_abcdefghi',
+    status: 'pending',
     updated_at: '2026-01-01T00:00:00.000Z',
     variant_request: { status: 'unresolved', active_variant_key: 'compact', variants: [] },
     variant_presentation: { css: '.card { gap: 8px; }' },
@@ -273,6 +276,7 @@ test('Queue conflict resolution preserves Variant-owned state from ordinary reco
   };
   const newerOrdinary = {
     id: unresolved.id,
+    status: 'pending',
     updated_at: '2026-01-02T00:00:00.000Z',
     comment: 'stale ordinary copy',
   };
@@ -320,6 +324,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   const annotation = {
     id: 'waypoint_1750000000001_abcdefghi',
     comment: 'Change it',
+    status: 'pending',
     created_at: '2026-01-01T00:00:00.000Z',
     pending_changes: {
       color: { original: 'green', value: 'red' },
