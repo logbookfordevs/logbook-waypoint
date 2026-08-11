@@ -3,6 +3,8 @@ import { existsSync } from 'node:fs';
 import { mkdir, open, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { isValidAnnotationId } from './annotation-id.js';
+
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
   if (!value || typeof value !== 'object') return value;
@@ -78,7 +80,7 @@ function validateSavedQueue(saved) {
       || typeof change.cursor !== 'string'
       || cursors.has(change.cursor)
       || !change.annotation
-      || typeof change.annotation.id !== 'string'
+      || !isValidAnnotationId(change.annotation.id)
     ) {
       throw new Error('Invalid Watch journal change');
     }

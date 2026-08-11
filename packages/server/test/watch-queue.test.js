@@ -319,6 +319,28 @@ test('persistent Watch quarantines corruption and rebuilds from the committed Qu
   }
 });
 
+test('persistent Watch rejects predecessor Annotation IDs in saved history', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const pending = annotation();
+  const original = new PersistentWatchQueue({ historyFile });
+
+  try {
+    await original.recordChanges([pending]);
+    const saved = await readFile(historyFile, 'utf8');
+    await writeFile(historyFile, saved.replaceAll('waypoint_', 'vibe_'));
+
+    const restored = new PersistentWatchQueue({ historyFile });
+    const rebuilt = await restored.watch({ timeoutMs: 0 }, async () => [pending]);
+    const files = await readdir(directory);
+
+    assert.equal(rebuilt.changes.every(change => change.annotation.id.startsWith('waypoint_')), true);
+    assert.equal(files.some(file => file.startsWith('watch-history.json.corrupted.')), true);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('corrupt-journal rebuild uses a fresh revision namespace for deduplication', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
   const historyFile = path.join(directory, 'watch-history.json');
