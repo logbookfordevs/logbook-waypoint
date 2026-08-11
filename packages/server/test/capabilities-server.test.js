@@ -69,6 +69,125 @@ test('server accepts commentless visual Annotations and rejects empty records', 
   }
 });
 
+test('server rejects URL-less and contentless Annotations at create and sync HTTP seams', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-annotation-validation-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const server = new LocalAnnotationsServer({
+    annotationsFile,
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+  const validAnnotation = {
+    id,
+    url: 'http://localhost:3000/app',
+    comment: 'Keep this feedback',
+    status: 'pending',
+  };
+  const invalidAnnotations = [
+    { ...validAnnotation, id: 'waypoint_1750000000001_abcdefghi', url: undefined },
+    { ...validAnnotation, id: 'waypoint_1750000000002_abcdefghi', url: '   ' },
+    { ...validAnnotation, id: 'waypoint_1750000000003_abcdefghi', url: '/relative-page' },
+    { ...validAnnotation, id: 'waypoint_1750000000004_abcdefghi', comment: '   ' },
+    { ...validAnnotation, id: 'waypoint_1750000000005_abcdefghi', comment: '', pending_changes: {} },
+    { ...validAnnotation, id: 'waypoint_1750000000006_abcdefghi', comment: '', css: '  ' },
+    { ...validAnnotation, id: 'waypoint_1750000000007_abcdefghi', comment: '', screenshot: {} },
+    { ...validAnnotation, id: 'waypoint_1750000000008_abcdefghi', comment: '', attachments: [] },
+  ];
+
+  try {
+    await withServer(server, async baseUrl => {
+      const baseline = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(validAnnotation),
+      });
+      assert.equal(baseline.status, 200);
+
+      for (const annotation of invalidAnnotations) {
+        const create = await fetch(`${baseUrl}/api/annotations`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(annotation),
+        });
+        assert.equal(create.status, 400, `create should reject ${annotation.id}`);
+
+        const sync = await fetch(`${baseUrl}/api/annotations/sync`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ annotations: [annotation] }),
+        });
+        assert.equal(sync.status, 400, `sync should reject ${annotation.id}`);
+      }
+
+      const persisted = JSON.parse(await readFile(annotationsFile, 'utf8'));
+      assert.equal(persisted.length, 1);
+      assert.equal(persisted[0].id, validAnnotation.id);
+    });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('server accepts non-comment Annotation content at create and sync HTTP seams', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-annotation-content-'));
+  const server = new LocalAnnotationsServer({
+    annotationsFile: path.join(directory, 'annotations.json'),
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+
+  try {
+    await withServer(server, async baseUrl => {
+      const create = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          url: 'http://localhost:3000/app',
+          comment: '',
+          css: '.feedback { outline: 2px solid currentColor; }',
+          status: 'pending',
+        }),
+      });
+      assert.equal(create.status, 200);
+
+      const sync = await fetch(`${baseUrl}/api/annotations/sync`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          annotations: [{
+            id: 'waypoint_1750000000001_abcdefghi',
+            url: 'http://localhost:3000/app',
+            comment: '',
+            pending_changes: { color: { original: '#000', value: '#201a16' } },
+            status: 'pending',
+          }, {
+            id: 'waypoint_1750000000002_abcdefghi',
+            url: 'http://localhost:3000/app',
+            comment: '',
+            screenshot: { data_url: 'data:image/png;base64,c2NyZWVuc2hvdA==' },
+            status: 'pending',
+          }, {
+            id: 'waypoint_1750000000003_abcdefghi',
+            url: 'http://localhost:3000/app',
+            comment: '',
+            attachments: [{
+              name: 'detail.png',
+              mime_type: 'image/png',
+              size_bytes: 6,
+              data_url: 'data:image/png;base64,ZGV0YWls',
+            }],
+            status: 'pending',
+          }],
+        }),
+      });
+      assert.equal(sync.status, 200);
+    });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('server shares strict loopback project scope across read, context, deletion, and export', async () => {
   const server = new LocalAnnotationsServer();
   const annotations = [

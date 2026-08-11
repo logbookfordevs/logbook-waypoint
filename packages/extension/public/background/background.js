@@ -1,6 +1,8 @@
 // Logbook Waypoint Background Service Worker
 
 importScripts('../annotation-id.js');
+importScripts('../annotation-validation.js');
+importScripts('../export-codec.js');
 importScripts('queue-sync.js');
 importScripts('source-identity-probe.js');
 importScripts('variant-errors.js');
@@ -255,6 +257,7 @@ class WaypointAnnotationsBackground {
 
   async syncAnnotationsToAPI(annotations) {
     try {
+      WaypointAnnotationValidation.assertAll(annotations);
       for (const annotation of annotations) {
         this.validateAnnotationAttachments(annotation);
       }
@@ -585,13 +588,13 @@ class WaypointAnnotationsBackground {
       
       switch (format) {
         case 'json':
-          return JSON.stringify(this.createExportEnvelope(annotations), null, 2);
+          return JSON.stringify(WaypointExportCodec.createExportEnvelope(annotations), null, 2);
           
         case 'csv':
           return this.annotationsToCSV(annotations);
           
         case 'mcp':
-          return this.createExportEnvelope(annotations);
+          return WaypointExportCodec.createExportEnvelope(annotations);
           
         default:
           throw new Error('Unsupported export format');
@@ -615,64 +618,6 @@ class WaypointAnnotationsBackground {
     ]);
     
     return [headers, ...rows].map(row => row.join(',')).join('\n');
-  }
-
-  sanitizeExportValue(value) {
-    if (Array.isArray(value)) return value.map(item => this.sanitizeExportValue(item));
-    if (!value || typeof value !== 'object') return value;
-
-    const sensitive = new Set(['attachments', 'screenshot', 'source_file_path', 'source_mapping', 'source_identity']);
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([key]) => !sensitive.has(key) && !/(?:^|_)(?:data_url|file_path|file_path_hint|filesystem_path|source_path|absolute_path|local_path)$/.test(key))
-        .map(([key, nestedValue]) => [key, this.sanitizeExportValue(nestedValue)]),
-    );
-  }
-
-  exportedAnnotation(annotation) {
-    let urlPath = annotation.url_path;
-    try {
-      const url = new URL(annotation.url);
-      urlPath = `${url.pathname}${url.search}${url.hash}`;
-    } catch {}
-
-    return {
-      ...this.sanitizeExportValue(annotation),
-      id: annotation.id,
-      status: annotation.status || 'pending',
-      ...(urlPath ? { url_path: urlPath } : {}),
-      has_screenshot: Boolean(annotation.screenshot?.data_url || annotation.screenshot?.attachment_id || annotation.has_screenshot),
-      has_attachments: Boolean(annotation.attachments?.length || annotation.has_attachments),
-    };
-  }
-
-  createExportEnvelope(annotations) {
-    const portableAnnotations = annotations.map(annotation => this.exportedAnnotation(annotation));
-    const routes = new Map();
-
-    for (const annotation of portableAnnotations) {
-      try {
-        const url = new URL(annotation.url);
-        const route = annotation.url_path || `${url.pathname}${url.search}${url.hash}`;
-        const key = `${url.origin}${route}`;
-        if (!routes.has(key)) routes.set(key, { origin: url.origin, route, url: `${url.origin}${route}`, annotations: [] });
-        routes.get(key).annotations.push(annotation);
-      } catch {}
-    }
-
-    const routeGroups = [...routes.values()];
-    const sourceUrl = routeGroups[0] ? new URL(routeGroups[0].origin) : null;
-    return {
-      waypoint_annotations_export: true,
-      version: '1.0',
-      exported_at: new Date().toISOString(),
-      source: sourceUrl ? { origin: sourceUrl.origin, hostname: sourceUrl.hostname, port: sourceUrl.port } : undefined,
-      scope: 'project',
-      status_filter: 'all',
-      annotation_count: portableAnnotations.length,
-      annotations: portableAnnotations,
-      routes: routeGroups,
-    };
   }
 
   async updateBadge(tabId, url) {
@@ -1090,6 +1035,8 @@ class WaypointAnnotationsBackground {
         matches: [originPattern],
         js: [
           'annotation-id.js',
+          'annotation-validation.js',
+          'export-codec.js',
           'agent-setup-config.js',
           'content/modules/event-bus.js',
           'content/modules/styles.js',
@@ -1162,6 +1109,8 @@ class WaypointAnnotationsBackground {
     if (!Array.isArray(newAnnotations) || !newAnnotations.length) {
       return { imported: 0 };
     }
+
+    WaypointAnnotationValidation.assertAll(newAnnotations);
 
     return this._withStorageLock(async () => {
       const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);

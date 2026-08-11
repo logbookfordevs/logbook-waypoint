@@ -62,8 +62,10 @@ test('generated setup data is the single Waypoint-native source for agent config
     new URL('../.output/chrome-mv3/manifest.json', import.meta.url),
     'utf8',
   ));
-  assert.deepEqual(manifest.content_scripts[0].js.slice(0, 2), [
+  assert.deepEqual(manifest.content_scripts[0].js.slice(0, 4), [
     'annotation-id.js',
+    'annotation-validation.js',
+    'export-codec.js',
     'agent-setup-config.js',
   ]);
 });

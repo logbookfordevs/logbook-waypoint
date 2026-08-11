@@ -20,6 +20,7 @@ import {
   mcpTransportSecurity
 } from './security.js';
 import { isValidAnnotationId } from './annotation-id.js';
+import { assertValidAnnotation } from './annotation-validation.js';
 import { ALLOWED_IMAGE_MIME_TYPES, AttachmentStore } from './attachment-store.js';
 import { encodeAnnotationsExport } from './export-codec.js';
 import { createProjectScope, matchesProjectScope } from './project-scope.js';
@@ -80,14 +81,6 @@ function createToolErrorPayload(tool, error) {
 
 function annotationMatchesProjectScope(annotation, scope) {
   return matchesProjectScope(annotation?.url, scope);
-}
-
-function hasMeaningfulAnnotationContent(annotation) {
-  return typeof annotation.comment === 'string' && annotation.comment.trim().length > 0
-    || annotation.pending_changes && Object.keys(annotation.pending_changes).length > 0
-    || typeof annotation.css === 'string' && annotation.css.trim().length > 0
-    || Boolean(annotation.screenshot?.data_url || annotation.screenshot?.attachment_id)
-    || Array.isArray(annotation.attachments) && annotation.attachments.length > 0;
 }
 
 function annotationSummary(annotation) {
@@ -196,18 +189,7 @@ export class LocalAnnotationsServer {
       try {
         const annotation = req.body;
 
-        if (!annotation || typeof annotation !== 'object' || Array.isArray(annotation)) {
-          return res.status(400).json({ error: 'annotation must be an object' });
-        }
-        
-        // Validate annotation
-        if (!annotation.id || !annotation.url || !hasMeaningfulAnnotationContent(annotation)) {
-          return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        if (!isValidAnnotationId(annotation.id)) {
-          return res.status(400).json({ error: 'Invalid annotation ID' });
-        }
+        assertValidAnnotation(annotation);
 
         const result = await this.applyAnnotationsUpdate(async annotations => {
           const normalized = await this.normalizeAnnotationMedia(annotation, { stagedAttachments });
@@ -256,9 +238,7 @@ export class LocalAnnotationsServer {
           return res.status(400).json({ error: 'annotations must be an array' });
         }
 
-        if (annotations.some(annotation => !isValidAnnotationId(annotation?.id))) {
-          return res.status(400).json({ error: 'Invalid annotation ID in sync payload' });
-        }
+        for (const annotation of annotations) assertValidAnnotation(annotation);
 
         if (new Set(annotations.map(annotation => annotation.id)).size !== annotations.length) {
           return res.status(400).json({ error: 'Duplicate annotation ID in sync payload' });

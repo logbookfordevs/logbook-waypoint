@@ -72,9 +72,11 @@ test('generated popup loads the shared Annotation ID adapter before storage cons
   assert.ok(source.indexOf('../annotation-id.js') < source.indexOf('popup.js'));
 });
 
-test('generated annotation ID adapter precedes all callers and rejects legacy IDs', async () => {
-  const [adapterSource, backgroundSource, manifestSource] = await Promise.all([
+test('generated shared adapters precede all callers and reject legacy IDs', async () => {
+  const [adapterSource, validationSource, codecSource, backgroundSource, manifestSource] = await Promise.all([
     readFile(new URL('../.output/chrome-mv3/annotation-id.js', import.meta.url), 'utf8'),
+    readFile(new URL('../.output/chrome-mv3/annotation-validation.js', import.meta.url), 'utf8'),
+    readFile(new URL('../.output/chrome-mv3/export-codec.js', import.meta.url), 'utf8'),
     readFile(new URL('../.output/chrome-mv3/background/background.js', import.meta.url), 'utf8'),
     readFile(new URL('../.output/chrome-mv3/manifest.json', import.meta.url), 'utf8'),
   ]);
@@ -92,5 +94,11 @@ test('generated annotation ID adapter precedes all callers and rejects legacy ID
     ['waypoint_1700000000000_abcdefgh'],
   );
   assert.equal(JSON.parse(manifestSource).content_scripts[0].js[0], 'annotation-id.js');
+  assert.ok(JSON.parse(manifestSource).content_scripts[0].js.indexOf('annotation-validation.js') < JSON.parse(manifestSource).content_scripts[0].js.indexOf('content/modules/floating-toolbar.js'));
+  assert.ok(JSON.parse(manifestSource).content_scripts[0].js.indexOf('export-codec.js') < JSON.parse(manifestSource).content_scripts[0].js.indexOf('content/modules/floating-toolbar.js'));
+  assert.match(codecSource, /globalThis\.WaypointExportCodec/);
+  assert.match(validationSource, /globalThis\.WaypointAnnotationValidation/);
   assert.ok(backgroundSource.indexOf("importScripts('../annotation-id.js')") < backgroundSource.indexOf("importScripts('queue-sync.js')"));
+  assert.ok(backgroundSource.indexOf("importScripts('../annotation-validation.js')") < backgroundSource.indexOf("importScripts('queue-sync.js')"));
+  assert.ok(backgroundSource.indexOf("importScripts('../export-codec.js')") < backgroundSource.indexOf("importScripts('queue-sync.js')"));
 });

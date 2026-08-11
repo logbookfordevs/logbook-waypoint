@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
+const codecUrl = new URL('../public/export-codec.js', import.meta.url);
 const popupUrl = new URL('../public/popup/popup.js', import.meta.url);
 const popupHtmlUrl = new URL('../public/popup/popup.html', import.meta.url);
 const stylesUrl = new URL('../public/content/modules/styles.js', import.meta.url);
@@ -12,20 +13,24 @@ test('toolbar exports status-filtered Markdown and can invoke native sharing', a
   const toolbar = await readFile(toolbarUrl, 'utf8');
 
   assert.match(toolbar, /waypoint-export-status/);
-  assert.match(toolbar, /filterAnnotationsByStatus/);
-  assert.match(toolbar, /formatAnnotationsAsMarkdown/);
+  assert.match(toolbar, /WaypointExportCodec\.filterAnnotationsByStatus/);
+  assert.match(toolbar, /WaypointExportCodec\.formatAnnotationsAsMarkdown/);
   assert.match(toolbar, /navigator\.share\(/);
   assert.match(toolbar, /text\/markdown/);
 });
 
 test('toolbar uses the portable Waypoint envelope for export and accepts server route groups for import', async () => {
-  const toolbar = await readFile(toolbarUrl, 'utf8');
+  const [codec, toolbar] = await Promise.all([
+    readFile(codecUrl, 'utf8'),
+    readFile(toolbarUrl, 'utf8'),
+  ]);
   const context = vm.createContext({
     window: { location: new URL('http://localhost:3000/app?tab=open#feedback') },
     navigator: { platform: 'MacIntel' },
     URL,
   });
   context.globalThis = context;
+  vm.runInContext(codec, context, { filename: 'export-codec.js' });
   vm.runInContext(toolbar, context, { filename: 'floating-toolbar.js' });
 
   const annotation = {
@@ -77,9 +82,7 @@ test('toolbar uses the portable Waypoint envelope for export and accepts server 
 test('toolbar clipboard groups annotations by their full route identity', async () => {
   const toolbar = await readFile(toolbarUrl, 'utf8');
 
-  assert.match(toolbar, /getAnnotationRoute/);
-  assert.match(toolbar, /annotation\.url_path/);
-  assert.match(toolbar, /pathname.*search.*hash/);
+  assert.match(toolbar, /WaypointExportCodec\.getAnnotationRoute/);
   assert.match(toolbar, /## Route: /);
 });
 

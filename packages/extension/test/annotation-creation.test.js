@@ -78,17 +78,48 @@ test('background only reports site enablement after injection registration and v
 
   assert.match(source, /await chrome\.scripting\.registerContentScripts/);
   assert.match(source, /Failed to register content scripts:', err\);\s*throw err/s);
-  assert.match(source, /return JSON\.stringify\(this\.createExportEnvelope\(annotations\), null, 2\)/);
-  assert.match(source, /case 'mcp':\s*return this\.createExportEnvelope\(annotations\)/s);
+  assert.match(source, /return JSON\.stringify\(WaypointExportCodec\.createExportEnvelope\(annotations\), null, 2\)/);
+  assert.match(source, /case 'mcp':\s*return WaypointExportCodec\.createExportEnvelope\(annotations\)/s);
+  assert.ok(
+    source.indexOf("'export-codec.js'") < source.indexOf("'content/modules/floating-toolbar.js'"),
+    'dynamic site registration must load the export codec before callers',
+  );
   assert.ok(
     source.indexOf('await chrome.scripting.registerContentScripts') < source.indexOf('if (tabId)'),
     'reload must occur only after content-script registration succeeds',
   );
   assert.match(source, /for \(const annotation of annotations\) \{\s*this\.validateAnnotationAttachments\(annotation\);\s*\}/s);
+  assert.match(source, /WaypointAnnotationValidation\.assertAll\(newAnnotations\)/);
+  assert.match(source, /WaypointAnnotationValidation\.assertAll\(annotations\)/);
   assert.ok(
     source.indexOf('this.validateAnnotationAttachments(a);') < source.indexOf('all.push(a);'),
     'imports must validate media before persisting locally',
   );
+});
+
+test('shared extension validation rejects URL-less and empty imported Annotations', async () => {
+  const context = vm.createContext({ URL });
+  context.globalThis = context;
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'annotation-validation.js');
+
+  assert.throws(() => context.WaypointAnnotationValidation.assertAnnotation({
+    id: 'waypoint_1750000000000_abc123xyz',
+    comment: 'Missing URL',
+  }), /URL is required/);
+  assert.throws(() => context.WaypointAnnotationValidation.assertAnnotation({
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/app',
+    comment: '   ',
+    pending_changes: {},
+    attachments: [],
+  }), /must include/);
+  assert.doesNotThrow(() => context.WaypointAnnotationValidation.assertAnnotation({
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/app?tab=open#feedback',
+    comment: '',
+    pending_changes: { color: { value: '#201a16' } },
+  }));
 });
 
 test('annotation popover only permits a commentless save with a visual edit or validated image attachment', async () => {

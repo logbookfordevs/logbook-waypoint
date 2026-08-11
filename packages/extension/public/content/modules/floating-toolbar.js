@@ -965,7 +965,7 @@ var WaypointToolbar = (() => {
       const annotations = scope === 'page'
         ? await WaypointAPI.loadAnnotations()
         : await WaypointAPI.loadProjectAnnotations();
-      const filtered = filterAnnotationsByStatus(annotations, status);
+      const filtered = WaypointExportCodec.filterAnnotationsByStatus(annotations, status);
       if (!filtered.length) {
         backdrop.remove();
         showInfoModal('Nothing to export', `No ${status === 'all' ? '' : `${status} `}annotations in this scope.`);
@@ -982,12 +982,14 @@ var WaypointToolbar = (() => {
 
   async function doExport(annotations, { scope, status, format, share }) {
     const loc = window.location;
-    const exportData = createExportEnvelope(annotations, { scope, status, source: loc });
+    const exportData = WaypointExportCodec.createExportEnvelope(annotations, { scope, status, source: loc });
 
     const dateStr = new Date().toISOString().slice(0, 10);
     const hostStr = loc.hostname + (loc.port ? '-' + loc.port : '');
     const isMarkdown = format === 'markdown';
-    const content = isMarkdown ? formatAnnotationsAsMarkdown(exportData.annotations, { scope, status }) : JSON.stringify(exportData, null, 2);
+    const content = isMarkdown
+      ? WaypointExportCodec.formatAnnotationsAsMarkdown(exportData.annotations, { scope, status, formatGroups: formatAnnotationsForClipboard })
+      : JSON.stringify(exportData, null, 2);
     const type = isMarkdown ? 'text/markdown' : 'application/json';
     const filename = `logbook-waypoint-${hostStr}-${dateStr}.${isMarkdown ? 'md' : 'json'}`;
     const file = new File([content], filename, { type });
@@ -1044,7 +1046,7 @@ var WaypointToolbar = (() => {
     const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
-    const importedData = normalizeImportEnvelope(data);
+    const importedData = WaypointExportCodec.normalizeImportEnvelope(data);
 
     // Validate envelope
     if (!importedData) {
@@ -1080,6 +1082,13 @@ var WaypointToolbar = (() => {
         if (a.url) a.url = a.url.replace(remapFrom, currentOrigin);
         if (a.url_path) { /* url_path is an origin-less route, so it does not need remapping */ }
       }
+    }
+
+    try {
+      WaypointAnnotationValidation.assertAll(importedData.annotations);
+    } catch (error) {
+      showInfoModal('Invalid format', error.message);
+      return;
     }
 
     // Deduplicate against existing
@@ -1222,7 +1231,7 @@ var WaypointToolbar = (() => {
   function formatAnnotationsForClipboard(annotations) {
     const groups = new Map();
     for (const annotation of annotations) {
-      const route = getAnnotationRoute(annotation);
+      const route = WaypointExportCodec.getAnnotationRoute(annotation, window.location.href);
       const group = groups.get(route) || [];
       group.push(annotation);
       groups.set(route, group);
@@ -1333,119 +1342,6 @@ var WaypointToolbar = (() => {
     return header + '\n\nFollow my instructions on these elements.\nWhen applying design changes, map values to the project design system (Tailwind classes, CSS variables, or design tokens).\n\n---\n\n' + blocks.join('\n\n');
   }
 
-  function getAnnotationRoute(annotation) {
-    if (annotation.url_path) return annotation.url_path;
-    try {
-      const { pathname, search, hash } = new URL(annotation.url || window.location.href);
-      return `${pathname}${search}${hash}`;
-    } catch {
-      const { pathname, search, hash } = window.location;
-      return `${pathname}${search}${hash}`;
-    }
-  }
-
-  function filterAnnotationsByStatus(annotations, status) {
-    if (status === 'all') return annotations;
-    return annotations.filter(annotation => (annotation.status || 'pending') === status);
-  }
-
-  const SENSITIVE_EXPORT_KEYS = new Set([
-    'attachments',
-    'screenshot',
-    'source_file_path',
-    'source_mapping',
-    'source_identity',
-  ]);
-
-  function isSensitiveExportKey(key) {
-    return SENSITIVE_EXPORT_KEYS.has(key)
-      || /(?:^|_)(?:data_url|file_path|file_path_hint|filesystem_path|source_path|absolute_path|local_path)$/.test(key);
-  }
-
-  function portableExportValue(value) {
-    if (Array.isArray(value)) return value.map(portableExportValue);
-    if (!value || typeof value !== 'object') return value;
-
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([key]) => !isSensitiveExportKey(key))
-        .map(([key, nestedValue]) => [key, portableExportValue(nestedValue)]),
-    );
-  }
-
-  function portableExportAnnotation(annotation) {
-    return {
-      ...portableExportValue(annotation),
-      id: annotation.id,
-      status: annotation.status || 'pending',
-      url_path: getAnnotationRoute(annotation),
-      has_screenshot: Boolean(annotation.screenshot?.data_url || annotation.screenshot?.attachment_id || annotation.has_screenshot),
-      has_attachments: Boolean(annotation.attachments?.length || annotation.has_attachments),
-    };
-  }
-
-  function sourceForExport(source) {
-    const url = new URL(typeof source === 'string' ? source : (source?.href || source?.origin || window.location.href));
-    return { origin: url.origin, hostname: url.hostname, port: url.port || '' };
-  }
-
-  function createExportEnvelope(annotations, {
-    scope = 'project',
-    status = 'all',
-    exportedAt = new Date().toISOString(),
-    source = window.location,
-  } = {}) {
-    const portableAnnotations = annotations.map(portableExportAnnotation);
-    const routes = new Map();
-
-    for (const annotation of portableAnnotations) {
-      let url;
-      try {
-        url = new URL(annotation.url || annotation.url_path, sourceForExport(source).origin);
-      } catch {
-        url = new URL(sourceForExport(source).origin);
-      }
-      const route = annotation.url_path || `${url.pathname}${url.search}${url.hash}`;
-      const key = `${url.origin}${route}`;
-      if (!routes.has(key)) routes.set(key, { origin: url.origin, route, url: `${url.origin}${route}`, annotations: [] });
-      routes.get(key).annotations.push(annotation);
-    }
-
-    return {
-      waypoint_annotations_export: true,
-      version: '1.0',
-      exported_at: exportedAt,
-      source: sourceForExport(source),
-      scope,
-      status_filter: status,
-      annotation_count: portableAnnotations.length,
-      annotations: portableAnnotations,
-      routes: [...routes.values()],
-    };
-  }
-
-  function normalizeImportEnvelope(data) {
-    if (!data || data.waypoint_annotations_export !== true) return null;
-    if (Array.isArray(data.annotations)) return { ...data, annotations: data.annotations.map(annotation => ({ ...annotation })) };
-    if (!Array.isArray(data.routes)) return null;
-
-    const annotations = data.routes.flatMap(group => (group.annotations || []).map(annotation => ({
-      ...annotation,
-      url: annotation.url || group.url || (group.origin && group.route ? `${group.origin}${group.route}` : undefined),
-      url_path: annotation.url_path || group.route,
-    })));
-    if (!annotations.length) return null;
-
-    const source = data.source || (data.routes[0]?.origin ? sourceForExport(data.routes[0].origin) : undefined);
-    return { ...data, source, annotations };
-  }
-
-  function formatAnnotationsAsMarkdown(annotations, { scope, status }) {
-    const statusLabel = status === 'all' ? 'all statuses' : status;
-    const portableAnnotations = annotations.map(portableExportAnnotation);
-    return `# Logbook Waypoint export\n\nScope: ${scope}\nStatus: ${statusLabel}\n\n${formatAnnotationsForClipboard(portableAnnotations)}`;
-  }
-
   function formatStyles(styles) {
     if (!styles) return '';
     const STYLE_KEYS = {
@@ -1482,5 +1378,10 @@ var WaypointToolbar = (() => {
     return clean.substring(0, max) + '\u2026';
   }
 
-  return { init, createExportEnvelope, normalizeImportEnvelope, formatAnnotationsAsMarkdown };
+  return {
+    init,
+    createExportEnvelope: (...args) => WaypointExportCodec.createExportEnvelope(...args),
+    normalizeImportEnvelope: (...args) => WaypointExportCodec.normalizeImportEnvelope(...args),
+    formatAnnotationsAsMarkdown: (annotations, options) => WaypointExportCodec.formatAnnotationsAsMarkdown(annotations, { ...options, formatGroups: formatAnnotationsForClipboard }),
+  };
 })();
