@@ -272,31 +272,26 @@ export class LocalAnnotationsServer {
             normalizedAnnotations.push(await this.normalizeAnnotationMedia(annotation, { stagedAttachments }));
           }
           for (const incoming of normalizedAnnotations) assertSyncedAnnotationAllowed(currentById.get(incoming.id), incoming);
-          const incomingIds = new Set(normalizedAnnotations.map(annotation => annotation.id));
-          if (current.some(annotation => annotation.variant_request && !incomingIds.has(annotation.id))) {
-            throw new VariantContractError('Synchronization cannot remove an Annotation with Variant state');
-          }
           const currentJson = JSON.stringify([...current].sort((a, b) => a.id.localeCompare(b.id)));
-          const newJson = JSON.stringify([...normalizedAnnotations].sort((a, b) => a.id.localeCompare(b.id)));
           const normalizedById = new Map(normalizedAnnotations.map(annotation => [annotation.id, annotation]));
-          const removedAnnotationIds = current
-            .filter(annotation => !normalizedById.has(annotation.id))
-            .map(annotation => annotation.id);
+          const mergedAnnotations = current.map(annotation => normalizedById.get(annotation.id) ?? annotation);
+          for (const annotation of normalizedAnnotations) {
+            if (!currentById.has(annotation.id)) mergedAnnotations.push(annotation);
+          }
+          const newJson = JSON.stringify([...mergedAnnotations].sort((a, b) => a.id.localeCompare(b.id)));
           const superseded = current.flatMap(annotation => {
             const incoming = normalizedById.get(annotation.id);
             return incoming ? this.supersededAttachmentReferences(annotation, incoming) : [];
           });
-          current.splice(0, current.length, ...structuredClone(normalizedAnnotations));
+          current.splice(0, current.length, ...structuredClone(mergedAnnotations));
           return {
-            count: normalizedAnnotations.length,
+            count: mergedAnnotations.length,
             skipped: currentJson === newJson,
             superseded,
-            removedAnnotationIds,
           };
         });
         committed = true;
         await this.cleanupAttachmentReferences(result.superseded);
-        await Promise.all(result.removedAnnotationIds.map(annotationId => this.cleanupAnnotationAttachments(annotationId)));
         res.json({ success: true, count: result.count, skipped: result.skipped });
       } catch (error) {
         console.error('Error syncing annotations:', error);

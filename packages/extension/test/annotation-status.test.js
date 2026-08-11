@@ -24,20 +24,19 @@ test('annotation status adapter migrates legacy lifecycle values into canonical 
       { id: 'completed', status: 'completed' },
       { id: 'archived', status: 'archived' },
       { id: 'claimed', status: 'claimed' },
-      { id: 'unknown', status: 'unknown' },
     ]))),
     [
       { id: 'missing', status: 'pending' },
       { id: 'completed', status: 'resolved' },
       { id: 'archived', status: 'discarded' },
       { id: 'claimed', status: 'claimed' },
-      { id: 'unknown', status: 'pending' },
     ],
   );
   assert.equal(status.isActionable({ status: 'pending' }), true);
   assert.equal(status.isActionable({ status: 'claimed' }), true);
   assert.equal(status.isActionable({ status: 'resolved' }), false);
   assert.equal(status.isActionable({ status: 'discarded' }), false);
+  assert.throws(() => status.normalize({ id: 'unknown', status: 'future' }), /invalid annotation status/i);
 });
 
 test('export and Queue sync normalize statuses at their public boundaries', async () => {
@@ -100,4 +99,17 @@ test('lifecycle API calls delegate transitions to the background and normalize i
       url: 'http://localhost:3000/review',
     });
   }
+});
+
+test('generic extension updates reject lifecycle state and Claim changes', async () => {
+  const context = await loadStatus();
+
+  assert.throws(
+    () => context.WaypointAnnotationStatus.normalizeUpdate({ status: 'resolved' }),
+    /lifecycle operations/i,
+  );
+  assert.throws(
+    () => context.WaypointAnnotationStatus.normalizeUpdate({ claim: { owner: 'agent-one' } }),
+    /lifecycle operations/i,
+  );
 });

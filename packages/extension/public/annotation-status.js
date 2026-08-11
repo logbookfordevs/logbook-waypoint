@@ -7,9 +7,12 @@ globalThis.WaypointAnnotationStatus = (() => {
   ]);
 
   function normalizeStatus(value) {
+    if (value === undefined) return 'pending';
     const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
     if (CANONICAL_STATUSES.includes(status)) return status;
-    return LEGACY_STATUSES.get(status) || 'pending';
+    const migrated = LEGACY_STATUSES.get(status);
+    if (migrated) return migrated;
+    throw new TypeError('Invalid Annotation status');
   }
 
   function normalize(annotation) {
@@ -23,9 +26,10 @@ globalThis.WaypointAnnotationStatus = (() => {
 
   function normalizeUpdate(updates) {
     if (!updates || typeof updates !== 'object') return updates;
-    return Object.hasOwn(updates, 'status')
-      ? { ...updates, status: normalizeStatus(updates.status) }
-      : { ...updates };
+    if (Object.hasOwn(updates, 'status') || Object.hasOwn(updates, 'claim')) {
+      throw new TypeError('Annotation lifecycle state and Claim change only through lifecycle operations');
+    }
+    return { ...updates };
   }
 
   function isActionable(annotation) {

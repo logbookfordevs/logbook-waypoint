@@ -102,3 +102,29 @@ test('expired Claims return to Pending and publish Watch without read or Watch r
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('Queue synchronization cannot implicitly delete retained lifecycle history', async () => {
+  const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
+  const { directory, server } = await fixture(now);
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+
+  try {
+    await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
+    await server.changeAnnotationLifecycle({ id, operation: 'resolve', owner: 'agent-one' });
+    const response = await fetch(`${baseUrl}/api/annotations/sync`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ annotations: [] }),
+    });
+
+    assert.equal(response.status, 200);
+    const retained = await server.readAnnotations({ status: 'resolved' });
+    assert.equal(retained.annotations.length, 1);
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
