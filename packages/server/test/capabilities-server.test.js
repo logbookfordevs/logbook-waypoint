@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -17,6 +17,15 @@ async function withServer(server, run) {
   } finally {
     listener.close();
     await once(listener, 'close');
+  }
+}
+
+async function attachmentFiles(rootDir) {
+  try {
+    return await readdir(rootDir, { recursive: true });
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
   }
 }
 
@@ -140,6 +149,194 @@ test('server refuses unsafe attachment references before persistence', async () 
         size_bytes: 1,
       }],
     }), /mime/i);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('bulk deletion previews and confirms commentless visual Annotations', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-commentless-delete-'));
+  const server = new LocalAnnotationsServer({
+    annotationsFile: path.join(directory, 'annotations.json'),
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+
+  try {
+    await withServer(server, async baseUrl => {
+      const created = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          url: 'http://localhost:3000/app',
+          pending_changes: { color: { original: '#000', value: '#fff' } },
+        }),
+      });
+      assert.equal(created.status, 200);
+    });
+
+    const preview = await server.deleteProjectAnnotations({ url_pattern: 'http://localhost:3000/*' });
+    assert.equal(preview.count, 1);
+    assert.equal(preview.preview['http://localhost:3000/app'][0].comment, '');
+
+    const confirmed = await server.deleteProjectAnnotations({ url_pattern: 'http://localhost:3000/*', confirm: true });
+    assert.equal(confirmed.count, 1);
+    assert.equal(confirmed.deleted_annotations[0].comment, '');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('HTTP media writes roll back staged files and preserve superseded files until Queue persistence commits', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-media-rollback-'));
+  const attachmentRoot = path.join(directory, 'attachments');
+  const server = new LocalAnnotationsServer({
+    annotationsFile: path.join(directory, 'annotations.json'),
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot,
+  });
+  const secondId = 'waypoint_1750000000001_abcdefghi';
+  const thirdId = 'waypoint_1750000000002_abcdefghi';
+
+  try {
+    await withServer(server, async baseUrl => {
+      const validationFailure = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id: secondId,
+          url: 'http://localhost:3000/app',
+          comment: 'Images',
+          attachments: [
+            { name: 'first.png', mime_type: 'image/png', size_bytes: 5, data_url: 'data:image/png;base64,Zmlyc3Q=' },
+            { name: 'wrong-size.png', mime_type: 'image/png', size_bytes: 1, data_url: 'data:image/png;base64,c2Vjb25k' },
+          ],
+        }),
+      });
+      assert.equal(validationFailure.status, 400);
+      assert.deepEqual(await attachmentFiles(path.join(attachmentRoot, secondId)), []);
+
+      const created = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          url: 'http://localhost:3000/app',
+          comment: 'Keep original on a failed replacement',
+          attachments: [{ name: 'original.png', mime_type: 'image/png', size_bytes: 8, data_url: 'data:image/png;base64,b3JpZ2luYWw=' }],
+        }),
+      });
+      assert.equal(created.status, 200);
+
+      const requestVariants = await fetch(`${baseUrl}/api/annotations/${id}/variants/request`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ variants: [{ key: 'a', name: 'A', implementation: {} }] }),
+      });
+      assert.equal(requestVariants.status, 200);
+      const variantFailure = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          url: 'http://localhost:3000/app',
+          comment: 'Variant replacement',
+          variant_request: null,
+          screenshot: { data_url: 'data:image/png;base64,c2NyZWVuc2hvdA==' },
+        }),
+      });
+      assert.equal(variantFailure.status, 409);
+      assert.equal((await attachmentFiles(path.join(attachmentRoot, id))).length, 2);
+
+      const replacementBase = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id: thirdId,
+          url: 'http://localhost:3000/app',
+          comment: 'Keep original on a Queue write failure',
+          attachments: [{ name: 'original.png', mime_type: 'image/png', size_bytes: 8, data_url: 'data:image/png;base64,b3JpZ2luYWw=' }],
+        }),
+      });
+      assert.equal(replacementBase.status, 200);
+      const replacementOriginalId = (await replacementBase.json()).annotation.attachments[0].id;
+
+      const save = server._saveAnnotationsInternal;
+      server._saveAnnotationsInternal = async () => { throw new Error('Queue write failed'); };
+      const writeFailure = await fetch(`${baseUrl}/api/annotations/${thirdId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          attachments: [{ name: 'replacement.png', mime_type: 'image/png', size_bytes: 11, data_url: 'data:image/png;base64,cmVwbGFjZW1lbnQ=' }],
+        }),
+      });
+      assert.equal(writeFailure.status, 500);
+      server._saveAnnotationsInternal = save;
+
+      assert.ok(await server.attachmentStore.get({ annotationId: thirdId, attachmentId: replacementOriginalId }));
+      assert.equal((await attachmentFiles(path.join(attachmentRoot, thirdId))).length, 2);
+
+      const replacement = await fetch(`${baseUrl}/api/annotations/${thirdId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          attachments: [{ name: 'replacement.png', mime_type: 'image/png', size_bytes: 11, data_url: 'data:image/png;base64,cmVwbGFjZW1lbnQ=' }],
+        }),
+      });
+      assert.equal(replacement.status, 200);
+      assert.equal(await server.attachmentStore.get({ annotationId: thirdId, attachmentId: replacementOriginalId }), null);
+      assert.equal((await attachmentFiles(path.join(attachmentRoot, thirdId))).length, 2);
+    });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('HTTP attachment references require matching metadata in their canonical Annotation', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-attachment-reference-'));
+  const server = new LocalAnnotationsServer({
+    annotationsFile: path.join(directory, 'annotations.json'),
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+  const secondId = 'waypoint_1750000000001_abcdefghi';
+
+  try {
+    await withServer(server, async baseUrl => {
+      const created = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          url: 'http://localhost:3000/app',
+          comment: 'Stored attachment',
+          attachments: [{ name: 'detail.png', mime_type: 'image/png', size_bytes: 6, data_url: 'data:image/png;base64,ZGV0YWls' }],
+        }),
+      });
+      const saved = (await created.json()).annotation.attachments[0];
+
+      const crossAnnotation = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: secondId, url: 'http://localhost:3000/app', comment: 'Cross reference', attachments: [saved] }),
+      });
+      assert.equal(crossAnnotation.status, 400);
+
+      const metadataMismatch = await fetch(`${baseUrl}/api/annotations/${id}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ attachments: [{ ...saved, name: 'forged.png' }] }),
+      });
+      assert.equal(metadataMismatch.status, 400);
+
+      const exactReference = await fetch(`${baseUrl}/api/annotations/${id}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ attachments: [saved] }),
+      });
+      assert.equal(exactReference.status, 200);
+    });
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

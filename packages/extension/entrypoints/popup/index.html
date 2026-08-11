@@ -23,36 +23,6 @@
     .header img { width: 32px; height: 32px; border-radius: 9px; }
     .header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
     .eyebrow { color: #a34b2a; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-    .update-banner {
-      background: #eff6ff;
-      border: 1px solid #3b82f6;
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .update-banner strong { font-size: 12px; color: #1e40af; }
-    .update-link {
-      font-size: 12px;
-      color: #3b82f6;
-      text-decoration: none;
-      white-space: nowrap;
-      font-weight: 500;
-    }
-    .update-link:hover { text-decoration: underline; }
-    .dismiss-btn {
-      background: none;
-      border: none;
-      font-size: 16px;
-      color: #6b7280;
-      cursor: pointer;
-      padding: 0 2px;
-      line-height: 1;
-    }
-    .dismiss-btn:hover { color: #1f2937; }
     .message {
       background: #fef3c7;
       border: 1px solid #f59e0b;
@@ -124,13 +94,6 @@
     <div><div class="eyebrow">Chart the change</div><h1>Logbook Waypoint</h1></div>
   </div>
   <div class="route-line" aria-hidden="true"></div>
-  <div class="update-banner hidden" id="updateBanner">
-    <strong id="updateText"></strong>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <a href="#" id="updateLink" class="update-link" target="_blank" rel="noopener">Learn more</a>
-      <button id="updateDismiss" class="dismiss-btn" title="Dismiss">&times;</button>
-    </div>
-  </div>
   <div class="message hidden" id="message"></div>
   <div class="success hidden" id="success"></div>
   <div class="site-url hidden" id="siteUrl"></div>

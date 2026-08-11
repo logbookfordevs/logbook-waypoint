@@ -14,7 +14,6 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import chalk from 'chalk';
 import {
   isAllowedBrowserOrigin,
   localRequestBoundary,
@@ -89,6 +88,22 @@ function hasMeaningfulAnnotationContent(annotation) {
     || typeof annotation.css === 'string' && annotation.css.trim().length > 0
     || Boolean(annotation.screenshot?.data_url || annotation.screenshot?.attachment_id)
     || Array.isArray(annotation.attachments) && annotation.attachments.length > 0;
+}
+
+function annotationSummary(annotation) {
+  const comment = typeof annotation.comment === 'string' ? annotation.comment : '';
+  return {
+    id: annotation.id,
+    url: annotation.url,
+    comment: comment.substring(0, 100) + (comment.length > 100 ? '...' : ''),
+    created_at: annotation.created_at,
+  };
+}
+
+function requestErrorStatus(error) {
+  if (error instanceof VariantContractError) return 409;
+  if (error instanceof TypeError || error instanceof RangeError) return 400;
+  return 500;
 }
 
 export class LocalAnnotationsServer {
@@ -176,6 +191,8 @@ export class LocalAnnotationsServer {
     });
 
     this.app.post('/api/annotations', async (req, res) => {
+      const stagedAttachments = [];
+      let committed = false;
       try {
         const annotation = req.body;
 
@@ -192,13 +209,17 @@ export class LocalAnnotationsServer {
           return res.status(400).json({ error: 'Invalid annotation ID' });
         }
 
-        const saved = await this.applyAnnotationsUpdate(async annotations => {
-          const normalized = await this.normalizeAnnotationMedia(annotation);
+        const result = await this.applyAnnotationsUpdate(async annotations => {
+          const normalized = await this.normalizeAnnotationMedia(annotation, { stagedAttachments });
           const existingIndex = annotations.findIndex(candidate => candidate.id === normalized.id);
           if (existingIndex >= 0) {
-            assertGenericAnnotationUpdateAllowed(annotations[existingIndex], normalized);
-            annotations[existingIndex] = { ...annotations[existingIndex], ...normalized, updated_at: new Date().toISOString() };
-            return annotations[existingIndex];
+            const existing = annotations[existingIndex];
+            assertGenericAnnotationUpdateAllowed(existing, normalized);
+            annotations[existingIndex] = { ...existing, ...normalized, updated_at: new Date().toISOString() };
+            return {
+              annotation: annotations[existingIndex],
+              superseded: this.supersededAttachmentReferences(existing, annotations[existingIndex]),
+            };
           }
           assertSyncedAnnotationAllowed(null, normalized);
           const created = {
@@ -207,18 +228,23 @@ export class LocalAnnotationsServer {
             updated_at: new Date().toISOString(),
           };
           annotations.push(created);
-          return created;
+          return { annotation: created, superseded: [] };
         });
-        res.json({ success: true, annotation: saved });
+        committed = true;
+        await this.cleanupAttachmentReferences(result.superseded);
+        res.json({ success: true, annotation: result.annotation });
       } catch (error) {
         console.error('Error saving annotation:', error);
-        const status = error instanceof VariantContractError ? 409 : 500;
+        if (!committed) await this.cleanupAttachmentReferences(stagedAttachments);
+        const status = requestErrorStatus(error);
         res.status(status).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
       }
     });
 
     // New endpoint to sync all annotations (replace existing)
     this.app.post('/api/annotations/sync', async (req, res) => {
+      const stagedAttachments = [];
+      let committed = false;
       try {
         if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
           return res.status(400).json({ error: 'request body must be an object' });
@@ -240,7 +266,10 @@ export class LocalAnnotationsServer {
 
         const result = await this.applyAnnotationsUpdate(async current => {
           const currentById = new Map(current.map(annotation => [annotation.id, annotation]));
-          const normalizedAnnotations = await Promise.all(annotations.map(annotation => this.normalizeAnnotationMedia(annotation)));
+          const normalizedAnnotations = [];
+          for (const annotation of annotations) {
+            normalizedAnnotations.push(await this.normalizeAnnotationMedia(annotation, { stagedAttachments }));
+          }
           for (const incoming of normalizedAnnotations) assertSyncedAnnotationAllowed(currentById.get(incoming.id), incoming);
           const incomingIds = new Set(normalizedAnnotations.map(annotation => annotation.id));
           if (current.some(annotation => annotation.variant_request && !incomingIds.has(annotation.id))) {
@@ -248,13 +277,30 @@ export class LocalAnnotationsServer {
           }
           const currentJson = JSON.stringify([...current].sort((a, b) => a.id.localeCompare(b.id)));
           const newJson = JSON.stringify([...normalizedAnnotations].sort((a, b) => a.id.localeCompare(b.id)));
+          const normalizedById = new Map(normalizedAnnotations.map(annotation => [annotation.id, annotation]));
+          const removedAnnotationIds = current
+            .filter(annotation => !normalizedById.has(annotation.id))
+            .map(annotation => annotation.id);
+          const superseded = current.flatMap(annotation => {
+            const incoming = normalizedById.get(annotation.id);
+            return incoming ? this.supersededAttachmentReferences(annotation, incoming) : [];
+          });
           current.splice(0, current.length, ...structuredClone(normalizedAnnotations));
-          return { count: normalizedAnnotations.length, skipped: currentJson === newJson };
+          return {
+            count: normalizedAnnotations.length,
+            skipped: currentJson === newJson,
+            superseded,
+            removedAnnotationIds,
+          };
         });
-        res.json({ success: true, ...result });
+        committed = true;
+        await this.cleanupAttachmentReferences(result.superseded);
+        await Promise.all(result.removedAnnotationIds.map(annotationId => this.cleanupAnnotationAttachments(annotationId)));
+        res.json({ success: true, count: result.count, skipped: result.skipped });
       } catch (error) {
         console.error('Error syncing annotations:', error);
-        const status = error instanceof VariantContractError ? 409 : 500;
+        if (!committed) await this.cleanupAttachmentReferences(stagedAttachments);
+        const status = requestErrorStatus(error);
         res.status(status).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
       }
     });
@@ -286,6 +332,8 @@ export class LocalAnnotationsServer {
     ));
 
     this.app.put('/api/annotations/:id', async (req, res) => {
+      const stagedAttachments = [];
+      let committed = false;
       try {
         const { id } = req.params;
         const updates = req.body;
@@ -302,18 +350,25 @@ export class LocalAnnotationsServer {
           return res.status(400).json({ error: 'Annotation ID cannot be changed' });
         }
         
-        const annotation = await this.applyAnnotationsUpdate(async annotations => {
+        const result = await this.applyAnnotationsUpdate(async annotations => {
           const index = annotations.findIndex(candidate => candidate.id === id);
           if (index === -1) throw new Error('Annotation not found');
-          assertGenericAnnotationUpdateAllowed(annotations[index], updates);
-          const normalized = await this.normalizeAnnotationMedia({ ...annotations[index], ...updates, id });
+          const existing = annotations[index];
+          assertGenericAnnotationUpdateAllowed(existing, updates);
+          const normalized = await this.normalizeAnnotationMedia({ ...existing, ...updates, id }, { stagedAttachments });
           annotations[index] = { ...normalized, updated_at: new Date().toISOString() };
-          return annotations[index];
+          return {
+            annotation: annotations[index],
+            superseded: this.supersededAttachmentReferences(existing, annotations[index]),
+          };
         });
-        res.json({ success: true, annotation });
+        committed = true;
+        await this.cleanupAttachmentReferences(result.superseded);
+        res.json({ success: true, annotation: result.annotation });
       } catch (error) {
         console.error('Error updating annotation:', error);
-        const status = error instanceof VariantContractError ? 409 : error.message === 'Annotation not found' ? 404 : 500;
+        if (!committed) await this.cleanupAttachmentReferences(stagedAttachments);
+        const status = error.message === 'Annotation not found' ? 404 : requestErrorStatus(error);
         res.status(status).json({ error: error.message, remaining_cleanup: error.remaining_cleanup ?? [] });
       }
     });
@@ -1048,75 +1103,137 @@ export class LocalAnnotationsServer {
     return this.updateVariantAnnotation(args?.id, annotation => finalizeVariantRecord(annotation, args?.key));
   }
 
-  async normalizeAnnotationMedia(annotation) {
+  async normalizeAnnotationMedia(annotation, { stagedAttachments } = {}) {
     if (!annotation || typeof annotation !== 'object' || Array.isArray(annotation)) {
       throw new TypeError('Annotation must be an object');
     }
     if (!isValidAnnotationId(annotation.id)) throw new Error('Invalid annotation ID');
 
+    const createdAttachments = stagedAttachments ?? [];
+    const ownsStagedAttachments = stagedAttachments === undefined;
+    const saveAttachment = async options => {
+      const saved = await this.attachmentStore.save(options);
+      createdAttachments.push({ annotationId: annotation.id, attachmentId: saved.id });
+      return saved;
+    };
     const normalized = { ...annotation };
-    if (annotation.attachments !== undefined && !Array.isArray(annotation.attachments)) {
-      throw new TypeError('Attachments must be an array');
-    }
-    if (Array.isArray(annotation.attachments)) {
-      normalized.attachments = [];
-      for (const attachment of annotation.attachments) {
-        if (!attachment || typeof attachment !== 'object' || Array.isArray(attachment)) {
-          throw new TypeError('Attachment must be an object');
-        }
-        const { name, mime_type: mimeType, size_bytes: sizeBytes, data_url: dataUrl, id } = attachment;
-        if (typeof name !== 'string' || name.length === 0 || name.length > 200 || path.basename(name) !== name) {
-          throw new TypeError('Invalid attachment name');
-        }
-        if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 0) throw new TypeError('Invalid attachment size');
-
-        if (dataUrl !== undefined) {
-          const saved = await this.attachmentStore.save({
-            annotationId: annotation.id,
-            kind: 'image',
-            mimeType,
-            content: dataUrl,
-          });
-          if (saved.byte_size !== sizeBytes) throw new TypeError('Attachment size does not match content');
-          normalized.attachments.push({
-            id: saved.id,
-            name,
-            mime_type: saved.mime_type,
-            size_bytes: saved.byte_size,
-          });
-          continue;
-        }
-
-        if (typeof id !== 'string' || !/^[a-f0-9-]{36}$/.test(id)) {
-          throw new TypeError('Invalid attachment ID');
-        }
-        if (!ALLOWED_IMAGE_MIME_TYPES.has(mimeType)) {
-          throw new TypeError('Unsupported image MIME type');
-        }
-        normalized.attachments.push({ id, name, mime_type: mimeType, size_bytes: sizeBytes });
+    try {
+      if (annotation.attachments !== undefined && !Array.isArray(annotation.attachments)) {
+        throw new TypeError('Attachments must be an array');
       }
-    }
+      if (Array.isArray(annotation.attachments)) {
+        normalized.attachments = [];
+        for (const attachment of annotation.attachments) {
+          if (!attachment || typeof attachment !== 'object' || Array.isArray(attachment)) {
+            throw new TypeError('Attachment must be an object');
+          }
+          const { name, mime_type: mimeType, size_bytes: sizeBytes, data_url: dataUrl, id } = attachment;
+          if (typeof name !== 'string' || name.length === 0 || name.length > 200 || path.basename(name) !== name) {
+            throw new TypeError('Invalid attachment name');
+          }
+          if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 0) throw new TypeError('Invalid attachment size');
 
-    if (annotation.screenshot?.data_url) {
-      const { data_url: dataUrl, attachment_id: ignoredAttachmentId, ...screenshot } = annotation.screenshot;
-      const mimeType = /^data:(image\/(?:png|jpeg|webp|gif));base64,/.exec(dataUrl)?.[1];
-      if (!mimeType) throw new TypeError('Screenshot must be a supported image data URL');
-      const saved = await this.attachmentStore.save({
-        annotationId: annotation.id,
-        kind: 'screenshot',
-        mimeType,
-        content: dataUrl,
-      });
-      normalized.screenshot = {
-        ...screenshot,
-        attachment_id: saved.id,
-        mime_type: saved.mime_type,
-        size_bytes: saved.byte_size,
-      };
-      normalized.has_screenshot = true;
-    }
+          if (dataUrl !== undefined) {
+            const saved = await saveAttachment({
+              annotationId: annotation.id,
+              kind: 'image',
+              mimeType,
+              content: dataUrl,
+              name,
+            });
+            if (saved.byte_size !== sizeBytes) throw new TypeError('Attachment size does not match content');
+            normalized.attachments.push({
+              id: saved.id,
+              name,
+              mime_type: saved.mime_type,
+              size_bytes: saved.byte_size,
+            });
+            continue;
+          }
 
-    return normalized;
+          if (!ALLOWED_IMAGE_MIME_TYPES.has(mimeType)) {
+            throw new TypeError('Unsupported image MIME type');
+          }
+          const stored = await this.attachmentStore.get({
+            annotationId: annotation.id,
+            attachmentId: id,
+          });
+          if (!stored) throw new TypeError('Attachment reference does not exist for this Annotation');
+          if (
+            stored.kind !== 'image'
+            || stored.mime_type !== mimeType
+            || stored.byte_size !== sizeBytes
+            || stored.name !== undefined && stored.name !== name
+          ) {
+            throw new TypeError('Attachment reference metadata does not match stored media');
+          }
+          normalized.attachments.push({ id, name, mime_type: mimeType, size_bytes: sizeBytes });
+        }
+      }
+
+      if (annotation.screenshot?.data_url) {
+        const { data_url: dataUrl, attachment_id: ignoredAttachmentId, ...screenshot } = annotation.screenshot;
+        const mimeType = /^data:(image\/(?:png|jpeg|webp|gif));base64,/.exec(dataUrl)?.[1];
+        if (!mimeType) throw new TypeError('Screenshot must be a supported image data URL');
+        const saved = await saveAttachment({
+          annotationId: annotation.id,
+          kind: 'screenshot',
+          mimeType,
+          content: dataUrl,
+          name: 'screenshot',
+        });
+        normalized.screenshot = {
+          ...screenshot,
+          attachment_id: saved.id,
+          mime_type: saved.mime_type,
+          size_bytes: saved.byte_size,
+        };
+        normalized.has_screenshot = true;
+      } else if (annotation.screenshot?.attachment_id) {
+        const stored = await this.attachmentStore.get({
+          annotationId: annotation.id,
+          attachmentId: annotation.screenshot.attachment_id,
+        });
+        if (!stored || stored.kind !== 'screenshot') {
+          throw new TypeError('Screenshot reference does not exist for this Annotation');
+        }
+        if (
+          stored.mime_type !== annotation.screenshot.mime_type
+          || stored.byte_size !== annotation.screenshot.size_bytes
+        ) {
+          throw new TypeError('Screenshot reference metadata does not match stored media');
+        }
+      }
+
+      return normalized;
+    } catch (error) {
+      if (ownsStagedAttachments) await this.cleanupAttachmentReferences(createdAttachments);
+      throw error;
+    }
+  }
+
+  attachmentReferences(annotation) {
+    const references = [];
+    if (annotation?.screenshot?.attachment_id) {
+      references.push({ annotationId: annotation.id, attachmentId: annotation.screenshot.attachment_id });
+    }
+    for (const attachment of annotation?.attachments ?? []) {
+      if (attachment?.id) references.push({ annotationId: annotation.id, attachmentId: attachment.id });
+    }
+    return references;
+  }
+
+  supersededAttachmentReferences(previous, next) {
+    const currentIds = new Set(this.attachmentReferences(next).map(reference => reference.attachmentId));
+    return this.attachmentReferences(previous).filter(reference => !currentIds.has(reference.attachmentId));
+  }
+
+  async cleanupAttachmentReferences(references) {
+    const uniqueReferences = new Map(references.map(reference => [
+      `${reference.annotationId}:${reference.attachmentId}`,
+      reference,
+    ]));
+    await Promise.all([...uniqueReferences.values()].map(reference => this.attachmentStore.delete(reference)));
   }
 
   async cleanupAnnotationAttachments(annotationId) {
@@ -1355,11 +1472,7 @@ export class LocalAnnotationsServer {
         if (!acc[url]) {
           acc[url] = [];
         }
-        acc[url].push({
-          id: annotation.id,
-          comment: annotation.comment.substring(0, 100) + (annotation.comment.length > 100 ? '...' : ''),
-          created_at: annotation.created_at
-        });
+        acc[url].push(annotationSummary(annotation));
         return acc;
       }, {});
       
@@ -1381,11 +1494,7 @@ export class LocalAnnotationsServer {
       current.splice(0, current.length, ...remaining);
       return { removed, remainingTotal: remaining.length };
     });
-    const deletedInfo = deletion.removed.map(annotation => ({
-      id: annotation.id,
-      url: annotation.url,
-      comment: annotation.comment.substring(0, 100) + (annotation.comment.length > 100 ? '...' : '')
-    }));
+    const deletedInfo = deletion.removed.map(annotationSummary);
     await Promise.all(deletion.removed.map(annotation => this.cleanupAnnotationAttachments(annotation.id)));
     
     return {
@@ -1563,78 +1672,6 @@ export class LocalAnnotationsServer {
     });
   }
 
-  async checkForUpdates() {
-    try {
-      // Check cache first (24hr TTL)
-      const updateCacheFile = path.join(DATA_DIR, '.update-check');
-      let lastCheck = 0;
-      
-      try {
-        if (existsSync(updateCacheFile)) {
-          const cacheData = await readFile(updateCacheFile, 'utf8');
-          lastCheck = parseInt(cacheData, 10) || 0;
-        }
-      } catch (error) {
-        // Ignore cache read errors
-      }
-      
-      // Only check once per day
-      if (Date.now() - lastCheck < 86400000) return;
-      
-      // Fetch latest version from NPM registry
-      const response = await fetch('https://registry.npmjs.org/@logbookfordevs%2Fwaypoint/latest', {
-        headers: {
-          'User-Agent': PRODUCT_IDENTITY.npmPackage
-        }
-      });
-      
-      // If package not found (404), skip update check
-      if (response.status === 404) {
-        console.log('[Update Check] Package not found in NPM registry yet');
-        await writeFile(updateCacheFile, Date.now().toString());
-        return;
-      }
-      
-      if (!response.ok) {
-        console.log(`[Update Check] NPM Registry error: ${response.status}`);
-        return;
-      }
-      
-      const data = await response.json();
-      const latestVersion = data.version || packageJson.version;
-      
-      // Simple version comparison (assuming semantic versioning)
-      const currentParts = packageJson.version.split('.').map(Number);
-      const latestParts = latestVersion.split('.').map(Number);
-      
-      let hasUpdate = false;
-      for (let i = 0; i < 3; i++) {
-        if ((latestParts[i] || 0) > (currentParts[i] || 0)) {
-          hasUpdate = true;
-          break;
-        }
-        if ((latestParts[i] || 0) < (currentParts[i] || 0)) {
-          break;
-        }
-      }
-      
-      if (hasUpdate) {
-        console.log(chalk.yellow(`
-╔════════════════════════════════════════════════════════════════╗
-║  Update available: ${packageJson.version} → ${latestVersion}                          ║
-║  Run: pnpm update --global @logbookfordevs/waypoint            ║
-╚════════════════════════════════════════════════════════════════╝
-        `));
-      }
-      
-      // Save last check timestamp
-      await writeFile(updateCacheFile, Date.now().toString());
-    } catch (error) {
-      // Log error for debugging but don't disrupt user experience
-      console.log(`[Update Check] Failed: ${error.message}`);
-    }
-  }
-
   listen(port = PORT) {
     this.server = this.app.listen(port, HOST);
 
@@ -1658,9 +1695,6 @@ export class LocalAnnotationsServer {
     
     // Set up process handlers only once
     this.setupProcessHandlers();
-    
-    // Check for updates (non-blocking)
-    this.checkForUpdates().catch(() => {});
     
     this.listen(PORT);
     this.server.once('listening', () => {

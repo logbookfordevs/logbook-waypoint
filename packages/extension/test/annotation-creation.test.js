@@ -67,6 +67,28 @@ test('background validates attachment payloads before forwarding an annotation t
   assert.match(source, /chrome\.permissions\.request\(\{ origins: \[originPattern\] \}\)/);
   assert.match(source, /validateAnnotationAttachments\(annotation\)/);
   assert.match(source, /apiServerUrl}\/api\/annotations/);
+  assert.ok(
+    source.indexOf("'annotation-id.js'") < source.indexOf("'agent-setup-config.js'"),
+    'dynamic site registration must load canonical Annotation IDs before callers',
+  );
+});
+
+test('background only reports site enablement after injection registration and validates imports before storage or sync', async () => {
+  const source = await readFile(new URL('../public/background/background.js', import.meta.url), 'utf8');
+
+  assert.match(source, /await chrome\.scripting\.registerContentScripts/);
+  assert.match(source, /Failed to register content scripts:', err\);\s*throw err/s);
+  assert.match(source, /return JSON\.stringify\(this\.createExportEnvelope\(annotations\), null, 2\)/);
+  assert.match(source, /case 'mcp':\s*return this\.createExportEnvelope\(annotations\)/s);
+  assert.ok(
+    source.indexOf('await chrome.scripting.registerContentScripts') < source.indexOf('if (tabId)'),
+    'reload must occur only after content-script registration succeeds',
+  );
+  assert.match(source, /for \(const annotation of annotations\) \{\s*this\.validateAnnotationAttachments\(annotation\);\s*\}/s);
+  assert.ok(
+    source.indexOf('this.validateAnnotationAttachments(a);') < source.indexOf('all.push(a);'),
+    'imports must validate media before persisting locally',
+  );
 });
 
 test('annotation popover only permits a commentless save with a visual edit or validated image attachment', async () => {

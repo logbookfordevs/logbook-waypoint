@@ -73,36 +73,12 @@ class WaypointAnnotationsBackground {
   }
 
   async handleUpdate(previousVersion) {
-    
-    // Handle any migration logic here
     try {
-      const currentVersion = chrome.runtime.getManifest().version;
-      
-      // Store update info for popup to display
-      await chrome.storage.local.set({
-        waypointUpdateInfo: {
-          hasUpdate: true,
-          previousVersion,
-          currentVersion,
-          timestamp: Date.now(),
-          changelog: this.getChangelogForVersion(currentVersion),
-          releaseUrl: `https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v${currentVersion}`
-        }
-      });
-      
-      // Set badge to notify user
-      chrome.action.setBadgeText({ text: 'NEW' });
-      chrome.action.setBadgeBackgroundColor({ color: '#d97757' }); // Waypoint terracotta
-      
-      // Also update settings
       const result = await chrome.storage.local.get(['waypointSettings']);
       const settings = result.waypointSettings || {};
-      
       settings.lastUpdate = Date.now();
       settings.previousVersion = previousVersion;
-      
       await chrome.storage.local.set({ waypointSettings: settings });
-      
     } catch (error) {
       console.error('Error during update migration:', error);
     }
@@ -279,6 +255,9 @@ class WaypointAnnotationsBackground {
 
   async syncAnnotationsToAPI(annotations) {
     try {
+      for (const annotation of annotations) {
+        this.validateAnnotationAttachments(annotation);
+      }
       
       // Use the new sync endpoint to replace all annotations
       const response = await fetch(`${this.apiServerUrl}/api/annotations/sync`, {
@@ -606,13 +585,13 @@ class WaypointAnnotationsBackground {
       
       switch (format) {
         case 'json':
-          return JSON.stringify(annotations, null, 2);
+          return JSON.stringify(this.createExportEnvelope(annotations), null, 2);
           
         case 'csv':
           return this.annotationsToCSV(annotations);
           
         case 'mcp':
-          return this.annotationsToMCP(annotations);
+          return this.createExportEnvelope(annotations);
           
         default:
           throw new Error('Unsupported export format');
@@ -638,17 +617,61 @@ class WaypointAnnotationsBackground {
     return [headers, ...rows].map(row => row.join(',')).join('\n');
   }
 
-  annotationsToMCP(annotations) {
-    // Format for MCP server consumption
+  sanitizeExportValue(value) {
+    if (Array.isArray(value)) return value.map(item => this.sanitizeExportValue(item));
+    if (!value || typeof value !== 'object') return value;
+
+    const sensitive = new Set(['attachments', 'screenshot', 'source_file_path', 'source_mapping', 'source_identity']);
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => !sensitive.has(key) && !/(?:^|_)(?:data_url|file_path|file_path_hint|filesystem_path|source_path|absolute_path|local_path)$/.test(key))
+        .map(([key, nestedValue]) => [key, this.sanitizeExportValue(nestedValue)]),
+    );
+  }
+
+  exportedAnnotation(annotation) {
+    let urlPath = annotation.url_path;
+    try {
+      const url = new URL(annotation.url);
+      urlPath = `${url.pathname}${url.search}${url.hash}`;
+    } catch {}
+
     return {
+      ...this.sanitizeExportValue(annotation),
+      id: annotation.id,
+      status: annotation.status || 'pending',
+      ...(urlPath ? { url_path: urlPath } : {}),
+      has_screenshot: Boolean(annotation.screenshot?.data_url || annotation.screenshot?.attachment_id || annotation.has_screenshot),
+      has_attachments: Boolean(annotation.attachments?.length || annotation.has_attachments),
+    };
+  }
+
+  createExportEnvelope(annotations) {
+    const portableAnnotations = annotations.map(annotation => this.exportedAnnotation(annotation));
+    const routes = new Map();
+
+    for (const annotation of portableAnnotations) {
+      try {
+        const url = new URL(annotation.url);
+        const route = annotation.url_path || `${url.pathname}${url.search}${url.hash}`;
+        const key = `${url.origin}${route}`;
+        if (!routes.has(key)) routes.set(key, { origin: url.origin, route, url: `${url.origin}${route}`, annotations: [] });
+        routes.get(key).annotations.push(annotation);
+      } catch {}
+    }
+
+    const routeGroups = [...routes.values()];
+    const sourceUrl = routeGroups[0] ? new URL(routeGroups[0].origin) : null;
+    return {
+      waypoint_annotations_export: true,
       version: '1.0',
       exported_at: new Date().toISOString(),
-      total_annotations: annotations.length,
-      annotations: annotations.map(annotation => ({
-        ...annotation,
-        // Add any MCP-specific formatting here
-        mcp_ready: true
-      }))
+      source: sourceUrl ? { origin: sourceUrl.origin, hostname: sourceUrl.hostname, port: sourceUrl.port } : undefined,
+      scope: 'project',
+      status_filter: 'all',
+      annotation_count: portableAnnotations.length,
+      annotations: portableAnnotations,
+      routes: routeGroups,
     };
   }
 
@@ -852,6 +875,9 @@ class WaypointAnnotationsBackground {
       const serverResult = await response.json();
       if (!Array.isArray(serverResult.annotations)) return; // Unexpected response (e.g. multi-project warning) — skip sync
       serverAnnotations = WaypointAnnotationId.filterValid(serverResult.annotations);
+      for (const annotation of serverAnnotations) {
+        this.validateAnnotationAttachments(annotation);
+      }
     } catch {
       return; // Server unreachable, skip sync
     }
@@ -882,12 +908,7 @@ class WaypointAnnotationsBackground {
         // Push merged result to server only if content changed
         if (changed) {
           try {
-            const syncResponse = await fetch(`${this.apiServerUrl}/api/annotations/sync`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ annotations: merged })
-            });
-            if (!syncResponse.ok) throw new Error(`API sync error: ${syncResponse.status}`);
+            await this.syncAnnotationsToAPI(merged);
             // Mark all as synced
             let needsUpdate = false;
             for (const a of merged) {
@@ -1068,6 +1089,7 @@ class WaypointAnnotationsBackground {
         id: scriptId,
         matches: [originPattern],
         js: [
+          'annotation-id.js',
           'agent-setup-config.js',
           'content/modules/event-bus.js',
           'content/modules/styles.js',
@@ -1092,6 +1114,7 @@ class WaypointAnnotationsBackground {
 
     } catch (err) {
       console.error('Failed to register content scripts:', err);
+      throw err;
     }
 
     // Reload the tab so scripts inject cleanly
@@ -1152,6 +1175,7 @@ class WaypointAnnotationsBackground {
         if (!WaypointAnnotationId.isValid(a?.id)) {
           throw new Error('Invalid Waypoint annotation ID');
         }
+        this.validateAnnotationAttachments(a);
         if (!existingIds.has(a.id)) {
           WaypointVariantPolicy.assertSaveAllowed(null, a);
           all.push(a);
@@ -1190,55 +1214,6 @@ class WaypointAnnotationsBackground {
     });
   }
 
-  getChangelogForVersion(version) {
-    // Real changelog mapping for actual versions
-    const changelogs = {
-      '1.0.0': [
-        'Initial release of Waypoint Annotations (MIT foundation)',
-        'Visual annotation system for localhost development',
-        'MCP integration for AI coding agents',
-        'Light/dark theme support with system preference detection'
-      ],
-      '1.0.1': [
-        'Added Chrome Web Store download link',
-        'Enhanced documentation for local file support (file:// URLs)',
-        'Added step-by-step instructions for enabling local file access',
-        'Improved error messages for file access permissions',
-        'Backwards compatible with current server version'
-      ],
-      '1.0.2': [
-        'Added support for .local, .test, and .localhost development domains',
-        'WordPress development compatibility (*.local domains)',
-        'Laravel Valet compatibility (*.test domains)',
-        'Custom localhost setups (*.localhost domains)',
-        'Expanded local development environment support'
-      ],
-      '1.0.3': [
-        'Added HTTPS support for localhost development servers',
-        'Support for https://localhost (Vite, Next.js, CRA with SSL)',
-        'Support for https://127.0.0.1 and https://0.0.0.0',
-        'HTTP transport now recommended over SSE for better stability',
-        'Updated all setup instructions to promote HTTP transport first',
-        'Compatible with mkcert and other local SSL setups'
-      ],
-      '1.1.0': [
-        'Rich clipboard copy format with full element context for AI agents',
-        'Floating toolbar with enhanced settings and improved UX'
-      ],
-      '1.2.0': [
-        'Keyboard shortcut (Cmd+Shift+V / Ctrl+Shift+V) to toggle annotation mode',
-        'Release notes opened automatically on extension update',
-        'Clipboard copy now nudges AI agents with actionable instruction',
-        'Badge color picker with 5 colors in toolbar settings',
-        'Provisional pin shown immediately on element click',
-        'Badges positioned at click point relative to element',
-        'Popover anchored to cursor position for accurate placement',
-        'Shadow DOM event containment prevents framework interference'
-      ]
-    };
-    
-    return changelogs[version] || ['Various improvements and bug fixes'];
-  }
 }
 
 // Initialize the background service worker

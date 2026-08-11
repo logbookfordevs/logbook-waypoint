@@ -24,3 +24,9 @@ test('server package exposes the canonical package and CLI identifiers', async (
   });
   assert.equal(extensionManifest.dependencies[PRODUCT_IDENTITY.npmPackage], 'workspace:*');
 });
+
+test('server startup has no remote registry update check or promotional release banner', async () => {
+  const source = await readFile(new URL('../lib/server.js', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(source, /registry\.npmjs\.org|checkForUpdates|Update available/);
+});

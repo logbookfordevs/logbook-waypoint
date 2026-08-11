@@ -29,6 +29,12 @@ function assertKind(kind) {
   if (typeof kind !== 'string' || !KIND_PATTERN.test(kind)) throw new TypeError('Invalid attachment kind');
 }
 
+function assertName(name) {
+  if (typeof name !== 'string' || name.length === 0 || name.length > 200 || path.basename(name) !== name) {
+    throw new TypeError('Invalid attachment name');
+  }
+}
+
 function contentBuffer(content, mimeType) {
   if (Buffer.isBuffer(content)) return content;
   if (content instanceof Uint8Array) return Buffer.from(content);
@@ -58,7 +64,7 @@ export class AttachmentStore {
     return directory;
   }
 
-  async save({ annotationId, kind = 'image', mimeType, content } = {}) {
+  async save({ annotationId, kind = 'image', mimeType, content, name } = {}) {
     assertAnnotationId(annotationId);
     assertKind(kind);
     const extension = ALLOWED_IMAGE_MIME_TYPES.get(mimeType);
@@ -68,6 +74,8 @@ export class AttachmentStore {
 
     const id = randomUUID();
     const filename = `${id}.${extension}`;
+    const attachmentName = name ?? filename;
+    assertName(attachmentName);
     const metadataFilename = `${id}.json`;
     const directory = this.annotationDirectory(annotationId);
     await mkdir(directory, { recursive: true });
@@ -80,6 +88,7 @@ export class AttachmentStore {
       mime_type: mimeType,
       byte_size: data.byteLength,
       filename,
+      name: attachmentName,
       created_at: new Date().toISOString(),
     };
     const suffix = randomUUID();
@@ -91,12 +100,17 @@ export class AttachmentStore {
       await rename(temporaryContent, contentPath);
       await writeFile(temporaryMetadata, JSON.stringify(metadata), { flag: 'wx' });
       await rename(temporaryMetadata, metadataPath);
+      return metadata;
+    } catch (error) {
+      await Promise.all([
+        rm(contentPath, { force: true }),
+        rm(metadataPath, { force: true }),
+      ]);
+      throw error;
     } finally {
       await rm(temporaryContent, { force: true }).catch(() => {});
       await rm(temporaryMetadata, { force: true }).catch(() => {});
     }
-
-    return metadata;
   }
 
   async get({ annotationId, attachmentId, includeContent = false } = {}) {
@@ -118,6 +132,7 @@ export class AttachmentStore {
       || metadata.annotation_id !== annotationId
       || !ALLOWED_IMAGE_MIME_TYPES.has(metadata.mime_type)
       || typeof metadata.filename !== 'string'
+      || metadata.name !== undefined && (typeof metadata.name !== 'string' || path.basename(metadata.name) !== metadata.name)
       || metadata.filename !== `${attachmentId}.${ALLOWED_IMAGE_MIME_TYPES.get(metadata.mime_type)}`
     ) {
       throw new TypeError('Invalid attachment metadata');

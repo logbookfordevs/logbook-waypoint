@@ -14,9 +14,6 @@ class AnnotationsPopup {
     this.themeManager = new ThemeManager();
     await this.themeManager.init();
     
-    // Check for update notification
-    await this.checkForUpdateNotification();
-    
     // Set current route subtitle
     await this.setCurrentRoute();
     
@@ -40,26 +37,6 @@ class AnnotationsPopup {
     
     // Update button text based on annotation mode status
     this.updateAnnotationButton();
-  }
-
-  async checkForUpdateNotification() {
-    try {
-      const result = await chrome.storage.local.get(['waypointUpdateInfo']);
-      const waypointUpdateInfo = result.waypointUpdateInfo;
-      
-      if (waypointUpdateInfo && waypointUpdateInfo.hasUpdate) {
-        const updateBanner = document.getElementById('update-banner');
-        const updateMessage = document.getElementById('update-banner-message');
-        
-        updateMessage.textContent = `Extension updated to v${waypointUpdateInfo.currentVersion}`;
-        updateBanner.style.display = 'block';
-        
-        // Clear the "NEW" badge since user is viewing the popup
-        chrome.action.setBadgeText({ text: '' });
-      }
-    } catch (error) {
-      console.error('Error checking for update notification:', error);
-    }
   }
 
   async setCurrentRoute() {
@@ -188,21 +165,6 @@ class AnnotationsPopup {
     settingsBtn.addEventListener('click', () => {
       this.openSettings();
     });
-
-    // Update banner buttons
-    const viewChangelogBtn = document.getElementById('view-changelog-btn');
-    if (viewChangelogBtn) {
-      viewChangelogBtn.addEventListener('click', () => {
-        this.showChangelog();
-      });
-    }
-    
-    const dismissUpdateBtn = document.getElementById('dismiss-update-btn');
-    if (dismissUpdateBtn) {
-      dismissUpdateBtn.addEventListener('click', () => {
-        this.dismissUpdateBanner();
-      });
-    }
 
     // Theme selector
     const themeSelect = document.getElementById('theme-select');
@@ -663,21 +625,18 @@ class AnnotationsPopup {
 
   async updateMCPStatus() {
     try {
-      // Check external server health via direct HTTP call
-      const response = await fetch('http://127.0.0.1:3846/health', {
-        method: 'GET',
-        signal: AbortSignal.timeout(2000) // 2 second timeout
-      });
+      const result = await chrome.runtime.sendMessage({ action: 'checkMCPStatus' });
+      const status = result?.status;
       
       const statusIndicator = document.querySelector('.status-indicator');
       const statusText = document.querySelector('.status-text');
       const newAnnotationBtn = document.getElementById('new-annotation-btn');
       
-      this.serverOnline = response.ok;
+      this.serverOnline = Boolean(result?.success && status?.connected);
       
       if (this.serverOnline) {
         statusIndicator.className = 'status-indicator online';
-        statusText.textContent = 'API online';
+        statusText.textContent = status.compatibility_message || 'API online';
         newAnnotationBtn.disabled = false;
         newAnnotationBtn.title = 'Create new annotation';
         
@@ -1204,33 +1163,6 @@ class AnnotationsPopup {
     }, 1000);
   }
 
-  async showChangelog() {
-    try {
-      const result = await chrome.storage.local.get(['waypointUpdateInfo']);
-      const waypointUpdateInfo = result.waypointUpdateInfo;
-      
-      if (waypointUpdateInfo && waypointUpdateInfo.changelog) {
-        // For now, just show an alert. In a real app, you'd open a modal or new tab
-        const changes = waypointUpdateInfo.changelog.join('\n• ');
-        alert(`What's new in v${waypointUpdateInfo.currentVersion}:\n\n• ${changes}`);
-      }
-    } catch (error) {
-      console.error('Error showing changelog:', error);
-    }
-  }
-
-  async dismissUpdateBanner() {
-    try {
-      // Hide the banner
-      const updateBanner = document.getElementById('update-banner');
-      updateBanner.style.display = 'none';
-      
-      // Clear the update info from storage
-      await chrome.storage.local.remove(['waypointUpdateInfo']);
-    } catch (error) {
-      console.error('Error dismissing update banner:', error);
-    }
-  }
 }
 
 // Initialize popup when DOM is loaded

@@ -58,6 +58,7 @@ describe('local HTTP security boundary', () => {
     const response = await fetch(`${baseUrl}/health`);
 
     assert.equal(response.status, 200);
+    assert.match((await response.json()).version, /^\d+\.\d+\.\d+/);
   });
 
   test('rejects a non-loopback Host header', async () => {

@@ -6,33 +6,6 @@
   const siteUrlEl = document.getElementById('siteUrl');
   const messageEl = document.getElementById('message');
   const successEl = document.getElementById('success');
-  const updateBanner = document.getElementById('updateBanner');
-  const updateLink = document.getElementById('updateLink');
-
-  // --- Update banner ---
-  const updateText = document.getElementById('updateText');
-  const updateDismiss = document.getElementById('updateDismiss');
-  try {
-    const { waypointUpdateInfo } = await chrome.storage.local.get(['waypointUpdateInfo']);
-    if (waypointUpdateInfo?.hasUpdate) {
-      // Clear the NEW badge immediately on popup open
-      chrome.action.setBadgeText({ text: '' });
-
-      updateBanner.classList.remove('hidden');
-      updateText.textContent = `Version ${waypointUpdateInfo.currentVersion} installed`;
-      const releaseUrl = waypointUpdateInfo.releaseUrl || 'https://github.com/logbookfordevs/logbook-waypoint/releases';
-      updateLink.href = releaseUrl;
-
-      async function dismissBanner() {
-        await chrome.storage.local.set({ waypointUpdateInfo: { ...waypointUpdateInfo, hasUpdate: false } });
-        updateBanner.classList.add('hidden');
-      }
-
-      updateLink.addEventListener('click', dismissBanner);
-      updateDismiss.addEventListener('click', dismissBanner);
-    }
-  } catch { /* ignore */ }
-
   // --- Get active tab ---
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url) {

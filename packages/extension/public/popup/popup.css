@@ -603,40 +603,6 @@ input:checked + .toggle-slider:before {
   line-height: 1.4;
 }
 
-/* Update Banner */
-.update-banner {
-  background: linear-gradient(135deg, rgba(217, 119, 87, 0.08) 0%, rgba(217, 119, 87, 0.04) 100%);
-  border-bottom: 1px solid var(--theme-border);
-  padding: 8px 12px;
-}
-
-.update-banner-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.update-banner-text {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  color: var(--theme-text-primary);
-  font-size: 13px;
-}
-
-.update-banner-text iconify-icon {
-  color: var(--theme-accent);
-  flex-shrink: 0;
-}
-
-.update-banner-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .link-btn {
   background: none;
   border: none;
