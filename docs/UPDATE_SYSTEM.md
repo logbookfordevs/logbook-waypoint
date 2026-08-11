@@ -33,4 +33,4 @@ Updating the extension or server remains an explicit user-controlled installatio
 
 ## Verification
 
-The compatibility checks are hermetic and cover compatible, incompatible, unavailable, and malformed health responses. They use no live registry, release API, external network call, or user data fixture. Active regressions also guard the documentation and runtime against promotional release UI and automatic remote update checking.
+The active documentation and runtime regressions are hermetic. They use no live registry, release API, external network call, or user data fixture, and guard against promotional release UI and automatic remote update checking.

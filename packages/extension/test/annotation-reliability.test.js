@@ -99,7 +99,7 @@ test('keyboard shortcuts ignore editable controls across composed paths', async 
   assert.equal(context.WaypointKeyboardTarget.isEditableEvent({ composedPath: () => [toolbarButton] }), false);
 });
 
-test('content status preserves the server compatibility nudge', async () => {
+test('content status preserves a local extension incompatibility message', async () => {
   const context = createBrowserContext();
   context.chrome = {
     runtime: {
@@ -107,8 +107,8 @@ test('content status preserves the server compatibility nudge', async () => {
         success: true,
         status: {
           connected: true,
-          compatibility_message: 'Server update recommended.',
-          version_compatible: true,
+          compatibility_message: 'Extension update required. Minimum version: 0.2.0',
+          version_compatible: false,
         },
       }),
     },
@@ -117,7 +117,8 @@ test('content status preserves the server compatibility nudge', async () => {
 
   const status = await context.WaypointAPI.checkServerStatus();
   assert.equal(status.connected, true);
-  assert.equal(status.compatibility_message, 'Server update recommended.');
+  assert.equal(status.compatibility_message, 'Extension update required. Minimum version: 0.2.0');
+  assert.equal(status.version_compatible, false);
 });
 
 test('direct storage fallback rejects non-Waypoint Annotation IDs', async () => {

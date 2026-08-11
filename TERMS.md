@@ -127,5 +127,5 @@ By using Logbook Waypoint, you acknowledge that you have read, understood, and a
 
 ---
 
-*Last Updated: August 11, 2025*
+*Last Updated: August 11, 2026*
 *Version: 1.0*
