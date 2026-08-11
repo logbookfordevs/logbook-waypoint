@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 
-import { WatchQueue } from '../lib/watch-queue.js';
+import { PersistentWatchQueue, WatchQueue } from '../lib/watch-queue.js';
 
 const annotation = (overrides = {}) => ({
   id: 'waypoint_1750000000000_abc123xyz',
@@ -95,4 +98,50 @@ test('Watch rejects forged and cross-Queue cursors', async () => {
 
   await assert.rejects(second.watch({ cursor, timeoutMs: 0 }), /Invalid Watch cursor/);
   await assert.rejects(first.watch({ cursor: 'not-a-cursor', timeoutMs: 0 }), /Invalid Watch cursor/);
+});
+
+test('persistent Watch initialization is single-flight for concurrent first watchers', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const watch = new PersistentWatchQueue({ historyFile });
+  let loads = 0;
+
+  try {
+    const results = await Promise.all(Array.from({ length: 20 }, () => watch.watch(
+      { timeoutMs: 0 },
+      async () => {
+        loads += 1;
+        await new Promise(resolve => setTimeout(resolve, 2));
+        return [];
+      },
+    )));
+
+    assert.equal(loads, 1);
+    assert.equal(new Set(results.map(result => result.cursor)).size, 1);
+    assert.deepEqual(JSON.parse(await readFile(historyFile, 'utf8')).history, []);
+  } finally {
+    await rm(directory, { recursive: true });
+  }
+});
+
+test('persistent Watch reconciles current Queue state when history missed a change', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const first = new PersistentWatchQueue({ historyFile });
+  const pending = annotation();
+
+  try {
+    await first.recordChanges([pending]);
+    const acknowledged = await first.watch({ timeoutMs: 0 }, async () => [pending]);
+    const restored = new PersistentWatchQueue({ historyFile });
+    const resumed = await restored.watch(
+      { cursor: acknowledged.cursor, timeoutMs: 0 },
+      async () => [annotation({ status: 'discarded' })],
+    );
+
+    assert.equal(resumed.changes.length, 1);
+    assert.equal(resumed.changes[0].annotation.status, 'discarded');
+  } finally {
+    await rm(directory, { recursive: true });
+  }
 });

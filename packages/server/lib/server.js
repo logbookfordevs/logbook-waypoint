@@ -23,7 +23,7 @@ import {
   mcpTransportSecurity
 } from './security.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
-import { WatchQueue } from './watch-queue.js';
+import { PersistentWatchQueue } from './watch-queue.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,7 +52,7 @@ function createToolPayload(tool, data, extra = {}) {
 }
 
 export class LocalAnnotationsServer {
-  constructor() {
+  constructor({ watchHistoryFile = WATCH_FILE } = {}) {
     this.app = express();
     this.mcpServer = new Server(
       {
@@ -70,7 +70,7 @@ export class LocalAnnotationsServer {
     this.transports = {}; // Track transport sessions
     this.connections = new Set(); // Track HTTP connections
     this.saveLock = Promise.resolve(); // Serialize save operations to prevent race conditions
-    this.watchQueue = null;
+    this.watchQueue = new PersistentWatchQueue({ historyFile: watchHistoryFile });
     
     this.setupExpress();
     this.setupMCP();
@@ -715,10 +715,7 @@ export class LocalAnnotationsServer {
       await fs.promises.rename(tempFile, DATA_FILE);
       annotationFileSaved = true;
 
-      const watchQueue = await this.ensureWatchQueue(previousAnnotations);
-      if (watchQueue.recordChanges(previousAnnotations, annotations).length > 0) {
-        await this.persistWatchQueue();
-      }
+      await this.watchQueue.recordChanges(annotations, async () => previousAnnotations);
       
       console.log(`Successfully saved ${annotations.length} annotations to ${DATA_FILE}`);
     } catch (error) {
@@ -795,42 +792,6 @@ export class LocalAnnotationsServer {
     }
   }
 
-  async ensureWatchQueue(currentAnnotations) {
-    if (this.watchQueue) return this.watchQueue;
-
-    if (existsSync(WATCH_FILE)) {
-      try {
-        const saved = JSON.parse(await readFile(WATCH_FILE, 'utf8'));
-        this.watchQueue = new WatchQueue(saved);
-        const annotations = currentAnnotations ?? await this.loadAnnotations();
-        const latestById = new Map();
-        for (const change of this.watchQueue.history) {
-          latestById.set(change.annotation.id, change.annotation);
-        }
-        if (this.watchQueue.recordChanges([...latestById.values()], annotations).length > 0) {
-          await this.persistWatchQueue();
-        }
-        return this.watchQueue;
-      } catch (error) {
-        console.warn(`Warning: Could not read Watch history: ${error.message}`);
-      }
-    }
-
-    this.watchQueue = new WatchQueue();
-    const annotations = currentAnnotations ?? await this.loadAnnotations();
-    this.watchQueue.recordChanges([], annotations);
-    await this.persistWatchQueue();
-    return this.watchQueue;
-  }
-
-  async persistWatchQueue() {
-    await mkdir(path.dirname(WATCH_FILE), { recursive: true });
-    const tempFile = `${WATCH_FILE}.tmp`;
-    await writeFile(tempFile, JSON.stringify(this.watchQueue.toJSON(), null, 2));
-    const fs = await import('fs');
-    await fs.promises.rename(tempFile, WATCH_FILE);
-  }
-
   portableAnnotation(annotation) {
     const {
       screenshot,
@@ -852,8 +813,10 @@ export class LocalAnnotationsServer {
       throw new Error('timeout_ms must be an integer between 0 and 30000');
     }
 
-    const watchQueue = await this.ensureWatchQueue();
-    const result = await watchQueue.watch({ cursor: args.cursor, timeoutMs });
+    const result = await this.watchQueue.watch(
+      { cursor: args.cursor, timeoutMs },
+      () => this.loadAnnotations(),
+    );
     return {
       changes: result.changes.map(change => ({
         annotation: this.portableAnnotation(change.annotation),

@@ -20,3 +20,19 @@ test('generated toolbar guides supported coding agents with Waypoint-native MCP 
   assert.match(source, new RegExp(`"logbook-waypoint"[\\s\\S]{0,240}${WAYPOINT_MCP_URL}`));
   assert.match(source, /"type":"remote"/);
 });
+
+test('popup setup wizard guides every supported coding agent without OpenClaw', async () => {
+  const source = await readFile(
+    new URL('../.output/chrome-mv3/popup/popup.html', import.meta.url),
+    'utf8',
+  );
+
+  for (const agent of ['Claude Code', 'Cursor', 'Windsurf', 'Codex', 'Pi', 'OpenCode']) {
+    assert.match(source, new RegExp(`>${agent}<`));
+  }
+
+  assert.doesNotMatch(source, /OpenClaw/i);
+  assert.match(source, /~\/\.pi\/agent\/mcp\.json/);
+  assert.match(source, /~\/\.config\/opencode\/opencode\.json/);
+  assert.match(source, new RegExp(`"logbook-waypoint"[\\s\\S]{0,240}${WAYPOINT_MCP_URL}`));
+});

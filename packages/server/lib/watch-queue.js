@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 
 function comparableAnnotation(annotation) {
   return JSON.stringify(annotation);
@@ -49,6 +52,14 @@ export class WatchQueue {
     return changes;
   }
 
+  reconcile(nextAnnotations) {
+    const latestById = new Map();
+    for (const change of this.history) {
+      latestById.set(change.annotation.id, change.annotation);
+    }
+    return this.recordChanges([...latestById.values()], nextAnnotations);
+  }
+
   async watch({ cursor, timeoutMs = 25_000 } = {}) {
     if (cursor !== undefined && (typeof cursor !== 'string' || cursor.length > 512)) {
       throw new Error('Invalid Watch cursor');
@@ -81,5 +92,64 @@ export class WatchQueue {
       changes,
       cursor: changes.at(-1)?.cursor ?? cursor ?? this.initialCursor,
     };
+  }
+}
+
+export class PersistentWatchQueue {
+  constructor({ historyFile }) {
+    this.historyFile = historyFile;
+    this.queue = null;
+    this.initialization = null;
+    this.operations = Promise.resolve();
+  }
+
+  async watch(options, loadAnnotations) {
+    const queue = await this.ensureQueue(loadAnnotations);
+    return queue.watch(options);
+  }
+
+  async recordChanges(nextAnnotations, loadAnnotations = async () => []) {
+    return this.serialize(async () => {
+      const queue = await this.ensureQueue(loadAnnotations);
+      const changes = queue.reconcile(nextAnnotations);
+      if (changes.length > 0) await this.persist(queue);
+      return changes;
+    });
+  }
+
+  async ensureQueue(loadAnnotations) {
+    if (this.queue) return this.queue;
+    if (!this.initialization) {
+      this.initialization = this.initialize(loadAnnotations).catch(error => {
+        this.initialization = null;
+        throw error;
+      });
+    }
+    return this.initialization;
+  }
+
+  async initialize(loadAnnotations) {
+    const annotations = await loadAnnotations();
+    const historyExists = existsSync(this.historyFile);
+    const saved = historyExists
+      ? JSON.parse(await readFile(this.historyFile, 'utf8'))
+      : undefined;
+    const queue = new WatchQueue(saved);
+    const changes = queue.reconcile(annotations);
+    if (!historyExists || changes.length > 0) await this.persist(queue);
+    this.queue = queue;
+    return queue;
+  }
+
+  serialize(operation) {
+    this.operations = this.operations.catch(() => {}).then(operation);
+    return this.operations;
+  }
+
+  async persist(queue) {
+    await mkdir(path.dirname(this.historyFile), { recursive: true });
+    const tempFile = `${this.historyFile}.tmp`;
+    await writeFile(tempFile, JSON.stringify(queue.toJSON(), null, 2));
+    await rename(tempFile, this.historyFile);
   }
 }

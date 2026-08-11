@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
 import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -296,7 +299,10 @@ describe('local HTTP security boundary', () => {
   });
 
   test('Watch is exposed through MCP as non-destructive untrusted activity', async () => {
-    const runtime = new LocalAnnotationsServer();
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-mcp-watch-'));
+    const runtime = new LocalAnnotationsServer({
+      watchHistoryFile: path.join(directory, 'watch-history.json'),
+    });
     runtime.loadAnnotations = async () => [];
     const server = runtime.listen(0);
     await new Promise((resolve) => server.once('listening', resolve));
@@ -317,7 +323,7 @@ describe('local HTTP security boundary', () => {
       assert.deepEqual(firstPayload.data.changes, []);
       assert.equal(firstPayload.data.timed_out, true);
 
-      runtime.watchQueue.recordChanges([], [{
+      await runtime.watchQueue.recordChanges([{
         id: 'waypoint_1750000000000_abc123xyz',
         url: 'http://localhost:3000/',
         status: 'discarded',
@@ -339,6 +345,7 @@ describe('local HTTP security boundary', () => {
       await client.close().catch(() => {});
       server.closeAllConnections();
       server.close();
+      await rm(directory, { recursive: true });
     }
   });
 
