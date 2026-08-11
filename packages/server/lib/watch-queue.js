@@ -1,18 +1,76 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+function canonicalValue(value) {
+  if (Array.isArray(value)) return value.map(canonicalValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value).sort().map(key => [key, canonicalValue(value[key])]),
+  );
+}
+
 function comparableAnnotation(annotation) {
-  return JSON.stringify(annotation);
+  return JSON.stringify(canonicalValue(annotation));
+}
+
+export function toWatchAnnotation(annotation) {
+  const {
+    screenshot,
+    source_file_path,
+    source_line_range,
+    source_map_available,
+    context_hints,
+    ...portableAnnotation
+  } = annotation;
+  return {
+    ...portableAnnotation,
+    has_screenshot: annotation.has_screenshot ?? Boolean(screenshot?.data_url),
+  };
+}
+
+function validateSavedQueue(saved) {
+  if (!saved || typeof saved.initialCursor !== 'string' || !Array.isArray(saved.history)) {
+    throw new Error('Invalid Watch journal header');
+  }
+  const cursors = new Set([saved.initialCursor]);
+  const history = saved.history.map((change, index) => {
+    const sequence = index + 1;
+    if (
+      change?.sequence !== sequence
+      || change.revision !== String(sequence)
+      || typeof change.cursor !== 'string'
+      || cursors.has(change.cursor)
+      || !change.annotation
+      || typeof change.annotation.id !== 'string'
+    ) {
+      throw new Error('Invalid Watch journal change');
+    }
+    cursors.add(change.cursor);
+    return { ...change, annotation: toWatchAnnotation(change.annotation) };
+  });
+  return { initialCursor: saved.initialCursor, history };
 }
 
 export class WatchQueue {
-  constructor({ initialCursor = randomUUID(), history = [] } = {}) {
+  constructor(saved = {}) {
+    const initialCursor = saved.initialCursor ?? randomUUID();
+    const history = saved.history ?? [];
     this.initialCursor = initialCursor;
     this.history = history;
-    this.sequence = history.at(-1)?.sequence ?? 0;
     this.waiters = new Set();
+    this.rebuildIndexes();
+  }
+
+  rebuildIndexes() {
+    this.sequence = this.history.at(-1)?.sequence ?? 0;
+    this.cursorSequences = new Map([[this.initialCursor, 0]]);
+    this.latestById = new Map();
+    for (const change of this.history) {
+      this.cursorSequences.set(change.cursor, change.sequence);
+      this.latestById.set(change.annotation.id, change.annotation);
+    }
   }
 
   toJSON() {
@@ -27,10 +85,16 @@ export class WatchQueue {
   }
 
   recordChanges(previousAnnotations, nextAnnotations) {
-    const previousById = new Map(previousAnnotations.map(annotation => [annotation.id, annotation]));
+    const previousById = new Map(
+      previousAnnotations.map(annotation => {
+        const portableAnnotation = toWatchAnnotation(annotation);
+        return [portableAnnotation.id, portableAnnotation];
+      }),
+    );
     const changes = [];
 
-    for (const annotation of nextAnnotations) {
+    for (const rawAnnotation of nextAnnotations) {
+      const annotation = toWatchAnnotation(rawAnnotation);
       const previous = previousById.get(annotation.id);
       if (!previous || comparableAnnotation(previous) !== comparableAnnotation(annotation)) {
         const sequence = ++this.sequence;
@@ -41,23 +105,18 @@ export class WatchQueue {
           revision: String(sequence),
         };
         this.history.push(change);
+        this.cursorSequences.set(change.cursor, sequence);
+        this.latestById.set(annotation.id, annotation);
         changes.push(change);
       }
     }
 
-    if (changes.length > 0) {
-      for (const notify of this.waiters) notify();
-      this.waiters.clear();
-    }
+    if (changes.length > 0) this.notifyWaiters();
     return changes;
   }
 
   reconcile(nextAnnotations) {
-    const latestById = new Map();
-    for (const change of this.history) {
-      latestById.set(change.annotation.id, change.annotation);
-    }
-    return this.recordChanges([...latestById.values()], nextAnnotations);
+    return this.recordChanges([...this.latestById.values()], nextAnnotations);
   }
 
   reconciledCopy(nextAnnotations) {
@@ -70,7 +129,7 @@ export class WatchQueue {
     const changed = candidate.sequence > this.sequence;
     this.initialCursor = candidate.initialCursor;
     this.history = candidate.history;
-    this.sequence = candidate.sequence;
+    this.rebuildIndexes();
     if (changed) this.notifyWaiters();
   }
 
@@ -79,19 +138,17 @@ export class WatchQueue {
     this.waiters.clear();
   }
 
-  async watch({ cursor, timeoutMs = 25_000 } = {}) {
+  changesAfter(cursor) {
     if (cursor !== undefined && (typeof cursor !== 'string' || cursor.length > 512)) {
       throw new Error('Invalid Watch cursor');
     }
-    const cursorChange = cursor === undefined
-      ? null
-      : this.history.find(change => change.cursor === cursor);
-    if (cursor !== undefined && cursor !== this.initialCursor && !cursorChange) {
-      throw new Error('Invalid Watch cursor');
-    }
+    const afterSequence = cursor === undefined ? 0 : this.cursorSequences.get(cursor);
+    if (afterSequence === undefined) throw new Error('Invalid Watch cursor');
+    return this.history.slice(afterSequence);
+  }
 
-    const afterSequence = cursorChange?.sequence ?? 0;
-    let changes = this.history.filter(change => change.sequence > afterSequence);
+  async watch({ cursor, timeoutMs = 25_000 } = {}) {
+    let changes = this.changesAfter(cursor);
     if (changes.length === 0 && timeoutMs > 0) {
       await new Promise(resolve => {
         const timer = setTimeout(() => {
@@ -104,7 +161,7 @@ export class WatchQueue {
         };
         this.waiters.add(notify);
       });
-      changes = this.history.filter(change => change.sequence > afterSequence);
+      changes = this.changesAfter(cursor);
     }
 
     return {
@@ -161,15 +218,71 @@ export class PersistentWatchQueue {
 
   async initialize(loadAnnotations) {
     const annotations = await loadAnnotations();
-    const historyExists = existsSync(this.historyFile);
-    const saved = historyExists
-      ? JSON.parse(await readFile(this.historyFile, 'utf8'))
-      : undefined;
-    const queue = new WatchQueue(saved);
+    let queue;
+    let replaceJournal = !existsSync(this.historyFile);
+
+    if (replaceJournal) {
+      queue = new WatchQueue();
+    } else {
+      try {
+        const loaded = await this.loadJournal();
+        queue = new WatchQueue(validateSavedQueue(loaded.saved));
+        replaceJournal = loaded.replaceJournal;
+      } catch (error) {
+        const corruptedFile = `${this.historyFile}.corrupted.${randomUUID()}`;
+        await rename(this.historyFile, corruptedFile);
+        console.warn(`Corrupted Watch journal moved to ${corruptedFile}: ${error.message}`);
+        queue = new WatchQueue();
+        replaceJournal = true;
+      }
+    }
+
     const changes = queue.reconcile(annotations);
-    if (!historyExists || changes.length > 0) await this.persist(queue);
+    if (replaceJournal || changes.length > 0) {
+      await this.persist(queue, { replace: true });
+    }
     this.queue = queue;
     return queue;
+  }
+
+  async loadJournal() {
+    const source = await readFile(this.historyFile, 'utf8');
+    try {
+      const legacy = JSON.parse(source);
+      if (legacy?.initialCursor && Array.isArray(legacy.history)) {
+        return { saved: legacy, replaceJournal: true };
+      }
+    } catch {}
+
+    const complete = source.endsWith('\n');
+    const lines = source.split('\n');
+    if (lines.at(-1) === '') lines.pop();
+    const records = [];
+    let replaceJournal = false;
+    for (const [index, line] of lines.entries()) {
+      try {
+        records.push(JSON.parse(line));
+      } catch (error) {
+        if (!complete && index === lines.length - 1) {
+          replaceJournal = true;
+          break;
+        }
+        throw error;
+      }
+    }
+
+    const [header, ...changes] = records;
+    if (header?.type !== 'header') throw new Error('Invalid Watch journal header');
+    if (changes.some(change => change.type !== 'change')) {
+      throw new Error('Invalid Watch journal record');
+    }
+    return {
+      saved: {
+        initialCursor: header.initial_cursor,
+        history: changes.map(({ type, ...change }) => change),
+      },
+      replaceJournal,
+    };
   }
 
   serialize(operation) {
@@ -178,17 +291,39 @@ export class PersistentWatchQueue {
   }
 
   async reconcileAndPersist(queue, annotations) {
+    const previousSequence = queue.sequence;
     const { candidate, changes } = queue.reconciledCopy(annotations);
     if (changes.length === 0) return changes;
-    await this.persist(candidate);
+    await this.persist(candidate, { previousSequence });
     queue.commit(candidate);
     return changes;
   }
 
-  async persist(queue) {
+  async persist(queue, { previousSequence = 0, replace = false } = {}) {
     await mkdir(path.dirname(this.historyFile), { recursive: true });
-    const tempFile = `${this.historyFile}.tmp`;
-    await writeFile(tempFile, JSON.stringify(queue.toJSON(), null, 2));
-    await rename(tempFile, this.historyFile);
+    if (replace || !existsSync(this.historyFile)) {
+      const records = [
+        JSON.stringify({ type: 'header', initial_cursor: queue.initialCursor }),
+        ...queue.history.map(change => JSON.stringify({ type: 'change', ...change })),
+      ];
+      const tempFile = `${this.historyFile}.tmp`;
+      await writeFile(tempFile, `${records.join('\n')}\n`);
+      const tempHandle = await open(tempFile, 'r');
+      await tempHandle.sync();
+      await tempHandle.close();
+      await rename(tempFile, this.historyFile);
+      return;
+    }
+
+    const records = queue.history
+      .slice(previousSequence)
+      .map(change => JSON.stringify({ type: 'change', ...change }));
+    const handle = await open(this.historyFile, 'a');
+    try {
+      await handle.writeFile(`${records.join('\n')}\n`);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
   }
 }

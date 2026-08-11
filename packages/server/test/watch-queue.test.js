@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -47,6 +47,25 @@ test('Watch delivery is at least once until the returned cursor is acknowledged'
   const resumed = await queue.watch({ cursor: first.cursor, timeoutMs: 0 });
 
   assert.deepEqual(repeated.changes, first.changes);
+  assert.deepEqual(resumed.changes, []);
+});
+
+test('Watch does not revise an Annotation when only object key order changes', async () => {
+  const queue = new WatchQueue({ initialCursor: 'initial-test-cursor' });
+  const original = annotation({ element_context: { tag: 'button', text: 'Save' } });
+  queue.recordChanges([], [original]);
+  const acknowledged = await queue.watch({ timeoutMs: 0 });
+  const reordered = {
+    status: 'pending',
+    comment: 'Move this button',
+    url: 'http://localhost:3000/',
+    id: 'waypoint_1750000000000_abc123xyz',
+    element_context: { text: 'Save', tag: 'button' },
+  };
+
+  queue.reconcile([reordered]);
+  const resumed = await queue.watch({ cursor: acknowledged.cursor, timeoutMs: 0 });
+
   assert.deepEqual(resumed.changes, []);
 });
 
@@ -117,7 +136,8 @@ test('persistent Watch initialization is single-flight for concurrent first watc
 
     assert.equal(loads, 1);
     assert.equal(new Set(results.map(result => result.cursor)).size, 1);
-    assert.deepEqual(JSON.parse(await readFile(historyFile, 'utf8')).history, []);
+    const records = (await readFile(historyFile, 'utf8')).trim().split('\n').map(JSON.parse);
+    assert.deepEqual(records, [{ type: 'header', initial_cursor: results[0].cursor }]);
   } finally {
     await rm(directory, { recursive: true });
   }
@@ -196,6 +216,50 @@ test('persistent Watch reconciles a committed Queue after journal recovery', asy
       async () => [pending],
     );
     assert.deepEqual(resumed.changes, []);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('persistent Watch journal excludes screenshots and Source Identity hints', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const watch = new PersistentWatchQueue({ historyFile });
+
+  try {
+    await watch.recordChanges([annotation({
+      screenshot: { data_url: 'data:image/png;base64,AAAA' },
+      source_file_path: 'src/Button.tsx',
+      source_line_range: '1-2',
+      source_map_available: true,
+      context_hints: ['React component: Button'],
+    })]);
+    const journal = await readFile(historyFile, 'utf8');
+
+    assert.doesNotMatch(journal, /data:image|source_file_path|source_line_range|context_hints/);
+    assert.match(journal, /Move this button/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('persistent Watch quarantines corruption and rebuilds from the committed Queue', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  await writeFile(historyFile, '{not valid journal data');
+  const watch = new PersistentWatchQueue({ historyFile });
+  const pending = annotation();
+
+  try {
+    const rebuilt = await watch.watch({ timeoutMs: 0 }, async () => [pending]);
+    const files = await readdir(directory);
+
+    assert.equal(rebuilt.changes[0].annotation.id, pending.id);
+    assert.equal(files.some(file => file.startsWith('watch-history.json.corrupted.')), true);
+    await assert.rejects(
+      watch.watch({ cursor: 'cursor-from-corrupted-journal', timeoutMs: 0 }, async () => [pending]),
+      /Invalid Watch cursor/,
+    );
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

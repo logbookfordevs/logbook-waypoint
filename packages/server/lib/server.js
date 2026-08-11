@@ -23,7 +23,7 @@ import {
   mcpTransportSecurity
 } from './security.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
-import { PersistentWatchQueue } from './watch-queue.js';
+import { PersistentWatchQueue, toWatchAnnotation } from './watch-queue.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -797,17 +797,9 @@ export class LocalAnnotationsServer {
   }
 
   portableAnnotation(annotation) {
-    const {
-      screenshot,
-      source_file_path,
-      source_line_range,
-      source_map_available,
-      context_hints,
-      ...portableAnnotation
-    } = annotation;
     return {
-      ...portableAnnotation,
-      has_screenshot: Boolean(screenshot?.data_url),
+      ...toWatchAnnotation(annotation),
+      has_screenshot: annotation.has_screenshot ?? Boolean(annotation.screenshot?.data_url),
     };
   }
 
