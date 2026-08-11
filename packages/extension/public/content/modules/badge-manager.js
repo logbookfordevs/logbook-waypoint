@@ -150,6 +150,9 @@ var VibeBadgeManager = (() => {
         badgeIndex++;
         const existing = previousBadges.get(annotation.id);
         if (existing) {
+          if (existing.targetElement !== target) {
+            restorePendingChanges(existing.targetElement, existing.annotation.pending_changes);
+          }
           existing.annotation = annotation;
           existing.targetElement = target;
           existing.el.childNodes[0].textContent = badgeIndex.toString();

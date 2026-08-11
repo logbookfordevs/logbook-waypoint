@@ -132,6 +132,11 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   const target = context.document.querySelector('#target');
   target.style.color = 'green';
   target.style.backgroundColor = 'yellow';
+  const replacement = context.document.createElement('button');
+  replacement.textContent = 'Old';
+  replacement.style.color = 'green';
+  replacement.style.backgroundColor = 'yellow';
+  context.document.body.appendChild(replacement);
   const overlay = context.document.querySelector('#overlay');
   const annotation = {
     id: 'vibe_1_abcdefghi',
@@ -144,7 +149,8 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
     css: '#target:hover { color: blue; }',
   };
   context.VibeShadowHost = { getRoot: () => overlay };
-  context.VibeElementContext = { findElementBySelector: candidate => candidate.id === annotation.id ? target : null };
+  let resolvedTarget = target;
+  context.VibeElementContext = { findElementBySelector: candidate => candidate.id === annotation.id ? resolvedTarget : null };
   await loadScript(context, 'content/modules/event-bus.js');
   await loadScript(context, 'content/modules/badge-manager.js');
   context.VibeBadgeManager.render([annotation]);
@@ -157,9 +163,17 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   assert.equal(context.document.querySelector('[data-vibe-style]'), firstStyle);
   assert.equal(overlay.querySelector('.vibe-badge'), firstBadge);
 
-  context.VibeBadgeManager.render([]);
+  resolvedTarget = replacement;
+  context.VibeBadgeManager.render([annotation]);
   assert.equal(target.style.color, 'green');
-  assert.equal(target.style.backgroundColor, 'yellow');
   assert.equal(target.textContent, 'Old');
+  assert.equal(replacement.style.color, 'red');
+  assert.equal(replacement.textContent, 'New');
+  assert.equal(overlay.querySelector('.vibe-badge'), firstBadge);
+
+  context.VibeBadgeManager.render([]);
+  assert.equal(replacement.style.color, 'green');
+  assert.equal(replacement.style.backgroundColor, 'yellow');
+  assert.equal(replacement.textContent, 'Old');
   assert.equal(context.document.querySelector('[data-vibe-style]'), null);
 });
