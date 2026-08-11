@@ -91,9 +91,6 @@ var VibeElementContext = (() => {
     const unique = findUniqueAttributeSelector(element);
     if (unique) return unique;
 
-    const textSel = generateTextBasedSelector(element);
-    if (textSel && isUnique(textSel)) return textSel;
-
     const classSel = generateClassSelector(element);
     if (classSel && isUnique(classSel)) return classSel;
 
@@ -106,7 +103,7 @@ var VibeElementContext = (() => {
     const pathSel = generateRobustPathSelector(element);
     if (pathSel && isUnique(pathSel)) return pathSel;
 
-    return generateDataAttributeSelector(element);
+    return generateStructuralSelector(element);
   }
 
   // Build "host >> host >> innerSelector" for elements inside shadow DOM
@@ -151,7 +148,7 @@ var VibeElementContext = (() => {
     while (current && current !== root && !(VibeShadowDOMUtils.isShadowRoot(current))) {
       const tag = current.tagName.toLowerCase();
       let part = tag;
-      const parent = current.parentElement;
+      const parent = current.parentElement || (current.parentNode === root ? root : null);
       if (parent) {
         const siblings = Array.from(parent.children).filter(el => el.tagName.toLowerCase() === tag);
         if (siblings.length > 1) {
@@ -166,7 +163,7 @@ var VibeElementContext = (() => {
     const pathSel = pathParts.join(' > ');
     if (pathSel && isUniqueIn(pathSel, root)) return pathSel;
 
-    return generateDataAttributeSelector(element);
+    return generateStructuralSelector(element, root);
   }
 
   function findUniqueAttributeSelector(element, root = document) {
@@ -220,26 +217,6 @@ var VibeElementContext = (() => {
       depth++;
     }
 
-    return null;
-  }
-
-  function generateTextBasedSelector(element) {
-    const text = element.textContent?.trim();
-    if (!text || text.length > 100) return null;
-    const tag = element.tagName.toLowerCase();
-    if (!['button', 'a', 'span', 'div'].includes(tag)) return null;
-
-    const sanitized = text.replace(/[^\w\s]/g, '').trim();
-    if (!sanitized || sanitized.length >= 50) return null;
-
-    const candidates = VibeShadowDOMUtils.querySelectorAllDeep(document, tag);
-    const matches = candidates.filter(el =>
-      el.textContent?.trim().replace(/[^\w\s]/g, '').trim() === sanitized
-    );
-    if (matches.length === 1) {
-      element.setAttribute('data-text-content', sanitized);
-      return `${tag}[data-text-content="${CSS.escape(sanitized)}"]`;
-    }
     return null;
   }
 
@@ -331,10 +308,30 @@ var VibeElementContext = (() => {
     return path.length ? path.join(' > ') : null;
   }
 
-  function generateDataAttributeSelector(element) {
-    const id = `vibe-annotation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    element.setAttribute('data-vibe-id', id);
-    return `[data-vibe-id="${id}"]`;
+  function generateStructuralSelector(element, root = document) {
+    const parts = [];
+    let current = element;
+
+    while (current?.nodeType === Node.ELEMENT_NODE) {
+      const tag = current.tagName.toLowerCase();
+      const parent = current.parentElement || (current.parentNode === root ? root : null);
+      let part = tag;
+
+      if (parent) {
+        const siblings = Array.from(parent.children)
+          .filter(sibling => sibling.tagName.toLowerCase() === tag);
+        if (siblings.length > 1) {
+          part = `${tag}:nth-of-type(${siblings.indexOf(current) + 1})`;
+        }
+      }
+
+      parts.unshift(part);
+      if (!parent || parent === root) break;
+      current = parent;
+    }
+
+    const selector = parts.join(' > ');
+    return selector && isUniqueIn(selector, root) ? selector : null;
   }
 
   function isStableClass(cls) {
@@ -364,7 +361,8 @@ var VibeElementContext = (() => {
     try {
       const srcInfo = extractSourceInfo(element);
       const projectArea = getProjectAreaFromURL();
-      const urlPath = new URL(window.location.href).pathname;
+      const location = new URL(window.location.href);
+      const urlPath = `${location.pathname}${location.search}${location.hash}`;
       const hints = generateContextHints(element);
       return {
         source_file_path: srcInfo.filePath || null,
@@ -379,7 +377,7 @@ var VibeElementContext = (() => {
         source_file_path: null,
         source_line_range: null,
         project_area: 'unknown',
-        url_path: window.location.pathname || '/',
+        url_path: `${window.location.pathname || '/'}${window.location.search || ''}${window.location.hash || ''}`,
         source_map_available: false,
         context_hints: generateContextHints(element)
       };
@@ -685,18 +683,46 @@ var VibeElementContext = (() => {
     return text.substring(0, 100).trim().replace(/[^\w\s]/g, '').trim();
   }
 
+  function matchesParentContext(element, context) {
+    if (element.tagName.toLowerCase() !== context.tag) return false;
+    if (context.id && element.id !== context.id) return false;
+    if (context.role && element.getAttribute('role') !== context.role) return false;
+    if (context.classes?.length && !context.classes.some(cls => element.classList.contains(cls))) return false;
+    return true;
+  }
+
+  function matchesParentChain(element, parentChain) {
+    if (!parentChain?.length) return true;
+
+    let current = VibeShadowDOMUtils.getParentElement(element);
+    for (const context of parentChain) {
+      while (current && !matchesParentContext(current, context)) {
+        current = VibeShadowDOMUtils.getParentElement(current);
+      }
+      if (!current) return false;
+      current = VibeShadowDOMUtils.getParentElement(current);
+    }
+    return true;
+  }
+
+  function narrowByParentChain(candidates, parentChain) {
+    const contextualMatches = candidates.filter(candidate => matchesParentChain(candidate, parentChain));
+    return contextualMatches.length ? contextualMatches : candidates;
+  }
+
   function findElementBySelector(annotation) {
     try {
       const el = resolveSelector(annotation.selector);
       if (el) {
         // Verify text content to catch drifted selectors
         const expectedText = annotation.element_context?.text;
+        const matchesContext = matchesParentChain(el, annotation.parent_chain);
         if (expectedText) {
           const actualText = el.textContent?.substring(0, 100).trim();
           const changedText = annotation.pending_changes?.copyChange?.value?.substring(0, 100).trim();
-          if (actualText === expectedText || (changedText && actualText === changedText)) return el;
+          if (matchesContext && (actualText === expectedText || (changedText && actualText === changedText))) return el;
           // Selector matched wrong element — fall through to fallbacks
-        } else {
+        } else if (matchesContext) {
           return el;
         }
       }
@@ -723,10 +749,13 @@ var VibeElementContext = (() => {
         matches = candidates.filter(el => normalizeText(el.textContent) === changedSanitized);
       }
 
+      matches = narrowByParentChain(matches, annotation.parent_chain);
+
       // If scoped search found nothing, try deep search as last resort
       if (matches.length === 0 && scopeRoot !== document) {
         candidates = VibeShadowDOMUtils.querySelectorAllDeep(document, tag);
         matches = candidates.filter(el => normalizeText(el.textContent) === sanitized);
+        matches = narrowByParentChain(matches, annotation.parent_chain);
       }
 
       if (matches.length === 1) return matches[0];
@@ -762,17 +791,9 @@ var VibeElementContext = (() => {
           const candidates = scopeRoot !== document
             ? Array.from(scopeRoot.querySelectorAll(sel))
             : VibeShadowDOMUtils.querySelectorAllDeep(document, sel);
-          if (candidates.length === 1) return candidates[0];
+          const matches = narrowByParentChain(candidates, annotation.parent_chain);
+          if (matches.length === 1) return matches[0];
         } catch { /* continue */ }
-      }
-    }
-
-    // Fallback: data-vibe-id
-    if (annotation.selector.includes('data-vibe-id')) {
-      const m = annotation.selector.match(/data-vibe-id="([^"]+)"/);
-      if (m) {
-        const el = VibeShadowDOMUtils.querySelectorDeep(document, `[data-vibe-id="${m[1]}"]`);
-        if (el) return el;
       }
     }
 

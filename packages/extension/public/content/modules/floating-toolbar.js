@@ -80,7 +80,11 @@ var VibeToolbar = (() => {
     // Listen for events
     VibeEvents.on('inspection:started', () => { isAnnotating = true; updateUI(); });
     VibeEvents.on('inspection:stopped', () => { isAnnotating = false; updateUI(); });
-    VibeEvents.on('badges:rendered', ({ count, total, styleCount }) => { annotationCount = count; styleAnnotationCount = styleCount || 0; updateUI(); });
+    VibeEvents.on('badges:rendered', ({ total, styleCount }) => {
+      styleAnnotationCount = styleCount || 0;
+      annotationCount = Math.max(0, (total || 0) - styleAnnotationCount);
+      updateUI();
+    });
     VibeEvents.on('annotations:cleared', () => { annotationCount = 0; styleAnnotationCount = 0; updateUI(); });
 
     // Periodic server status check
@@ -1193,7 +1197,7 @@ var VibeToolbar = (() => {
 
   function formatAnnotationsForClipboard(annotations) {
     const loc = window.location;
-    const route = loc.pathname;
+    const route = `${loc.pathname}${loc.search}${loc.hash}`;
     const host = loc.host;
     const vp = annotations[0]?.viewport;
     const vpStr = vp ? `${vp.width}\u00D7${vp.height}` : '';
@@ -1225,16 +1229,12 @@ var VibeToolbar = (() => {
         lines.push(`   Size: ${Math.round(pos.width)}\u00D7${Math.round(pos.height)}`);
       }
 
-      // Source file
-      if (a.source_file_path) {
-        let src = a.source_file_path;
-        if (a.source_line_range) src += ` (lines ${a.source_line_range})`;
-        lines.push(`   Source: ${src}`);
-      }
-
-      // Context hints
-      if (a.context_hints && a.context_hints.length) {
-        lines.push(`   Hints: ${a.context_hints.join(' \u00B7 ')}`);
+      const parent = a.parent_chain?.[0];
+      if (parent) {
+        const parentIdentity = parent.id
+          ? `#${parent.id}`
+          : [parent.tag, ...(parent.classes || []).slice(0, 2).map(cls => `.${cls}`)].join('');
+        if (parentIdentity) lines.push(`   Context: inside ${parentIdentity}`);
       }
 
       // Design changes

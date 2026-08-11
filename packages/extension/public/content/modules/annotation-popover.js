@@ -627,7 +627,7 @@ var VibeAnnotationPopover = (() => {
         const skip = await VibeAPI.getSkipDeleteConfirm();
         if (skip) {
           await VibeAPI.deleteAnnotation(existingAnnotation.id);
-          VibeEvents.emit('annotation:deleted', { id: existingAnnotation.id });
+          VibeEvents.emit('annotation:deleted', { id: existingAnnotation.id, annotation: existingAnnotation });
           activeExistingAnnotation = null;
           dismiss(true);
           return;
@@ -2123,7 +2123,7 @@ var VibeAnnotationPopover = (() => {
       source_file_path: context.source_mapping?.source_file_path || null,
       source_line_range: context.source_mapping?.source_line_range || null,
       project_area: context.source_mapping?.project_area || 'unknown',
-      url_path: context.source_mapping?.url_path || window.location.pathname,
+      url_path: context.source_mapping?.url_path || `${window.location.pathname}${window.location.search}${window.location.hash}`,
       source_map_available: context.source_mapping?.source_map_available || false,
       context_hints: context.source_mapping?.context_hints || null,
       screenshot: context.screenshot || null,

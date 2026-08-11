@@ -108,7 +108,10 @@ export class LocalAnnotationsServer {
           filtered = filtered.filter(a => a.url === url);
         }
         
-        filtered = filtered.slice(0, parseInt(limit));
+        const parsedLimit = Number.parseInt(limit, 10);
+        if (parsedLimit !== 0) {
+          filtered = filtered.slice(0, Number.isFinite(parsedLimit) ? parsedLimit : 50);
+        }
         
         res.json({
           annotations: filtered,

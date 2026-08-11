@@ -13,3 +13,9 @@ test('generated manifest exposes the canonical product identity', async () => {
   assert.equal(manifest.homepage_url, PRODUCT_IDENTITY.homepageUrl);
   assert.equal(manifest.action.default_title, PRODUCT_IDENTITY.productName);
 });
+
+test('generated background requests the complete Queue during smart sync', async () => {
+  const source = await readFile(new URL('../.output/chrome-mv3/background/background.js', import.meta.url), 'utf8');
+
+  assert.match(source, /api\/annotations\?limit=0/);
+});

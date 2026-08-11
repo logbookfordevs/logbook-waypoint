@@ -112,7 +112,7 @@ var VibeBadgeManager = (() => {
 
   function render(annotations) {
     removeProvisional();
-    clearAll();
+    clearAll(undefined, false);
 
     const sorted = [...annotations].sort((a, b) =>
       new Date(a.created_at) - new Date(b.created_at)
@@ -219,7 +219,7 @@ var VibeBadgeManager = (() => {
     }
   }
 
-  function clearAll(annotations) {
+  function clearAll(annotations, restoreTargets = true) {
     // Clear injected stylesheets
     for (const entry of styleInjections) entry.styleEl.remove();
     styleInjections = [];
@@ -228,8 +228,10 @@ var VibeBadgeManager = (() => {
     const clearedEls = new Set();
     for (const entry of badges) {
       const pc = entry.annotation.pending_changes;
-      for (const prop of DESIGN_PROPS) entry.targetElement.style[prop] = '';
-      if (pc?.copyChange) entry.targetElement.textContent = pc.copyChange.original;
+      if (restoreTargets) {
+        for (const prop of getStyleProps(pc)) entry.targetElement.style[prop] = '';
+        if (pc?.copyChange) entry.targetElement.textContent = pc.copyChange.original;
+      }
       clearedEls.add(entry.targetElement);
       entry.el.remove();
     }
@@ -239,7 +241,7 @@ var VibeBadgeManager = (() => {
     clearTimeout(rematchDebounceTimer);
 
     // Sweep for orphaned styled elements (badges lost their target but styles remain)
-    if (annotations) {
+    if (restoreTargets && annotations) {
       for (const a of annotations) {
         if (!a.pending_changes) continue;
         const el = VibeElementContext.findElementBySelector(a);
