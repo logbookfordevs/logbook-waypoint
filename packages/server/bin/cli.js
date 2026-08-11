@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { homedir } from 'os';
 import fs from 'fs';
+import { PRODUCT_IDENTITY } from '../lib/product-identity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,7 +21,7 @@ const execAsync = promisify(exec);
 const program = new Command();
 
 // Configuration paths
-const CONFIG_DIR = join(homedir(), '.logbook-waypoint');
+const CONFIG_DIR = join(homedir(), PRODUCT_IDENTITY.dataDirectory);
 const PID_FILE = join(CONFIG_DIR, 'server.pid');
 const LOG_FILE = join(CONFIG_DIR, 'server.log');
 const PORT = 3846;
@@ -61,7 +62,7 @@ async function checkPort() {
 
 // Commands
 program
-  .name('waypoint')
+  .name(PRODUCT_IDENTITY.cliCommand)
   .description('Global MCP server for Logbook Waypoint browser extension')
   .version(packageJson.version);
 

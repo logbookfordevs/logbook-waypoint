@@ -1,6 +1,6 @@
 import { defineConfig } from 'wxt';
 
-import PRODUCT from './src/product.json';
+import { PRODUCT_IDENTITY } from '../server/lib/product-identity.js';
 
 const LOCAL_MATCHES = [
   'http://localhost/*',
@@ -37,9 +37,9 @@ const CONTENT_MODULES = [
 export default defineConfig({
   manifestVersion: 3,
   manifest: {
-    name: PRODUCT.name,
-    description: PRODUCT.description,
-    homepage_url: PRODUCT.homepage,
+    name: PRODUCT_IDENTITY.productName,
+    description: PRODUCT_IDENTITY.description,
+    homepage_url: PRODUCT_IDENTITY.homepageUrl,
     permissions: ['activeTab', 'storage', 'scripting'],
     optional_host_permissions: ['*://*/*'],
     host_permissions: LOCAL_MATCHES,
@@ -50,7 +50,7 @@ export default defineConfig({
       128: 'assets/icons/icon128.png',
     },
     action: {
-      default_title: PRODUCT.name,
+      default_title: PRODUCT_IDENTITY.productName,
     },
     content_scripts: [
       {
