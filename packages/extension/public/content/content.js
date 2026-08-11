@@ -40,19 +40,16 @@ console.log('[Vibe] content.js loaded');
     // 2. Theme
     await VibeThemeManager.init();
 
-    // 3. API bridge is stateless, no init needed
-
-    // 4. Load annotations
+    // 3. Load annotations
     annotations = await VibeAPI.loadAnnotations();
 
-    // 5. Initialize modules
+    // 4. Initialize modules
     VibeBadgeManager.init();
     VibeInspectionMode.init();
     VibeAnnotationPopover.init();
-    VibeBridgeHandler.init(() => annotations);
     await VibeToolbar.init();
 
-    // 6. Set up message listener (popup ↔ content)
+    // 5. Set up message listener (popup ↔ content)
     setupMessageListener();
 
     // 7. Set up storage listener for external changes

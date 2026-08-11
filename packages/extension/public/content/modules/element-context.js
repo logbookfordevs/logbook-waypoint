@@ -65,7 +65,7 @@ var VibeElementContext = (() => {
         width: window.innerWidth,
         height: window.innerHeight
       },
-      source_mapping: generateSourceMapping(element),
+      source_mapping: await generateSourceMapping(element),
       screenshot: null,
       parent_chain: getParentChainContext(element)
     };
@@ -357,23 +357,25 @@ var VibeElementContext = (() => {
 
   // --- Source mapping ---
 
-  function generateSourceMapping(element) {
+  async function generateSourceMapping(element) {
     try {
-      const srcInfo = extractSourceInfo(element);
+      const sourceIdentity = await WaypointSourceIdentity.resolve(element);
       const projectArea = getProjectAreaFromURL();
       const location = new URL(window.location.href);
       const urlPath = `${location.pathname}${location.search}${location.hash}`;
       const hints = generateContextHints(element);
       return {
-        source_file_path: srcInfo.filePath || null,
-        source_line_range: srcInfo.lineRange || null,
+        component_name: sourceIdentity?.component_name || null,
+        source_file_path: sourceIdentity?.file_path_hint || null,
+        source_line_range: sourceIdentity?.line_range_hint || null,
         project_area: projectArea,
         url_path: urlPath,
-        source_map_available: srcInfo.hasSourceMap || false,
+        source_map_available: !!sourceIdentity,
         context_hints: hints
       };
     } catch {
       return {
+        component_name: null,
         source_file_path: null,
         source_line_range: null,
         project_area: 'unknown',
@@ -382,116 +384,6 @@ var VibeElementContext = (() => {
         context_hints: generateContextHints(element)
       };
     }
-  }
-
-  function extractSourceInfo(element) {
-    let info = { filePath: null, lineRange: null, hasSourceMap: false };
-    try {
-      const react = getReactFiberInfo(element);
-      if (react) return { ...info, ...react };
-    } catch { /* continue */ }
-
-    try {
-      const data = getDataAttributeInfo(element);
-      if (data) return { ...info, ...data };
-    } catch { /* continue */ }
-
-    return info;
-  }
-
-  function getReactFiberInfo(element) {
-    let current = element;
-    let depth = 0;
-    while (current && depth < 10) {
-      const fiberKey = Object.keys(current).find(k =>
-        k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance') || k.startsWith('_reactInternalFiber')
-      );
-      if (fiberKey) {
-        let fiber = current[fiberKey];
-        let fd = 0;
-        while (fiber && fd < 20) {
-          const source = fiber._debugSource || fiber._source ||
-            fiber.elementType?._source || fiber.type?._source;
-          if (source?.fileName) {
-            return {
-              filePath: normalizeSourcePath(source.fileName),
-              lineRange: source.lineNumber ? `${source.lineNumber}-${source.lineNumber + 10}` : null,
-              hasSourceMap: true
-            };
-          }
-          if (fiber._debugOwner) {
-            const os = fiber._debugOwner._debugSource || fiber._debugOwner._source;
-            if (os?.fileName) {
-              return {
-                filePath: normalizeSourcePath(os.fileName),
-                lineRange: os.lineNumber ? `${os.lineNumber}-${os.lineNumber + 10}` : null,
-                hasSourceMap: true
-              };
-            }
-          }
-          fiber = fiber.return || fiber._debugOwner;
-          fd++;
-        }
-      }
-      current = VibeShadowDOMUtils.getParentElement(current);
-      depth++;
-    }
-    return null;
-  }
-
-  function getDataAttributeInfo(element) {
-    let current = element;
-    let depth = 0;
-    while (current && depth < 5) {
-      const f = current.getAttribute('data-source-file') ||
-        current.getAttribute('data-component-file') ||
-        current.getAttribute('data-file');
-      const l = current.getAttribute('data-source-line') || current.getAttribute('data-line');
-      if (f) {
-        return {
-          filePath: normalizeSourcePath(f),
-          lineRange: l ? `${l}-${parseInt(l) + 10}` : null,
-          hasSourceMap: true
-        };
-      }
-      const np = current.getAttribute('data-nextjs-path');
-      if (np) return { filePath: normalizeSourcePath(np), lineRange: null, hasSourceMap: true };
-
-      current = VibeShadowDOMUtils.getParentElement(current);
-      depth++;
-    }
-    return null;
-  }
-
-  function normalizeSourcePath(fp) {
-    let n = fp
-      .replace(/^\[project\]\//, '')
-      .replace(/^\[turbopack\]\//, '')
-      .replace(/^\[next\]\//, '')
-      .replace(/^.*\/(app\/.*?)$/, '$1')
-      .replace(/^.*\/src\//, 'src/')
-      .replace(/^.*\/components\//, 'components/')
-      .replace(/^.*\/pages\//, 'pages/')
-      .replace(/^.*\/app\/views\//, 'app/views/')
-      .replace(/^.*\/app\/assets\//, 'app/assets/')
-      .replace(/^.*\/app\/controllers\//, 'app/controllers/')
-      .replace(/^.*\/app\/models\//, 'app/models/')
-      .replace(/^.*\/app\/helpers\//, 'app/helpers/')
-      .replace(/^.*\/templates\//, 'templates/')
-      .replace(/^.*\/static\//, 'static/')
-      .replace(/^.*\/public\//, 'public/')
-      .replace(/^.*\/assets\//, 'assets/')
-      .replace(/^.*\/js\//, 'js/')
-      .replace(/^.*\/css\//, 'css/')
-      .replace(/^.*\/scss\//, 'scss/')
-      .replace(/^.*\/styles\//, 'styles/')
-      .replace(/\?.*$/, '')
-      .replace(/#.*$/, '');
-
-    if (!n.startsWith('app/') && n.includes('/app/')) {
-      n = 'app/' + n.split('/app/')[1];
-    }
-    return n;
   }
 
   function getProjectAreaFromURL() {

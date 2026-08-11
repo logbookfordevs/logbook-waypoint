@@ -1,6 +1,7 @@
 // Logbook Waypoint Background Service Worker
 
 importScripts('queue-sync.js');
+importScripts('source-identity-probe.js');
 
 class VibeAnnotationsBackground {
   constructor() {
@@ -117,6 +118,12 @@ class VibeAnnotationsBackground {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
       switch (request.action) {
+        case 'probeSourceIdentity':
+          WaypointSourceIdentityProbe.run(request.targetId, sender)
+            .then(result => sendResponse({ success: true, result }))
+            .catch(() => sendResponse({ success: false, result: null }));
+          break;
+
         case 'getAnnotations':
           this.getAnnotations(request.url)
             .then(annotations => sendResponse({ success: true, annotations }))
@@ -920,10 +927,12 @@ class VibeAnnotationsBackground {
   async enableSite(originPattern, tabId) {
     // Register dynamic content scripts for this origin
     const scriptId = 'vibe-' + originPattern.replace(/[^a-zA-Z0-9]/g, '_');
+    const legacyPageScriptId = scriptId + '_bridge';
 
     try {
       // Unregister first in case it already exists
       await chrome.scripting.unregisterContentScripts({ ids: [scriptId] }).catch(() => {});
+      await chrome.scripting.unregisterContentScripts({ ids: [legacyPageScriptId] }).catch(() => {});
 
       await chrome.scripting.registerContentScripts([{
         id: scriptId,
@@ -935,29 +944,18 @@ class VibeAnnotationsBackground {
           'content/modules/theme-manager.js',
           'content/modules/api-bridge.js',
           'content/modules/shadow-dom-utils.js',
+          'content/modules/source-identity.js',
           'content/modules/element-context.js',
           'content/modules/badge-manager.js',
           'content/modules/inspection-mode.js',
           'content/modules/annotation-popover.js',
           'content/modules/floating-toolbar.js',
-          'content/modules/bridge-handler.js',
           'content/content.js'
         ],
         runAt: 'document_idle',
         persistAcrossSessions: true
       }]);
 
-      // Also register the MAIN world bridge API script
-      const bridgeScriptId = scriptId + '_bridge';
-      await chrome.scripting.unregisterContentScripts({ ids: [bridgeScriptId] }).catch(() => {});
-      await chrome.scripting.registerContentScripts([{
-        id: bridgeScriptId,
-        matches: [originPattern],
-        js: ['content/bridge-api.js'],
-        world: 'MAIN',
-        runAt: 'document_start',
-        persistAcrossSessions: true
-      }]);
     } catch (err) {
       console.error('Failed to register content scripts:', err);
     }

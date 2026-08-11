@@ -68,6 +68,6 @@ The local server:
 
 Screenshots are embedded in the local annotation JSON in this foundation. There are no attachment filesystem endpoints, so attachment path-containment controls do not apply yet.
 
-The optional page-world API (`window.__vibeAnnotations`) still communicates through page-visible custom events. Enable the extension only on development pages you trust. Authentication or capability isolation for that bridge is tracked as a separate compatibility-sensitive hardening phase.
+The extension exposes no page-world Annotation CRUD, export, or status interface. Source Identity uses a narrow extension-owned read-only probe in the page's MAIN world for the current Target; all framework and build-derived values are bounded and treated as untrusted display hints.
 
 Thank you for helping keep Logbook Waypoint and our users safe!

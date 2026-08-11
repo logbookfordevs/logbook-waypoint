@@ -34,7 +34,7 @@ Logbook Waypoint is a developer tool that:
 The Chrome extension requires minimal permissions:
 - `activeTab`: To annotate the current webpage
 - `storage`: To persist annotations locally
-- `scripting`: To inject annotation interface
+- `scripting`: To register extension content scripts and run the read-only Source Identity probe for the current Target
 
 ## 5. Acceptable Use
 
