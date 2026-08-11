@@ -155,20 +155,30 @@ export class WatchQueue {
   }
 
   reconcile(nextAnnotations) {
-    return this.recordChangesFrom(this.latestById, nextAnnotations);
+    const changes = this.recordChangesFrom(this.latestById, nextAnnotations);
+    this.latestById = new Map(
+      nextAnnotations.map(annotation => {
+        const portable = toWatchAnnotation(annotation);
+        return [portable.id, portable];
+      }),
+    );
+    return changes;
   }
 
   reconciledCopy(nextAnnotations) {
     const candidate = new WatchQueue(structuredClone(this.toJSON()));
+    candidate.latestById = new Map(this.latestById);
     const changes = candidate.reconcile(nextAnnotations);
     return { candidate, changes };
   }
 
   commit(candidate) {
     const changed = candidate.sequence > this.sequence;
+    const latestById = candidate.latestById;
     this.initialCursor = candidate.initialCursor;
     this.history = candidate.history;
     this.rebuildIndexes();
+    this.latestById = new Map(latestById);
     if (changed) this.notifyWaiters();
   }
 
@@ -332,7 +342,10 @@ export class PersistentWatchQueue {
   async reconcileAndPersist(queue, annotations) {
     const previousSequence = queue.sequence;
     const { candidate, changes } = queue.reconciledCopy(annotations);
-    if (changes.length === 0) return changes;
+    if (changes.length === 0) {
+      queue.commit(candidate);
+      return changes;
+    }
     await this.persist(candidate, { previousSequence });
     queue.commit(candidate);
     return changes;

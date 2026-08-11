@@ -348,3 +348,26 @@ test('persistent Watch discards only a partial tail and preserves successful cur
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('persistent Watch delivers an identical Annotation re-created after deletion and restart', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const original = new PersistentWatchQueue({ historyFile });
+  const pending = annotation();
+
+  try {
+    await original.recordChanges([pending]);
+    const observed = await original.watch({ timeoutMs: 0 }, async () => [pending]);
+
+    const restarted = new PersistentWatchQueue({ historyFile });
+    await restarted.watch({ cursor: observed.cursor, timeoutMs: 0 }, async () => []);
+    await restarted.recordChanges([pending], async () => []);
+    const recreated = await restarted.watch({ cursor: observed.cursor, timeoutMs: 0 }, async () => [pending]);
+
+    assert.equal(recreated.changes.length, 1);
+    assert.equal(recreated.changes[0].annotation.id, pending.id);
+    assert.notEqual(recreated.changes[0].revision, observed.changes.at(-1).revision);
+  } finally {
+    await rm(directory, { recursive: true });
+  }
+});
