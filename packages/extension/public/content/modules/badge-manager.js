@@ -122,12 +122,13 @@ var VibeBadgeManager = (() => {
   function render(annotations) {
     removeProvisional();
     rollbackChangedTargets(annotations);
-    clearAll(undefined, { restoreTargets: false, removeStyles: false });
     syncStyleAnnotations(annotations);
 
     const sorted = [...annotations].sort((a, b) =>
       new Date(a.created_at) - new Date(b.created_at)
     );
+    const previousBadges = new Map(badges.map(entry => [entry.annotation.id, entry]));
+    badges = [];
 
     let badgeIndex = 0;
     sorted.forEach((annotation) => {
@@ -147,9 +148,27 @@ var VibeBadgeManager = (() => {
           if (rpc.copyChange) target.textContent = rpc.copyChange.value;
         }
         badgeIndex++;
-        addBadge(target, annotation, badgeIndex);
+        const existing = previousBadges.get(annotation.id);
+        if (existing) {
+          existing.annotation = annotation;
+          existing.targetElement = target;
+          existing.el.childNodes[0].textContent = badgeIndex.toString();
+          const tooltip = existing.el.querySelector('.vibe-badge-tooltip');
+          if (tooltip) tooltip.textContent = annotation.comment;
+          badges.push(existing);
+          positionBadge(existing);
+          previousBadges.delete(annotation.id);
+        } else {
+          addBadge(target, annotation, badgeIndex);
+        }
       }
     });
+
+    for (const entry of previousBadges.values()) {
+      restorePendingChanges(entry.targetElement, entry.annotation.pending_changes);
+      entry.el.remove();
+    }
+    if (!badges.length) stopRAF();
 
     lastTotal = annotations.length;
     VibeEvents.emit('badges:rendered', { count: badges.length, total: annotations.length, styleCount: styleInjections.filter(s => s.annotation.type === 'stylesheet').length });

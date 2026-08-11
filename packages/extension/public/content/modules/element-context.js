@@ -687,7 +687,8 @@ var VibeElementContext = (() => {
     if (element.tagName.toLowerCase() !== context.tag) return false;
     if (context.id && element.id !== context.id) return false;
     if (context.role && element.getAttribute('role') !== context.role) return false;
-    if (context.classes?.length && !context.classes.some(cls => element.classList.contains(cls))) return false;
+    const stableClasses = (context.classes || []).filter(isStableClass);
+    if (stableClasses.length && !stableClasses.every(cls => element.classList.contains(cls))) return false;
     return true;
   }
 
@@ -696,10 +697,12 @@ var VibeElementContext = (() => {
 
     let current = VibeShadowDOMUtils.getParentElement(element);
     for (const context of parentChain) {
-      while (current && !matchesParentContext(current, context)) {
+      let depth = 0;
+      while (current && depth < 20 && !matchesParentContext(current, context)) {
         current = VibeShadowDOMUtils.getParentElement(current);
+        depth++;
       }
-      if (!current) return false;
+      if (!current || depth >= 20) return false;
       current = VibeShadowDOMUtils.getParentElement(current);
     }
     return true;

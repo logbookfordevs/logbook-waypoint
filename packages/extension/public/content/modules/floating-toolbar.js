@@ -1058,7 +1058,7 @@ var VibeToolbar = (() => {
     if (remapFrom) {
       for (const a of data.annotations) {
         if (a.url) a.url = a.url.replace(remapFrom, currentOrigin);
-        if (a.url_path) { /* url_path is pathname-only, no origin to remap */ }
+        if (a.url_path) { /* url_path is an origin-less route, so it does not need remapping */ }
       }
     }
 

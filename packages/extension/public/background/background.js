@@ -1,5 +1,7 @@
 // Logbook Waypoint Background Service Worker
 
+importScripts('queue-sync.js');
+
 class VibeAnnotationsBackground {
   constructor() {
     this.apiServerUrl = 'http://127.0.0.1:3846'; // Updated to match external server
@@ -781,52 +783,10 @@ class VibeAnnotationsBackground {
         const localAnnotations = localResult.annotations || [];
         const deletedIds = new Set(localResult.deletedAnnotationIds || []);
 
-        // Build lookup maps
-        const localMap = new Map(localAnnotations.map(a => [a.id, a]));
-        const serverMap = new Map(serverAnnotations.map(a => [a.id, a]));
-        const allIds = new Set([...localMap.keys(), ...serverMap.keys()]);
-
-        const merged = [];
-        let changed = false;   // content changed (additions, deletions, updates)
-        let flagsChanged = false; // _synced flags need persisting
-
-        for (const id of allIds) {
-          if (deletedIds.has(id)) {
-            if (serverMap.has(id)) changed = true;
-            continue;
-          }
-
-          const local = localMap.get(id);
-          const server = serverMap.get(id);
-
-          if (local && server) {
-            const lt = new Date(local.updated_at || local.created_at || 0).getTime();
-            const st = new Date(server.updated_at || server.created_at || 0).getTime();
-            if (st > lt) {
-              server._synced = true;
-              merged.push(server);
-              changed = true;
-            } else {
-              if (!local._synced) flagsChanged = true;
-              local._synced = true;
-              merged.push(local);
-              if (lt > st) changed = true;
-            }
-          } else if (local && !server) {
-            if (local._synced) {
-              // Was on server before, now gone → server-side deletion (MCP agent)
-              changed = true; // drop it — don't push back
-            } else {
-              // Never reached server (created offline) → push to server
-              merged.push(local);
-              changed = true;
-            }
-          } else if (!local && server) {
-            server._synced = true;
-            merged.push(server);
-            changed = true;
-          }
-        }
+        const mergeResult = VibeQueueSync.merge(localAnnotations, serverAnnotations, deletedIds);
+        const merged = mergeResult.annotations;
+        const { changed, flagsChanged } = mergeResult;
+        const serverMap = new Map(serverAnnotations.map(annotation => [annotation.id, annotation]));
 
         // Always persist _synced flag updates even if content didn't change
         if (!changed && !flagsChanged) return;

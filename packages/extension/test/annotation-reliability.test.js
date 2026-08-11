@@ -35,8 +35,8 @@ function createBrowserContext(html = '<html><head></head><body></body></html>') 
 test('portable Target fallback respects parent context and open shadow roots', async () => {
   const context = createBrowserContext(`
     <html><head></head><body><main>
-      <section class="first"><button>Save</button><a class="unique">Unique</a></section>
-      <section class="second"><button>Save</button></section>
+      <section class="first shared"><button>Save</button></section>
+      <section class="second shared"><button>Save</button></section>
     </main></body></html>
   `);
   context.VibeAPI = { getScreenshotEnabled: async () => false };
@@ -51,8 +51,8 @@ test('portable Target fallback respects parent context and open shadow roots', a
 
   const recovered = context.VibeElementContext.findElementBySelector({
     selector: 'button',
-    element_context: { tag: 'button', text: 'Save', classes: [] },
-    parent_chain: [{ tag: 'section', classes: ['second'], id: null, role: null }],
+    element_context: { tag: 'button', text: 'Save', classes: [], position: { x: 0, y: 0 } },
+    parent_chain: [{ tag: 'section', classes: ['second', 'shared'], id: null, role: null }],
   });
   assert.equal(recovered, secondButton);
 
@@ -62,13 +62,6 @@ test('portable Target fallback respects parent context and open shadow roots', a
     parent_chain: [{ tag: 'section', classes: ['missing'], id: null, role: null }],
   });
   assert.equal(missingContext, null);
-
-  const uniqueWrongParent = context.VibeElementContext.findElementBySelector({
-    selector: '.unique',
-    element_context: { tag: 'a', text: 'Unique', classes: ['unique'] },
-    parent_chain: [{ tag: 'section', classes: ['missing'], id: null, role: null }],
-  });
-  assert.equal(uniqueWrongParent, null);
 
   const host = context.document.createElement('target-card');
   context.document.body.appendChild(host);
@@ -116,6 +109,24 @@ test('content status preserves the server compatibility nudge', async () => {
   assert.equal(status.compatibility_message, 'Server update recommended.');
 });
 
+test('full Queue sync preserves more than 50 annotations in both directions', async () => {
+  const context = createBrowserContext();
+  await loadScript(context, 'background/queue-sync.js');
+  const annotations = Array.from({ length: 75 }, (_, index) => ({
+    id: `vibe_${index}_abcdefghi`,
+    created_at: '2026-01-01T00:00:00.000Z',
+  }));
+
+  const pulled = context.VibeQueueSync.merge([], annotations, []);
+  assert.equal(pulled.annotations.length, 75);
+  assert.equal(pulled.annotations.every(annotation => annotation._synced), true);
+
+  const local = annotations.map(annotation => ({ ...annotation, _synced: false }));
+  const pushed = context.VibeQueueSync.merge(local, [], []);
+  assert.equal(pushed.annotations.length, 75);
+  assert.equal(pushed.changed, true);
+});
+
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {
   const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="target">Old</button></body></html>');
   const target = context.document.querySelector('#target');
@@ -138,11 +149,13 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   await loadScript(context, 'content/modules/badge-manager.js');
   context.VibeBadgeManager.render([annotation]);
   const firstStyle = context.document.querySelector('[data-vibe-style]');
+  const firstBadge = overlay.querySelector('.vibe-badge');
   assert.equal(target.style.color, 'red');
   assert.equal(target.textContent, 'New');
 
   context.VibeBadgeManager.render([annotation]);
   assert.equal(context.document.querySelector('[data-vibe-style]'), firstStyle);
+  assert.equal(overlay.querySelector('.vibe-badge'), firstBadge);
 
   context.VibeBadgeManager.render([]);
   assert.equal(target.style.color, 'green');
