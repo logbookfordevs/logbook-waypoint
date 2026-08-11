@@ -219,9 +219,7 @@ test('storage reads ignore predecessor Annotation IDs', async () => {
       },
     },
   };
-  context.WaypointAnnotationId = {
-    isValid: value => /^waypoint_[0-9]{10,16}_[a-z0-9]{6,32}$/.test(value),
-  };
+  await loadScript(context, 'annotation-id.js');
   await loadScript(context, 'content/modules/api-bridge.js');
 
   const annotations = await context.WaypointAPI.loadAnnotations();
@@ -233,15 +231,24 @@ test('storage reads ignore predecessor Annotation IDs', async () => {
 
 test('full Queue sync preserves more than 50 annotations in both directions', async () => {
   const context = createBrowserContext();
+  await loadScript(context, 'annotation-id.js');
   await loadScript(context, 'background/queue-sync.js');
   const annotations = Array.from({ length: 75 }, (_, index) => ({
-    id: `waypoint_${index}_abcdefghi`,
+    id: `waypoint_${1750000000000 + index}_abcdefghi`,
     created_at: '2026-01-01T00:00:00.000Z',
   }));
 
   const pulled = context.WaypointQueueSync.merge([], annotations, []);
   assert.equal(pulled.annotations.length, 75);
   assert.equal(pulled.annotations.every(annotation => annotation._synced), true);
+
+  const withPredecessorData = context.WaypointQueueSync.merge(
+    [],
+    [...annotations, { id: 'vibe_1750000000000_abc123xyz' }],
+    ['vibe_1750000000000_deleted'],
+  );
+  assert.equal(withPredecessorData.annotations.length, 75);
+  assert.equal(withPredecessorData.annotations.some(annotation => annotation.id.startsWith('vibe_')), false);
 
   const local = annotations.map(annotation => ({ ...annotation, _synced: false }));
   const pushed = context.WaypointQueueSync.merge(local, [], []);
@@ -251,9 +258,10 @@ test('full Queue sync preserves more than 50 annotations in both directions', as
 
 test('Queue conflict resolution preserves Variant-owned state from ordinary records', async () => {
   const context = createBrowserContext();
+  await loadScript(context, 'annotation-id.js');
   await loadScript(context, 'background/queue-sync.js');
   const unresolved = {
-    id: 'waypoint_1_abcdefghi',
+    id: 'waypoint_1750000000001_abcdefghi',
     updated_at: '2026-01-01T00:00:00.000Z',
     variant_request: { status: 'unresolved', active_variant_key: 'compact', variants: [] },
     variant_presentation: { css: '.card { gap: 8px; }' },
@@ -306,7 +314,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   context.document.body.appendChild(replacement);
   const overlay = context.document.querySelector('#overlay');
   const annotation = {
-    id: 'waypoint_1_abcdefghi',
+    id: 'waypoint_1750000000001_abcdefghi',
     comment: 'Change it',
     created_at: '2026-01-01T00:00:00.000Z',
     pending_changes: {

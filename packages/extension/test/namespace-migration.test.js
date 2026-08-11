@@ -62,7 +62,8 @@ test('background persistence consistently reads canonical Waypoint storage prope
   assert.match(source, /stored\.waypointAnnotations/);
   assert.match(source, /fresh\.waypointAnnotations/);
   assert.match(source, /updates\?\.id !== undefined && updates\.id !== id/);
-  assert.match(source, /validWaypointAnnotations/);
+  assert.match(source, /WaypointAnnotationId\.filterValid/);
+  assert.doesNotMatch(source, /function validWaypointAnnotations/);
 });
 
 test('generated popup loads the shared Annotation ID adapter before storage consumers', async () => {
@@ -83,6 +84,13 @@ test('generated annotation ID adapter precedes all callers and rejects legacy ID
 
   assert.equal(context.globalThis.WaypointAnnotationId.isValid('waypoint_1700000000000_abcdefgh'), true);
   assert.equal(context.globalThis.WaypointAnnotationId.isValid(`${legacyNamespace}_1700000000000_abcdefgh`), false);
+  assert.deepEqual(
+    context.globalThis.WaypointAnnotationId.filterValid([
+      { id: 'waypoint_1700000000000_abcdefgh' },
+      { id: `${legacyNamespace}_1700000000000_abcdefgh` },
+    ]).map(annotation => annotation.id),
+    ['waypoint_1700000000000_abcdefgh'],
+  );
   assert.equal(JSON.parse(manifestSource).content_scripts[0].js[0], 'annotation-id.js');
   assert.ok(backgroundSource.indexOf("importScripts('../annotation-id.js')") < backgroundSource.indexOf("importScripts('queue-sync.js')"));
 });

@@ -22,9 +22,9 @@ var WaypointQueueSync = (() => {
   }
 
   function merge(localAnnotations, serverAnnotations, deletedAnnotationIds = []) {
-    const deletedIds = new Set(deletedAnnotationIds);
-    const localMap = new Map(localAnnotations.map(annotation => [annotation.id, annotation]));
-    const serverMap = new Map(serverAnnotations.map(annotation => [annotation.id, annotation]));
+    const deletedIds = new Set(deletedAnnotationIds.filter(WaypointAnnotationId.isValid));
+    const localMap = new Map(WaypointAnnotationId.filterValid(localAnnotations).map(annotation => [annotation.id, annotation]));
+    const serverMap = new Map(WaypointAnnotationId.filterValid(serverAnnotations).map(annotation => [annotation.id, annotation]));
     const allIds = new Set([...localMap.keys(), ...serverMap.keys()]);
     const annotations = [];
     let changed = false;
