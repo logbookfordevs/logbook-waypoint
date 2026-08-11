@@ -243,6 +243,29 @@ test('persistent Watch journal excludes screenshots and Source Identity hints', 
   }
 });
 
+test('persistent Watch does not revise an unchanged screenshot-bearing Annotation after restart', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const withScreenshot = annotation({
+    screenshot: { data_url: 'data:image/png;base64,AAAA' },
+  });
+  const first = new PersistentWatchQueue({ historyFile });
+
+  try {
+    await first.recordChanges([withScreenshot]);
+    const acknowledged = await first.watch({ timeoutMs: 0 }, async () => [withScreenshot]);
+    const restored = new PersistentWatchQueue({ historyFile });
+    const resumed = await restored.watch(
+      { cursor: acknowledged.cursor, timeoutMs: 0 },
+      async () => [withScreenshot],
+    );
+
+    assert.deepEqual(resumed.changes, []);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('persistent Watch quarantines corruption and rebuilds from the committed Queue', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
   const historyFile = path.join(directory, 'watch-history.json');

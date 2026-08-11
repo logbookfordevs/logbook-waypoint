@@ -108,6 +108,10 @@ export class WatchQueue {
         return [portableAnnotation.id, portableAnnotation];
       }),
     );
+    return this.recordChangesFrom(previousById, nextAnnotations);
+  }
+
+  recordChangesFrom(previousById, nextAnnotations) {
     const changes = [];
 
     for (const rawAnnotation of nextAnnotations) {
@@ -133,7 +137,7 @@ export class WatchQueue {
   }
 
   reconcile(nextAnnotations) {
-    return this.recordChanges([...this.latestById.values()], nextAnnotations);
+    return this.recordChangesFrom(this.latestById, nextAnnotations);
   }
 
   reconciledCopy(nextAnnotations) {
