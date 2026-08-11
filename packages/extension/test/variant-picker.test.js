@@ -89,4 +89,8 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   const backgroundSource = await readFile(new URL('../.output/chrome-mv3/background/background.js', import.meta.url), 'utf8');
   assert.match(backgroundSource, /WaypointVariantPolicy\.assertUpdateAllowed/);
   assert.equal(backgroundSource.match(/WaypointVariantPolicy\.assertSaveAllowed/g).length >= 2, true);
+  assert.match(
+    backgroundSource,
+    /background\/variant-policy\.js[\s\S]*content\/modules\/api-bridge\.js[\s\S]*content\/modules\/variant-picker\.js[\s\S]*content\/modules\/annotation-popover\.js/,
+  );
 });
