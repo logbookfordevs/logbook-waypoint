@@ -1,4 +1,8 @@
 packages:
   - packages/*
 
+allowBuilds:
+  esbuild: true
+  spawn-sync: true
+
 onlyBuiltDependencies: []
