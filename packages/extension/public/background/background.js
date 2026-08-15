@@ -121,6 +121,12 @@ class WaypointAnnotationsBackground {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
       switch (request.action) {
+        case 'captureVisibleTabScreenshot':
+          chrome.tabs.captureVisibleTab(sender?.tab?.windowId, { format: 'png' })
+            .then(dataUrl => sendResponse({ success: true, dataUrl }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+          break;
+
         case 'probeSourceIdentity':
           WaypointSourceIdentityProbe.run(request.targetId, sender)
             .then(result => sendResponse({ success: true, result }))

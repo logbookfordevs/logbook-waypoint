@@ -104,7 +104,8 @@ var WaypointAnnotationPopover = (() => {
     // Device icons for viewport indicator
     phone: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
     tablet: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
-    monitor: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
+    monitor: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+    attachment: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
   };
 
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -349,17 +350,23 @@ var WaypointAnnotationPopover = (() => {
           <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000">${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
           <span class="waypoint-kbd-hint">${kbdHint} to save</span>
         </div>
-        <div class="waypoint-annotation-attachments">
-          <label class="waypoint-attachment-button">
-            <input class="waypoint-image-attachment-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple>
-            Add image
+        <div class="waypoint-annotation-options" role="group" aria-label="Annotation options">
+          <div class="waypoint-annotation-attachments">
+            <label class="waypoint-attachment-button">
+              <input class="waypoint-image-attachment-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple>
+              <span class="waypoint-attachment-button-icon">${ICONS.attachment}</span>
+              <span class="waypoint-attachment-button-label">Add image</span>
+            </label>
+            <span class="waypoint-attachment-status" aria-live="polite"></span>
+          </div>
+          <label class="waypoint-variant-intent-label">
+            <span class="waypoint-variant-intent-copy">
+              <span class="waypoint-variant-intent-title">Request Variants</span>
+              <span class="waypoint-variant-intent-description">Explore multiple named directions</span>
+            </span>
+            <input class="waypoint-variant-intent" type="checkbox">
           </label>
-          <span class="waypoint-attachment-status" aria-live="polite"></span>
         </div>
-        <label class="waypoint-variant-intent-label">
-          <input class="waypoint-variant-intent" type="checkbox">
-          Request Variants
-        </label>
       </div>
       <div class="waypoint-popover-footer">
         <div class="waypoint-footer-left">
@@ -391,10 +398,12 @@ var WaypointAnnotationPopover = (() => {
     const resetBtn = popover.querySelector('.waypoint-design-reset');
     const imageInput = popover.querySelector('.waypoint-image-attachment-input');
     const attachmentStatus = popover.querySelector('.waypoint-attachment-status');
+    const attachmentButtonLabel = popover.querySelector('.waypoint-attachment-button-label');
     const variantIntentInput = popover.querySelector('.waypoint-variant-intent');
     let attachments = Array.isArray(existingAnnotation?.attachments)
       ? existingAnnotation.attachments.filter(isImageAttachmentMetadata)
       : [];
+    const originalAttachments = JSON.stringify(attachments);
 
     // Track active element for revert-on-dismiss
     activeElement = targetElement;
@@ -516,6 +525,7 @@ var WaypointAnnotationPopover = (() => {
       bpcFns.push(wireContainerToolbar(popover, targetElement, pc, s, resetBtn));
     }
     bpcFns.push(wireSizingToolbar(popover, targetElement, pc, s, resetBtn));
+    wireScrubbableSizingLabels(popover);
 
     // Raw CSS buildPendingChanges
     function buildRawCssPC() {
@@ -573,7 +583,8 @@ var WaypointAnnotationPopover = (() => {
     }
 
     function updateAttachmentStatus(message = '') {
-      attachmentStatus.textContent = message || (attachments.length ? `${attachments.length} image${attachments.length === 1 ? '' : 's'} attached` : '');
+      attachmentStatus.textContent = message || (attachments.length ? `${attachments.length} image${attachments.length === 1 ? '' : 's'} attached` : 'PNG, JPEG, WebP or GIF · 1 MB each');
+      attachmentButtonLabel.textContent = attachments.length ? 'Add another' : 'Add image';
       if (message) attachmentStatus.setAttribute('role', 'alert');
       else attachmentStatus.removeAttribute('role');
     }
@@ -617,7 +628,8 @@ var WaypointAnnotationPopover = (() => {
         const designChanged = JSON.stringify(buildPendingChanges()) !== JSON.stringify(savedPC);
         const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value : '';
         const cssRulesChanged = cssRulesVal !== cssRulesOriginal;
-        saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged;
+        const attachmentsChanged = JSON.stringify(attachments) !== originalAttachments;
+        saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged && !attachmentsChanged;
         saveBtn.textContent = 'Save';
       } else {
         const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value.trim() : '';
@@ -718,12 +730,14 @@ var WaypointAnnotationPopover = (() => {
 
       if (isEdit) {
         const updates = WaypointVariantPicker.buildAnnotationUpdates(existingAnnotation, comment, pendingChanges, cssField);
+        updates.attachments = attachments;
         await WaypointAPI.updateAnnotation(existingAnnotation.id, updates);
         WaypointEvents.emit('annotation:updated', {
           id: existingAnnotation.id,
           comment,
           pending_changes: presentationLocked ? existingAnnotation.pending_changes : pendingChanges,
           css: presentationLocked ? existingAnnotation.css : cssField,
+          attachments,
         });
       } else {
         const annotation = buildAnnotation(context, comment, pendingChanges);
@@ -1553,19 +1567,19 @@ var WaypointAnnotationPopover = (() => {
       <div class="waypoint-section-header"><span class="waypoint-section-label">Width</span></div>
       <div class="waypoint-sizing-row">
         <div class="waypoint-sizing-pair">
-          <span class="waypoint-design-icon-label" title="Width">W</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="width" title="Drag to change width">W</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
             <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="width" type="text" value="${vals.width}" placeholder="Default">
           </div>
         </div>
         <div class="waypoint-sizing-pair">
-          <span class="waypoint-design-icon-label" title="Min width">Min</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="minWidth" title="Drag to change minimum width">Min</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
             <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="minWidth" type="text" value="${vals.minWidth}" placeholder="—">
           </div>
         </div>
         <div class="waypoint-sizing-pair">
-          <span class="waypoint-design-icon-label" title="Max width">Max</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="maxWidth" title="Drag to change maximum width">Max</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
             <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="maxWidth" type="text" value="${vals.maxWidth}" placeholder="—">
           </div>
@@ -1574,19 +1588,19 @@ var WaypointAnnotationPopover = (() => {
       <div class="waypoint-section-header"><span class="waypoint-section-label">Height</span></div>
       <div class="waypoint-sizing-row">
         <div class="waypoint-sizing-pair">
-          <span class="waypoint-design-icon-label" title="Height">H</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="height" title="Drag to change height">H</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
             <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="height" type="text" value="${vals.height}" placeholder="Default">
           </div>
         </div>
         <div class="waypoint-sizing-pair">
-          <span class="waypoint-design-icon-label" title="Min height">Min</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="minHeight" title="Drag to change minimum height">Min</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
             <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="minHeight" type="text" value="${vals.minHeight}" placeholder="—">
           </div>
         </div>
         <div class="waypoint-sizing-pair">
-          <span class="waypoint-design-icon-label" title="Max height">Max</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="maxHeight" title="Drag to change maximum height">Max</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
             <input class="waypoint-stepper-text waypoint-sizing-input" data-sizing="maxHeight" type="text" value="${vals.maxHeight}" placeholder="—">
           </div>
@@ -1910,6 +1924,38 @@ var WaypointAnnotationPopover = (() => {
       }
       return Object.keys(changes).length ? changes : null;
     };
+  }
+
+  function wireScrubbableSizingLabels(popover) {
+    popover.querySelectorAll('.waypoint-scrubbable-label').forEach(label => {
+      const input = popover.querySelector(`.waypoint-sizing-input[data-sizing="${label.dataset.scrubTarget}"]`);
+      if (!input) return;
+      label.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        const startX = event.clientX;
+        const parsed = parseFloat(input.value);
+        const startValue = Number.isFinite(parsed) ? parsed : 0;
+        const unit = input.value.trim().match(/[a-z%]+$/i)?.[0] || 'px';
+        label.setPointerCapture(event.pointerId);
+        label.classList.add('scrubbing');
+
+        const move = moveEvent => {
+          const multiplier = moveEvent.shiftKey ? 10 : 1;
+          const next = Math.round((startValue + (moveEvent.clientX - startX) * multiplier) * 100) / 100;
+          input.value = `${Math.max(0, next)}${unit}`;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        const finish = () => {
+          label.classList.remove('scrubbing');
+          label.removeEventListener('pointermove', move);
+          label.removeEventListener('pointerup', finish);
+          label.removeEventListener('pointercancel', finish);
+        };
+        label.addEventListener('pointermove', move);
+        label.addEventListener('pointerup', finish);
+        label.addEventListener('pointercancel', finish);
+      });
+    });
   }
 
   // Helpers for split-mode input reads

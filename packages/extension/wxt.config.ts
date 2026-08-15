@@ -33,6 +33,7 @@ const CONTENT_MODULES = [
   'content/modules/api-bridge.js',
   'content/modules/shadow-dom-utils.js',
   'content/modules/source-identity.js',
+  'content/modules/screenshot-capture.js',
   'content/modules/element-context.js',
   'content/modules/badge-manager.js',
   'content/modules/inspection-mode.js',
@@ -81,7 +82,7 @@ export default defineConfig({
     },
     web_accessible_resources: [
       {
-        resources: ['assets/fonts/InterVariable.woff2', 'assets/icons/icon-hq.png'],
+        resources: ['assets/fonts/InterVariable.woff2', 'assets/thelu/thelu-settings.png', 'assets/thelu/thelu-waypoint-collapsed.png'],
         matches: ['<all_urls>'],
       },
     ],

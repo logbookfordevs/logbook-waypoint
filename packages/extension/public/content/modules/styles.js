@@ -588,6 +588,28 @@ var WAYPOINT_STYLES = `
 /* T/R/B/L labels */
 .waypoint-design-icon-label { display:flex; align-items:center; justify-content:center; color:var(--waypoint-text-secondary); font-family:var(--waypoint-font-mono); font-size:9px; font-weight:600; width:12px; flex-shrink:0; }
 .waypoint-design-icon-label-wide { width:auto; }
+.waypoint-scrubbable-label { cursor: ew-resize; touch-action: none; border-radius: 3px; }
+.waypoint-scrubbable-label:hover,
+.waypoint-scrubbable-label.scrubbing { color: var(--waypoint-accent); background: var(--waypoint-surface-hover); }
+
+.waypoint-annotation-options { display:grid; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--waypoint-outline); }
+.waypoint-annotation-attachments { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:8px; min-height:32px; }
+.waypoint-attachment-button { position:relative; display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:6px 10px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-sm); background:var(--waypoint-surface-1); color:var(--waypoint-text-primary); font-size:11px; line-height:1; font-weight:600; white-space:nowrap; cursor:pointer; transition:border-color .15s ease, background .15s ease, color .15s ease; }
+.waypoint-attachment-button:hover { border-color:var(--waypoint-outline-highlight); background:var(--waypoint-surface-hover); color:var(--waypoint-accent); }
+.waypoint-attachment-button:focus-within { outline:2px solid var(--waypoint-accent); outline-offset:2px; }
+.waypoint-attachment-button-icon { display:grid; place-items:center; flex:0 0 auto; }
+.waypoint-image-attachment-input { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
+.waypoint-attachment-status { min-width:0; color:var(--waypoint-text-secondary); font-size:10px; line-height:1.3; }
+.waypoint-attachment-status[role="alert"] { color:var(--waypoint-danger); }
+.waypoint-variant-intent-label { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; padding:8px 10px; border:1px solid transparent; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+.waypoint-variant-intent-label:hover { border-color:var(--waypoint-outline); background:var(--waypoint-surface-hover); }
+.waypoint-variant-intent-copy { display:grid; gap:1px; min-width:0; }
+.waypoint-variant-intent-title { color:var(--waypoint-text-primary); font-size:11px; line-height:1.35; font-weight:600; }
+.waypoint-variant-intent-description { color:var(--waypoint-text-secondary); font-size:10px; line-height:1.35; }
+.waypoint-variant-intent { appearance:none; -webkit-appearance:none; width:18px; height:18px; flex:0 0 auto; border:1.5px solid var(--waypoint-outline-highlight); border-radius:5px; background:var(--waypoint-surface-1); cursor:pointer; position:relative; transition:background .15s ease, border-color .15s ease; }
+.waypoint-variant-intent:checked { border-color:var(--waypoint-accent); background:var(--waypoint-accent); }
+.waypoint-variant-intent:checked::after { content:''; position:absolute; left:5px; top:2px; width:4px; height:8px; border:solid var(--waypoint-on-accent); border-width:0 1.5px 1.5px 0; transform:rotate(45deg); }
+.waypoint-variant-intent:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }
 
 /* Color picker */
 .waypoint-color-row { display:flex; align-items:center; gap:6px; }
@@ -853,15 +875,12 @@ var WAYPOINT_STYLES = `
   margin: 0 2px;
 }
 
-.waypoint-pet-slot {
-  display: none;
-}
-
-.waypoint-pet-slot[data-state="ready"] {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
+.waypoint-branded-settings-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 /* Drag handle (vertical bar) */
@@ -921,9 +940,12 @@ var WAYPOINT_STYLES = `
   border-radius: 50%;
 }
 
-.waypoint-toolbar.collapsed .waypoint-tb-collapse img {
-  width: 26px;
-  height: 26px;
+.waypoint-collapsed-icon {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .waypoint-toolbar.collapsed .waypoint-toolbar-inner {

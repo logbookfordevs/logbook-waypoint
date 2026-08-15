@@ -28,10 +28,9 @@ var WaypointToolbar = (() => {
     stop: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>',
     copy: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
     trash: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
-    settings: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+    settings: '',
     collapse: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
-    // Waypoint icon — set dynamically in buildToolbar
-    logo: '',
+    collapsed: '',
     eyeOff: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>',
     power: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>',
     // Theme icons
@@ -93,19 +92,20 @@ var WaypointToolbar = (() => {
   }
 
   function buildToolbar(root) {
-    const logoUrl = chrome.runtime.getURL('assets/icons/icon-hq.png');
-    ICONS.logo = `<img src="${logoUrl}" style="pointer-events:none;">`;
+    const collapsedUrl = chrome.runtime.getURL('assets/thelu/thelu-waypoint-collapsed.png');
+    const settingsUrl = chrome.runtime.getURL('assets/thelu/thelu-settings.png');
+    ICONS.collapsed = `<img class="waypoint-collapsed-icon" src="${collapsedUrl}" alt="">`;
+    ICONS.settings = `<img class="waypoint-branded-settings-icon" src="${settingsUrl}" alt="">`;
 
     toolbarEl = document.createElement('div');
     toolbarEl.className = 'waypoint-toolbar' + (isCollapsed ? ' collapsed' : '');
 
     toolbarEl.innerHTML = `
       <button class="waypoint-toolbar-btn waypoint-tb-collapse" title="${isCollapsed ? 'Expand' : 'Collapse'}">
-        ${isCollapsed ? ICONS.logo : ICONS.collapse}
+        ${isCollapsed ? ICONS.collapsed : ICONS.collapse}
         <span class="waypoint-toolbar-tip">${isCollapsed ? 'Expand' : 'Collapse'}</span>
       </button>
       <div class="waypoint-toolbar-inner">
-        <span class="waypoint-pet-slot" data-waypoint-pet-slot aria-hidden="true"></span>
         <div class="waypoint-toolbar-divider"></div>
         <button class="waypoint-toolbar-btn waypoint-tb-annotate" title="Annotate (${shortcutHint})">
           ${ICONS.annotate}
@@ -284,7 +284,7 @@ var WaypointToolbar = (() => {
             ${ICONS.camera}
             <div>
               <span>Screenshots</span>
-              <div style="font-size:11px;color:var(--waypoint-text-secondary);margin-top:1px;">Only used via MCP server, not clipboard</div>
+              <div style="font-size:11px;color:var(--waypoint-text-secondary);margin-top:1px;">Automatically capture the selected Target for MCP context. Manual reference images stay available.</div>
             </div>
           </div>
           <button class="waypoint-toggle waypoint-screenshot-toggle ${screenshotEnabled ? 'on' : ''}" type="button"></button>
@@ -755,7 +755,7 @@ var WaypointToolbar = (() => {
     closeSettings();
 
     const btn = toolbarEl.querySelector('.waypoint-tb-collapse');
-    btn.innerHTML = (isCollapsed ? ICONS.logo : ICONS.collapse) +
+    btn.innerHTML = (isCollapsed ? ICONS.collapsed : ICONS.collapse) +
       `<span class="waypoint-toolbar-tip">${isCollapsed ? 'Expand' : 'Collapse'}</span>`;
     btn.title = isCollapsed ? 'Expand' : 'Collapse';
 

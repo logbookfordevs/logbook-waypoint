@@ -147,6 +147,83 @@ test('popover image attachment validation is image-only and caps the encoded pay
   assert.match(source, /dataUrl\.length > MAX_IMAGE_ATTACHMENT_DATA_URL_LENGTH/);
 });
 
+test('annotation popover presents a branded attachment control and restores saved attachment presence', async () => {
+  const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
+  const styles = await readFile(new URL('../public/content/modules/styles.js', import.meta.url), 'utf8');
+
+  assert.match(source, /waypoint-attachment-button-icon/);
+  assert.match(source, /Add image/);
+  assert.match(source, /attachments\.length \? `\$\{attachments\.length\} image/);
+  assert.match(styles, /\.waypoint-image-attachment-input\s*\{[^}]*position:\s*absolute;[^}]*opacity:\s*0/s);
+  assert.match(styles, /\.waypoint-attachment-button:focus-within/);
+});
+
+test('annotation options group aligns attachment help and an accessible Variants choice', async () => {
+  const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
+  const styles = await readFile(new URL('../public/content/modules/styles.js', import.meta.url), 'utf8');
+
+  assert.match(source, /class="waypoint-annotation-options" role="group" aria-label="Annotation options"/);
+  assert.match(source, /class="waypoint-variant-intent-copy"/);
+  assert.match(source, /Explore multiple named directions/);
+  assert.match(styles, /\.waypoint-annotation-options\s*\{[^}]*display:\s*grid/s);
+  assert.match(styles, /\.waypoint-variant-intent\s*\{[^}]*appearance:\s*none/s);
+  assert.match(styles, /\.waypoint-variant-intent:focus-visible/);
+});
+
+test('sizing labels scrub adjacent numeric values through the public input event seam', async () => {
+  const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
+  const styles = await readFile(new URL('../public/content/modules/styles.js', import.meta.url), 'utf8');
+
+  assert.match(source, /data-scrub-target="width"/);
+  assert.match(source, /wireScrubbableSizingLabels\(popover\)/);
+  assert.match(source, /new Event\('input', \{ bubbles: true \}\)/);
+  assert.match(styles, /\.waypoint-scrubbable-label\s*\{[^}]*cursor:\s*ew-resize/s);
+});
+
+test('automatic screenshot capture renders the browser viewport before cropping the Target', async () => {
+  const capture = await readFile(new URL('../public/content/modules/screenshot-capture.js', import.meta.url), 'utf8');
+  const context = await readFile(new URL('../public/content/modules/element-context.js', import.meta.url), 'utf8');
+  const background = await readFile(new URL('../public/background/background.js', import.meta.url), 'utf8');
+
+  assert.match(capture, /captureVisibleTabScreenshot/);
+  assert.match(capture, /drawImage\(\s*image/s);
+  assert.match(capture, /await image\.decode\(\)/);
+  assert.match(context, /await WaypointScreenshotCapture\.capture\(element\)/);
+  assert.doesNotMatch(context, /function captureElementScreenshot/);
+  assert.match(background, /chrome\.tabs\.captureVisibleTab/);
+
+  const drawCalls = [];
+  class FakeImage {
+    naturalWidth = 200;
+    naturalHeight = 100;
+    async decode() {}
+  }
+  const runtime = vm.createContext({
+    window: { innerWidth: 100, innerHeight: 50 },
+    Image: FakeImage,
+    chrome: { runtime: { sendMessage: async () => ({ success: true, dataUrl: 'data:image/png;base64,viewport' }) } },
+    document: {
+      createElement: () => ({
+        width: 0,
+        height: 0,
+        getContext: () => ({
+          drawImage: (...args) => drawCalls.push(args),
+          strokeRect() {},
+        }),
+        toDataURL: () => 'data:image/webp;base64,crop',
+      }),
+    },
+    Date,
+  });
+  vm.runInContext(capture, runtime);
+  const result = await runtime.WaypointScreenshotCapture.capture({
+    getBoundingClientRect: () => ({ left: 10, top: 5, width: 20, height: 10 }),
+  });
+  assert.equal(drawCalls.length, 1);
+  assert.equal(drawCalls[0][0] instanceof FakeImage, true);
+  assert.equal(result.data_url, 'data:image/webp;base64,crop');
+});
+
 test('ordinary annotation comments do not create a Variant request without structured intent', async () => {
   const source = await readFile(new URL('../.output/chrome-mv3/content/modules/annotation-popover.js', import.meta.url), 'utf8');
 

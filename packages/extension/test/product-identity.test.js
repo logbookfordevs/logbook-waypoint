@@ -10,10 +10,19 @@ test('canonical product identity rejects a divergent public identifier', () => {
   );
 });
 
-test('toolbar exposes an empty future pet seam without shipping mascot behavior', async () => {
+test('toolbar uses Thelu as a functional settings icon without a decorative pet slot', async () => {
   const toolbar = await readFile(new URL('../public/content/modules/floating-toolbar.js', import.meta.url), 'utf8');
 
-  assert.match(toolbar, /data-waypoint-pet-slot/);
-  assert.match(toolbar, /aria-hidden="true"/);
-  assert.doesNotMatch(toolbar, /mascot|pet animation|sprite/i);
+  assert.match(toolbar, /assets\/thelu\/thelu-settings\.png/);
+  assert.match(toolbar, /waypoint-tb-settings/);
+  assert.doesNotMatch(toolbar, /data-waypoint-pet-slot|thelu-toolbar\.png/);
+});
+
+test('collapsed toolbar uses the selected Thelu inside Waypoint control', async () => {
+  const toolbar = await readFile(new URL('../public/content/modules/floating-toolbar.js', import.meta.url), 'utf8');
+
+  assert.match(toolbar, /assets\/thelu\/thelu-waypoint-collapsed\.png/);
+  assert.match(toolbar, /waypoint-collapsed-icon/);
+  assert.match(toolbar, /isCollapsed \? ICONS\.collapsed : ICONS\.collapse/);
+  assert.match(toolbar, /isCollapsed \? 'Expand' : 'Collapse'/);
 });

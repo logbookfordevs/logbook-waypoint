@@ -109,6 +109,16 @@ test('popup exposes synchronized theme, pin color, and clear-on-copy settings', 
   assert.match(popup, /waypointBadgeColor/);
 });
 
+test('screenshot settings distinguish automatic MCP context from manual attachments', async () => {
+  const toolbar = await readFile(new URL('../public/content/modules/floating-toolbar.js', import.meta.url), 'utf8');
+  const popup = await readFile(new URL('../public/popup/popup.html', import.meta.url), 'utf8');
+
+  assert.match(toolbar, /Automatically capture the selected Target for MCP context/);
+  assert.match(toolbar, /Manual reference images stay available/);
+  assert.match(popup, /Automatically capture the selected Target for MCP context/);
+  assert.match(popup, /Manual reference images remain available/);
+});
+
 test('popup presents retained Queue states and Claim ownership explicitly', async () => {
   const popup = await readFile(popupUrl, 'utf8');
 
