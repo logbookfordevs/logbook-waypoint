@@ -333,18 +333,18 @@ var WaypointAPI = (() => {
     } catch { /* ignore */ }
   }
 
-  function getOverlayHidden() {
+  async function getOverlayHidden() {
     try {
-      return sessionStorage.getItem('waypointOverlayHidden') === '1';
+      const result = await chrome.storage.local.get(['waypointOverlayHidden']);
+      return Boolean(result.waypointOverlayHidden);
     } catch {
       return false;
     }
   }
 
-  function saveOverlayHidden(hidden) {
+  async function saveOverlayHidden(hidden) {
     try {
-      if (hidden) sessionStorage.setItem('waypointOverlayHidden', '1');
-      else sessionStorage.removeItem('waypointOverlayHidden');
+      await chrome.storage.local.set({ waypointOverlayHidden: Boolean(hidden) });
     } catch { /* ignore */ }
   }
 

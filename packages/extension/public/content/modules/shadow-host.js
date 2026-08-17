@@ -3,9 +3,13 @@
 var WaypointShadowHost = (() => {
   let hostEl = null;
   let shadowRoot = null;
+  let hidden = false;
+  let visibilityAnimation = null;
 
-  function init() {
+  function init(initiallyHidden = false) {
     if (hostEl) return shadowRoot;
+
+    hidden = initiallyHidden;
 
     hostEl = document.createElement('div');
     hostEl.id = 'logbook-waypoint-root';
@@ -27,10 +31,7 @@ var WaypointShadowHost = (() => {
     styleEl.textContent = WAYPOINT_STYLES;
     shadowRoot.appendChild(styleEl);
 
-    // Restore hidden state before appending to avoid flash
-    if (WaypointAPI.getOverlayHidden()) {
-      hostEl.style.display = 'none';
-    }
+    if (hidden) hostEl.style.display = 'none';
 
     document.body.appendChild(hostEl);
 
@@ -59,18 +60,54 @@ var WaypointShadowHost = (() => {
     shadowRoot = null;
   }
 
+  function animateToolbar(opening) {
+    const toolbar = shadowRoot?.querySelector('.waypoint-toolbar');
+    if (!toolbar?.animate) return null;
+
+    visibilityAnimation?.cancel();
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const visible = reducedMotion
+      ? { opacity: 1 }
+      : { opacity: 1, transform: 'translateY(0) scale(1)' };
+    const tucked = reducedMotion
+      ? { opacity: 0 }
+      : { opacity: 0, transform: 'translateY(-6px) scale(0.96)' };
+
+    visibilityAnimation = toolbar.animate(
+      opening ? [tucked, visible] : [visible, tucked],
+      {
+        duration: reducedMotion ? 120 : 180,
+        easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+        fill: 'both',
+      },
+    );
+    return visibilityAnimation;
+  }
+
   function hide() {
-    if (hostEl) hostEl.style.display = 'none';
+    if (!hostEl || hidden) return;
+    hidden = true;
+    const animation = animateToolbar(false);
+    if (animation) {
+      animation.finished.catch(() => {}).then(() => {
+        if (hidden && hostEl) hostEl.style.display = 'none';
+      });
+    } else {
+      hostEl.style.display = 'none';
+    }
     WaypointAPI.saveOverlayHidden(true);
   }
 
   function show() {
-    if (hostEl) hostEl.style.display = '';
+    if (!hostEl || !hidden) return;
+    hidden = false;
+    hostEl.style.display = '';
+    animateToolbar(true);
     WaypointAPI.saveOverlayHidden(false);
   }
 
   function isVisible() {
-    return hostEl && hostEl.style.display !== 'none';
+    return Boolean(hostEl && !hidden);
   }
 
   function toggle() {

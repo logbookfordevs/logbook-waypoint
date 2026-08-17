@@ -15,6 +15,8 @@
     return;
   }
 
+  chrome.runtime.sendMessage({ action: 'clearInterventionPopup', tabId: tab.id }).catch(() => {});
+
   // Chrome internal pages
   if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('about:')) {
     mainBtn.classList.remove('hidden');

@@ -145,7 +145,7 @@ test('extension has no release promotion banner, NEW badge, or changelog behavio
     readFile(new URL('../public/background/background.js', import.meta.url), 'utf8'),
     readFile(popupUrl, 'utf8'),
     readFile(popupHtmlUrl, 'utf8'),
-    readFile(new URL('../entrypoints/popup/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../entrypoints/intervention.html', import.meta.url), 'utf8'),
   ]);
 
   assert.doesNotMatch(background, /setBadgeText\(\{ text: 'NEW' \}\)/);

@@ -31,11 +31,10 @@ console.log('[Waypoint] content.js loaded');
   async function init() {
     injectFontFace();
 
-    // 1. Shadow host + styles
-    WaypointShadowHost.init();
+    const overlayClosed = await WaypointAPI.getOverlayHidden();
 
-    // 1b. Overlay hidden state is restored synchronously in WaypointShadowHost.init()
-    const overlayClosed = WaypointAPI.getOverlayHidden();
+    // 1. Shadow host + styles
+    WaypointShadowHost.init(overlayClosed);
 
     // 2. Theme
     await WaypointThemeManager.init();

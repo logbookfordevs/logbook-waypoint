@@ -7,6 +7,7 @@ importScripts('../annotation-validation.js');
 importScripts('../export-codec.js');
 importScripts('queue-sync.js');
 importScripts('source-identity-probe.js');
+importScripts('action-controller.js');
 importScripts('variant-errors.js');
 importScripts('variant-policy.js');
 
@@ -124,6 +125,12 @@ class WaypointAnnotationsBackground {
         case 'captureVisibleTabScreenshot':
           chrome.tabs.captureVisibleTab(sender?.tab?.windowId, { format: 'png' })
             .then(dataUrl => sendResponse({ success: true, dataUrl }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+          break;
+
+        case 'clearInterventionPopup':
+          WaypointActionController.clearIntervention(request.tabId)
+            .then(() => sendResponse({ success: true }))
             .catch(error => sendResponse({ success: false, error: error.message }));
           break;
 
@@ -1213,6 +1220,10 @@ class WaypointAnnotationsBackground {
 // Initialize the background service worker
 const bg = new WaypointAnnotationsBackground();
 
+chrome.action.onClicked.addListener((tab) => {
+  WaypointActionController.handleClick(tab).catch(() => {});
+});
+
 // Keyboard shortcut commands (chrome.commands)
 chrome.commands.onCommand.addListener(async (command, tab) => {
   if (command === 'toggle-annotate' && tab?.id && await bg.isSupportedUrl(tab.url)) {
@@ -1221,5 +1232,3 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
     } catch { /* Content script not loaded */ }
   }
 });
-
-// No onClicked handler — popup.html handles all interaction
