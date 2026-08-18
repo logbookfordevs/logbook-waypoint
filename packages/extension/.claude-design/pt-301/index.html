@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PT-301 — Impeccable action row prototype</title>
+  <!-- Five variants of the PT-301 Impeccable action row, switchable via ?variant=, beside the incumbent extension editor. -->
+  <style>
+    :root {
+      --surface: #f8f9fc;
+      --surface-1: #fcfcfd;
+      --text: #0c111b;
+      --muted: #697586;
+      --outline: #00000014;
+      --outline-strong: #00000028;
+      --accent: #d97757;
+      --accent-soft: #d9775717;
+      --highlight: #2563eb;
+      --hover: #0d0f1c14;
+      --field: #0000000d;
+      --primary: #4f5d75;
+      --font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: "SF Mono", Monaco, Inconsolata, "Fira Code", monospace;
+      --radius-xs: 4px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: var(--text); background: var(--surface); font: 14px/1.5 var(--font); }
+    button, textarea, input { font: inherit; }
+    button { color: inherit; }
+
+    .lab-header { max-width: 920px; margin: 0 auto; padding: 28px 24px 16px; }
+    .lab-header h1 { margin: 0 0 6px; font-size: 20px; line-height: 1.25; letter-spacing: -.02em; }
+    .lab-header p { max-width: 72ch; margin: 0; color: var(--muted); font-size: 13px; }
+    .prototype-note { display: inline-flex; margin-bottom: 12px; padding: 4px 8px; border-radius: 999px; background: var(--accent-soft); color: #8c442e; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+
+    .lab { min-height: 700px; display: grid; place-items: center; padding: 24px 24px 120px; background: radial-gradient(circle at 50% 45%, #fff 0 18%, transparent 58%); }
+    .scene { width: min(920px, 100%); min-height: 570px; position: relative; display: grid; place-items: center; border: 1px solid var(--outline); border-radius: 16px; overflow: hidden; background: #eef1f6; }
+    .scene::before { content: ""; position: absolute; inset: 68px 9% 50px; border-radius: 14px; background: #fff; box-shadow: 0 18px 44px rgba(28, 39, 55, .08); }
+    .scene-copy { position: absolute; top: 94px; left: 13%; width: 42%; }
+    .scene-copy span, .scene-copy strong { display: block; height: 9px; margin-bottom: 10px; border-radius: 5px; background: #dce2ea; }
+    .scene-copy strong { width: 70%; height: 18px; background: #bfc9d6; }
+    .target-outline { position: absolute; top: 196px; left: 13%; width: 38%; height: 92px; border: 2px solid var(--highlight); border-radius: 5px; background: #2563eb0d; }
+    .target-label { position: absolute; top: -24px; left: -2px; padding: 3px 7px; border-radius: 4px; background: var(--highlight); color: white; font: 10px/1.4 var(--mono); }
+
+    .editor { position: relative; z-index: 2; width: 340px; margin-left: min(38vw, 330px); border: 1px solid var(--outline); border-radius: var(--radius-md); background: var(--surface-1); box-shadow: 0 8px 32px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.08); overflow: visible; }
+    .drag { display: flex; justify-content: center; padding: 8px 0 4px; }
+    .drag::after { content: ""; width: 40%; height: 4px; border-radius: 2px; background: var(--outline-strong); }
+    .editor-title { display: flex; align-items: center; padding: 2px 14px 8px; color: var(--muted); font-size: 12px; font-weight: 500; }
+    .editor-title code { margin-left: 4px; color: var(--text); font: 11px var(--mono); }
+    .tabs { display: flex; gap: 4px; padding: 4px 14px 8px; overflow: hidden; }
+    .tab { flex: none; padding: 3px 10px; border: 1px solid var(--outline); border-radius: 999px; background: none; color: var(--muted); font-size: 11px; font-weight: 500; }
+    .editor-body { padding: 10px 14px; }
+    .textarea-wrap { position: relative; }
+    textarea { width: 100%; min-height: 76px; resize: none; padding: 10px 10px 24px; border: 1px solid var(--outline); border-radius: var(--radius-sm); outline: none; background: var(--field); color: var(--text); font-size: 13px; line-height: 1.45; }
+    textarea:focus { border-color: var(--highlight); background: var(--hover); }
+    textarea::placeholder { color: var(--muted); }
+    .kbd { position: absolute; right: 8px; bottom: 6px; color: var(--muted); font-size: 10px; opacity: .7; }
+    .options { display: grid; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--outline); }
+    .attachment { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+    .secondary { min-height: 32px; padding: 6px 10px; border: 1px solid var(--outline); border-radius: var(--radius-sm); background: var(--surface-1); font-size: 11px; font-weight: 600; cursor: pointer; }
+    .secondary:hover { border-color: var(--outline-strong); background: var(--hover); color: var(--accent); }
+    .status { color: var(--muted); font-size: 10px; }
+
+    .workflow { display: grid; gap: 7px; }
+    .workflow-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .workflow-name { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 650; }
+    .spark { width: 16px; height: 16px; display: grid; place-items: center; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 800; }
+    .hint { color: var(--muted); font-size: 10px; line-height: 1.35; }
+    .chips { display: flex; gap: 5px; overflow-x: auto; padding: 1px 1px 3px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+    .action-grid .chip { width: 100%; border-radius: var(--radius-xs); }
+    .chip { flex: none; min-height: 30px; padding: 5px 9px; border: 1px solid var(--outline); border-radius: 999px; background: var(--surface-1); color: var(--muted); font-size: 10px; font-weight: 600; cursor: pointer; }
+    .chip:hover { border-color: var(--outline-strong); color: var(--text); }
+    .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: #8c442e; }
+    .chip:focus-visible, .switch:focus-visible, .disclosure:focus-visible, .stage-button:focus-visible, .variant-row input:focus-visible, .secondary:focus-visible, .btn:focus-visible, .switcher button:focus-visible, .state-button:focus-visible { outline: 2px solid var(--highlight); outline-offset: 2px; }
+
+    .switch { width: 34px; height: 20px; position: relative; flex: none; border: 0; border-radius: 999px; background: #c9cfd8; cursor: pointer; }
+    .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .16s ease-out; }
+    .switch[aria-checked="true"] { background: var(--accent); }
+    .switch[aria-checked="true"]::after { transform: translateX(14px); }
+
+    .variant-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 8px 10px; border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--field); cursor: pointer; }
+    .variant-row:hover { border-color: var(--outline); background: var(--hover); }
+    .variant-copy { display: grid; gap: 1px; }
+    .variant-copy strong { font-size: 11px; line-height: 1.35; }
+    .variant-copy span { color: var(--muted); font-size: 10px; line-height: 1.35; }
+    .variant-row input { appearance: none; width: 18px; height: 18px; flex: none; margin: 0; border: 1.5px solid var(--outline-strong); border-radius: 5px; background: var(--surface-1); }
+    .variant-row input:checked { border-color: var(--accent); background: var(--accent); }
+    .variant-row input:checked::after { content: ""; display: block; width: 4px; height: 8px; margin: 2px 0 0 5px; border: solid white; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+
+    .disclosure { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 8px 9px; border: 1px solid var(--outline); border-radius: var(--radius-sm); background: var(--surface-1); cursor: pointer; }
+    .disclosure:hover { background: var(--hover); }
+    .disclosure-copy { display: flex; align-items: center; gap: 7px; text-align: left; }
+    .chevron { color: var(--muted); font-size: 12px; transition: transform .16s ease-out; }
+    .disclosure[aria-expanded="true"] .chevron { transform: rotate(90deg); }
+    .disclosed { display: none; padding: 3px 0 1px; }
+    .disclosure[aria-expanded="true"] + .disclosed { display: grid; gap: 6px; }
+
+    .action-first { display: grid; gap: 7px; }
+    .action-first .chips { padding-bottom: 1px; }
+    .plain-action { color: var(--text); border-style: dashed; }
+    .plain-action[aria-pressed="true"] { border-style: solid; }
+    .selection-note { min-height: 14px; color: var(--muted); font-size: 10px; }
+
+    .instrument { display: grid; grid-template-columns: 32px minmax(0, 1fr); border: 1px solid var(--outline); border-radius: var(--radius-sm); overflow: hidden; }
+    .instrument-toggle { border: 0; border-right: 1px solid var(--outline); background: var(--field); color: var(--muted); font-weight: 800; cursor: pointer; }
+    .instrument-toggle[aria-pressed="true"] { background: var(--accent); color: white; }
+    .instrument .chips { padding: 5px; background: var(--surface-1); }
+    .instrument .chip { min-height: 27px; padding: 3px 8px; border-radius: var(--radius-xs); }
+
+    .stages { display: grid; gap: 6px; }
+    .stage-line { display: grid; grid-template-columns: 66px minmax(0, 1fr); align-items: start; gap: 6px; }
+    .stage-label { padding-top: 7px; color: var(--muted); font: 9px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .05em; }
+    .stage-button { min-height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border: 1px solid var(--outline); border-radius: var(--radius-xs); background: var(--surface-1); text-align: left; font-size: 10px; cursor: pointer; }
+    .stage-button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: #8c442e; }
+    .stage-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 4px; }
+    .stage-actions .chip { width: 100%; min-height: 28px; border-radius: var(--radius-xs); }
+    .workflow-status { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 7px; border-radius: var(--radius-xs); background: var(--accent-soft); color: #8c442e; font-size: 10px; font-weight: 650; }
+    .action-description { min-height: 14px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+    .dependency { color: var(--muted); font-size: 9px; line-height: 1.35; }
+    .chooser-row { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 7px; }
+    .chooser-row label { color: var(--muted); font: 9px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .05em; }
+    .action-select { width: 100%; min-height: 32px; padding: 5px 28px 5px 9px; border: 1px solid var(--outline); border-radius: var(--radius-xs); outline: none; background: var(--surface-1); color: var(--text); font-size: 10px; font-weight: 600; }
+    .action-select:focus-visible { outline: 2px solid var(--highlight); outline-offset: 2px; }
+    .action-list { display: grid; gap: 3px; max-height: 150px; overflow-y: auto; padding-right: 2px; }
+    .action-list .chip { width: 100%; display: flex; justify-content: space-between; border-radius: var(--radius-xs); text-align: left; }
+    .action-list .chip[aria-pressed="true"]::after { content: "Selected"; color: #8c442e; font-size: 9px; font-weight: 500; }
+    .summary-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px; border: 1px solid var(--outline); border-radius: var(--radius-sm); background: var(--field); }
+    .summary-copy { min-width: 0; display: grid; gap: 1px; }
+    .summary-copy strong { font-size: 11px; }
+    .summary-copy span { color: var(--muted); font-size: 10px; }
+    .summary-row .switch { margin-left: auto; }
+
+    .footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 14px 12px; }
+    .viewport { color: var(--muted); font: 11px var(--mono); }
+    .footer-actions { display: flex; gap: 8px; }
+    .btn { padding: 7px 16px; border: 0; border-radius: 999px; cursor: pointer; font-size: 13px; }
+    .btn-cancel { background: var(--field); }
+    .btn-save { background: var(--primary); color: white; }
+
+    .review-tools { position: sticky; z-index: 10; top: 8px; width: max-content; max-width: calc(100vw - 24px); margin: 0 auto 8px; display: flex; gap: 4px; padding: 5px; border: 1px solid #ffffff24; border-radius: 999px; overflow-x: auto; background: #111827; box-shadow: 0 8px 24px rgba(0,0,0,.22); }
+    .state-button { min-height: 34px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: #cbd5e1; font-size: 10px; font-weight: 650; cursor: pointer; }
+    .state-button[aria-pressed="true"] { background: #fff; color: #111827; }
+    .switcher { position: fixed; z-index: 11; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 999px; background: #111827; color: white; box-shadow: 0 8px 24px rgba(0,0,0,.28); }
+    .switcher button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: #ffffff14; color: white; cursor: pointer; font-size: 17px; }
+    .switcher button:hover { background: #ffffff24; }
+    .variant-label { min-width: 160px; text-align: center; font-size: 11px; font-weight: 650; }
+
+    .feedback { position: fixed; z-index: 12; right: 18px; bottom: 18px; }
+    .feedback > button { min-height: 46px; padding: 0 15px; border: 0; border-radius: 999px; background: var(--accent); color: white; box-shadow: 0 8px 24px rgba(0,0,0,.2); font-weight: 700; cursor: pointer; }
+    .feedback-panel { width: min(320px, calc(100vw - 36px)); display: none; position: absolute; right: 0; bottom: 56px; padding: 14px; border: 1px solid var(--outline); border-radius: var(--radius-md); background: white; box-shadow: 0 12px 40px rgba(0,0,0,.2); }
+    .feedback.open .feedback-panel { display: grid; gap: 9px; }
+    .feedback-panel strong { font-size: 12px; }
+    .feedback-panel textarea { min-height: 100px; }
+    .feedback-panel button { min-height: 36px; border: 0; border-radius: 999px; background: var(--primary); color: white; cursor: pointer; }
+    .feedback-status { min-height: 14px; color: var(--muted); font-size: 10px; }
+
+    @media (max-width: 680px) {
+      .lab-header { padding: 20px 16px 12px; }
+      .lab { place-items: start center; padding: 14px 8px 150px; }
+      .scene { min-height: 610px; border-radius: 12px; }
+      .scene::before { inset: 44px 12px 34px; }
+      .scene-copy { top: 72px; left: 9%; width: 70%; }
+      .target-outline { top: 166px; left: 9%; width: 60%; }
+      .editor { width: min(340px, calc(100vw - 32px)); margin: 190px 0 0; }
+      .review-tools { width: calc(100vw - 24px); justify-content: flex-start; }
+      .state-button { flex: none; }
+      .variant-label { min-width: 126px; }
+      .feedback { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <header class="lab-header">
+    <span class="prototype-note">Throwaway design prototype</span>
+    <h1>How should Impeccable join an Annotation?</h1>
+    <p>Compare five compact interaction models inside Waypoint’s incumbent editor. Impeccable stays optional, the comment remains the freeform brief, one action can be selected, and Request Variants stays a separate Waypoint control.</p>
+  </header>
+
+  <nav class="review-tools" aria-label="Prototype states">
+    <button class="state-button" data-state="ordinary" aria-pressed="true">Ordinary</button>
+    <button class="state-button" data-state="freeform" aria-pressed="false">Freeform</button>
+    <button class="state-button" data-state="action" aria-pressed="false">One action</button>
+    <button class="state-button" data-state="variants" aria-pressed="false">Action + Variants</button>
+  </nav>
+
+  <main class="lab">
+    <section class="scene" aria-label="Prototype scene">
+      <div class="scene-copy" aria-hidden="true"><strong></strong><span></span><span style="width:84%"></span><span style="width:60%"></span></div>
+      <div class="target-outline" aria-hidden="true"><span class="target-label">button.checkout-primary</span></div>
+      <article class="editor" data-variant="A" aria-label="Waypoint Annotation editor prototype">
+        <div class="drag"></div>
+        <div class="editor-title">Editing <code>button.checkout-primary</code></div>
+        <div class="tabs" aria-label="Design properties"><button class="tab">Content</button><button class="tab">Font</button><button class="tab">Sizing</button><button class="tab">Spacing</button></div>
+        <div class="editor-body">
+          <div class="textarea-wrap">
+            <textarea aria-label="Annotation comment" placeholder="What should change?"></textarea>
+            <span class="kbd">⌘↩ to save</span>
+          </div>
+          <div class="options" role="group" aria-label="Annotation options">
+            <div class="workflow-slot"></div>
+            <div class="attachment"><button class="secondary" type="button">Add image</button><span class="status">PNG, JPG, GIF, or WebP</span></div>
+            <label class="variant-row"><span class="variant-copy"><strong>Request Variants</strong><span>Explore multiple named directions</span></span><input type="checkbox" aria-label="Request Variants"></label>
+          </div>
+        </div>
+        <footer class="footer"><span class="viewport">▯ <span class="viewport-width">920w</span></span><span class="footer-actions"><button class="btn btn-cancel">Cancel</button><button class="btn btn-save">Save as pointer</button></span></footer>
+      </article>
+    </section>
+  </main>
+
+  <nav class="switcher" aria-label="Prototype variants">
+    <button class="previous" type="button" aria-label="Previous variant">←</button>
+    <span class="variant-label" aria-live="polite"></span>
+    <button class="next" type="button" aria-label="Next variant">→</button>
+  </nav>
+
+  <aside class="feedback">
+    <div class="feedback-panel">
+      <strong>Feedback for <span class="feedback-variant">A</span></strong>
+      <textarea aria-label="Prototype feedback" placeholder="What should Leo keep, change, or combine?"></textarea>
+      <button type="button">Copy feedback</button>
+      <span class="feedback-status" aria-live="polite"></span>
+    </div>
+    <button class="feedback-toggle" type="button" aria-expanded="false">Add feedback</button>
+  </aside>
+
+  <script>
+    const actionDescriptions = {
+      Bolder: "Increase visual impact and confidence.",
+      Quieter: "Reduce visual intensity and distraction.",
+      Distill: "Remove complexity and keep only what matters.",
+      Polish: "Refine hierarchy, spacing, and visual details.",
+      Typeset: "Improve typography, scale, and rhythm.",
+      Colorize: "Add purposeful color and clearer emphasis.",
+      Layout: "Improve structure, spacing, and alignment.",
+      Animate: "Add purposeful motion and transitions.",
+      Delight: "Add personality through thoughtful details.",
+      Overdrive: "Push the design beyond conventional limits."
+    };
+    const actions = Object.keys(actionDescriptions);
+    const variants = {
+      A: { name: "A1 - Wrapped catalog", render: renderExplicitSwitch },
+      B: { name: "A2 - Compact chooser", render: renderCompactChooser },
+      C: { name: "E1 - Status + matrix", render: renderStages },
+      D: { name: "E2 - Status + list", render: renderStatusList },
+      E: { name: "A/E - Hybrid summary", render: renderHybrid }
+    };
+    const state = { variant: getVariant(), mode: "ordinary", enabled: false, action: null, requestVariants: false };
+    const editor = document.querySelector(".editor");
+    const slot = document.querySelector(".workflow-slot");
+    const textarea = document.querySelector("textarea[aria-label='Annotation comment']");
+    const variantInput = document.querySelector("input[aria-label='Request Variants']");
+
+    function getVariant() {
+      const key = new URLSearchParams(location.search).get("variant")?.toUpperCase();
+      return variants[key] ? key : "A";
+    }
+
+    function chipMarkup(action, extraClass = "") {
+      return `<button type="button" class="chip ${extraClass}" data-action="${action}" aria-pressed="${state.action === action}">${action}</button>`;
+    }
+
+    function renderExplicitSwitch() {
+      const status = state.action ? `Design Action · ${state.action}` : "Design Actions · Freeform";
+      const guidance = state.action
+        ? `<span class="action-description" aria-live="polite">${actionDescriptions[state.action]}</span>`
+        : `<span class="hint">Choose a guided action or use your comment as freeform direction.</span>`;
+      slot.innerHTML = `<section class="workflow"><div class="workflow-heading"><span class="workflow-name"><span class="spark">✦</span>Design Actions</span><span style="display:flex;align-items:center;gap:7px">${state.enabled ? `<span class="workflow-status">${status}</span>` : ""}<button class="switch" type="button" role="switch" aria-label="Use Design Actions" aria-checked="${state.enabled}"></button></span></div>${state.enabled ? `${guidance}<div class="action-grid">${actions.map(action => chipMarkup(action)).join("")}</div><span class="dependency">Requires Impeccable</span>` : `<span class="hint">Off — this remains an ordinary Annotation.</span>`}</section>`;
+    }
+
+    function renderCompactChooser() {
+      const selected = state.action || "";
+      slot.innerHTML = `<section class="workflow"><div class="workflow-heading"><span class="workflow-name"><span class="spark">✦</span>Impeccable</span><button class="switch" type="button" role="switch" aria-label="Use Impeccable" aria-checked="${state.enabled}"></button></div>${state.enabled ? `<div class="chooser-row"><label for="action-select">Action</label><select class="action-select" id="action-select"><option value="">Freeform</option>${actions.map(action => `<option value="${action}" ${selected === action ? "selected" : ""}>${action}</option>`).join("")}</select></div><span class="hint">${state.action ? `${state.action} is the single Design Action.` : "On - Freeform. The comment carries the direction."}</span>` : `<span class="hint">Off - provider-neutral Annotation</span>`}</section>`;
+    }
+
+    function renderInstrument() {
+      slot.innerHTML = `<section class="workflow"><div class="workflow-heading"><span class="workflow-name">Design action</span><span class="hint">Impeccable · optional</span></div><div class="instrument"><button class="instrument-toggle" type="button" aria-label="Toggle Impeccable" aria-pressed="${state.enabled}">✦</button><div class="chips">${actions.map(action => chipMarkup(action)).join("")}</div></div><span class="hint">${state.enabled ? (state.action ? `Instrument armed for ${state.action}` : "Armed for freeform intent") : "Instrument idle; save a provider-neutral Annotation"}</span></section>`;
+    }
+
+    function renderStages() {
+      const workflowStatus = state.action ? "On" : "On - Freeform";
+      slot.innerHTML = `<section class="stages"><div class="stage-line"><span class="stage-label">Workflow</span><button type="button" class="stage-button" data-workflow aria-pressed="${state.enabled}"><span>✦ Impeccable</span><span>${state.enabled ? workflowStatus : "Optional"}</span></button></div>${state.enabled ? `<div class="stage-line"><span class="stage-label">Action</span><div class="stage-actions">${actions.map(action => chipMarkup(action)).join("")}</div></div><span class="hint">${state.action ? `${state.action} selected; the comment adds direction.` : "No named action; the comment is the freeform intent."}</span>` : ""}</section>`;
+    }
+
+    function renderStatusList() {
+      const status = state.action || "On - Freeform";
+      slot.innerHTML = `<section class="stages"><div class="stage-line"><span class="stage-label">Workflow</span><button type="button" class="stage-button" data-workflow aria-pressed="${state.enabled}"><span>✦ Impeccable</span><span>${state.enabled ? status : "Optional"}</span></button></div>${state.enabled ? `<div class="stage-line"><span class="stage-label">Action</span><div class="action-list">${actions.map(action => chipMarkup(action)).join("")}</div></div>` : ""}</section>`;
+    }
+
+    function renderHybrid() {
+      const title = state.enabled ? (state.action || "On - Freeform") : "Optional workflow";
+      const description = state.enabled ? (state.action ? "One Design Action selected" : "Comment supplies the freeform intent") : "Ordinary Annotation until enabled";
+      slot.innerHTML = `<section class="workflow"><div class="summary-row"><span class="spark">✦</span><span class="summary-copy"><strong>Impeccable - ${title}</strong><span>${description}</span></span><button class="switch" type="button" role="switch" aria-label="Use Impeccable" aria-checked="${state.enabled}"></button></div>${state.enabled ? `<div class="chooser-row"><label for="hybrid-action">Action</label><select class="action-select" id="hybrid-action"><option value="">Freeform</option>${actions.map(action => `<option value="${action}" ${state.action === action ? "selected" : ""}>${action}</option>`).join("")}</select></div>` : ""}</section>`;
+    }
+
+    function applyMode(mode) {
+      state.mode = mode;
+      state.enabled = mode !== "ordinary";
+      state.action = mode === "action" || mode === "variants" ? "Polish" : null;
+      state.requestVariants = mode === "variants";
+      textarea.value = mode === "ordinary" ? "Make the checkout button easier to notice without changing the layout." : "Polish the checkout button so it feels confident and intentional, while preserving its current hierarchy.";
+      variantInput.checked = state.requestVariants;
+      render();
+    }
+
+    function render() {
+      editor.dataset.variant = state.variant;
+      variants[state.variant].render();
+      document.querySelector(".variant-label").textContent = `${state.variant} — ${variants[state.variant].name}`;
+      document.querySelector(".feedback-variant").textContent = state.variant;
+      document.querySelectorAll(".state-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.state === state.mode)));
+      wireWorkflow();
+    }
+
+    function wireWorkflow() {
+      slot.querySelector(".switch")?.addEventListener("click", () => { state.enabled = !state.enabled; if (!state.enabled) state.action = null; render(); slot.querySelector(".switch")?.focus(); });
+      slot.querySelector(".disclosure")?.addEventListener("click", () => { state.enabled = !state.enabled; if (!state.enabled) state.action = null; render(); slot.querySelector(".disclosure")?.focus(); });
+      slot.querySelector(".instrument-toggle")?.addEventListener("click", () => { state.enabled = !state.enabled; if (!state.enabled) state.action = null; render(); slot.querySelector(".instrument-toggle")?.focus(); });
+      slot.querySelector("[data-workflow]")?.addEventListener("click", () => { state.enabled = !state.enabled; if (!state.enabled) state.action = null; render(); slot.querySelector("[data-workflow]")?.focus(); });
+      slot.querySelector(".action-select")?.addEventListener("change", event => { state.enabled = true; state.action = event.currentTarget.value || null; render(); slot.querySelector(".action-select")?.focus(); });
+      slot.querySelectorAll("[data-action]").forEach(button => button.addEventListener("click", event => {
+        const action = event.currentTarget.dataset.action;
+        state.enabled = true;
+        state.action = action === "Freeform" ? null : (state.action === action ? null : action);
+        render();
+        const selector = action === "Freeform" ? "[data-action='Freeform']" : `[data-action='${action}']`;
+        slot.querySelector(selector)?.focus();
+      }));
+    }
+
+    function cycle(direction) {
+      const keys = Object.keys(variants);
+      const index = keys.indexOf(state.variant);
+      state.variant = keys[(index + direction + keys.length) % keys.length];
+      const url = new URL(location.href);
+      url.searchParams.set("variant", state.variant);
+      history.replaceState({}, "", url);
+      render();
+    }
+
+    document.querySelector(".previous").addEventListener("click", () => cycle(-1));
+    document.querySelector(".next").addEventListener("click", () => cycle(1));
+    document.querySelectorAll(".state-button").forEach(button => button.addEventListener("click", () => applyMode(button.dataset.state)));
+    variantInput.addEventListener("change", () => { state.requestVariants = variantInput.checked; state.mode = state.requestVariants ? "variants" : (state.action ? "action" : state.enabled ? "freeform" : "ordinary"); render(); });
+    addEventListener("keydown", event => {
+      if (event.target.matches("input, textarea, [contenteditable='true']")) return;
+      if (event.key === "ArrowLeft") cycle(-1);
+      if (event.key === "ArrowRight") cycle(1);
+    });
+    addEventListener("resize", () => { document.querySelector(".viewport-width").textContent = `${innerWidth}w`; });
+
+    const feedback = document.querySelector(".feedback");
+    const feedbackToggle = document.querySelector(".feedback-toggle");
+    feedbackToggle.addEventListener("click", () => { const open = feedback.classList.toggle("open"); feedbackToggle.setAttribute("aria-expanded", String(open)); });
+    document.querySelector(".feedback-panel button").addEventListener("click", async () => {
+      const note = document.querySelector(".feedback-panel textarea").value.trim();
+      const payload = `## PT-301 prototype feedback\n\n**Variant:** ${state.variant} — ${variants[state.variant].name}\n**State:** ${state.mode}\n\n${note || "No written note."}`;
+      await navigator.clipboard.writeText(payload);
+      document.querySelector(".feedback-status").textContent = "Copied. Paste it into the Codex task.";
+    });
+
+    applyMode("ordinary");
+    document.querySelector(".viewport-width").textContent = `${innerWidth}w`;
+  </script>
+</body>
+</html>

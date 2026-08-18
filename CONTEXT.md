@@ -16,6 +16,20 @@ _Avoid_: selector, node, element reference
 The collection of Annotations available to or retained from agent work.
 _Avoid_: inbox, backlog, annotation list
 
+## Design workflow
+
+**Design Intent**:
+Optional structured design work requested through an Annotation.
+_Avoid_: mode, command, design comment
+
+**Design Action**:
+The named design operation requested by a Design Intent, such as polishing, adjusting layout, or animating a Target.
+_Avoid_: mode, skill, prompt
+
+**Surface Mode**:
+The visitor outcome that guides design decisions for a surface: Persuade, Operate, Read, or Experience.
+_Avoid_: Design Action, workflow mode
+
 ## Lifecycle
 
 **Pending**:
@@ -26,9 +40,17 @@ _Avoid_: open, new, unassigned
 Temporary ownership of an Annotation by one agent while work is active.
 _Avoid_: lock, assignment, reservation
 
+**Work Notice**:
+A non-terminal explanation attached to a Pending Annotation when a claimed attempt could not proceed or complete.
+_Avoid_: blocked state, error state, failure status
+
 **Resolved**:
 The terminal state of an Annotation whose requested work was explicitly completed and retained as history.
 _Avoid_: done, completed, deleted
+
+**Resolution Record**:
+The provider-neutral summary and verification evidence retained when an Annotation becomes Resolved.
+_Avoid_: agent output, result, completion metadata
 
 **Discarded**:
 The terminal state of an Annotation intentionally closed without implementing its requested work.
@@ -44,9 +66,17 @@ _Avoid_: poll, read, claim
 
 ## Variants
 
+**Variant Intent**:
+An optional request on an Annotation asking an agent to produce multiple named Variants.
+_Avoid_: Variant Set, Variant Request, checkbox state
+
 **Variant**:
 One named candidate implementation produced for an Annotation.
 _Avoid_: option, version, alternative
+
+**Variant Set**:
+The server-owned collection of generated Variants presented together for evaluation.
+_Avoid_: Variant Intent, Variant Request, options list
 
 **Active Variant**:
 The single Variant currently presented for evaluation.
