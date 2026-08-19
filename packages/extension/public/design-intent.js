@@ -50,5 +50,12 @@ globalThis.WaypointDesignIntent = (() => {
     return assertAnnotation(updated);
   }
 
-  return { applyUpdate, assert, assertAnnotation, createFreeform };
+  function preserve(existing, incoming) {
+    if (existing?.design_intent !== undefined && !Object.hasOwn(incoming, 'design_intent')) {
+      return assertAnnotation({ ...incoming, design_intent: existing.design_intent });
+    }
+    return assertAnnotation(incoming);
+  }
+
+  return { applyUpdate, assert, assertAnnotation, createFreeform, preserve };
 })();

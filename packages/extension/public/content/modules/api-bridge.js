@@ -96,6 +96,7 @@ var WaypointAPI = (() => {
     try {
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
+      all.forEach(WaypointDesignIntent.assertAnnotation);
       return all.filter(a => a.url === window.location.href);
     } catch {
       return [];
@@ -106,6 +107,7 @@ var WaypointAPI = (() => {
     try {
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
+      all.forEach(WaypointDesignIntent.assertAnnotation);
       const origin = window.location.origin;
       return all.filter(a => {
         try { return new URL(a.url).origin === origin; } catch { return false; }

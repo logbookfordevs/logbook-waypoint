@@ -1,5 +1,5 @@
 const DESIGN_INTENT_VERSION = 1;
-const IMPRECCABLE_WORKFLOW = 'impeccable';
+const IMPECCABLE_WORKFLOW = 'impeccable';
 const FREEFORM_ACTION = 'freeform';
 
 function isRecord(value) {
@@ -15,7 +15,7 @@ function hasExactKeys(value, expectedKeys) {
 export function createFreeformDesignIntent() {
   return {
     version: DESIGN_INTENT_VERSION,
-    workflow: IMPRECCABLE_WORKFLOW,
+    workflow: IMPECCABLE_WORKFLOW,
     action: { type: FREEFORM_ACTION },
   };
 }
@@ -27,8 +27,8 @@ export function assertDesignIntent(value) {
   if (value.version !== DESIGN_INTENT_VERSION) {
     throw new TypeError(`Design Intent version must be ${DESIGN_INTENT_VERSION}`);
   }
-  if (value.workflow !== IMPRECCABLE_WORKFLOW) {
-    throw new TypeError(`Design Intent workflow must be ${IMPRECCABLE_WORKFLOW}`);
+  if (value.workflow !== IMPECCABLE_WORKFLOW) {
+    throw new TypeError(`Design Intent workflow must be ${IMPECCABLE_WORKFLOW}`);
   }
   if (
     !isRecord(value.action)
@@ -51,4 +51,11 @@ export function applyDesignIntentUpdate(annotation, updates) {
     delete updated.design_intent;
   }
   return assertAnnotationDesignIntent(updated);
+}
+
+export function preserveDesignIntent(existing, incoming) {
+  if (existing?.design_intent !== undefined && !Object.hasOwn(incoming, 'design_intent')) {
+    return assertAnnotationDesignIntent({ ...incoming, design_intent: existing.design_intent });
+  }
+  return assertAnnotationDesignIntent(incoming);
 }

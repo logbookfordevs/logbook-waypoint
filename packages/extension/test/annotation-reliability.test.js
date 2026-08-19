@@ -16,6 +16,12 @@ async function loadScript(context, relativePath) {
   if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointDesignIntent) {
     await loadScript(context, 'design-intent.js');
   }
+  if (relativePath === 'background/queue-sync.js' && !context.WaypointDesignIntent) {
+    await loadScript(context, 'design-intent.js');
+  }
+  if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationValidation) {
+    await loadScript(context, 'annotation-validation.js');
+  }
   const source = await readFile(new URL(`../.output/chrome-mv3/${relativePath}`, import.meta.url), 'utf8');
   vm.runInContext(source, context, { filename: relativePath });
 }
@@ -247,8 +253,8 @@ test('storage reads ignore predecessor Annotation IDs', async () => {
       local: {
         get: async () => ({
           waypointAnnotations: [
-            { id: 'vibe_1750000000000_abc123xyz', url: context.window.location.href, status: 'pending' },
-            { id: 'waypoint_1750000000000_abc123xyz', url: context.window.location.href, status: 'pending' },
+            { id: 'vibe_1750000000000_abc123xyz', url: context.window.location.href, comment: 'Legacy', status: 'pending' },
+            { id: 'waypoint_1750000000000_abc123xyz', url: context.window.location.href, comment: 'Current', status: 'pending' },
           ],
         }),
       },
@@ -262,6 +268,63 @@ test('storage reads ignore predecessor Annotation IDs', async () => {
   assert.deepEqual(annotations.map(annotation => annotation.id), [
     'waypoint_1750000000000_abc123xyz',
   ]);
+});
+
+test('storage reads with malformed Design Intent do not reach content consumers', async () => {
+  const context = createBrowserContext();
+  context.window.location = { href: 'http://localhost:3000/app' };
+  context.chrome = {
+    storage: {
+      local: {
+        get: async () => ({
+          waypointAnnotations: [{
+            id: 'waypoint_1750000000000_abc123xyz',
+            url: 'http://localhost:3000/app',
+            comment: 'Malformed',
+            status: 'pending',
+            design_intent: { version: 2, workflow: 'impeccable', action: { type: 'freeform' } },
+          }],
+        }),
+      },
+    },
+  };
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'annotation-validation.js');
+  context.WaypointVariantPolicy = {};
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  assert.equal((await context.WaypointAPI.loadAnnotations()).length, 0);
+});
+
+test('ordinary Queue sync does not erase existing Design Intent', async () => {
+  const context = createBrowserContext();
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'annotation-collection.js');
+  await loadScript(context, 'design-intent.js');
+  await loadScript(context, 'background/queue-sync.js');
+  const designIntent = {
+    version: 1,
+    workflow: 'impeccable',
+    action: { type: 'freeform' },
+  };
+  const local = {
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/app',
+    comment: 'Intent owner',
+    status: 'pending',
+    updated_at: '2026-08-18T10:00:00.000Z',
+    design_intent: designIntent,
+  };
+  const ordinaryServer = {
+    ...local,
+    comment: 'Ordinary client update',
+    updated_at: '2026-08-18T11:00:00.000Z',
+  };
+  delete ordinaryServer.design_intent;
+
+  const merged = context.WaypointQueueSync.merge([local], [ordinaryServer]).annotations[0];
+  assert.deepEqual(JSON.parse(JSON.stringify(merged.design_intent)), designIntent);
 });
 
 test('full Queue sync preserves more than 50 annotations in both directions', async () => {

@@ -359,6 +359,7 @@ class WaypointAnnotationsBackground {
       
       const result = await response.json();
       const annotations = WaypointAnnotationStatus.normalizeAll(result.annotations);
+      annotations.forEach(WaypointDesignIntent.assertAnnotation);
       
       
       return annotations;
@@ -367,6 +368,7 @@ class WaypointAnnotationsBackground {
       // Fallback to local storage if API fails
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const annotations = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
+      annotations.forEach(WaypointDesignIntent.assertAnnotation);
       
       
       if (url) {

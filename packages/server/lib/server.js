@@ -21,7 +21,11 @@ import {
 } from './security.js';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertValidAnnotation } from './annotation-validation.js';
-import { applyDesignIntentUpdate, assertAnnotationDesignIntent } from './design-intent.js';
+import {
+  applyDesignIntentUpdate,
+  assertAnnotationDesignIntent,
+  preserveDesignIntent,
+} from './design-intent.js';
 import {
   ANNOTATION_STATUSES,
   AnnotationLifecycle,
@@ -277,7 +281,8 @@ export class LocalAnnotationsServer {
           const currentById = new Map(current.map(annotation => [annotation.id, annotation]));
           const normalizedAnnotations = [];
           for (const annotation of annotations) {
-            normalizedAnnotations.push(await this.normalizeAnnotationMedia(annotation, { stagedAttachments }));
+            const normalized = await this.normalizeAnnotationMedia(annotation, { stagedAttachments });
+            normalizedAnnotations.push(preserveDesignIntent(currentById.get(annotation.id), normalized));
           }
           for (const incoming of normalizedAnnotations) assertSyncedAnnotationAllowed(currentById.get(incoming.id), incoming);
           const currentJson = JSON.stringify([...current].sort((a, b) => a.id.localeCompare(b.id)));

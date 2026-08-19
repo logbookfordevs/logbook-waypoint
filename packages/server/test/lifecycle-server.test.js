@@ -252,6 +252,17 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
     });
     const payload = JSON.parse(mcpRead.content[0].text);
     assert.deepEqual(payload.data.annotations[0].design_intent, designIntent);
+
+    const ordinarySync = await fetch(`${baseUrl}/api/annotations/sync`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ annotations: [{ ...annotation, design_intent: undefined }] }),
+    });
+    assert.equal(ordinarySync.status, 200);
+    assert.deepEqual(
+      (await server.readAnnotations({ status: 'pending' })).annotations[0].design_intent,
+      designIntent,
+    );
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));

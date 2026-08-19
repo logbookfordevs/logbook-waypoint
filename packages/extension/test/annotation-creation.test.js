@@ -16,6 +16,9 @@ async function loadScript(context, relativePath) {
   if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointDesignIntent) {
     await loadScript(context, 'design-intent.js');
   }
+  if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationValidation) {
+    await loadScript(context, 'annotation-validation.js');
+  }
   if (relativePath === 'annotation-validation.js' && !context.WaypointDesignIntent) {
     await loadScript(context, 'design-intent.js');
   }
