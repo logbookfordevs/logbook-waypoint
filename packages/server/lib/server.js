@@ -265,10 +265,13 @@ export class LocalAnnotationsServer {
           return res.status(400).json({ error: 'request body must be an object' });
         }
 
-        const { annotations } = req.body;
+        const { annotations, design_intent_removals = [] } = req.body;
         
         if (!Array.isArray(annotations)) {
           return res.status(400).json({ error: 'annotations must be an array' });
+        }
+        if (!Array.isArray(design_intent_removals) || design_intent_removals.some(id => typeof id !== 'string')) {
+          return res.status(400).json({ error: 'design_intent_removals must be an array of annotation IDs' });
         }
 
         for (const annotation of annotations) assertValidAnnotation(annotation);
@@ -279,10 +282,16 @@ export class LocalAnnotationsServer {
 
         const result = await this.applyAnnotationsUpdate(async current => {
           const currentById = new Map(current.map(annotation => [annotation.id, annotation]));
+          const removalIds = new Set(design_intent_removals);
+          if ([...removalIds].some(id => !annotations.some(annotation => annotation.id === id))) {
+            throw new TypeError('Design Intent removals must reference synchronized annotations');
+          }
           const normalizedAnnotations = [];
           for (const annotation of annotations) {
             const normalized = await this.normalizeAnnotationMedia(annotation, { stagedAttachments });
-            normalizedAnnotations.push(preserveDesignIntent(currentById.get(annotation.id), normalized));
+            const merged = preserveDesignIntent(currentById.get(annotation.id), normalized);
+            if (removalIds.has(annotation.id)) delete merged.design_intent;
+            normalizedAnnotations.push(merged);
           }
           for (const incoming of normalizedAnnotations) assertSyncedAnnotationAllowed(currentById.get(incoming.id), incoming);
           const currentJson = JSON.stringify([...current].sort((a, b) => a.id.localeCompare(b.id)));

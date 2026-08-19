@@ -157,14 +157,27 @@ var WaypointAPI = (() => {
       if (updates?.id !== undefined && updates.id !== id) {
         throw new Error('Annotation ID cannot be changed');
       }
-      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const result = await chrome.storage.local.get([
+        'waypointAnnotations',
+        'waypointDesignIntentRemovalIds'
+      ]);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       const idx = all.findIndex(a => a.id === id);
       if (idx !== -1) {
         WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
         const updatedAnnotation = WaypointDesignIntent.applyUpdate(all[idx], updates);
         all[idx] = updatedAnnotation;
-        await chrome.storage.local.set({ waypointAnnotations: all });
+        const designIntentRemovalIds = result.waypointDesignIntentRemovalIds || [];
+        if (updates.design_intent === null && !designIntentRemovalIds.includes(id)) {
+          designIntentRemovalIds.push(id);
+        } else if (updates.design_intent !== undefined) {
+          const removalIndex = designIntentRemovalIds.indexOf(id);
+          if (removalIndex !== -1) designIntentRemovalIds.splice(removalIndex, 1);
+        }
+        await chrome.storage.local.set({
+          waypointAnnotations: all,
+          waypointDesignIntentRemovalIds: designIntentRemovalIds
+        });
       }
       return true;
     }

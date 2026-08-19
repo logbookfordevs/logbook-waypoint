@@ -295,7 +295,7 @@ class WaypointAnnotationsBackground {
     }
   }
 
-  async syncAnnotationsToAPI(annotations) {
+  async syncAnnotationsToAPI(annotations, designIntentRemovals = []) {
     try {
       const normalized = WaypointAnnotationStatus.normalizeAll(annotations);
       WaypointAnnotationValidation.assertAll(normalized);
@@ -309,7 +309,7 @@ class WaypointAnnotationsBackground {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ annotations: normalized })
+        body: JSON.stringify({ annotations: normalized, design_intent_removals: designIntentRemovals })
       });
       
       if (!response.ok) {
@@ -636,7 +636,10 @@ class WaypointAnnotationsBackground {
           throw new Error('Annotation ID cannot be changed');
         }
         updates = WaypointAnnotationStatus.normalizeUpdate(updates);
-        const result = await chrome.storage.local.get(['waypointAnnotations']);
+        const result = await chrome.storage.local.get([
+          'waypointAnnotations',
+          'waypointDesignIntentRemovalIds'
+        ]);
         const annotations = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
 
         const annotationIndex = annotations.findIndex(annotation => annotation.id === id);
@@ -652,7 +655,17 @@ class WaypointAnnotationsBackground {
         WaypointAnnotationValidation.assertAnnotation(updatedAnnotation);
         annotations[annotationIndex] = updatedAnnotation;
 
-        await chrome.storage.local.set({ waypointAnnotations: annotations });
+        const designIntentRemovalIds = result.waypointDesignIntentRemovalIds || [];
+        if (updates.design_intent === null && !designIntentRemovalIds.includes(id)) {
+          designIntentRemovalIds.push(id);
+        } else if (updates.design_intent !== undefined) {
+          const removalIndex = designIntentRemovalIds.indexOf(id);
+          if (removalIndex !== -1) designIntentRemovalIds.splice(removalIndex, 1);
+        }
+        await chrome.storage.local.set({
+          waypointAnnotations: annotations,
+          waypointDesignIntentRemovalIds: designIntentRemovalIds
+        });
 
         await this.updateBadgeForUrl(annotations[annotationIndex].url);
 
@@ -882,16 +895,34 @@ class WaypointAnnotationsBackground {
     // Merge inside the storage lock to serialize against save/delete/import
     return this._withStorageLock(async () => {
       try {
-        const localResult = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
+        const localResult = await chrome.storage.local.get([
+          'waypointAnnotations',
+          'waypointDeletedAnnotationIds',
+          'waypointDesignIntentRemovalIds'
+        ]);
         const localAnnotations = WaypointAnnotationCollection.canonicalize(localResult.waypointAnnotations);
         const deletedIds = new Set(
           (localResult.waypointDeletedAnnotationIds || []).filter(WaypointAnnotationId.isValid),
         );
+        const designIntentRemovalIds = (localResult.waypointDesignIntentRemovalIds || [])
+          .filter(WaypointAnnotationId.isValid);
+        const serverMap = new Map(serverAnnotations.map(annotation => [annotation.id, annotation]));
+        const activeDesignIntentRemovalIds = designIntentRemovalIds
+          .filter(id => serverMap.get(id)?.design_intent !== undefined);
 
-        const mergeResult = WaypointQueueSync.merge(localAnnotations, serverAnnotations, deletedIds);
+        const mergeResult = WaypointQueueSync.merge(
+          localAnnotations,
+          serverAnnotations,
+          deletedIds,
+          activeDesignIntentRemovalIds
+        );
         const merged = mergeResult.annotations;
         const { changed, flagsChanged } = mergeResult;
-        const serverMap = new Map(serverAnnotations.map(annotation => [annotation.id, annotation]));
+        if (activeDesignIntentRemovalIds.length !== designIntentRemovalIds.length) {
+          await chrome.storage.local.set({
+            waypointDesignIntentRemovalIds: activeDesignIntentRemovalIds
+          });
+        }
 
         // Always persist _synced flag updates even if content didn't change
         if (!changed && !flagsChanged) return;
@@ -907,7 +938,8 @@ class WaypointAnnotationsBackground {
           try {
             const serverIds = new Set(serverAnnotations.map(annotation => annotation.id));
             const uploadable = merged.filter(annotation => serverIds.has(annotation.id) || annotation.status === 'pending');
-            await this.syncAnnotationsToAPI(uploadable);
+            await this.syncAnnotationsToAPI(uploadable, activeDesignIntentRemovalIds);
+            await chrome.storage.local.set({ waypointDesignIntentRemovalIds: [] });
             // Mark all as synced
             let needsUpdate = false;
             for (const a of merged) {

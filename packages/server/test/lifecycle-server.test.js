@@ -263,6 +263,20 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
       (await server.readAnnotations({ status: 'pending' })).annotations[0].design_intent,
       designIntent,
     );
+
+    const removalResponse = await fetch(`${baseUrl}/api/annotations/sync`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        annotations: [{ ...annotation, design_intent: undefined }],
+        design_intent_removals: [annotation.id],
+      }),
+    });
+    assert.equal(removalResponse.status, 200);
+    assert.equal(
+      'design_intent' in (await server.readAnnotations({ status: 'pending' })).annotations[0],
+      false,
+    );
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));

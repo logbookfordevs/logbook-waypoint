@@ -216,6 +216,40 @@ test('direct storage fallback keeps Annotation identity immutable', async () => 
   assert.deepEqual(writes, []);
 });
 
+test('direct storage fallback records explicit Design Intent removal', async () => {
+  const context = createBrowserContext();
+  const writes = [];
+  const id = 'waypoint_1750000000000_abc123xyz';
+  context.chrome = {
+    runtime: { sendMessage: async () => { throw new Error('background unavailable'); } },
+    storage: {
+      local: {
+        get: async () => ({
+          waypointAnnotations: [{
+            id,
+            url: 'http://localhost:3000/app',
+            comment: 'Remove intent',
+            status: 'pending',
+            design_intent: { version: 1, workflow: 'impeccable', action: { type: 'freeform' } },
+          }],
+        }),
+        set: async value => { writes.push(value); },
+      },
+    },
+  };
+  context.WaypointAnnotationId = {
+    isValid: value => value === id,
+    filterValid: annotations => annotations.filter(annotation => annotation.id === id),
+  };
+  context.WaypointVariantPolicy = { assertUpdateAllowed: () => {} };
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  await context.WaypointAPI.updateAnnotation(id, { design_intent: null });
+
+  assert.equal('design_intent' in writes[0].waypointAnnotations[0], false);
+  assert.deepEqual(Array.from(writes[0].waypointDesignIntentRemovalIds), [id]);
+});
+
 test('direct storage delete fallback rejects non-Waypoint Annotation IDs', async () => {
   const context = createBrowserContext();
   const writes = [];
@@ -325,6 +359,25 @@ test('ordinary Queue sync does not erase existing Design Intent', async () => {
 
   const merged = context.WaypointQueueSync.merge([local], [ordinaryServer]).annotations[0];
   assert.deepEqual(JSON.parse(JSON.stringify(merged.design_intent)), designIntent);
+});
+
+test('explicit Design Intent removal survives Queue reconciliation', async () => {
+  const context = createBrowserContext();
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'annotation-collection.js');
+  await loadScript(context, 'design-intent.js');
+  await loadScript(context, 'background/queue-sync.js');
+  const id = 'waypoint_1750000000000_abc123xyz';
+  const local = { id, url: 'http://localhost:3000/app', comment: 'Intent removed', status: 'pending' };
+  const server = {
+    ...local,
+    design_intent: { version: 1, workflow: 'impeccable', action: { type: 'freeform' } },
+  };
+
+  const merged = context.WaypointQueueSync.merge([local], [server], [], [id]).annotations[0];
+  assert.equal('design_intent' in merged, false);
+  assert.equal(merged._synced, false);
 });
 
 test('full Queue sync preserves more than 50 annotations in both directions', async () => {
