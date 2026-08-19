@@ -21,6 +21,7 @@ import {
 } from './security.js';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertValidAnnotation } from './annotation-validation.js';
+import { applyDesignIntentUpdate, assertAnnotationDesignIntent } from './design-intent.js';
 import {
   ANNOTATION_STATUSES,
   AnnotationLifecycle,
@@ -378,7 +379,8 @@ export class LocalAnnotationsServer {
           if (index === -1) throw new Error('Annotation not found');
           const existing = annotations[index];
           assertGenericAnnotationUpdateAllowed(existing, updates);
-          const normalized = await this.normalizeAnnotationMedia({ ...existing, ...updates, id }, { stagedAttachments });
+          const updated = applyDesignIntentUpdate(existing, { ...updates, id });
+          const normalized = await this.normalizeAnnotationMedia(updated, { stagedAttachments });
           annotations[index] = { ...normalized, updated_at: new Date().toISOString() };
           return {
             annotation: annotations[index],
@@ -984,6 +986,7 @@ export class LocalAnnotationsServer {
       if (!Array.isArray(annotations)) return [];
       const validAnnotations = annotations.filter(annotation => isValidAnnotationId(annotation?.id));
       validAnnotations.forEach(assertAnnotationLifecycleState);
+      validAnnotations.forEach(assertAnnotationDesignIntent);
       return validAnnotations;
     } catch (error) {
       console.error('Error loading annotations:', error);
@@ -1000,6 +1003,7 @@ export class LocalAnnotationsServer {
       throw new TypeError('Invalid Waypoint annotation ID');
     }
     annotations.forEach(assertAnnotationLifecycleState);
+    annotations.forEach(assertAnnotationDesignIntent);
     // Move jsonData outside try block to make it accessible in catch
     console.log(`Saving ${annotations.length} annotations to disk`);
     const jsonData = JSON.stringify(annotations, null, 2);

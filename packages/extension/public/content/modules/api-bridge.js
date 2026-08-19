@@ -117,6 +117,7 @@ var WaypointAPI = (() => {
 
   async function saveAnnotation(annotation) {
     annotation = WaypointAnnotationStatus.normalize(annotation);
+    WaypointDesignIntent.assertAnnotation(annotation);
     validateAnnotationAttachments(annotation);
     try {
       const r = await chrome.runtime.sendMessage({ action: 'saveAnnotation', annotation });
@@ -159,7 +160,8 @@ var WaypointAPI = (() => {
       const idx = all.findIndex(a => a.id === id);
       if (idx !== -1) {
         WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
-        all[idx] = { ...all[idx], ...updates };
+        const updatedAnnotation = WaypointDesignIntent.applyUpdate(all[idx], updates);
+        all[idx] = updatedAnnotation;
         await chrome.storage.local.set({ waypointAnnotations: all });
       }
       return true;

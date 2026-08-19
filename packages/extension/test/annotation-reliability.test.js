@@ -13,6 +13,9 @@ async function loadScript(context, relativePath) {
     await loadScript(context, 'annotation-status.js');
     await loadScript(context, 'annotation-collection.js');
   }
+  if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointDesignIntent) {
+    await loadScript(context, 'design-intent.js');
+  }
   const source = await readFile(new URL(`../.output/chrome-mv3/${relativePath}`, import.meta.url), 'utf8');
   vm.runInContext(source, context, { filename: relativePath });
 }

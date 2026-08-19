@@ -3,6 +3,7 @@
 importScripts('../annotation-id.js');
 importScripts('../annotation-status.js');
 importScripts('../annotation-collection.js');
+importScripts('../design-intent.js');
 importScripts('../annotation-validation.js');
 importScripts('../export-codec.js');
 importScripts('queue-sync.js');
@@ -450,6 +451,7 @@ class WaypointAnnotationsBackground {
         if (!WaypointAnnotationId.isValid(annotation?.id)) {
           throw new Error('Invalid Waypoint annotation ID');
         }
+        WaypointAnnotationValidation.assertAnnotation(annotation);
         this.validateAnnotationAttachments(annotation);
         const result = await chrome.storage.local.get(['waypointAnnotations']);
         const annotations = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
@@ -641,11 +643,12 @@ class WaypointAnnotationsBackground {
         }
         WaypointVariantPolicy.assertUpdateAllowed(annotations[annotationIndex], updates);
 
-        annotations[annotationIndex] = {
-          ...annotations[annotationIndex],
+        const updatedAnnotation = WaypointDesignIntent.applyUpdate(annotations[annotationIndex], {
           ...updates,
           updated_at: new Date().toISOString()
-        };
+        });
+        WaypointAnnotationValidation.assertAnnotation(updatedAnnotation);
+        annotations[annotationIndex] = updatedAnnotation;
 
         await chrome.storage.local.set({ waypointAnnotations: annotations });
 
@@ -1086,6 +1089,7 @@ class WaypointAnnotationsBackground {
           'annotation-id.js',
           'annotation-status.js',
           'annotation-collection.js',
+          'design-intent.js',
           'annotation-validation.js',
           'export-codec.js',
           'agent-setup-config.js',

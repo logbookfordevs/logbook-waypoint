@@ -4,6 +4,7 @@ import { mkdir, open, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { isValidAnnotationId } from './annotation-id.js';
+import { assertAnnotationDesignIntent } from './design-intent.js';
 
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
@@ -93,7 +94,9 @@ function validateSavedQueue(saved) {
       throw new Error('Invalid Watch journal change');
     }
     cursors.add(change.cursor);
-    return { ...change, annotation: normalizeJournalAnnotation(change.annotation) };
+    const annotation = normalizeJournalAnnotation(change.annotation);
+    assertAnnotationDesignIntent(annotation);
+    return { ...change, annotation };
   });
   return { initialCursor: saved.initialCursor, history };
 }

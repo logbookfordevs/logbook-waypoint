@@ -65,3 +65,17 @@ _Avoid_: accept, merge, cleanup
 **Source Identity**:
 Untrusted framework- or page-derived information that may connect a Target to a likely source module.
 _Avoid_: source mapping, component path, trusted location
+
+## Design direction
+
+**Design Intent**:
+Optional structured direction attached to an Annotation for a design workflow. The Annotation remains the lifecycle root.
+_Avoid_: workflow job, agent task
+
+**Design Action**:
+The kind of design work requested by a Design Intent.
+_Avoid_: command, lifecycle operation
+
+**Freeform**:
+A Design Action whose brief is the Annotation comment rather than a named action.
+_Avoid_: custom prompt, unstructured annotation

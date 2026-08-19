@@ -253,6 +253,35 @@ test('persistent Watch journal excludes screenshots and Source Identity hints', 
   }
 });
 
+test('persistent Watch quarantines malformed Design Intent before delivery', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-design-intent-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const designIntent = {
+    version: 1,
+    workflow: 'impeccable',
+    action: { type: 'freeform' },
+  };
+
+  try {
+    const first = new PersistentWatchQueue({ historyFile });
+    await first.recordChanges([annotation({ design_intent: designIntent })]);
+    const journal = await readFile(historyFile, 'utf8');
+    await writeFile(historyFile, journal.replace('"workflow":"impeccable"', '"workflow":"other"'));
+
+    const restored = new PersistentWatchQueue({ historyFile });
+    const delivered = await restored.watch(
+      { timeoutMs: 0 },
+      async () => [annotation({ design_intent: designIntent })],
+    );
+
+    assert.equal(delivered.changes.length, 1);
+    assert.deepEqual(delivered.changes[0].annotation.design_intent, designIntent);
+    assert.equal((await readdir(directory)).some(file => file.includes('.corrupted.')), true);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('portable Watch activity excludes Variant implementation and Scaffold data', () => {
   const portable = toWatchAnnotation(annotation({
     component_name: 'SecretCard',
