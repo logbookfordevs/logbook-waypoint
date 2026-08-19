@@ -207,9 +207,9 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
   await once(listener, 'listening');
   const baseUrl = `http://127.0.0.1:${listener.address().port}`;
   const designIntent = {
-    version: 1,
+    schema_version: 1,
     workflow: 'impeccable',
-    action: { type: 'freeform' },
+    action: null,
   };
   const annotation = {
     id,
@@ -298,10 +298,10 @@ test('HTTP rejects malformed Design Intent while ordinary Annotations remain com
 
   try {
     for (const design_intent of [
-      { version: 2, workflow: 'impeccable', action: { type: 'freeform' } },
-      { version: 1, workflow: 'other', action: { type: 'freeform' } },
-      { version: 1, workflow: 'impeccable', action: { type: 'polish' } },
-      { version: 1, workflow: 'impeccable', action: { type: 'freeform' }, extra: true },
+      { schema_version: 2, workflow: 'impeccable', action: null },
+      { schema_version: 1, workflow: 'other', action: null },
+      { schema_version: 1, workflow: 'impeccable', action: 'polish' },
+      { schema_version: 1, workflow: 'impeccable', action: null, extra: true },
     ]) {
       const response = await fetch(`${baseUrl}/api/annotations`, {
         method: 'POST',
@@ -324,17 +324,17 @@ test('HTTP rejects malformed Design Intent while ordinary Annotations remain com
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        design_intent: { version: 2, workflow: 'impeccable', action: { type: 'freeform' } },
+        design_intent: { schema_version: 2, workflow: 'impeccable', action: null },
       }),
     });
     assert.equal(invalidUpdate.status, 400);
-    assert.match((await invalidUpdate.json()).error, /Design Intent version/i);
+    assert.match((await invalidUpdate.json()).error, /Design Intent schema version/i);
 
     const validUpdate = await fetch(`${baseUrl}/api/annotations/${id}`, {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        design_intent: { version: 1, workflow: 'impeccable', action: { type: 'freeform' } },
+        design_intent: { schema_version: 1, workflow: 'impeccable', action: null },
       }),
     });
     assert.equal(validUpdate.status, 200);
@@ -360,7 +360,7 @@ test('persisted malformed Design Intent is rejected before HTTP, MCP, or Watch c
     url: 'http://localhost:3000/app',
     comment: 'Malformed persisted intent',
     status: 'pending',
-    design_intent: { version: 1, workflow: 'other', action: { type: 'freeform' } },
+    design_intent: { schema_version: 1, workflow: 'other', action: null },
   }]));
   const server = new LocalAnnotationsServer({
     annotationsFile,

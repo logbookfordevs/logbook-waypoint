@@ -257,9 +257,9 @@ test('persistent Watch quarantines malformed Design Intent before delivery', asy
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-design-intent-'));
   const historyFile = path.join(directory, 'watch-history.json');
   const designIntent = {
-    version: 1,
+    schema_version: 1,
     workflow: 'impeccable',
-    action: { type: 'freeform' },
+    action: null,
   };
 
   try {

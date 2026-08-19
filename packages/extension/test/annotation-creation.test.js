@@ -144,7 +144,7 @@ test('shared extension validation rejects URL-less and empty imported Annotation
     id: 'waypoint_1750000000000_abc123xyz',
     url: 'http://localhost:3000/app',
     comment: 'Malformed intent',
-    design_intent: { version: 1, workflow: 'other', action: { type: 'freeform' } },
+    design_intent: { schema_version: 1, workflow: 'other', action: null },
   }), /Design Intent workflow/);
 });
 
@@ -329,9 +329,9 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   context.document.querySelector('.waypoint-save-btn').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(JSON.parse(JSON.stringify(saved[0].design_intent)), {
-    version: 1,
+    schema_version: 1,
     workflow: 'impeccable',
-    action: { type: 'freeform' },
+    action: null,
   });
   assert.equal(saved[0].comment, 'Make the hierarchy feel intentional');
 
@@ -344,9 +344,9 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   context.document.querySelector('.waypoint-save-btn').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(JSON.parse(JSON.stringify(updated[0].updates.design_intent)), {
-    version: 1,
+    schema_version: 1,
     workflow: 'impeccable',
-    action: { type: 'freeform' },
+    action: null,
   });
   assert.deepEqual(
     JSON.parse(JSON.stringify(emitted.find(event => event.name === 'annotation:updated').payload.design_intent)),

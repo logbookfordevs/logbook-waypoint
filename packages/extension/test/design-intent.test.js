@@ -20,10 +20,10 @@ test('server and extension enforce the same versioned Freeform Design Intent con
 
   const cases = [
     valid,
-    { version: 2, workflow: 'impeccable', action: { type: 'freeform' } },
-    { version: 1, workflow: 'other', action: { type: 'freeform' } },
-    { version: 1, workflow: 'impeccable', action: { type: 'polish' } },
-    { version: 1, workflow: 'impeccable', action: { type: 'freeform' }, extra: true },
+    { schema_version: 2, workflow: 'impeccable', action: null },
+    { schema_version: 1, workflow: 'other', action: null },
+    { schema_version: 1, workflow: 'impeccable', action: 'polish' },
+    { schema_version: 1, workflow: 'impeccable', action: null, extra: true },
   ];
 
   for (const designIntent of cases) {

@@ -1,7 +1,6 @@
 globalThis.WaypointDesignIntent = (() => {
-  const VERSION = 1;
+  const SCHEMA_VERSION = 1;
   const WORKFLOW = 'impeccable';
-  const FREEFORM_ACTION = 'freeform';
 
   function isRecord(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -15,23 +14,21 @@ globalThis.WaypointDesignIntent = (() => {
 
   function createFreeform() {
     return {
-      version: VERSION,
+      schema_version: SCHEMA_VERSION,
       workflow: WORKFLOW,
-      action: { type: FREEFORM_ACTION },
+      action: null,
     };
   }
 
   function assert(value) {
-    if (!isRecord(value) || !hasExactKeys(value, ['action', 'version', 'workflow'])) {
+    if (!isRecord(value) || !hasExactKeys(value, ['action', 'schema_version', 'workflow'])) {
       throw new TypeError('Design Intent must be a versioned workflow and action record');
     }
-    if (value.version !== VERSION) throw new TypeError(`Design Intent version must be ${VERSION}`);
+    if (value.schema_version !== SCHEMA_VERSION) {
+      throw new TypeError(`Design Intent schema version must be ${SCHEMA_VERSION}`);
+    }
     if (value.workflow !== WORKFLOW) throw new TypeError(`Design Intent workflow must be ${WORKFLOW}`);
-    if (
-      !isRecord(value.action)
-      || !hasExactKeys(value.action, ['type'])
-      || value.action.type !== FREEFORM_ACTION
-    ) {
+    if (value.action !== null) {
       throw new TypeError('Design Intent action must be Freeform');
     }
     return value;

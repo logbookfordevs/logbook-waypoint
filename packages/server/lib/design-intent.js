@@ -1,6 +1,5 @@
-const DESIGN_INTENT_VERSION = 1;
+const DESIGN_INTENT_SCHEMA_VERSION = 1;
 const IMPECCABLE_WORKFLOW = 'impeccable';
-const FREEFORM_ACTION = 'freeform';
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -14,27 +13,23 @@ function hasExactKeys(value, expectedKeys) {
 
 export function createFreeformDesignIntent() {
   return {
-    version: DESIGN_INTENT_VERSION,
+    schema_version: DESIGN_INTENT_SCHEMA_VERSION,
     workflow: IMPECCABLE_WORKFLOW,
-    action: { type: FREEFORM_ACTION },
+    action: null,
   };
 }
 
 export function assertDesignIntent(value) {
-  if (!isRecord(value) || !hasExactKeys(value, ['action', 'version', 'workflow'])) {
+  if (!isRecord(value) || !hasExactKeys(value, ['action', 'schema_version', 'workflow'])) {
     throw new TypeError('Design Intent must be a versioned workflow and action record');
   }
-  if (value.version !== DESIGN_INTENT_VERSION) {
-    throw new TypeError(`Design Intent version must be ${DESIGN_INTENT_VERSION}`);
+  if (value.schema_version !== DESIGN_INTENT_SCHEMA_VERSION) {
+    throw new TypeError(`Design Intent schema version must be ${DESIGN_INTENT_SCHEMA_VERSION}`);
   }
   if (value.workflow !== IMPECCABLE_WORKFLOW) {
     throw new TypeError(`Design Intent workflow must be ${IMPECCABLE_WORKFLOW}`);
   }
-  if (
-    !isRecord(value.action)
-    || !hasExactKeys(value.action, ['type'])
-    || value.action.type !== FREEFORM_ACTION
-  ) {
+  if (value.action !== null) {
     throw new TypeError('Design Intent action must be Freeform');
   }
   return value;

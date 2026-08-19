@@ -230,7 +230,7 @@ test('direct storage fallback records explicit Design Intent removal', async () 
             url: 'http://localhost:3000/app',
             comment: 'Remove intent',
             status: 'pending',
-            design_intent: { version: 1, workflow: 'impeccable', action: { type: 'freeform' } },
+            design_intent: { schema_version: 1, workflow: 'impeccable', action: null },
           }],
         }),
         set: async value => { writes.push(value); },
@@ -316,7 +316,7 @@ test('storage reads with malformed Design Intent do not reach content consumers'
             url: 'http://localhost:3000/app',
             comment: 'Malformed',
             status: 'pending',
-            design_intent: { version: 2, workflow: 'impeccable', action: { type: 'freeform' } },
+            design_intent: { schema_version: 2, workflow: 'impeccable', action: null },
           }],
         }),
       },
@@ -338,9 +338,9 @@ test('ordinary Queue sync does not erase existing Design Intent', async () => {
   await loadScript(context, 'design-intent.js');
   await loadScript(context, 'background/queue-sync.js');
   const designIntent = {
-    version: 1,
+    schema_version: 1,
     workflow: 'impeccable',
-    action: { type: 'freeform' },
+    action: null,
   };
   const local = {
     id: 'waypoint_1750000000000_abc123xyz',
@@ -372,7 +372,7 @@ test('explicit Design Intent removal survives Queue reconciliation', async () =>
   const local = { id, url: 'http://localhost:3000/app', comment: 'Intent removed', status: 'pending' };
   const server = {
     ...local,
-    design_intent: { version: 1, workflow: 'impeccable', action: { type: 'freeform' } },
+    design_intent: { schema_version: 1, workflow: 'impeccable', action: null },
   };
 
   const merged = context.WaypointQueueSync.merge([local], [server], [], [id]).annotations[0];
