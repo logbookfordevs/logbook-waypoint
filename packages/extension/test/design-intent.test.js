@@ -40,4 +40,19 @@ test('server and extension enforce the same versioned Freeform Design Intent con
     'design_intent' in context.WaypointDesignIntent.applyUpdate(annotation, { design_intent: null }),
     false,
   );
+
+  const removalIds = context.WaypointDesignIntent.updateRemovalIds([], annotation.id, {
+    design_intent: null,
+  });
+  assert.deepEqual(Array.from(removalIds), [annotation.id]);
+  assert.deepEqual(
+    Array.from(context.WaypointDesignIntent.updateRemovalIds(removalIds, annotation.id, {
+      design_intent: valid,
+    })),
+    [],
+  );
+  assert.deepEqual(
+    Array.from(context.WaypointDesignIntent.removeIds([annotation.id, 'waypoint_2_abcdefghi'], [annotation.id])),
+    ['waypoint_2_abcdefghi'],
+  );
 });

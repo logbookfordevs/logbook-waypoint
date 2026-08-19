@@ -57,5 +57,24 @@ globalThis.WaypointDesignIntent = (() => {
     return assertAnnotation(incoming);
   }
 
-  return { applyUpdate, assert, assertAnnotation, createFreeform, preserve };
+  function updateRemovalIds(removalIds, id, updates) {
+    const next = removalIds.filter(candidate => candidate !== id);
+    if (updates.design_intent === null) next.push(id);
+    return next;
+  }
+
+  function removeIds(removalIds, ids) {
+    const removed = new Set(ids);
+    return removalIds.filter(id => !removed.has(id));
+  }
+
+  return {
+    applyUpdate,
+    assert,
+    assertAnnotation,
+    createFreeform,
+    preserve,
+    removeIds,
+    updateRemovalIds
+  };
 })();

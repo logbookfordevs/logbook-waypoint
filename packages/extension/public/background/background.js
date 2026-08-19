@@ -532,7 +532,11 @@ class WaypointAnnotationsBackground {
         if (!WaypointAnnotationId.isValid(id)) {
           throw new Error('Invalid Waypoint annotation ID');
         }
-        const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
+        const result = await chrome.storage.local.get([
+          'waypointAnnotations',
+          'waypointDeletedAnnotationIds',
+          'waypointDesignIntentRemovalIds'
+        ]);
         const annotations = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
         const deletedIds = result.waypointDeletedAnnotationIds || [];
         const deletedAnnotation = annotations.find(annotation => annotation.id === id);
@@ -545,7 +549,11 @@ class WaypointAnnotationsBackground {
 
         await chrome.storage.local.set({
           waypointAnnotations: filteredAnnotations,
-          waypointDeletedAnnotationIds: deletedIds
+          waypointDeletedAnnotationIds: deletedIds,
+          waypointDesignIntentRemovalIds: WaypointDesignIntent.removeIds(
+            result.waypointDesignIntentRemovalIds || [],
+            [id]
+          )
         });
 
         // Also delete from API server
@@ -571,7 +579,11 @@ class WaypointAnnotationsBackground {
 
   async deleteAnnotationsByUrl(url) {
     return this._withStorageLock(async () => {
-      const result = await chrome.storage.local.get(['waypointAnnotations', 'waypointDeletedAnnotationIds']);
+      const result = await chrome.storage.local.get([
+        'waypointAnnotations',
+        'waypointDeletedAnnotationIds',
+        'waypointDesignIntentRemovalIds'
+      ]);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       const deletedIds = result.waypointDeletedAnnotationIds || [];
 
@@ -585,7 +597,11 @@ class WaypointAnnotationsBackground {
 
       await chrome.storage.local.set({
         waypointAnnotations: remaining,
-        waypointDeletedAnnotationIds: deletedIds
+        waypointDeletedAnnotationIds: deletedIds,
+        waypointDesignIntentRemovalIds: WaypointDesignIntent.removeIds(
+          result.waypointDesignIntentRemovalIds || [],
+          toDelete.map(annotation => annotation.id)
+        )
       });
 
       // Fire-and-forget API deletes
@@ -655,13 +671,11 @@ class WaypointAnnotationsBackground {
         WaypointAnnotationValidation.assertAnnotation(updatedAnnotation);
         annotations[annotationIndex] = updatedAnnotation;
 
-        const designIntentRemovalIds = result.waypointDesignIntentRemovalIds || [];
-        if (updates.design_intent === null && !designIntentRemovalIds.includes(id)) {
-          designIntentRemovalIds.push(id);
-        } else if (updates.design_intent !== undefined) {
-          const removalIndex = designIntentRemovalIds.indexOf(id);
-          if (removalIndex !== -1) designIntentRemovalIds.splice(removalIndex, 1);
-        }
+        const designIntentRemovalIds = WaypointDesignIntent.updateRemovalIds(
+          result.waypointDesignIntentRemovalIds || [],
+          id,
+          updates
+        );
         await chrome.storage.local.set({
           waypointAnnotations: annotations,
           waypointDesignIntentRemovalIds: designIntentRemovalIds
@@ -1176,11 +1190,17 @@ class WaypointAnnotationsBackground {
   async forceAPISync() {
     try {
       // Get all annotations from storage
-      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const result = await chrome.storage.local.get([
+        'waypointAnnotations',
+        'waypointDesignIntentRemovalIds'
+      ]);
       const annotations = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
+      const designIntentRemovalIds = (result.waypointDesignIntentRemovalIds || [])
+        .filter(WaypointAnnotationId.isValid);
       
       // Force sync to API
-      await this.syncAnnotationsToAPI(annotations);
+      await this.syncAnnotationsToAPI(annotations, designIntentRemovalIds);
+      await chrome.storage.local.set({ waypointDesignIntentRemovalIds: [] });
       
       
       return {

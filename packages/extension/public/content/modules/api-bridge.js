@@ -167,13 +167,11 @@ var WaypointAPI = (() => {
         WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
         const updatedAnnotation = WaypointDesignIntent.applyUpdate(all[idx], updates);
         all[idx] = updatedAnnotation;
-        const designIntentRemovalIds = result.waypointDesignIntentRemovalIds || [];
-        if (updates.design_intent === null && !designIntentRemovalIds.includes(id)) {
-          designIntentRemovalIds.push(id);
-        } else if (updates.design_intent !== undefined) {
-          const removalIndex = designIntentRemovalIds.indexOf(id);
-          if (removalIndex !== -1) designIntentRemovalIds.splice(removalIndex, 1);
-        }
+        const designIntentRemovalIds = WaypointDesignIntent.updateRemovalIds(
+          result.waypointDesignIntentRemovalIds || [],
+          id,
+          updates
+        );
         await chrome.storage.local.set({
           waypointAnnotations: all,
           waypointDesignIntentRemovalIds: designIntentRemovalIds
