@@ -55,10 +55,10 @@ import {
 import {
   VariantContractError,
   activateVariant as activateVariantRecord,
-  addVariant as addVariantRecord,
   assertAnnotationDeletable,
   assertGenericAnnotationUpdateAllowed,
   assertSyncedAnnotationAllowed,
+  cancelVariantRequest as cancelVariantRequestRecord,
   createVariantRequest,
   discardVariantRequest,
   discardVariant as discardVariantRecord,
@@ -395,8 +395,8 @@ export class LocalAnnotationsServer {
     this.app.post('/api/annotations/:id/variants/request', runVariantOperation(
       req => this.requestVariants({ id: req.params.id, variants: req.body?.variants }),
     ));
-    this.app.post('/api/annotations/:id/variants', runVariantOperation(
-      req => this.createVariant({ id: req.params.id, variant: req.body?.variant }),
+    this.app.delete('/api/annotations/:id/variants', runVariantOperation(
+      req => this.cancelVariantRequest({ id: req.params.id }),
     ));
     this.app.post('/api/annotations/:id/variants/:key/activate', runVariantOperation(
       req => this.activateVariant({ id: req.params.id, key: req.params.key }),
@@ -823,19 +823,6 @@ export class LocalAnnotationsServer {
             },
           },
           {
-            name: 'create_variant',
-            description: 'Adds one named candidate to an existing unresolved Variant request.',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                id: { type: 'string' },
-                variant: { type: 'object' },
-              },
-              required: ['id', 'variant'],
-              additionalProperties: false,
-            },
-          },
-          {
             name: 'activate_variant',
             description: 'Makes one Variant Active without changing the Annotation lifecycle.',
             inputSchema: {
@@ -852,6 +839,16 @@ export class LocalAnnotationsServer {
               type: 'object',
               properties: { id: { type: 'string' }, key: { type: 'string' } },
               required: ['id', 'key'],
+              additionalProperties: false,
+            },
+          },
+          {
+            name: 'cancel_variant_request',
+            description: 'Cancels an unresolved Variant Set, removes all candidate presentation and Scaffold, and preserves the Annotation as Pending.',
+            inputSchema: {
+              type: 'object',
+              properties: { id: { type: 'string' } },
+              required: ['id'],
               additionalProperties: false,
             },
           },
@@ -1012,15 +1009,15 @@ export class LocalAnnotationsServer {
           }
 
           case 'request_variants':
-          case 'create_variant':
           case 'activate_variant':
           case 'discard_variant':
+          case 'cancel_variant_request':
           case 'finalize_variant': {
             const operations = {
               request_variants: () => this.requestVariants(args),
-              create_variant: () => this.createVariant(args),
               activate_variant: () => this.activateVariant(args),
               discard_variant: () => this.discardVariant(args),
+              cancel_variant_request: () => this.cancelVariantRequest(args),
               finalize_variant: () => this.finalizeVariant(args),
             };
             const annotation = await operations[name]();
@@ -1252,16 +1249,16 @@ export class LocalAnnotationsServer {
     return this.updateVariantAnnotation(args?.id, annotation => createVariantRequest(annotation, args?.variants));
   }
 
-  async createVariant(args) {
-    return this.updateVariantAnnotation(args?.id, annotation => addVariantRecord(annotation, args?.variant));
-  }
-
   async activateVariant(args) {
     return this.updateVariantAnnotation(args?.id, annotation => activateVariantRecord(annotation, args?.key));
   }
 
   async discardVariant(args) {
     return this.updateVariantAnnotation(args?.id, annotation => discardVariantRecord(annotation, args?.key));
+  }
+
+  async cancelVariantRequest(args) {
+    return this.updateVariantAnnotation(args?.id, annotation => cancelVariantRequestRecord(annotation));
   }
 
   async finalizeVariant(args) {

@@ -28,6 +28,7 @@ function cleanupTarget(kind, key) {
 
 function validateCandidates(candidates) {
   if (!Array.isArray(candidates) || candidates.length === 0) fail('A variant request requires at least one Variant');
+  if (candidates.length > 6) fail('A Variant Set contains at most 6 complete Variants');
 
   const keys = candidates.map(candidate => candidate?.key);
   const names = candidates.map(candidate => candidate?.name?.trim());
@@ -108,6 +109,11 @@ export function createVariantRequest(annotation, candidates) {
   next.variant_request = {
     status: 'unresolved',
     active_variant_key: candidates[0].key,
+    origin_presentation: Object.fromEntries(
+      ['pending_changes', 'css']
+        .filter(field => Object.hasOwn(annotation, field))
+        .map(field => [field, clone(annotation[field])]),
+    ),
     variants: candidates.map((candidate, index) => ({
       key: candidate.key,
       name: candidate.name.trim(),
@@ -118,22 +124,6 @@ export function createVariantRequest(annotation, candidates) {
     scaffold: unique(candidates.flatMap(candidate => candidate.scaffold ?? [])),
   };
   return present(next, next.variant_request.variants[0]);
-}
-
-export function addVariant(annotation, candidate) {
-  const request = requireUnresolved(annotation);
-  validateCandidates([...request.variants, candidate]);
-  const next = clone(annotation);
-  next.variant_request.variants.push({
-    key: candidate.key,
-    name: candidate.name.trim(),
-    state: 'inactive',
-    implementation: clone(candidate.implementation ?? {}),
-    scaffold: unique(candidate.scaffold ?? []),
-  });
-  next.variant_request.scaffold = unique([...next.variant_request.scaffold, ...(candidate.scaffold ?? [])]);
-  assertSingleActive(next.variant_request);
-  return next;
 }
 
 export function activateVariant(annotation, key) {
@@ -155,6 +145,7 @@ export function discardVariant(annotation, key) {
   if (discarded.state === 'active') fail('Activate another surviving Variant before discarding the Active Variant');
 
   const survivors = request.variants.filter(variant => variant.key !== key);
+  if (survivors.length < 2) fail('An unresolved Variant Set requires at least 2 complete Variants');
   const survivorScaffold = new Set(survivors.flatMap(variant => variant.scaffold));
   const exclusiveScaffold = discarded.scaffold.filter(scaffoldKey => !survivorScaffold.has(scaffoldKey));
   const next = clone(annotation);
@@ -177,6 +168,19 @@ export function finalizeVariant(annotation, key) {
     scaffold: [],
   };
   return present(next, next.variant_request.variants[0]);
+}
+
+export function cancelVariantRequest(annotation) {
+  const request = requireUnresolved(annotation);
+  const next = clone(annotation);
+  next.status = 'pending';
+  delete next.claim;
+  delete next.variant_request;
+  delete next.variant_presentation;
+  delete next.pending_changes;
+  delete next.css;
+  Object.assign(next, clone(request.origin_presentation ?? {}));
+  return next;
 }
 
 export function assertAnnotationResolvable(annotation) {
@@ -227,6 +231,9 @@ export function assertGenericAnnotationUpdateAllowed(current, updates) {
   if (current?.status !== 'pending' && ['comment', 'design_intent'].some(field => field in updates)) {
     fail('Claimed and terminal Annotation comments and Design Intent are read-only');
   }
+  if (current?.variant_request?.status === 'unresolved' && ['comment', 'design_intent'].some(field => field in updates)) {
+    fail('Annotation comments and Design Intent are read-only during unresolved Variant evaluation');
+  }
   if (hasVariantOwnedFields(updates)) fail('Variant-owned fields can only be changed through the Variant module');
   if (current?.variant_request && ['pending_changes', 'css'].some(field => field in updates)) {
     fail('Variant presentation can only be changed through the Variant module');
@@ -252,13 +259,13 @@ export function assertSyncedAnnotationAllowed(current, incoming) {
     fail('Synchronization cannot change Work Notice');
   }
   if (
-    current.status !== 'pending'
+    (current.status !== 'pending' || current.variant_request?.status === 'unresolved')
     && (
       incoming.comment !== current.comment
       || JSON.stringify(incoming.design_intent ?? null) !== JSON.stringify(current.design_intent ?? null)
     )
   ) {
-    fail('Synchronization cannot change a Claimed or terminal Annotation work contract');
+    fail('Synchronization cannot change a Claimed, terminal, or unresolved Variant Annotation work contract');
   }
   if (current.variant_request) {
     for (const field of ['variant_request', 'variant_presentation', 'pending_changes', 'css']) {

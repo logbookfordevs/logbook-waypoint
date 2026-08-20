@@ -184,6 +184,7 @@ class WaypointAnnotationsBackground {
 
         case 'activateVariant':
         case 'discardVariant':
+        case 'cancelVariantRequest':
         case 'finalizeVariant':
           this.runVariantOperation(request.action, request.id, request.key)
             .then(annotation => sendResponse({ success: true, annotation }))
@@ -393,11 +394,13 @@ class WaypointAnnotationsBackground {
     const operation = {
       activateVariant: { method: 'POST', suffix: 'activate' },
       discardVariant: { method: 'DELETE', suffix: '' },
+      cancelVariantRequest: { method: 'DELETE', collection: true },
       finalizeVariant: { method: 'POST', suffix: 'finalize' },
     }[action];
     if (!operation) throw new Error('Unknown Variant operation');
     const suffix = operation.suffix ? `/${operation.suffix}` : '';
-    const response = await fetch(`${this.apiServerUrl}/api/annotations/${encodeURIComponent(id)}/variants/${encodeURIComponent(key)}${suffix}`, {
+    const variantPath = operation.collection ? 'variants' : `variants/${encodeURIComponent(key)}${suffix}`;
+    const response = await fetch(`${this.apiServerUrl}/api/annotations/${encodeURIComponent(id)}/${variantPath}`, {
       method: operation.method,
       headers: { 'Content-Type': 'application/json' },
     });
