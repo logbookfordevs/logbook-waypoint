@@ -192,9 +192,11 @@ var WaypointQueuePanel = (() => {
       });
     });
     panel.querySelectorAll('.waypoint-queue-delete').forEach(button => {
-      button.addEventListener('click', () => openDeleteConfirm(button, visibleAnnotations, actions));
+      button.addEventListener('click', () => openDeleteConfirm(button, annotations, route, otherRoutes, actions, currentRoute, view));
     });
-    if (view === 'active' && visibleAnnotations.length) wireSelection(visibleAnnotations, actions);
+    if (view === 'active' && visibleAnnotations.length) {
+      wireSelection(visibleAnnotations, annotations, route, otherRoutes, actions, currentRoute);
+    }
     if (view === 'history' && visibleAnnotations.length) {
       panel.querySelector('.waypoint-queue-clear-history').addEventListener('click', () => {
         openHistoryCleanup(annotations, route, otherRoutes, actions, currentRoute);
@@ -278,7 +280,7 @@ var WaypointQueuePanel = (() => {
     updatePreview();
   }
 
-  function openDeleteConfirm(button, annotations, actions) {
+  function openDeleteConfirm(button, annotations, route, otherRoutes, actions, currentRoute, view) {
     panel.querySelector('.waypoint-queue-row-menu')?.remove();
     const annotation = annotations.find(candidate => candidate.id === button.dataset.annotationId);
     if (!annotation) return;
@@ -295,7 +297,10 @@ var WaypointQueuePanel = (() => {
     menu.querySelector('.waypoint-queue-confirm-delete').addEventListener('click', async () => {
       try {
         await actions.delete?.(annotation);
-        close();
+        const deletedIndex = annotations.findIndex(candidate => candidate.id === annotation.id);
+        if (deletedIndex >= 0) annotations.splice(deletedIndex, 1);
+        renderRouteView(annotations, route, otherRoutes, actions, currentRoute, view);
+        panel.querySelector(view === 'history' ? '.waypoint-queue-history-view' : '.waypoint-queue-active-view')?.focus();
       } catch (error) {
         showActionError(menu, error, 'Could not delete this annotation.');
       }
@@ -331,7 +336,7 @@ var WaypointQueuePanel = (() => {
     });
   }
 
-  function wireSelection(annotations, actions) {
+  function wireSelection(annotations, allAnnotations, route, otherRoutes, actions, currentRoute) {
     const inputs = [...panel.querySelectorAll('.waypoint-queue-select')];
     const selectAll = panel.querySelector('.waypoint-queue-select-all');
     const discard = panel.querySelector('.waypoint-queue-discard-selected');
@@ -382,12 +387,14 @@ var WaypointQueuePanel = (() => {
       `;
       actionBar.querySelector('.waypoint-queue-cancel-discard').addEventListener('click', () => {
         actionBar.innerHTML = defaultActionsHTML;
-        wireSelection(annotations, actions);
+        wireSelection(annotations, allAnnotations, route, otherRoutes, actions, currentRoute);
       });
       actionBar.querySelector('.waypoint-queue-confirm-discard').addEventListener('click', async () => {
         try {
           await actions.discard?.(selected);
-          close();
+          selected.forEach(annotation => { annotation.status = 'discarded'; });
+          renderRouteView(allAnnotations, route, otherRoutes, actions, currentRoute, 'active');
+          panel.querySelector('.waypoint-queue-active-view')?.focus();
         } catch (error) {
           showActionError(actionBar, error, 'Could not discard the selected annotations.');
         }

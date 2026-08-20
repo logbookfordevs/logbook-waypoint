@@ -206,7 +206,9 @@ test('Queue keeps permanent deletion secondary and requires an explicit confirma
   root.querySelector('.waypoint-queue-confirm-delete').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(deleted, [annotation.id]);
-  assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+  assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
+  assert.equal(root.querySelector('.waypoint-queue-history-view').getAttribute('aria-pressed'), 'true');
+  assert.match(root.querySelector('.waypoint-queue-list').textContent, /No history on this route/);
 });
 
 test('Queue previews and confirms scoped permanent history cleanup', async () => {
@@ -310,7 +312,11 @@ test('Queue requires confirmation before discarding selected Annotations through
   await new Promise(resolve => setImmediate(resolve));
 
   assert.deepEqual(discarded, [{ id: annotation.id, owner: undefined, url: annotation.url }]);
-  assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+  assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
+  assert.equal(root.querySelector('.waypoint-queue-active-view').getAttribute('aria-pressed'), 'true');
+  assert.match(root.querySelector('.waypoint-queue-list').textContent, /No active annotations on this route/);
+  root.querySelector('.waypoint-queue-history-view').click();
+  assert.match(root.querySelector('.waypoint-queue-list').textContent, /Remove this request/);
 });
 
 test('Queue selection copies only the selected Annotations', async () => {
