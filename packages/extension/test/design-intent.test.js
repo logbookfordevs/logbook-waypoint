@@ -50,7 +50,7 @@ test('server and extension enforce the same versioned Freeform Design Intent con
   }
 
   assert.deepEqual(
-    Array.from(context.WaypointDesignIntent.actions),
+    Array.from(context.WaypointDesignIntent.catalog, item => item.action),
     actions,
   );
 

@@ -320,7 +320,9 @@ test('HTTP rejects malformed Design Intent while ordinary Annotations remain com
     assert.equal(ordinaryResponse.status, 200);
     assert.equal('design_intent' in (await ordinaryResponse.json()).annotation, false);
 
-    for (const action of ['bolder', 'quieter', 'distill', 'polish', 'typeset', 'colorize', 'layout', 'animate', 'delight', 'overdrive']) {
+    const actions = ['bolder', 'quieter', 'distill', 'polish', 'typeset', 'colorize', 'layout', 'animate', 'delight', 'overdrive'];
+    const watchBaseline = await server.watchAnnotations({ timeout_ms: 0 });
+    for (const action of actions) {
       const response = await fetch(`${baseUrl}/api/annotations`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -332,6 +334,21 @@ test('HTTP rejects malformed Design Intent while ordinary Annotations remain com
       });
       assert.equal(response.status, 200, action);
     }
+    assert.deepEqual(
+      (await server.readAnnotations({ status: 'pending' })).annotations
+        .flatMap(annotation => annotation.design_intent?.action || []),
+      actions,
+    );
+    assert.deepEqual(
+      JSON.parse(await readFile(path.join(directory, 'annotations.json'), 'utf8'))
+        .flatMap(annotation => annotation.design_intent?.action || []),
+      actions,
+    );
+    assert.deepEqual(
+      (await server.watchAnnotations({ cursor: watchBaseline.cursor, timeout_ms: 0 })).changes
+        .flatMap(change => change.annotation.design_intent?.action || []),
+      actions,
+    );
 
     const invalidUpdate = await fetch(`${baseUrl}/api/annotations/${id}`, {
       method: 'PUT',

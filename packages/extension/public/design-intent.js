@@ -84,7 +84,6 @@ globalThis.WaypointDesignIntent = (() => {
   }
 
   return {
-    actions,
     applyUpdate,
     assert,
     assertAnnotation,
