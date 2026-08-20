@@ -2016,12 +2016,20 @@ var WaypointAnnotationPopover = (() => {
       if (padVInput) {
         padVInput.value = origPT === origPB ? `${Math.round(origPT)}` : `${Math.round(origPT)}, ${Math.round(origPB)}`;
         padHInput.value = origPL === origPR ? `${Math.round(origPL)}` : `${Math.round(origPL)}, ${Math.round(origPR)}`;
+        setInputVal(popover, 'paddingTop', Math.round(origPT));
+        setInputVal(popover, 'paddingRight', Math.round(origPR));
+        setInputVal(popover, 'paddingBottom', Math.round(origPB));
+        setInputVal(popover, 'paddingLeft', Math.round(origPL));
         targetElement.style.paddingTop = ''; targetElement.style.paddingRight = '';
         targetElement.style.paddingBottom = ''; targetElement.style.paddingLeft = '';
       }
       if (marVInput) {
         marVInput.value = origMT === origMB ? `${Math.round(origMT)}` : `${Math.round(origMT)}, ${Math.round(origMB)}`;
         marHInput.value = origML === origMR ? `${Math.round(origML)}` : `${Math.round(origML)}, ${Math.round(origMR)}`;
+        setInputVal(popover, 'marginTop', Math.round(origMT));
+        setInputVal(popover, 'marginRight', Math.round(origMR));
+        setInputVal(popover, 'marginBottom', Math.round(origMB));
+        setInputVal(popover, 'marginLeft', Math.round(origML));
         targetElement.style.marginTop = ''; targetElement.style.marginRight = '';
         targetElement.style.marginBottom = ''; targetElement.style.marginLeft = '';
       }

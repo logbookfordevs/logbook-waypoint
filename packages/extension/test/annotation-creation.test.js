@@ -473,6 +473,22 @@ test('rendered editor serializes and restores Design Intent and Variant Intent i
   await handlers.get('annotation:edit')({
     annotation: {
       ...saved[0],
+      pending_changes: {
+        marginTop: { original: '12px', value: '144px' },
+      },
+    },
+    element: target,
+  });
+  const marginTopInput = context.document.querySelector('[data-prop="marginTop"]');
+  assert.equal(marginTopInput.value, '144');
+  context.document.querySelector('.waypoint-design-reset').click();
+  assert.equal(target.style.marginTop, '');
+  assert.equal(marginTopInput.value, '12');
+  context.document.querySelector('.waypoint-cancel-btn').click();
+
+  await handlers.get('annotation:edit')({
+    annotation: {
+      ...saved[0],
       status: 'resolved',
       resolution_record: {
         summary: 'Clarified the heading hierarchy and supporting copy.',
