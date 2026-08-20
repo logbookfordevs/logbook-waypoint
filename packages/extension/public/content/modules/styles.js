@@ -603,6 +603,9 @@ var WAYPOINT_STYLES = `
 .waypoint-attachment-status[role="alert"] { color:var(--waypoint-danger); }
 .waypoint-variant-intent-label { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; padding:8px 10px; border:1px solid transparent; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); cursor:pointer; transition:border-color .15s ease, background .15s ease; }
 .waypoint-variant-intent-label:hover { border-color:var(--waypoint-outline); background:var(--waypoint-surface-hover); }
+.waypoint-design-intent-row { display:grid; gap:4px; }
+.waypoint-design-intent-dependency { justify-self:start; color:var(--waypoint-accent); font-size:11px; line-height:1.35; text-underline-offset:2px; }
+.waypoint-design-intent-dependency:focus-visible { outline:2px solid var(--waypoint-accent); outline-offset:2px; border-radius:2px; }
 .waypoint-variant-intent-copy { display:grid; gap:1px; min-width:0; }
 .waypoint-variant-intent-title { color:var(--waypoint-text-primary); font-size:11px; line-height:1.35; font-weight:600; }
 .waypoint-variant-intent-description { color:var(--waypoint-text-secondary); font-size:10px; line-height:1.35; }

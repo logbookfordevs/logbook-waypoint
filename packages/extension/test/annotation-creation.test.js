@@ -286,6 +286,7 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   const emitted = [];
   const saved = [];
   const updated = [];
+  let showDesignActions = true;
   const computedStyle = new Proxy({ display: 'block' }, { get: (styles, key) => styles[key] ?? '' });
   const context = vm.createContext({
     window,
@@ -321,6 +322,7 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   };
   context.WaypointAPI = {
     isFileProtocol: () => false,
+    getShowDesignActions: async () => showDesignActions,
     saveAnnotation: async annotation => { saved.push(annotation); },
     updateAnnotation: async (annotationId, updates) => { updated.push({ annotationId, updates }); },
   };
@@ -362,8 +364,14 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   });
   assert.equal(saved[0].comment, 'Make the hierarchy feel intentional');
 
+  showDesignActions = false;
+  await handlers.get('inspection:elementClicked')({ element: target, clientX: 10, clientY: 10 });
+  assert.equal(Boolean(context.document.querySelector('.waypoint-design-intent-label')), false);
+  context.document.querySelector('.waypoint-cancel-btn').click();
+
   await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
   const editToggle = context.document.querySelector('.waypoint-design-intent');
+  assert.match(context.document.querySelector('.waypoint-design-intent-row').textContent, /Requires Impeccable/);
   assert.equal(editToggle.hasAttribute('checked'), true);
   editToggle.checked = true;
   context.document.querySelector('.waypoint-textarea').value = 'Keep the hierarchy quiet and intentional';
