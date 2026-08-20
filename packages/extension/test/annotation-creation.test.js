@@ -51,6 +51,33 @@ test('content can request the current site permission through the background bou
   }]);
 });
 
+test('Design Actions visibility defaults on and persists through the extension preference boundary', async () => {
+  const writes = [];
+  let stored = {};
+  const context = vm.createContext({
+    window: { location: { protocol: 'https:' } },
+    chrome: {
+      runtime: { sendMessage: async () => ({ success: true }) },
+      storage: {
+        local: {
+          get: async () => stored,
+          set: async update => {
+            stored = { ...stored, ...update };
+            writes.push(update);
+          },
+        },
+      },
+    },
+  });
+  context.globalThis = context;
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  assert.equal(await context.WaypointAPI.getShowDesignActions(), true);
+  await context.WaypointAPI.saveShowDesignActions(false);
+  assert.equal(await context.WaypointAPI.getShowDesignActions(), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(writes)), [{ waypointShowDesignActions: false }]);
+});
+
 test('content rejects non-image or oversized attachment payloads before they reach the background', async () => {
   const messages = [];
   const context = vm.createContext({
@@ -259,6 +286,7 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   const emitted = [];
   const saved = [];
   const updated = [];
+  let showDesignActions = true;
   const computedStyle = new Proxy({ display: 'block' }, { get: (styles, key) => styles[key] ?? '' });
   const context = vm.createContext({
     window,
@@ -294,6 +322,7 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   };
   context.WaypointAPI = {
     isFileProtocol: () => false,
+    getShowDesignActions: async () => showDesignActions,
     saveAnnotation: async annotation => { saved.push(annotation); },
     updateAnnotation: async (annotationId, updates) => { updated.push({ annotationId, updates }); },
   };
@@ -335,8 +364,21 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   });
   assert.equal(saved[0].comment, 'Make the hierarchy feel intentional');
 
+  showDesignActions = false;
+  await handlers.get('inspection:elementClicked')({ element: target, clientX: 10, clientY: 10 });
+  assert.equal(Boolean(context.document.querySelector('.waypoint-design-intent-label')), false);
+  context.document.querySelector('.waypoint-cancel-btn').click();
+
+  const ordinaryExistingAnnotation = { ...saved[0] };
+  delete ordinaryExistingAnnotation.design_intent;
+  await handlers.get('annotation:edit')({ annotation: ordinaryExistingAnnotation, element: target });
+  assert.equal(Boolean(context.document.querySelector('.waypoint-design-intent-label')), false);
+  assert.equal(context.document.querySelector('.waypoint-save-btn').disabled, true);
+  context.document.querySelector('.waypoint-cancel-btn').click();
+
   await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
   const editToggle = context.document.querySelector('.waypoint-design-intent');
+  assert.match(context.document.querySelector('.waypoint-design-intent-row').textContent, /Requires Impeccable/);
   assert.equal(editToggle.hasAttribute('checked'), true);
   editToggle.checked = true;
   context.document.querySelector('.waypoint-textarea').value = 'Keep the hierarchy quiet and intentional';

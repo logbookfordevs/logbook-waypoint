@@ -119,6 +119,24 @@ test('screenshot settings distinguish automatic MCP context from manual attachme
   assert.match(popup, /Manual reference images remain available/);
 });
 
+test('toolbar and popup expose the global Design Actions preference with Impeccable guidance', async () => {
+  const [toolbar, popup, popupHtml, readme] = await Promise.all([
+    readFile(toolbarUrl, 'utf8'),
+    readFile(popupUrl, 'utf8'),
+    readFile(popupHtmlUrl, 'utf8'),
+    readFile(new URL('../../../README.md', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(toolbar, /Show Design Actions/);
+  assert.match(toolbar, /Requires Impeccable/);
+  assert.match(toolbar, /saveShowDesignActions/);
+  assert.match(popupHtml, /id="show-design-actions-toggle"/);
+  assert.match(popupHtml, /Requires Impeccable/);
+  assert.match(popup, /waypointShowDesignActions/);
+  assert.match(readme, /Design Actions require \[Impeccable\]\(https:\/\/github\.com\/pbakaus\/impeccable\)/);
+  assert.match(readme, /Tested[^]*Expected[^]*Unknown/);
+});
+
 test('popup presents retained Queue states and Claim ownership explicitly', async () => {
   const popup = await readFile(popupUrl, 'utf8');
 

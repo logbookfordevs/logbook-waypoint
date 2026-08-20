@@ -285,6 +285,21 @@ var WaypointAPI = (() => {
   async function saveScreenshotEnabled(enabled) {
     try {
       await chrome.storage.local.set({ waypointScreenshotEnabled: enabled });
+    } catch {}
+  }
+
+  async function getShowDesignActions() {
+    try {
+      const result = await chrome.storage.local.get(['waypointShowDesignActions']);
+      return result.waypointShowDesignActions !== false;
+    } catch {
+      return true;
+    }
+  }
+
+  async function saveShowDesignActions(enabled) {
+    try {
+      await chrome.storage.local.set({ waypointShowDesignActions: Boolean(enabled) });
     } catch { /* ignore */ }
   }
 
@@ -414,6 +429,8 @@ var WaypointAPI = (() => {
     onAnnotationsChanged,
     getScreenshotEnabled,
     saveScreenshotEnabled,
+    getShowDesignActions,
+    saveShowDesignActions,
     getToolbarPosition,
     saveToolbarPosition,
     getToolbarCollapsed,

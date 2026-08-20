@@ -14,6 +14,7 @@ var WaypointToolbar = (() => {
   let styleAnnotationCount = 0;
   let clearOnCopy = false;
   let screenshotEnabled = true;
+  let showDesignActions = true;
   let badgeColor = '#4b5563';
 
   const BADGE_COLORS = ['#4b5563', '#d97757', '#3b82f6', '#22c55e', '#a855f7'];
@@ -68,6 +69,7 @@ var WaypointToolbar = (() => {
     isCollapsed = await WaypointAPI.getToolbarCollapsed();
     clearOnCopy = await WaypointAPI.getClearOnCopy();
     screenshotEnabled = await WaypointAPI.getScreenshotEnabled();
+    showDesignActions = await WaypointAPI.getShowDesignActions();
     badgeColor = await WaypointAPI.getBadgeColor();
     applyBadgeColor(badgeColor);
     customShortcut = await WaypointAPI.getCustomShortcut();
@@ -291,6 +293,17 @@ var WaypointToolbar = (() => {
         </div>
         <div class="waypoint-settings-item">
           <div class="waypoint-settings-item-left">
+            ${ICONS.palette}
+            <div>
+              <span>Show Design Actions</span>
+              <div class="waypoint-setting-description">Show Impeccable-powered controls for new Annotations. Saved Design Intent stays visible.</div>
+              <a href="https://github.com/pbakaus/impeccable" target="_blank" rel="noopener" class="waypoint-setting-help">Requires Impeccable</a>
+            </div>
+          </div>
+          <button class="waypoint-toggle waypoint-design-actions-toggle ${showDesignActions ? 'on' : ''}" type="button" aria-label="Show Design Actions" aria-pressed="${showDesignActions}"></button>
+        </div>
+        <div class="waypoint-settings-item">
+          <div class="waypoint-settings-item-left">
             ${ICONS.keyboard}
             <span>Trigger hotkey</span>
           </div>
@@ -340,6 +353,13 @@ var WaypointToolbar = (() => {
       screenshotEnabled = !screenshotEnabled;
       e.currentTarget.classList.toggle('on', screenshotEnabled);
       await WaypointAPI.saveScreenshotEnabled(screenshotEnabled);
+    });
+
+    settingsDropdown.querySelector('.waypoint-design-actions-toggle').addEventListener('click', async (e) => {
+      showDesignActions = !showDesignActions;
+      e.currentTarget.classList.toggle('on', showDesignActions);
+      e.currentTarget.setAttribute('aria-pressed', String(showDesignActions));
+      await WaypointAPI.saveShowDesignActions(showDesignActions);
     });
 
     const permissionButton = settingsDropdown.querySelector('.waypoint-site-permission-btn');
