@@ -1199,6 +1199,7 @@ class WaypointAnnotationsBackground {
           'content/modules/keyboard-target.js',
           'content/modules/variant-picker.js',
           'content/modules/annotation-popover.js',
+          'content/modules/queue-panel.js',
           'content/modules/floating-toolbar.js',
           'content/content.js'
         ],

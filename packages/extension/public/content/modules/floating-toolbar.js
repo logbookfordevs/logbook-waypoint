@@ -28,6 +28,7 @@ var WaypointToolbar = (() => {
     annotate: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
     stop: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>',
     copy: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    queue: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>',
     trash: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
     settings: '',
     collapse: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
@@ -117,6 +118,10 @@ var WaypointToolbar = (() => {
           ${ICONS.copy}
           <span class="waypoint-toolbar-tip">Copy all</span>
         </button>
+        <button class="waypoint-toolbar-btn waypoint-tb-queue" title="Open Queue">
+          ${ICONS.queue}
+          <span class="waypoint-toolbar-tip">Queue</span>
+        </button>
         <button class="waypoint-toolbar-btn waypoint-tb-delete" title="Delete all annotations" disabled>
           ${ICONS.trash}
           <span class="waypoint-toolbar-tip">Delete all</span>
@@ -152,19 +157,7 @@ var WaypointToolbar = (() => {
     toolbarEl.querySelector('.waypoint-tb-copy').addEventListener('click', async () => {
       const annotations = await WaypointAPI.loadAnnotations();
       if (!annotations.length) return;
-      const text = formatAnnotationsForClipboard(annotations);
-      try {
-        await navigator.clipboard.writeText(text);
-        showCopyFeedback();
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        ta.remove();
-        showCopyFeedback();
-      }
+      await copyAnnotations(annotations);
 
       // Clear on copy if setting is enabled
       if (clearOnCopy) {
@@ -174,6 +167,17 @@ var WaypointToolbar = (() => {
         WaypointEvents.emit('annotations:cleared', { count: annotations.length });
         await WaypointAPI.deleteAnnotationsByUrl();
       }
+    });
+
+    toolbarEl.querySelector('.waypoint-tb-queue').addEventListener('click', (event) => {
+      event.stopPropagation();
+      closeSettings();
+      WaypointQueuePanel.toggle(toolbarEl, {
+        copy: copyAnnotations,
+        delete: deleteAnnotation,
+        discard: discardAnnotations,
+        open: openAnnotation,
+      });
     });
 
     // Delete all
@@ -197,6 +201,7 @@ var WaypointToolbar = (() => {
     // Settings
     toolbarEl.querySelector('.waypoint-tb-settings').addEventListener('click', (e) => {
       e.stopPropagation();
+      WaypointQueuePanel.close();
       toggleSettings();
     });
   }
@@ -773,6 +778,7 @@ var WaypointToolbar = (() => {
     isCollapsed = !isCollapsed;
     toolbarEl.classList.toggle('collapsed', isCollapsed);
     closeSettings();
+    WaypointQueuePanel.close();
 
     const btn = toolbarEl.querySelector('.waypoint-tb-collapse');
     btn.innerHTML = (isCollapsed ? ICONS.collapsed : ICONS.collapse) +
@@ -829,6 +835,40 @@ var WaypointToolbar = (() => {
     if (!btn) return;
     btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
     setTimeout(() => { updateUI(); }, 1200);
+  }
+
+  async function copyAnnotations(annotations) {
+    const text = formatAnnotationsForClipboard(annotations);
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    showCopyFeedback();
+  }
+
+  async function discardAnnotations(annotations) {
+    for (const annotation of annotations) {
+      await WaypointAPI.discardAnnotation(annotation.id, annotation.claim?.owner, annotation.url);
+    }
+  }
+
+  async function deleteAnnotation(annotation) {
+    await WaypointAPI.deleteAnnotation(annotation.id);
+  }
+
+  function openAnnotation(annotation) {
+    const element = WaypointElementContext.findElementBySelector(annotation);
+    if (!element) {
+      WaypointBadgeManager.highlightElement(annotation);
+      return;
+    }
+    WaypointEvents.emit('annotation:edit', { annotation, element });
   }
 
   // --- Drag ---
