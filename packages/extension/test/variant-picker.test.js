@@ -85,6 +85,16 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
     /cannot become Resolved/,
   );
   assert.throws(
+    () => context.WaypointVariantPolicy.assertUpdateAllowed(variants, {
+      design_intent: { schema_version: 1, workflow: 'impeccable', action: 'layout' },
+    }),
+    /work contract/i,
+  );
+  assert.throws(
+    () => context.WaypointVariantPolicy.assertUpdateAllowed(variants, { comment: 'Change the brief' }),
+    /work contract/i,
+  );
+  assert.throws(
     () => context.WaypointVariantPolicy.assertSaveAllowed(null, variants),
     /Variant-owned state/,
   );
