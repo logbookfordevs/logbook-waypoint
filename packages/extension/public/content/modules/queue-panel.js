@@ -26,6 +26,13 @@ var WaypointQueuePanel = (() => {
     return `<span class="waypoint-queue-signal" data-signal="${type}" role="img" aria-label="${escapeHTML(label)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg></span>`;
   }
 
+  function hasStyleChanges(annotation) {
+    if (typeof annotation.css === 'string' ? annotation.css.trim() : annotation.css) return true;
+    return Object.entries(annotation.pending_changes || {}).some(([property, change]) => (
+      property !== 'copyChange' && change && typeof change === 'object'
+    ));
+  }
+
   function renderSignals(annotation) {
     const signals = [];
     const attachmentCount = annotation.attachments?.length;
@@ -38,7 +45,7 @@ var WaypointQueuePanel = (() => {
       const actionLabel = action ? `${action.charAt(0).toUpperCase()}${action.slice(1)}` : 'Freeform';
       signals.push(signalIcon('design-action', `Design Action: ${actionLabel}`, '<path d="m12 3-1.4 3.6L7 8l3.6 1.4L12 13l1.4-3.6L17 8l-3.6-1.4L12 3Z"/><path d="m5 14-.9 2.1L2 17l2.1.9L5 20l.9-2.1L8 17l-2.1-.9L5 14Z"/><path d="m19 13-1 2.5-2.5 1 2.5 1 1 2.5 1-2.5 2.5-1-2.5-1-1-2.5Z"/>'));
     }
-    if (typeof annotation.css === 'string' ? annotation.css.trim() : annotation.css) {
+    if (hasStyleChanges(annotation)) {
       signals.push(signalIcon('css', 'Custom CSS override', '<path d="m8 3-5 9 5 9"/><path d="m16 3 5 9-5 9"/><path d="m14 4-4 16"/>'));
     }
     if (annotation.screenshot || annotation.has_screenshot) {

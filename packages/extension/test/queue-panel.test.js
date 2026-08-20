@@ -92,7 +92,7 @@ test('toolbar Queue button opens an anchored panel with current-route Annotation
       screenshot: { id: 'screenshot_1' },
       attachments: [{ id: 'attachment_1', name: 'reference.png', mime_type: 'image/png', size_bytes: 1200 }],
       design_intent: { schema_version: 1, workflow: 'impeccable', action: 'polish' },
-      css: '.invite-button { letter-spacing: 0.02em; }',
+      pending_changes: { width: { original: '576px', value: '678.42px' } },
     },
   ];
   const { context, root } = createHarness(annotations);
