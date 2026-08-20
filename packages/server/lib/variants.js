@@ -223,6 +223,10 @@ export function assertGenericAnnotationUpdateAllowed(current, updates) {
     fail('Annotation lifecycle state can only change through the lifecycle module');
   }
   if ('claim' in updates) fail('Annotation Claim can only change through the lifecycle module');
+  if ('work_notice' in updates) fail('Work Notice can only change through the lifecycle module');
+  if (current?.status !== 'pending' && ['comment', 'design_intent'].some(field => field in updates)) {
+    fail('Claimed and terminal Annotation comments and Design Intent are read-only');
+  }
   if (hasVariantOwnedFields(updates)) fail('Variant-owned fields can only be changed through the Variant module');
   if (current?.variant_request && ['pending_changes', 'css'].some(field => field in updates)) {
     fail('Variant presentation can only be changed through the Variant module');
@@ -236,13 +240,25 @@ export function assertSyncedAnnotationAllowed(current, incoming) {
     fail('Create Variant state through the Variant module before synchronization');
   }
   if (!current) {
-    if (incoming.status !== 'pending' || 'claim' in incoming) {
-      fail('New synchronized Annotations must begin Pending without a Claim');
+    if (incoming.status !== 'pending' || 'claim' in incoming || 'work_notice' in incoming) {
+      fail('New synchronized Annotations must begin Pending without a Claim or Work Notice');
     }
     return;
   }
   if (incoming.status !== current.status || JSON.stringify(incoming.claim ?? null) !== JSON.stringify(current.claim ?? null)) {
     fail('Synchronization cannot change Annotation lifecycle state or Claim');
+  }
+  if (JSON.stringify(incoming.work_notice ?? null) !== JSON.stringify(current.work_notice ?? null)) {
+    fail('Synchronization cannot change Work Notice');
+  }
+  if (
+    current.status !== 'pending'
+    && (
+      incoming.comment !== current.comment
+      || JSON.stringify(incoming.design_intent ?? null) !== JSON.stringify(current.design_intent ?? null)
+    )
+  ) {
+    fail('Synchronization cannot change a Claimed or terminal Annotation work contract');
   }
   if (current.variant_request) {
     for (const field of ['variant_request', 'variant_presentation', 'pending_changes', 'css']) {

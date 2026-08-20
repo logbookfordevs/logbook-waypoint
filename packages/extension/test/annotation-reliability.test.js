@@ -544,6 +544,16 @@ test('Queue conflict resolution preserves server-owned lifecycle state and Claim
   for (const server of [
     {
       ...local,
+      comment: 'old server comment',
+      updated_at: '2026-01-02T00:00:00.000Z',
+      work_notice: {
+        code: 'workflow_unavailable',
+        summary: 'Install Impeccable, then claim to retry.',
+        created_at: '2026-01-02T00:00:00.000Z',
+      },
+    },
+    {
+      ...local,
       status: 'claimed',
       comment: 'old server comment',
       updated_at: '2026-01-02T00:00:00.000Z',
@@ -553,9 +563,10 @@ test('Queue conflict resolution preserves server-owned lifecycle state and Claim
     { ...local, status: 'discarded', comment: 'old server comment', updated_at: '2026-01-02T00:00:00.000Z' },
   ]) {
     const merged = context.WaypointQueueSync.merge([local], [server], []).annotations[0];
-    assert.equal(merged.comment, 'new local comment');
+    assert.equal(merged.comment, server.status === 'pending' ? 'new local comment' : 'old server comment');
     assert.equal(merged.status, server.status);
     assert.deepEqual(merged.claim, server.claim);
+    assert.deepEqual(merged.work_notice, server.work_notice);
     assert.equal(merged._synced, false);
   }
 
@@ -573,6 +584,108 @@ test('Queue conflict resolution preserves server-owned lifecycle state and Claim
     JSON.parse(JSON.stringify(resolvedMerge.resolution_record)),
     resolvedDesignAction.resolution_record,
   );
+});
+
+test('Queue lifecycle reconciliation rejects stale notice snapshots and preserves concurrent edits', async () => {
+  const context = createBrowserContext();
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'background/queue-sync.js');
+  const id = 'waypoint_1750000000001_abcdefghi';
+  const cleared = {
+    id,
+    status: 'pending',
+    comment: 'Locally edited after dismissal',
+    updated_at: '2026-08-19T12:01:00.000Z',
+    _synced: true,
+  };
+  const stale = {
+    id,
+    status: 'pending',
+    comment: 'Before dismissal',
+    updated_at: '2026-08-19T12:00:00.000Z',
+    work_notice: {
+      code: 'execution_failed',
+      summary: 'Retry the workflow.',
+      created_at: '2026-08-19T11:59:00.000Z',
+    },
+  };
+
+  const reconciled = context.WaypointQueueSync.merge([cleared], [stale], []).annotations[0];
+  assert.equal(reconciled.comment, cleared.comment);
+  assert.equal('work_notice' in reconciled, false);
+
+  const lifecycleResponse = {
+    ...stale,
+    updated_at: '2026-08-19T12:00:30.000Z',
+  };
+  delete lifecycleResponse.work_notice;
+  const concurrent = context.WaypointQueueSync.applyServerLifecycle(cleared, lifecycleResponse);
+  assert.equal(concurrent.comment, cleared.comment);
+  assert.equal('work_notice' in concurrent, false);
+});
+
+test('rendered Queue shows recovery guidance and dismisses Work Notices through lifecycle', async () => {
+  const context = createBrowserContext();
+  const messages = [];
+  context.chrome = {
+    runtime: {
+      onMessage: { addListener() {} },
+      sendMessage: async message => {
+        messages.push(message);
+        return { success: true, annotation: { id: message.id, status: 'pending' } };
+      },
+    },
+    storage: { onChanged: { addListener() {} } },
+  };
+  const popupSource = await readFile(new URL('../.output/chrome-mv3/popup/popup.js', import.meta.url), 'utf8');
+  vm.runInContext(`${popupSource}\nglobalThis.WaypointAnnotationsPopup = AnnotationsPopup;`, context, {
+    filename: 'popup/popup.js',
+  });
+  const popup = Object.create(context.WaypointAnnotationsPopup.prototype);
+  popup.annotations = [{
+    id: 'waypoint_1750000000001_abcdefghi',
+    status: 'pending',
+    comment: 'Make this easier to scan',
+    created_at: '2026-08-19T12:00:00.000Z',
+    work_notice: {
+      code: 'execution_failed',
+      summary: 'The design workflow stopped before producing a result. Claim to retry.',
+      created_at: '2026-08-19T12:05:00.000Z',
+    },
+  }];
+  popup.getTimeAgo = () => 'now';
+  popup.render = () => {};
+
+  const container = context.document.createElement('div');
+  container.id = 'annotations-list';
+  context.document.body.appendChild(container);
+  container.innerHTML = popup.renderAnnotationItem(popup.annotations[0]);
+  const notice = container.querySelector('.work-notice');
+  assert.match(notice.textContent, /Design workflow needs attention/);
+  assert.match(notice.textContent, /The design workflow stopped before producing a result/);
+
+  popup.setupAnnotationListeners();
+  container.querySelector('.work-notice-dismiss').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(JSON.parse(JSON.stringify(messages)), [{
+    action: 'dismissWorkNotice',
+    id: 'waypoint_1750000000001_abcdefghi',
+  }]);
+  assert.equal('work_notice' in popup.annotations[0], false);
+
+  let editCount = 0;
+  popup.serverOnline = true;
+  popup.startInlineEdit = () => { editCount += 1; };
+  popup.annotations = [{
+    id: 'waypoint_1750000000001_abcdefghi',
+    status: 'claimed',
+    comment: 'Claimed contract',
+    created_at: '2026-08-19T12:00:00.000Z',
+  }];
+  container.innerHTML = popup.renderAnnotationItem(popup.annotations[0]);
+  popup.setupAnnotationListeners();
+  container.querySelector('.annotation-item').click();
+  assert.equal(editCount, 0);
 });
 
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {

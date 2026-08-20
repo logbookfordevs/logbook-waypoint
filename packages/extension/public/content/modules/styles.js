@@ -664,6 +664,44 @@ var WAYPOINT_STYLES = `
   flex-shrink: 0;
 }
 
+.waypoint-work-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 12px 16px 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--waypoint-warning) 32%, transparent);
+  border-radius: 10px;
+  background: var(--waypoint-warning-container);
+  color: var(--waypoint-on-warning-container);
+}
+
+.waypoint-work-notice-copy {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.waypoint-work-notice-dismiss {
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.waypoint-work-notice-dismiss:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 /* Textarea */
 .waypoint-popover-body {
   padding: 10px 14px;

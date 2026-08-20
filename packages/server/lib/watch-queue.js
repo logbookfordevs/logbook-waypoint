@@ -4,6 +4,7 @@ import { mkdir, open, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { isValidAnnotationId } from './annotation-id.js';
+import { assertAnnotationLifecycleState } from './annotation-lifecycle.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
 import { assertResolutionRecordSummary } from './resolution-record.js';
 import { assertAnnotationVariantIntent } from './variant-intent.js';
@@ -102,6 +103,7 @@ function validateSavedQueue(saved) {
     }
     cursors.add(change.cursor);
     const annotation = normalizeJournalAnnotation(change.annotation);
+    assertAnnotationLifecycleState(annotation);
     assertAnnotationDesignIntent(annotation);
     if (annotation.resolution_record !== undefined) assertResolutionRecordSummary(annotation.resolution_record);
     assertAnnotationVariantIntent(annotation);
