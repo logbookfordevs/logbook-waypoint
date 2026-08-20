@@ -1,6 +1,6 @@
-const SUMMARY_MAX_LENGTH = 500;
-const VERIFICATION_MAX_ITEMS = 20;
-const VERIFICATION_ITEM_MAX_LENGTH = 300;
+export const RESOLUTION_SUMMARY_MAX_LENGTH = 500;
+export const RESOLUTION_VERIFICATION_MAX_ITEMS = 20;
+export const RESOLUTION_VERIFICATION_ITEM_MAX_LENGTH = 300;
 const UNSAFE_EVIDENCE = [
   /\b(?:hidden|system)\s+prompt\b/i,
   /\b(?:impeccable live|provider[- ]internal|polling journal)\b/i,
@@ -25,12 +25,12 @@ export function assertResolutionRecord(record) {
   if (Object.keys(record).some(key => !['summary', 'verification'].includes(key))) {
     throw new TypeError('Resolution Record contains unsupported fields');
   }
-  assertSafeText(record.summary, 'Resolution Record summary', SUMMARY_MAX_LENGTH);
-  if (!Array.isArray(record.verification) || record.verification.length === 0 || record.verification.length > VERIFICATION_MAX_ITEMS) {
+  assertSafeText(record.summary, 'Resolution Record summary', RESOLUTION_SUMMARY_MAX_LENGTH);
+  if (!Array.isArray(record.verification) || record.verification.length === 0 || record.verification.length > RESOLUTION_VERIFICATION_MAX_ITEMS) {
     throw new TypeError('Resolution Record verification must be a non-empty bounded checklist');
   }
   record.verification.forEach(item => {
-    assertSafeText(item, 'Resolution Record verification item', VERIFICATION_ITEM_MAX_LENGTH);
+    assertSafeText(item, 'Resolution Record verification item', RESOLUTION_VERIFICATION_ITEM_MAX_LENGTH);
   });
   return record;
 }
@@ -39,7 +39,7 @@ export function assertResolutionRecordSummary(record) {
   if (!record || typeof record !== 'object' || Array.isArray(record) || Object.keys(record).some(key => key !== 'summary')) {
     throw new TypeError('Watch Resolution Record must contain only a summary');
   }
-  assertSafeText(record.summary, 'Resolution Record summary', SUMMARY_MAX_LENGTH);
+  assertSafeText(record.summary, 'Resolution Record summary', RESOLUTION_SUMMARY_MAX_LENGTH);
   return record;
 }
 

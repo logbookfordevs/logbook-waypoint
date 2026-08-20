@@ -42,6 +42,9 @@ import {
   assertAnnotationResolutionRecord,
   assertResolutionRecord,
   preserveResolutionRecord,
+  RESOLUTION_SUMMARY_MAX_LENGTH,
+  RESOLUTION_VERIFICATION_ITEM_MAX_LENGTH,
+  RESOLUTION_VERIFICATION_MAX_ITEMS,
 } from './resolution-record.js';
 import {
   VariantContractError,
@@ -82,12 +85,12 @@ function lifecycleToolSchema({ owner, resolutionRecord = false }) {
         resolution_record: {
           type: 'object',
           properties: {
-            summary: { type: 'string', minLength: 1, maxLength: 500 },
+            summary: { type: 'string', minLength: 1, maxLength: RESOLUTION_SUMMARY_MAX_LENGTH },
             verification: {
               type: 'array',
               minItems: 1,
-              maxItems: 20,
-              items: { type: 'string', minLength: 1, maxLength: 300 },
+              maxItems: RESOLUTION_VERIFICATION_MAX_ITEMS,
+              items: { type: 'string', minLength: 1, maxLength: RESOLUTION_VERIFICATION_ITEM_MAX_LENGTH },
             },
           },
           required: ['summary', 'verification'],
