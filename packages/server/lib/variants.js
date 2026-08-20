@@ -1,3 +1,5 @@
+import { requestedVariantCount } from './variant-intent.js';
+
 const VARIANT_KEY = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 
 export class VariantContractError extends Error {
@@ -95,9 +97,14 @@ export function createVariantRequest(annotation, candidates) {
     fail('A terminal Annotation cannot begin a Variant request');
   }
   if (annotation.variant_request) fail('Annotation already has explicit Variant state');
+  const requestedCount = requestedVariantCount(annotation);
   validateCandidates(candidates);
+  if (candidates.length !== requestedCount) {
+    fail(`Variant Intent requires ${requestedCount} complete Variants`);
+  }
 
   const next = clone(annotation);
+  delete next.variant_intent;
   next.variant_request = {
     status: 'unresolved',
     active_variant_key: candidates[0].key,

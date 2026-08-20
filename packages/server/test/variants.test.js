@@ -15,8 +15,9 @@ import {
 
 const annotation = () => ({
   id: 'waypoint_1750000000000_abc123xyz',
-  comment: 'Show me two approaches',
+  comment: 'Show me two variants',
   status: 'pending',
+  variant_intent: { requested: true, default_count: 3 },
 });
 
 const candidates = [
@@ -54,10 +55,15 @@ test('activation changes the presented implementation without a lifecycle transi
 });
 
 test('create adds a uniquely named stable candidate without changing the Active Variant', () => {
-  const requested = createVariantRequest(annotation(), [candidates[0]]);
-  const created = addVariant(requested, candidates[1]);
+  const requested = createVariantRequest(annotation(), candidates);
+  const created = addVariant(requested, {
+    key: 'balanced',
+    name: 'Balanced',
+    implementation: { css: '.card { gap: 16px; }' },
+    scaffold: ['variant-shell'],
+  });
 
-  assert.deepEqual(created.variant_request.variants.map(variant => variant.key), ['compact', 'spacious']);
+  assert.deepEqual(created.variant_request.variants.map(variant => variant.key), ['compact', 'spacious', 'balanced']);
   assert.equal(created.variant_request.active_variant_key, 'compact');
   assert.equal(created.variant_request.variants.filter(variant => variant.state === 'active').length, 1);
 });
