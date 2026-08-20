@@ -151,10 +151,6 @@ test('Queue keeps permanent deletion secondary and requires an explicit confirma
   await context.WaypointToolbar.init();
   root.querySelector('.waypoint-tb-queue').click();
   await new Promise(resolve => setImmediate(resolve));
-  root.querySelector('.waypoint-queue-more').click();
-
-  assert.equal(deleted.length, 0);
-  assert.match(root.querySelector('.waypoint-queue-row-menu').textContent, /Delete permanently/);
   root.querySelector('.waypoint-queue-delete').click();
   assert.equal(deleted.length, 0);
   assert.match(root.querySelector('.waypoint-queue-row-menu').textContent, /Delete this annotation permanently\?/);
@@ -255,6 +251,10 @@ test('Queue selection copies only the selected Annotations', async () => {
   assert.equal(clipboardWrites.length, 1);
   assert.doesNotMatch(clipboardWrites[0], /First request/);
   assert.match(clipboardWrites[0], /Second request/);
+  const feedback = root.querySelector('.waypoint-queue-copy-feedback');
+  assert.equal(feedback.getAttribute('role'), 'status');
+  assert.match(feedback.textContent, /Copied/);
+  assert.match(root.querySelector('.waypoint-queue-copy-selected').textContent, /Copied/);
 });
 
 test('Queue Open resolves the Target and reopens the existing Annotation editor', async () => {

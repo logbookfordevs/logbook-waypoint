@@ -1120,12 +1120,12 @@ var WAYPOINT_STYLES = `
 .waypoint-queue-meta { overflow: hidden; color: var(--waypoint-text-secondary); font-size: 11px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .waypoint-queue-open { border: 0; background: transparent; color: var(--waypoint-accent); font-size: 12px; font-weight: 600; cursor: pointer; padding: 2px 0; }
 .waypoint-queue-row-actions { display: flex; align-items: center; gap: 5px; }
-.waypoint-queue-more { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--waypoint-text-secondary); cursor: pointer; }
-.waypoint-queue-more:hover { background: var(--waypoint-surface-3); color: var(--waypoint-text-primary); }
+.waypoint-queue-delete { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--waypoint-text-secondary); cursor: pointer; }
+.waypoint-queue-delete:hover, .waypoint-queue-delete:focus-visible { background: var(--waypoint-danger-hover); color: var(--waypoint-danger); }
 .waypoint-queue-row-menu { grid-column: 2 / -1; display: flex; align-items: center; justify-content: flex-end; gap: 7px; padding-top: 8px; color: var(--waypoint-text-secondary); font-size: 11px; }
 .waypoint-queue-row-menu button { min-height: 30px; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: var(--waypoint-text-primary); font-size: 11px; font-weight: 600; cursor: pointer; }
 .waypoint-queue-row-menu button:hover { background: var(--waypoint-surface-3); }
-.waypoint-queue-row-menu .waypoint-queue-delete, .waypoint-queue-row-menu .waypoint-queue-confirm-delete { color: var(--waypoint-danger); }
+.waypoint-queue-row-menu .waypoint-queue-confirm-delete { color: var(--waypoint-danger); }
 .waypoint-queue-empty { margin: 0; padding: 28px 20px; color: var(--waypoint-text-secondary); font-size: 13px; text-align: center; }
 .waypoint-queue-route { width: 100%; min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; border: 0; border-bottom: 1px solid var(--waypoint-outline); background: transparent; color: var(--waypoint-text-primary); font: 12px/1.4 var(--waypoint-font-mono); text-align: left; cursor: pointer; }
 .waypoint-queue-route:last-child { border-bottom: 0; }
@@ -1133,12 +1133,13 @@ var WAYPOINT_STYLES = `
 .waypoint-queue-route span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .waypoint-queue-route span:last-child { color: var(--waypoint-text-secondary); font-family: var(--waypoint-font-sans); }
 .waypoint-queue-actions { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--waypoint-outline); background: var(--waypoint-surface-2); }
+.waypoint-queue-copy-feedback { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .waypoint-queue-actions button { min-height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--waypoint-text-primary); font-size: 12px; font-weight: 600; cursor: pointer; }
 .waypoint-queue-actions button:hover:not(:disabled) { background: var(--waypoint-surface-3); }
 .waypoint-queue-actions button:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
 .waypoint-queue-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
 .waypoint-queue-discard-selected { color: var(--waypoint-danger) !important; }
-.waypoint-queue-copy-selected { margin-left: auto; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
+.waypoint-queue-copy-selected { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
 .waypoint-queue-confirm-copy { color: var(--waypoint-text-primary); font-size: 12px; font-weight: 600; }
 .waypoint-queue-cancel-discard { margin-left: auto; }
 .waypoint-queue-confirm-discard { background: var(--waypoint-danger) !important; color: #fff !important; }

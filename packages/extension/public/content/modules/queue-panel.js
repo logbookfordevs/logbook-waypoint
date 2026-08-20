@@ -36,8 +36,8 @@ var WaypointQueuePanel = (() => {
         </span>
         <span class="waypoint-queue-row-actions">
           <button class="waypoint-queue-open" type="button" data-annotation-id="${escapeHTML(annotation.id)}">Open</button>
-          <button class="waypoint-queue-more" type="button" data-annotation-id="${escapeHTML(annotation.id)}" aria-label="More actions for annotation">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+          <button class="waypoint-queue-delete" type="button" data-annotation-id="${escapeHTML(annotation.id)}" aria-label="Delete annotation permanently">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
           </button>
         </span>
       </div>
@@ -117,6 +117,7 @@ var WaypointQueuePanel = (() => {
       </div>
       ${annotations.length ? `
         <footer class="waypoint-queue-actions">
+          <span class="waypoint-queue-copy-feedback" role="status" aria-live="polite"></span>
           <button class="waypoint-queue-select-all" type="button">Select all</button>
           <button class="waypoint-queue-discard-selected" type="button" disabled>Discard</button>
           <button class="waypoint-queue-copy-selected" type="button" disabled>Copy</button>
@@ -133,36 +134,33 @@ var WaypointQueuePanel = (() => {
         actions.open?.(annotation);
       });
     });
-    panel.querySelectorAll('.waypoint-queue-more').forEach(button => {
-      button.addEventListener('click', () => openRowMenu(button, annotations, actions));
+    panel.querySelectorAll('.waypoint-queue-delete').forEach(button => {
+      button.addEventListener('click', () => openDeleteConfirm(button, annotations, actions));
     });
     if (annotations.length) wireSelection(annotations, actions);
   }
 
-  function openRowMenu(button, annotations, actions) {
+  function openDeleteConfirm(button, annotations, actions) {
     panel.querySelector('.waypoint-queue-row-menu')?.remove();
     const annotation = annotations.find(candidate => candidate.id === button.dataset.annotationId);
     if (!annotation) return;
     const row = button.closest('.waypoint-queue-row');
     const menu = document.createElement('div');
     menu.className = 'waypoint-queue-row-menu';
-    menu.innerHTML = '<button class="waypoint-queue-delete" type="button">Delete permanently</button>';
+    menu.innerHTML = `
+      <span>Delete this annotation permanently?</span>
+      <button class="waypoint-queue-cancel-delete" type="button">Cancel</button>
+      <button class="waypoint-queue-confirm-delete" type="button">Delete</button>
+    `;
     row.appendChild(menu);
-    menu.querySelector('.waypoint-queue-delete').addEventListener('click', () => {
-      menu.innerHTML = `
-        <span>Delete this annotation permanently?</span>
-        <button class="waypoint-queue-cancel-delete" type="button">Cancel</button>
-        <button class="waypoint-queue-confirm-delete" type="button">Delete</button>
-      `;
-      menu.querySelector('.waypoint-queue-cancel-delete').addEventListener('click', () => menu.remove());
-      menu.querySelector('.waypoint-queue-confirm-delete').addEventListener('click', async () => {
-        try {
-          await actions.delete?.(annotation);
-          close();
-        } catch (error) {
-          showActionError(menu, error, 'Could not delete this annotation.');
-        }
-      });
+    menu.querySelector('.waypoint-queue-cancel-delete').addEventListener('click', () => menu.remove());
+    menu.querySelector('.waypoint-queue-confirm-delete').addEventListener('click', async () => {
+      try {
+        await actions.delete?.(annotation);
+        close();
+      } catch (error) {
+        showActionError(menu, error, 'Could not delete this annotation.');
+      }
     });
   }
 
@@ -200,6 +198,7 @@ var WaypointQueuePanel = (() => {
     const selectAll = panel.querySelector('.waypoint-queue-select-all');
     const discard = panel.querySelector('.waypoint-queue-discard-selected');
     const copy = panel.querySelector('.waypoint-queue-copy-selected');
+    const copyFeedback = panel.querySelector('.waypoint-queue-copy-feedback');
 
     const selectedAnnotations = () => {
       const ids = new Set(inputs.filter(input => input.checked).map(input => input.value));
@@ -222,7 +221,15 @@ var WaypointQueuePanel = (() => {
     });
     copy.addEventListener('click', async () => {
       const selected = selectedAnnotations();
-      if (selected.length) await actions.copy?.(selected);
+      if (!selected.length) return;
+      await actions.copy?.(selected);
+      copyFeedback.textContent = 'Copied to clipboard';
+      copy.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20 6-11 11-5-5"/></svg><span>Copied</span>';
+      setTimeout(() => {
+        if (!copy.isConnected) return;
+        copyFeedback.textContent = '';
+        updateActions();
+      }, 1400);
     });
     discard.addEventListener('click', () => {
       const selected = selectedAnnotations();
