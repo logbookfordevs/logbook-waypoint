@@ -50,10 +50,10 @@ var WaypointQueuePanel = (() => {
   function renderSignalKey() {
     return `
       <div class="waypoint-queue-signal-key" aria-label="Annotation context indicators">
-        ${signalIcon('attachment-key', 'File', '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>')}<span>File</span>
-        ${signalIcon('design-action-key', 'Design action', '<path d="m12 3-1.4 3.6L7 8l3.6 1.4L12 13l1.4-3.6L17 8l-3.6-1.4L12 3Z"/>')}<span>Design action</span>
-        ${signalIcon('css-key', 'CSS', '<path d="m8 3-5 9 5 9"/><path d="m16 3 5 9-5 9"/>')}<span>CSS</span>
-        ${signalIcon('screenshot-key', 'Screenshot', '<path d="M14.5 4 16 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l1.5-3h5Z"/>')}<span>Screenshot</span>
+        <span class="waypoint-queue-signal-key-item">${signalIcon('attachment-key', 'File', '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>')}<span aria-hidden="true">File</span></span>
+        <span class="waypoint-queue-signal-key-item">${signalIcon('design-action-key', 'Design action', '<path d="m12 3-1.4 3.6L7 8l3.6 1.4L12 13l1.4-3.6L17 8l-3.6-1.4L12 3Z"/>')}<span aria-hidden="true">Design action</span></span>
+        <span class="waypoint-queue-signal-key-item">${signalIcon('css-key', 'CSS', '<path d="m8 3-5 9 5 9"/><path d="m16 3 5 9-5 9"/>')}<span aria-hidden="true">CSS</span></span>
+        <span class="waypoint-queue-signal-key-item">${signalIcon('screenshot-key', 'Screenshot', '<path d="M14.5 4 16 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l1.5-3h5Z"/>')}<span aria-hidden="true">Screenshot</span></span>
       </div>
     `;
   }
