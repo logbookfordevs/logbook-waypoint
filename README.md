@@ -101,6 +101,10 @@ The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
 ### Design Actions setup
 
+Design Actions let you pair the normal Annotation comment with one Impeccable design discipline—such as Polish, Layout, Typeset, or Animate—or leave the action in Freeform. Turn on **Design Actions** in the Annotation editor, choose an action if one fits, and save the request to the normal Waypoint Queue.
+
+See [Use Design Actions](docs/DESIGN_ACTIONS.md) for the complete authoring flow, action catalog, Variant behavior, Queue outcomes, and troubleshooting expectations.
+
 Design Actions require [Impeccable](https://github.com/pbakaus/impeccable). Install it through Impeccable's current agent-specific instructions; Waypoint neither installs it nor detects whether it is available.
 
 - **Tested:** no agent-specific Impeccable installation path is certified by Waypoint in this initial integration.
