@@ -110,6 +110,9 @@ test('dismissing a Work Notice keeps the Annotation Pending', () => {
   assert.equal(dismissed.status, 'pending');
   assert.equal('work_notice' in dismissed, false);
   assert.equal(dismissed.updated_at, '2026-08-19T12:00:00.000Z');
+
+  const repeated = lifecycle.apply(dismissed, { operation: 'dismiss_notice' });
+  assert.deepEqual(repeated, dismissed);
 });
 
 test('Annotation lifecycle retains resolution and discard while terminal states reject transitions', () => {

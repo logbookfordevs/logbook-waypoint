@@ -194,6 +194,14 @@ test('Claim locks the Design Intent and comment work contract', async () => {
     const retained = (await server.readAnnotations({ status: 'claimed' })).annotations[0];
     assert.equal(retained.comment, 'Retain me');
     assert.equal('design_intent' in retained, false);
+
+    const syncResponse = await fetch(`${baseUrl}/api/annotations/sync`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ annotations: [{ ...retained, comment: 'Bypass through sync' }] }),
+    });
+    assert.equal(syncResponse.status, 409);
+    assert.match((await syncResponse.json()).error, /work contract/i);
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));

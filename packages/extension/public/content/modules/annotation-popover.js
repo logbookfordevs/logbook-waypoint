@@ -281,11 +281,15 @@ var WaypointAnnotationPopover = (() => {
     const workNoticeTitle = workNotice?.code === 'workflow_unavailable'
       ? 'Design workflow unavailable'
       : 'Design workflow needs attention';
+    const workNoticeGuidance = workNotice?.code === 'workflow_unavailable'
+      ? 'Set up Impeccable, then claim this Annotation again.'
+      : 'Review the notice, then claim this Annotation to retry.';
     const workNoticeHTML = workNotice ? `
       <div class="waypoint-work-notice" role="status">
         <div class="waypoint-work-notice-copy">
           <strong>${workNoticeTitle}</strong>
           <span>${escapeHTML(workNotice.summary)}</span>
+          <span>${workNoticeGuidance}</span>
         </div>
         <button class="waypoint-work-notice-dismiss" type="button">Dismiss</button>
       </div>

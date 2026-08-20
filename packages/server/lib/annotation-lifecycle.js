@@ -135,6 +135,7 @@ export class AnnotationLifecycle {
       if (current.status !== 'pending') {
         throw new LifecycleError('invalid_transition', 'Only a Pending Annotation can dismiss a Work Notice');
       }
+      if (!current.work_notice) return current;
       return { ...withoutWorkNotice(current), updated_at: timestamp };
     }
 

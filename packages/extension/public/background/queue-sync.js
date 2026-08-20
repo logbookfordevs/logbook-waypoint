@@ -8,13 +8,35 @@ var WaypointQueueSync = (() => {
     return content;
   }
 
-  function withServerLifecycle(candidate, server) {
-    const merged = { ...candidate, status: server.status };
-    if (Object.hasOwn(server, 'claim')) merged.claim = server.claim;
+  function applyLifecycleFields(candidate, source) {
+    const merged = { ...candidate, status: source.status };
+    if (Object.hasOwn(source, 'claim')) merged.claim = source.claim;
     else delete merged.claim;
-    if (Object.hasOwn(server, 'work_notice')) merged.work_notice = server.work_notice;
+    if (Object.hasOwn(source, 'work_notice')) merged.work_notice = source.work_notice;
     else delete merged.work_notice;
+    if (source.status !== 'pending') {
+      merged.comment = source.comment;
+      if (Object.hasOwn(source, 'design_intent')) merged.design_intent = source.design_intent;
+      else delete merged.design_intent;
+    }
     return merged;
+  }
+
+  function withServerLifecycle(candidate, server, local = candidate) {
+    const localTime = new Date(local.updated_at || local.created_at || 0).getTime();
+    const serverTime = new Date(server.updated_at || server.created_at || 0).getTime();
+    const source = local._synced && localTime > serverTime ? local : server;
+    return applyLifecycleFields(candidate, source);
+  }
+
+  function applyServerLifecycle(local, server) {
+    const localTime = new Date(local.updated_at || local.created_at || 0).getTime();
+    const serverTime = new Date(server.updated_at || server.created_at || 0).getTime();
+    return {
+      ...applyLifecycleFields(local, server),
+      updated_at: localTime > serverTime ? local.updated_at : server.updated_at,
+      _synced: true,
+    };
   }
 
   function withPreservedDesignIntent(candidate, local, server, removeDesignIntent = false) {
@@ -23,6 +45,7 @@ var WaypointQueueSync = (() => {
       delete withoutDesignIntent.design_intent;
       return withoutDesignIntent;
     }
+    if (candidate.status !== 'pending') return candidate;
     return WaypointDesignIntent.preserve(server, WaypointDesignIntent.preserve(local, candidate));
   }
 
@@ -35,7 +58,7 @@ var WaypointQueueSync = (() => {
       if (field in variantOwner) merged[field] = variantOwner[field];
       else delete merged[field];
     }
-    const lifecycleMerged = withPreservedDesignIntent(withServerLifecycle(merged, server), local, server, removeDesignIntent);
+    const lifecycleMerged = withPreservedDesignIntent(withServerLifecycle(merged, server, local), local, server, removeDesignIntent);
     const matchesServer = JSON.stringify(withoutSyncFlag(lifecycleMerged)) === JSON.stringify(withoutSyncFlag(server));
     return { ...lifecycleMerged, _synced: matchesServer };
   }
@@ -64,7 +87,7 @@ var WaypointQueueSync = (() => {
         const localOwnsVariant = hasVariantOwnedState(local);
         const serverOwnsVariant = hasVariantOwnedState(server);
         if (localOwnsVariant && !serverOwnsVariant) {
-          const merged = withPreservedDesignIntent(withServerLifecycle(local, server), local, server, removeDesignIntent);
+          const merged = withPreservedDesignIntent(withServerLifecycle(local, server, local), local, server, removeDesignIntent);
           annotations.push(merged);
           if (JSON.stringify(merged) !== JSON.stringify(local)) changed = true;
           continue;
@@ -81,7 +104,7 @@ var WaypointQueueSync = (() => {
           annotations.push({ ...withPreservedDesignIntent(server, local, server, removeDesignIntent), _synced: !removeDesignIntent });
           changed = true;
         } else {
-          const merged = withPreservedDesignIntent(withServerLifecycle(local, server), local, server, removeDesignIntent);
+          const merged = withPreservedDesignIntent(withServerLifecycle(local, server, local), local, server, removeDesignIntent);
           const matchesServer = JSON.stringify(withoutSyncFlag(merged)) === JSON.stringify(withoutSyncFlag(server));
           if (!matchesServer) flagsChanged = true;
           annotations.push({ ...merged, _synced: matchesServer });
@@ -103,5 +126,5 @@ var WaypointQueueSync = (() => {
     return { annotations, changed, flagsChanged };
   }
 
-  return { merge };
+  return { applyServerLifecycle, merge };
 })();

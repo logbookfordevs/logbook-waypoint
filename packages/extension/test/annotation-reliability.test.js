@@ -507,12 +507,50 @@ test('Queue conflict resolution preserves server-owned lifecycle state and Claim
     { ...local, status: 'discarded', comment: 'old server comment', updated_at: '2026-01-02T00:00:00.000Z' },
   ]) {
     const merged = context.WaypointQueueSync.merge([local], [server], []).annotations[0];
-    assert.equal(merged.comment, 'new local comment');
+    assert.equal(merged.comment, server.status === 'pending' ? 'new local comment' : 'old server comment');
     assert.equal(merged.status, server.status);
     assert.deepEqual(merged.claim, server.claim);
     assert.deepEqual(merged.work_notice, server.work_notice);
     assert.equal(merged._synced, false);
   }
+});
+
+test('Queue lifecycle reconciliation rejects stale notice snapshots and preserves concurrent edits', async () => {
+  const context = createBrowserContext();
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'background/queue-sync.js');
+  const id = 'waypoint_1750000000001_abcdefghi';
+  const cleared = {
+    id,
+    status: 'pending',
+    comment: 'Locally edited after dismissal',
+    updated_at: '2026-08-19T12:01:00.000Z',
+    _synced: true,
+  };
+  const stale = {
+    id,
+    status: 'pending',
+    comment: 'Before dismissal',
+    updated_at: '2026-08-19T12:00:00.000Z',
+    work_notice: {
+      code: 'execution_failed',
+      summary: 'Retry the workflow.',
+      created_at: '2026-08-19T11:59:00.000Z',
+    },
+  };
+
+  const reconciled = context.WaypointQueueSync.merge([cleared], [stale], []).annotations[0];
+  assert.equal(reconciled.comment, cleared.comment);
+  assert.equal('work_notice' in reconciled, false);
+
+  const lifecycleResponse = {
+    ...stale,
+    updated_at: '2026-08-19T12:00:30.000Z',
+  };
+  delete lifecycleResponse.work_notice;
+  const concurrent = context.WaypointQueueSync.applyServerLifecycle(cleared, lifecycleResponse);
+  assert.equal(concurrent.comment, cleared.comment);
+  assert.equal('work_notice' in concurrent, false);
 });
 
 test('rendered Queue shows recovery guidance and dismisses Work Notices through lifecycle', async () => {
@@ -548,12 +586,16 @@ test('rendered Queue shows recovery guidance and dismisses Work Notices through 
   popup.render = () => {};
 
   const container = context.document.createElement('div');
+  container.id = 'annotations-list';
+  context.document.body.appendChild(container);
   container.innerHTML = popup.renderAnnotationItem(popup.annotations[0]);
   const notice = container.querySelector('.work-notice');
   assert.match(notice.textContent, /Design workflow needs attention/);
   assert.match(notice.textContent, /The design workflow stopped before producing a result/);
 
-  await popup.dismissWorkNotice('waypoint_1750000000001_abcdefghi');
+  popup.setupAnnotationListeners();
+  container.querySelector('.work-notice-dismiss').click();
+  await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(JSON.parse(JSON.stringify(messages)), [{
     action: 'dismissWorkNotice',
     id: 'waypoint_1750000000001_abcdefghi',

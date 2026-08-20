@@ -4,6 +4,7 @@ import { mkdir, open, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { isValidAnnotationId } from './annotation-id.js';
+import { assertAnnotationLifecycleState } from './annotation-lifecycle.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
 
 function canonicalValue(value) {
@@ -95,6 +96,7 @@ function validateSavedQueue(saved) {
     }
     cursors.add(change.cursor);
     const annotation = normalizeJournalAnnotation(change.annotation);
+    assertAnnotationLifecycleState(annotation);
     assertAnnotationDesignIntent(annotation);
     return { ...change, annotation };
   });

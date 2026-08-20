@@ -244,6 +244,15 @@ export function assertSyncedAnnotationAllowed(current, incoming) {
   if (JSON.stringify(incoming.work_notice ?? null) !== JSON.stringify(current.work_notice ?? null)) {
     fail('Synchronization cannot change Work Notice');
   }
+  if (
+    current.status !== 'pending'
+    && (
+      incoming.comment !== current.comment
+      || JSON.stringify(incoming.design_intent ?? null) !== JSON.stringify(current.design_intent ?? null)
+    )
+  ) {
+    fail('Synchronization cannot change a Claimed or terminal Annotation work contract');
+  }
   if (current.variant_request) {
     for (const field of ['variant_request', 'variant_presentation', 'pending_changes', 'css']) {
       if (JSON.stringify(current[field] ?? null) !== JSON.stringify(incoming[field] ?? null)) {

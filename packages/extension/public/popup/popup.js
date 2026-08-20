@@ -123,11 +123,15 @@ class AnnotationsPopup {
     const workNoticeTitle = annotation.work_notice?.code === 'workflow_unavailable'
       ? 'Design workflow unavailable'
       : 'Design workflow needs attention';
+    const workNoticeGuidance = annotation.work_notice?.code === 'workflow_unavailable'
+      ? 'Set up Impeccable, then claim this Annotation again.'
+      : 'Review the notice, then claim this Annotation to retry.';
     const workNotice = annotation.status === 'pending' && annotation.work_notice ? `
       <div class="work-notice" role="status">
         <div class="work-notice-copy">
           <strong>${workNoticeTitle}</strong>
           <span>${this.escapeHtml(annotation.work_notice.summary)}</span>
+          <span>${workNoticeGuidance}</span>
         </div>
         <button class="work-notice-dismiss" data-id="${annotation.id}" type="button">Dismiss</button>
       </div>

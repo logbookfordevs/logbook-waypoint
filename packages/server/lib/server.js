@@ -28,6 +28,7 @@ import {
 } from './design-intent.js';
 import {
   ANNOTATION_STATUSES,
+  WORK_NOTICE_CODES,
   AnnotationLifecycle,
   LifecycleError,
   assertAnnotationLifecycleState,
@@ -77,7 +78,7 @@ function lifecycleToolSchema({ owner, reason = false }) {
         reason: {
           type: 'object',
           properties: {
-            code: { type: 'string', enum: ['workflow_unavailable', 'execution_failed'] },
+            code: { type: 'string', enum: [...WORK_NOTICE_CODES] },
             summary: { type: 'string', minLength: 1, maxLength: 500 },
           },
           required: ['code', 'summary'],

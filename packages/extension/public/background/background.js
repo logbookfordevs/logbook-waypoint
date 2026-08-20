@@ -435,12 +435,14 @@ class WaypointAnnotationsBackground {
       throw new Error(result.error || `Lifecycle operation failed (${response.status})`);
     }
 
-    const annotation = { ...WaypointAnnotationStatus.normalize(result.annotation), _synced: true };
+    const serverAnnotation = WaypointAnnotationStatus.normalize(result.annotation);
+    let annotation = { ...serverAnnotation, _synced: true };
     await this._withStorageLock(async () => {
       const stored = await chrome.storage.local.get(['waypointAnnotations']);
       const annotations = WaypointAnnotationCollection.canonicalize(stored.waypointAnnotations);
       const index = annotations.findIndex(candidate => candidate.id === id);
       if (index !== -1) {
+        annotation = WaypointQueueSync.applyServerLifecycle(annotations[index], serverAnnotation);
         annotations[index] = annotation;
         await chrome.storage.local.set({ waypointAnnotations: annotations });
       }
