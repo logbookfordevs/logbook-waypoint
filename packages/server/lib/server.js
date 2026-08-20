@@ -27,6 +27,11 @@ import {
   preserveDesignIntent,
 } from './design-intent.js';
 import {
+  applyVariantIntentUpdate,
+  assertAnnotationVariantIntent,
+  preserveVariantIntent,
+} from './variant-intent.js';
+import {
   ANNOTATION_STATUSES,
   AnnotationLifecycle,
   LifecycleError,
@@ -289,13 +294,20 @@ export class LocalAnnotationsServer {
           return res.status(400).json({ error: 'request body must be an object' });
         }
 
-        const { annotations, design_intent_removals = [] } = req.body;
+        const {
+          annotations,
+          design_intent_removals = [],
+          variant_intent_removals = [],
+        } = req.body;
         
         if (!Array.isArray(annotations)) {
           return res.status(400).json({ error: 'annotations must be an array' });
         }
         if (!Array.isArray(design_intent_removals) || design_intent_removals.some(id => typeof id !== 'string')) {
           return res.status(400).json({ error: 'design_intent_removals must be an array of annotation IDs' });
+        }
+        if (!Array.isArray(variant_intent_removals) || variant_intent_removals.some(id => typeof id !== 'string')) {
+          return res.status(400).json({ error: 'variant_intent_removals must be an array of annotation IDs' });
         }
 
         for (const annotation of annotations) assertValidAnnotation(annotation);
@@ -307,17 +319,25 @@ export class LocalAnnotationsServer {
         const result = await this.applyAnnotationsUpdate(async current => {
           const currentById = new Map(current.map(annotation => [annotation.id, annotation]));
           const removalIds = new Set(design_intent_removals);
+          const variantRemovalIds = new Set(variant_intent_removals);
           if ([...removalIds].some(id => !annotations.some(annotation => annotation.id === id))) {
             throw new TypeError('Design Intent removals must reference synchronized annotations');
+          }
+          if ([...variantRemovalIds].some(id => !annotations.some(annotation => annotation.id === id))) {
+            throw new TypeError('Variant Intent removals must reference synchronized annotations');
           }
           const normalizedAnnotations = [];
           for (const annotation of annotations) {
             const normalized = await this.normalizeAnnotationMedia(annotation, { stagedAttachments });
             const merged = preserveResolutionRecord(
               currentById.get(annotation.id),
-              preserveDesignIntent(currentById.get(annotation.id), normalized),
+              preserveVariantIntent(
+                currentById.get(annotation.id),
+                preserveDesignIntent(currentById.get(annotation.id), normalized),
+              ),
             );
             if (removalIds.has(annotation.id)) delete merged.design_intent;
+            if (variantRemovalIds.has(annotation.id)) delete merged.variant_intent;
             normalizedAnnotations.push(merged);
           }
           for (const incoming of normalizedAnnotations) assertSyncedAnnotationAllowed(currentById.get(incoming.id), incoming);
@@ -421,7 +441,11 @@ export class LocalAnnotationsServer {
           if (index === -1) throw new Error('Annotation not found');
           const existing = annotations[index];
           assertGenericAnnotationUpdateAllowed(existing, updates);
-          const updated = applyDesignIntentUpdate(existing, { ...updates, id });
+          const updatedDesignIntent = applyDesignIntentUpdate(existing, { ...updates, id });
+          const variantIntentUpdate = Object.hasOwn(updates, 'variant_intent')
+            ? { variant_intent: updates.variant_intent }
+            : {};
+          const updated = applyVariantIntentUpdate(updatedDesignIntent, variantIntentUpdate);
           const normalized = await this.normalizeAnnotationMedia(updated, { stagedAttachments });
           annotations[index] = { ...normalized, updated_at: new Date().toISOString() };
           return {
@@ -1030,6 +1054,7 @@ export class LocalAnnotationsServer {
       validAnnotations.forEach(assertAnnotationLifecycleState);
       validAnnotations.forEach(assertAnnotationDesignIntent);
       validAnnotations.forEach(assertAnnotationResolutionRecord);
+      validAnnotations.forEach(assertAnnotationVariantIntent);
       return validAnnotations;
     } catch (error) {
       console.error('Error loading annotations:', error);
@@ -1048,6 +1073,7 @@ export class LocalAnnotationsServer {
     annotations.forEach(assertAnnotationLifecycleState);
     annotations.forEach(assertAnnotationDesignIntent);
     annotations.forEach(assertAnnotationResolutionRecord);
+    annotations.forEach(assertAnnotationVariantIntent);
     // Move jsonData outside try block to make it accessible in catch
     console.log(`Saving ${annotations.length} annotations to disk`);
     const jsonData = JSON.stringify(annotations, null, 2);

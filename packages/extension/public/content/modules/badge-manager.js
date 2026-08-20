@@ -348,7 +348,7 @@ var WaypointBadgeManager = (() => {
     });
   }
 
-  function onUpdated({ id, comment, pending_changes, css, design_intent }) {
+  function onUpdated({ id, comment, pending_changes, css, design_intent, variant_intent }) {
     const entry = badges.find(b => b.annotation.id === id);
     if (entry) {
       const tooltip = entry.el.querySelector('.waypoint-badge-tooltip');
@@ -357,7 +357,7 @@ var WaypointBadgeManager = (() => {
       // Revert old copy change before applying new state
       entry.annotation = WaypointDesignIntent.applyUpdate(
         entry.annotation,
-        { comment, pending_changes, css, design_intent },
+        { comment, pending_changes, css, design_intent, variant_intent },
       );
       restorePendingChanges(entry.targetElement, oldPC);
       if (pending_changes) {

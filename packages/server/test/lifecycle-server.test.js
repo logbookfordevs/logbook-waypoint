@@ -463,6 +463,106 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
   }
 });
 
+test('canonical Variant Intent crosses HTTP, persistence, MCP Read, and Watch', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-intent-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const server = new LocalAnnotationsServer({
+    annotationsFile,
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+  const variantIntent = { requested: true, default_count: 3 };
+  const annotation = {
+    id,
+    url: 'http://localhost:3000/app',
+    comment: 'Show me five variants',
+    status: 'pending',
+    variant_intent: variantIntent,
+  };
+
+  try {
+    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const response = await fetch(`${baseUrl}/api/annotations`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(annotation),
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).annotation.variant_intent, variantIntent);
+    assert.deepEqual(JSON.parse(await readFile(annotationsFile, 'utf8'))[0].variant_intent, variantIntent);
+
+    const read = await server.readAnnotations({ status: 'pending' });
+    assert.deepEqual(read.annotations[0].variant_intent, variantIntent);
+    const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
+    assert.deepEqual(watched.changes.at(-1).annotation.variant_intent, variantIntent);
+
+    let callTool;
+    server.setupMCPHandlersForServer({
+      setRequestHandler(schema, handler) {
+        if (schema === CallToolRequestSchema) callTool = handler;
+      },
+    });
+    const mcpRead = await callTool({
+      params: { name: 'read_annotations', arguments: { status: 'pending' } },
+    });
+    const payload = JSON.parse(mcpRead.content[0].text);
+    assert.deepEqual(payload.data.annotations[0].variant_intent, variantIntent);
+
+    const removalResponse = await fetch(`${baseUrl}/api/annotations/sync`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        annotations: [{ ...annotation, variant_intent: undefined }],
+        variant_intent_removals: [annotation.id],
+      }),
+    });
+    assert.equal(removalResponse.status, 200);
+    assert.equal(
+      'variant_intent' in (await server.readAnnotations({ status: 'pending' })).annotations[0],
+      false,
+    );
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('HTTP rejects malformed Variant Intent while ordinary Annotations remain compatible', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-intent-validation-'));
+  const server = new LocalAnnotationsServer({
+    annotationsFile: path.join(directory, 'annotations.json'),
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+
+  try {
+    for (const variant_intent of [
+      { requested: false, default_count: 3 },
+      { requested: true, default_count: 4 },
+      { requested: true, default_count: 3, count: 5 },
+    ]) {
+      const response = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id, url: 'http://localhost:3000/app', comment: 'Compare', variant_intent }),
+      });
+      assert.equal(response.status, 400);
+      assert.match((await response.json()).error, /Variant Intent/i);
+    }
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('HTTP rejects malformed Design Intent while ordinary Annotations remain compatible', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-design-intent-validation-'));
   const server = new LocalAnnotationsServer({

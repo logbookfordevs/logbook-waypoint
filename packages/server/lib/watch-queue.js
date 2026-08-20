@@ -6,6 +6,7 @@ import path from 'node:path';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
 import { assertResolutionRecordSummary } from './resolution-record.js';
+import { assertAnnotationVariantIntent } from './variant-intent.js';
 
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
@@ -103,6 +104,7 @@ function validateSavedQueue(saved) {
     const annotation = normalizeJournalAnnotation(change.annotation);
     assertAnnotationDesignIntent(annotation);
     if (annotation.resolution_record !== undefined) assertResolutionRecordSummary(annotation.resolution_record);
+    assertAnnotationVariantIntent(annotation);
     return { ...change, annotation };
   });
   return { initialCursor: saved.initialCursor, history };
