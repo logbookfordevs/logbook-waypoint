@@ -404,6 +404,122 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   assert.equal(updated[1].updates.design_intent, null);
 });
 
+test('rendered editor selects one named Design Action, explains it, and returns to Freeform', async () => {
+  const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
+  const handlers = new Map();
+  const saved = [];
+  const computedStyle = new Proxy({ display: 'block' }, { get: (styles, key) => styles[key] ?? '' });
+  const context = vm.createContext({
+    window,
+    document: window.document,
+    navigator: { platform: 'MacIntel' },
+    Node: window.Node,
+    URL,
+    console,
+    requestAnimationFrame: () => 1,
+    cancelAnimationFrame() {},
+    getComputedStyle: () => computedStyle,
+  });
+  context.globalThis = context;
+  context.window.innerWidth = 390;
+  context.window.innerHeight = 800;
+  context.window.location = new URL('http://localhost:3000/app');
+  context.window.getComputedStyle = () => computedStyle;
+  context.window.HTMLTextAreaElement.prototype.select = function select() {};
+  context.WaypointEvents = {
+    on(name, handler) { handlers.set(name, handler); },
+    emit() {},
+  };
+  context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#root') };
+  context.WaypointInspectionMode = { tempDisable() {}, reEnable() {} };
+  context.WaypointVariantPicker = {
+    handles: () => false,
+    locksPresentation: () => false,
+    buildAnnotationUpdates: (_annotation, comment, pendingChanges, css) => ({ comment, pending_changes: pendingChanges, css }),
+  };
+  context.WaypointAPI = {
+    isFileProtocol: () => false,
+    getShowDesignActions: async () => true,
+    saveAnnotation: async annotation => { saved.push(annotation); },
+  };
+  context.WaypointAnnotationId = { create: () => 'waypoint_1750000000000_abc123xyz' };
+
+  const source = await readFile(new URL('../.output/chrome-mv3/content/modules/annotation-popover.js', import.meta.url), 'utf8');
+  const designIntentSource = await readFile(new URL('../.output/chrome-mv3/design-intent.js', import.meta.url), 'utf8');
+  vm.runInContext(designIntentSource, context);
+  vm.runInContext(source, context);
+  context.WaypointAnnotationPopover.init();
+
+  const target = context.document.querySelector('#target');
+  target.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 40, right: 100, bottom: 40 });
+  context.WaypointElementContext = { generate: async () => ({
+    selector: '#target',
+    tag: 'button',
+    classes: [],
+    text: 'Target',
+    styles: computedStyle,
+    position: { x: 0, y: 0, width: 100, height: 40 },
+    viewport: { width: 390, height: 800 },
+  }) };
+
+  await handlers.get('inspection:elementClicked')({ element: target, clientX: 10, clientY: 10 });
+  const toggle = context.document.querySelector('.waypoint-design-intent');
+  toggle.checked = true;
+  toggle.dispatchEvent(new window.Event('change'));
+
+  const explanations = new Map([
+    ['bolder', 'Increase visual impact and confidence.'],
+    ['quieter', 'Reduce visual intensity and distraction.'],
+    ['distill', 'Remove complexity and keep only what matters.'],
+    ['polish', 'Refine hierarchy, spacing, and visual details.'],
+    ['typeset', 'Improve typography, scale, and rhythm.'],
+    ['colorize', 'Add purposeful color and clearer emphasis.'],
+    ['layout', 'Improve structure, spacing, and alignment.'],
+    ['animate', 'Add purposeful motion and transitions.'],
+    ['delight', 'Add personality through thoughtful details.'],
+    ['overdrive', 'Push the design beyond conventional limits.'],
+  ]);
+  const expectedActions = [...explanations.keys()];
+  const buttons = [...context.document.querySelectorAll('.waypoint-design-action')];
+  assert.deepEqual(buttons.map(button => button.dataset.action), expectedActions);
+  assert.ok(buttons.every(button => button.getAttribute('aria-pressed') === 'false'));
+  assert.equal(context.document.querySelector('.waypoint-design-action-state').textContent, 'Design Actions · Freeform');
+  assert.equal(context.document.querySelector('.waypoint-design-action-state').getAttribute('aria-live'), 'polite');
+
+  for (const button of buttons) {
+    button.click();
+    assert.equal(button.getAttribute('aria-pressed'), 'true');
+    assert.equal(context.document.querySelector('.waypoint-design-action-description').textContent, explanations.get(button.dataset.action));
+    assert.equal(buttons.filter(candidate => candidate.getAttribute('aria-pressed') === 'true').length, 1);
+  }
+
+  const polish = context.document.querySelector('[data-action="polish"]');
+  if (polish.getAttribute('aria-pressed') !== 'true') polish.click();
+  assert.equal(polish.getAttribute('aria-pressed'), 'true');
+  assert.equal(context.document.querySelector('.waypoint-design-action-state').textContent, 'Design Action · Polish');
+  assert.equal(context.document.querySelector('.waypoint-design-action-description').textContent, 'Refine hierarchy, spacing, and visual details.');
+  assert.equal(context.document.querySelector('.waypoint-design-action-description').getAttribute('aria-live'), 'polite');
+  assert.ok(buttons.filter(button => button.getAttribute('aria-pressed') === 'true').length === 1);
+
+  context.document.querySelector('.waypoint-textarea').value = 'Keep the existing comment as the brief';
+  context.document.querySelector('.waypoint-textarea').dispatchEvent(new window.Event('input'));
+  context.document.querySelector('.waypoint-save-btn').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(JSON.parse(JSON.stringify(saved[0].design_intent)), {
+    schema_version: 1,
+    workflow: 'impeccable',
+    action: 'polish',
+  });
+
+  await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
+  const restoredPolish = context.document.querySelector('[data-action="polish"]');
+  assert.equal(restoredPolish.getAttribute('aria-pressed'), 'true');
+  restoredPolish.click();
+  assert.equal(restoredPolish.getAttribute('aria-pressed'), 'false');
+  assert.equal(context.document.querySelector('.waypoint-design-action-state').textContent, 'Design Actions · Freeform');
+  assert.equal(context.document.querySelector('.waypoint-design-action-description').textContent, '');
+});
+
 test('live Annotation consumers retain Design Intent after editor updates', async () => {
   const content = await readFile(new URL('../.output/chrome-mv3/content/content.js', import.meta.url), 'utf8');
   const badges = await readFile(new URL('../.output/chrome-mv3/content/modules/badge-manager.js', import.meta.url), 'utf8');

@@ -613,6 +613,18 @@ var WAYPOINT_STYLES = `
 .waypoint-variant-intent:checked { border-color:var(--waypoint-accent); background:var(--waypoint-accent); }
 .waypoint-variant-intent:checked::after { content:''; position:absolute; left:5px; top:2px; width:4px; height:8px; border:solid var(--waypoint-on-accent); border-width:0 1.5px 1.5px 0; transform:rotate(45deg); }
 .waypoint-variant-intent:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }
+.waypoint-design-actions { display:grid; gap:8px; }
+.waypoint-design-action-catalog { display:grid; gap:7px; padding:0 2px 2px; }
+.waypoint-design-action-catalog[hidden] { display:none; }
+.waypoint-design-action-heading { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.waypoint-design-action-state { color:var(--waypoint-text-primary); font-size:10px; line-height:1.35; font-weight:600; }
+.waypoint-design-action-dependency { color:var(--waypoint-text-secondary); font-size:9px; line-height:1.35; }
+.waypoint-design-action-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
+.waypoint-design-action { min-width:0; min-height:30px; padding:5px 8px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-1); color:var(--waypoint-text-primary); font:600 10px/1.2 var(--waypoint-font); text-align:left; cursor:pointer; transition:border-color .15s ease,background .15s ease,color .15s ease; }
+.waypoint-design-action:hover { border-color:var(--waypoint-outline-highlight); background:var(--waypoint-surface-hover); }
+.waypoint-design-action[aria-pressed="true"] { border-color:var(--waypoint-accent); background:color-mix(in srgb,var(--waypoint-accent) 14%,var(--waypoint-surface-1)); color:var(--waypoint-accent); }
+.waypoint-design-action:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }
+.waypoint-design-action-description { min-height:14px; color:var(--waypoint-text-secondary); font-size:9px; line-height:1.4; }
 
 /* Color picker */
 .waypoint-color-row { display:flex; align-items:center; gap:6px; }
