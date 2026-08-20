@@ -77,6 +77,16 @@ globalThis.WaypointAnnotationStatus = (() => {
     return normalizeAll(annotations).filter(isActionable);
   }
 
+  function isRenderable(annotation) {
+    const normalized = normalize(annotation);
+    return ACTIONABLE_STATUSES.has(normalized.status)
+      || normalized.design_intent !== undefined && ['resolved', 'discarded'].includes(normalized.status);
+  }
+
+  function filterRenderable(annotations) {
+    return normalizeAll(annotations).filter(isRenderable);
+  }
+
   function countActionable(annotations) {
     return filterActionable(annotations).reduce(
       (counts, annotation) => ({ ...counts, [annotation.status]: counts[annotation.status] + 1 }),
@@ -91,7 +101,9 @@ globalThis.WaypointAnnotationStatus = (() => {
     assertFilter,
     countActionable,
     filterActionable,
+    filterRenderable,
     isActionable,
+    isRenderable,
     migrateLegacy,
     migrateLegacyAll,
     normalize,

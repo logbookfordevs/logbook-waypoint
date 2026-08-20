@@ -92,6 +92,185 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
   }
 });
 
+test('Design Actions resolve with a retained Resolution Record while Watch stays concise', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-resolution-record-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  await writeFile(annotationsFile, JSON.stringify([{
+    id,
+    url: 'http://localhost:3000/app',
+    comment: 'Make the hierarchy intentional',
+    status: 'pending',
+    design_intent: { schema_version: 1, workflow: 'impeccable', action: null },
+  }]));
+  const server = new LocalAnnotationsServer({
+    annotationsFile,
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+  const resolutionRecord = {
+    summary: 'Clarified the heading hierarchy and supporting copy.',
+    verification: ['Focused lifecycle tests pass', 'Reviewed at 390px'],
+  };
+
+  try {
+    await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
+    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const response = await fetch(`${baseUrl}/api/annotations/${id}/resolve`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ owner: 'agent-one', resolution_record: resolutionRecord }),
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).annotation.resolution_record, resolutionRecord);
+
+    const persisted = JSON.parse(await readFile(annotationsFile, 'utf8'))[0];
+    assert.deepEqual(persisted.resolution_record, resolutionRecord);
+
+    const read = (await server.readAnnotations({ status: 'resolved' })).annotations[0];
+    assert.deepEqual(read.resolution_record, resolutionRecord);
+
+    let callTool;
+    server.setupMCPHandlersForServer({
+      setRequestHandler(schema, handler) {
+        if (schema === CallToolRequestSchema) callTool = handler;
+      },
+    });
+    const mcpRead = await callTool({
+      params: { name: 'read_annotations', arguments: { status: 'resolved' } },
+    });
+    assert.deepEqual(JSON.parse(mcpRead.content[0].text).data.annotations[0].resolution_record, resolutionRecord);
+
+    const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
+    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, {
+      summary: resolutionRecord.summary,
+    });
+
+    for (const synchronized of [
+      { ...persisted, resolution_record: undefined },
+      {
+        ...persisted,
+        resolution_record: { summary: 'Rewritten history', verification: ['Untrusted replacement'] },
+      },
+    ]) {
+      const sync = await fetch(`${baseUrl}/api/annotations/sync`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ annotations: [synchronized] }),
+      });
+      assert.equal(sync.status, 200);
+      assert.deepEqual(
+        (await server.readAnnotations({ status: 'resolved' })).annotations[0].resolution_record,
+        resolutionRecord,
+      );
+    }
+
+    const restarted = new LocalAnnotationsServer({
+      annotationsFile,
+      watchHistoryFile: path.join(directory, 'watch.json'),
+      attachmentRoot: path.join(directory, 'attachments'),
+    });
+    assert.deepEqual(
+      (await restarted.readAnnotations({ status: 'resolved' })).annotations[0].resolution_record,
+      resolutionRecord,
+    );
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('Design Actions require safe Resolution Records while ordinary resolution stays compatible', async () => {
+  const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
+  const { directory, server } = await fixture(now);
+
+  try {
+    await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
+    const ordinary = await server.changeAnnotationLifecycle({ id, operation: 'resolve', owner: 'agent-one' });
+    assert.equal(ordinary.status, 'resolved');
+    assert.equal('resolution_record' in ordinary, false);
+
+    const designAction = {
+      ...ordinary,
+      id: 'waypoint_1750000000001_def456uvw',
+      status: 'claimed',
+      claim: {
+        owner: 'agent-two',
+        refreshed_at: '2026-08-11T12:00:00.000Z',
+        expires_at: '2026-08-11T12:01:00.000Z',
+      },
+      design_intent: { schema_version: 1, workflow: 'impeccable', action: null },
+    };
+    await server.applyAnnotationsUpdate(annotations => annotations.push(designAction));
+
+    await assert.rejects(
+      () => server.changeAnnotationLifecycle({ id: designAction.id, operation: 'resolve', owner: 'agent-two' }),
+      /Resolution Record/i,
+    );
+    for (const unsafeEvidence of [
+      'Impeccable Live polling journal step completed',
+      'hidden\nprompt copied into the implementation',
+      'Stack\nTrace\n at worker (/workspace/project/file.js:1:2)',
+      'Reviewed output in (/Users/person/project/file.js)',
+      'Copied C:\\Users\\person\\project\\file.js',
+    ]) {
+      await assert.rejects(
+        () => server.changeAnnotationLifecycle({
+          id: designAction.id,
+          operation: 'resolve',
+          owner: 'agent-two',
+          resolution_record: {
+            summary: 'Updated the visible developer prompt field.',
+            verification: [unsafeEvidence],
+          },
+        }),
+        /safe provider-neutral evidence/i,
+      );
+    }
+
+    const accepted = await server.changeAnnotationLifecycle({
+      id: designAction.id,
+      operation: 'resolve',
+      owner: 'agent-two',
+      resolution_record: {
+        summary: 'Renamed the visible developer prompt field.',
+        verification: ['Manual verification remains required'],
+      },
+    });
+    assert.equal(accepted.status, 'resolved');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('legacy resolved Design Actions remain readable without fabricating evidence', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-legacy-resolution-record-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  await writeFile(annotationsFile, JSON.stringify([{
+    id,
+    url: 'http://localhost:3000/app',
+    comment: 'Resolved before Resolution Records existed',
+    status: 'resolved',
+    design_intent: { schema_version: 1, workflow: 'impeccable', action: null },
+  }]));
+  const server = new LocalAnnotationsServer({
+    annotationsFile,
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+
+  try {
+    const annotation = (await server.readAnnotations({ status: 'resolved' })).annotations[0];
+    assert.equal(annotation.status, 'resolved');
+    assert.equal('resolution_record' in annotation, false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('HTTP Queue reads reject non-canonical lifecycle status filters', async () => {
   const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
   const { directory, server } = await fixture(now);

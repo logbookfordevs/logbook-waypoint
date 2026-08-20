@@ -360,6 +360,27 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   context.document.querySelector('.waypoint-save-btn').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(updated[1].updates.design_intent, null);
+
+  await handlers.get('annotation:edit')({
+    annotation: {
+      ...saved[0],
+      status: 'resolved',
+      resolution_record: {
+        summary: 'Clarified the heading hierarchy and supporting copy.',
+        verification: ['Focused lifecycle tests pass', 'Reviewed at 390px'],
+      },
+    },
+    element: target,
+  });
+  const resolvedPopover = context.document.querySelector('.waypoint-popover');
+  assert.match(resolvedPopover.querySelector('.waypoint-resolution-summary').textContent, /Clarified the heading hierarchy/);
+  assert.deepEqual(
+    [...resolvedPopover.querySelectorAll('.waypoint-resolution-verification li')].map(item => item.textContent),
+    ['Focused lifecycle tests pass', 'Reviewed at 390px'],
+  );
+  assert.equal(resolvedPopover.querySelector('.waypoint-textarea').disabled, true);
+  assert.equal(resolvedPopover.querySelector('.waypoint-design-intent').disabled, true);
+  assert.equal(resolvedPopover.querySelector('.waypoint-save-btn'), null);
 });
 
 test('live Annotation consumers retain Design Intent after editor updates', async () => {
