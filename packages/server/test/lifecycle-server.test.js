@@ -92,6 +92,115 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
   }
 });
 
+test('HTTP release publishes and persists a recoverable Work Notice through Read and Watch', async () => {
+  const now = { value: Date.parse('2026-08-19T12:00:00.000Z') };
+  const { directory, server } = await fixture(now);
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+
+  try {
+    await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
+    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const response = await fetch(`${baseUrl}/api/annotations/${id}/release`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        owner: 'agent-one',
+        reason: {
+          code: 'workflow_unavailable',
+          summary: 'Install and configure Impeccable, then claim this Annotation again.',
+        },
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    const released = (await response.json()).annotation;
+    assert.deepEqual(released.work_notice, {
+      code: 'workflow_unavailable',
+      summary: 'Install and configure Impeccable, then claim this Annotation again.',
+      created_at: '2026-08-19T12:00:00.000Z',
+    });
+    assert.equal(released.status, 'pending');
+
+    const persisted = JSON.parse(await readFile(path.join(directory, 'annotations.json'), 'utf8'))[0];
+    assert.deepEqual(persisted.work_notice, released.work_notice);
+    assert.deepEqual((await server.readAnnotations({ status: 'pending' })).annotations[0].work_notice, released.work_notice);
+    const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
+    assert.deepEqual(watched.changes.at(-1).annotation.work_notice, released.work_notice);
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('MCP can dismiss a Work Notice without changing Pending status', async () => {
+  const now = { value: Date.parse('2026-08-19T12:00:00.000Z') };
+  const { directory, server } = await fixture(now);
+
+  try {
+    await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
+    await server.changeAnnotationLifecycle({
+      id,
+      operation: 'release',
+      owner: 'agent-one',
+      reason: { code: 'execution_failed', summary: 'The workflow stopped. Claim to retry.' },
+    });
+    let callTool;
+    let listTools;
+    server.setupMCPHandlersForServer({
+      setRequestHandler(schema, handler) {
+        if (schema === CallToolRequestSchema) callTool = handler;
+        if (schema === ListToolsRequestSchema) listTools = handler;
+      },
+    });
+
+    const listed = await listTools();
+    assert.ok(listed.tools.some(tool => tool.name === 'dismiss_work_notice'));
+    const dismissed = await callTool({
+      params: { name: 'dismiss_work_notice', arguments: { id } },
+    });
+    const annotation = JSON.parse(dismissed.content[0].text).data.annotation;
+
+    assert.equal(annotation.status, 'pending');
+    assert.equal('work_notice' in annotation, false);
+    assert.equal('work_notice' in (await server.readAnnotations({ status: 'pending' })).annotations[0], false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('Claim locks the Design Intent and comment work contract', async () => {
+  const now = { value: Date.parse('2026-08-19T12:00:00.000Z') };
+  const { directory, server } = await fixture(now);
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+
+  try {
+    await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
+    const response = await fetch(`${baseUrl}/api/annotations/${id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        comment: 'Replace the contract under the claimant',
+        design_intent: { schema_version: 1, workflow: 'impeccable', action: null },
+      }),
+    });
+
+    assert.equal(response.status, 409);
+    assert.match((await response.json()).error, /Claimed Annotation/i);
+    const retained = (await server.readAnnotations({ status: 'claimed' })).annotations[0];
+    assert.equal(retained.comment, 'Retain me');
+    assert.equal('design_intent' in retained, false);
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('HTTP Queue reads reject non-canonical lifecycle status filters', async () => {
   const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
   const { directory, server } = await fixture(now);
@@ -171,6 +280,33 @@ test('persisted Queue records reject non-canonical lifecycle states', async () =
       () => server.readAnnotations({ status: 'all' }),
       /invalid lifecycle state/i,
     );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('persisted Queue records reject malformed Work Notices', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-work-notice-invalid-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  await writeFile(annotationsFile, JSON.stringify([{
+    id,
+    url: 'http://localhost:3000/app',
+    comment: 'Unsafe notice',
+    status: 'pending',
+    work_notice: {
+      code: 'execution_failed',
+      summary: 'Stack trace:\nsecret-token',
+      created_at: '2026-08-19T12:00:00.000Z',
+    },
+  }]));
+  const server = new LocalAnnotationsServer({
+    annotationsFile,
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+
+  try {
+    await assert.rejects(() => server.readAnnotations({ status: 'all' }), /Work Notice/i);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
