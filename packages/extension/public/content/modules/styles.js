@@ -702,6 +702,29 @@ var WAYPOINT_STYLES = `
   outline-offset: 2px;
 }
 
+.waypoint-readonly-notice {
+  display: grid;
+  gap: 2px;
+  margin: 8px 14px 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: var(--waypoint-surface-hover);
+  color: var(--waypoint-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.waypoint-readonly-notice strong {
+  color: var(--waypoint-text-primary);
+  font-weight: 600;
+}
+
+.waypoint-control-readonly {
+  opacity: 0.62;
+  cursor: default;
+  pointer-events: none;
+}
+
 /* Textarea */
 .waypoint-popover-body {
   padding: 10px 14px;
@@ -734,6 +757,11 @@ var WAYPOINT_STYLES = `
 
 .waypoint-textarea::placeholder {
   color: var(--waypoint-text-secondary);
+}
+
+.waypoint-textarea[readonly] {
+  color: var(--waypoint-text-primary);
+  cursor: text;
 }
 
 .waypoint-kbd-hint {

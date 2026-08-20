@@ -483,9 +483,27 @@ test('rendered editor serializes and restores Design Intent and Variant Intent i
     [...resolvedPopover.querySelectorAll('.waypoint-resolution-verification li')].map(item => item.textContent),
     ['Focused lifecycle tests pass', 'Reviewed at 390px'],
   );
-  assert.equal(resolvedPopover.querySelector('.waypoint-textarea').disabled, true);
+  assert.match(resolvedPopover.querySelector('.waypoint-popover-title').textContent, /Viewing resolved annotation/);
+  assert.match(resolvedPopover.querySelector('.waypoint-readonly-notice').textContent, /Read-only history/);
+  assert.match(resolvedPopover.querySelector('.waypoint-readonly-notice').textContent, /resolved and can no longer be edited/);
+  assert.equal(resolvedPopover.querySelector('.waypoint-textarea').disabled, false);
+  assert.equal(resolvedPopover.querySelector('.waypoint-textarea').hasAttribute('readonly'), true);
   assert.equal(resolvedPopover.querySelector('.waypoint-design-intent').disabled, true);
+  assert.equal(resolvedPopover.querySelector('.waypoint-tab').disabled, false);
   assert.equal(resolvedPopover.querySelector('.waypoint-save-btn'), null);
+  assert.equal(resolvedPopover.querySelector('.waypoint-cancel-btn').textContent, 'Close');
+
+  await handlers.get('annotation:edit')({
+    annotation: { ...saved[0], status: 'discarded' },
+    element: target,
+  });
+  const discardedPopover = context.document.querySelector('.waypoint-popover');
+  assert.match(discardedPopover.querySelector('.waypoint-popover-title').textContent, /Viewing discarded annotation/);
+  assert.match(discardedPopover.querySelector('.waypoint-readonly-notice').textContent, /discarded and can no longer be edited/);
+  discardedPopover.querySelector('.waypoint-tab').click();
+  assert.notEqual(discardedPopover.querySelector('.waypoint-design-toolbar').style.display, 'none');
+  assert.equal(discardedPopover.querySelector('.waypoint-textarea').hasAttribute('readonly'), true);
+  assert.equal(discardedPopover.querySelector('.waypoint-save-btn'), null);
 });
 
 test('rendered editor selects one named Design Action, explains it, and returns to Freeform', async () => {

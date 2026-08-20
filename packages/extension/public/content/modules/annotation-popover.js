@@ -255,6 +255,7 @@ var WaypointAnnotationPopover = (() => {
     const lifecycleLocked = isEdit && existingAnnotation.status !== 'pending';
     const presentationLocked = lifecycleLocked || WaypointVariantPicker.locksPresentation(existingAnnotation);
     const isHistorical = ['resolved', 'discarded'].includes(existingAnnotation?.status);
+    const tabsLocked = presentationLocked && !isHistorical;
     const isFile = WaypointAPI.isFileProtocol();
     const elType = classifyElement(targetElement);
     const showDesignActions = !!existingAnnotation?.design_intent || await WaypointAPI.getShowDesignActions();
@@ -294,6 +295,13 @@ var WaypointAnnotationPopover = (() => {
           <span>${workNoticeGuidance}</span>
         </div>
         <button class="waypoint-work-notice-dismiss" type="button">Dismiss</button>
+      </div>
+    ` : '';
+    const historicalStatus = isHistorical ? existingAnnotation.status : null;
+    const readOnlyNoticeHTML = isHistorical ? `
+      <div class="waypoint-readonly-notice" id="waypoint-readonly-notice" role="note">
+        <strong>Read-only history</strong>
+        <span>This annotation was ${historicalStatus} and can no longer be edited.</span>
       </div>
     ` : '';
 
@@ -343,7 +351,7 @@ var WaypointAnnotationPopover = (() => {
     // Build tabs — cold start: no active tab, all panels hidden
     const tabs = getTabsForType(elType);
     const tabBarHTML = tabs.map(t =>
-      `<button class="waypoint-tab" data-tab="${t.key}" type="button" ${presentationLocked ? 'disabled' : ''}>${t.label}</button>`
+      `<button class="waypoint-tab" data-tab="${t.key}" type="button" ${tabsLocked ? 'disabled' : ''}>${t.label}</button>`
     ).join('');
     const panelsHTML = tabs.map(t =>
       `<div class="waypoint-tab-panel" data-tab-panel="${t.key}" style="display:none">${panelContent[t.key] || ''}</div>`
@@ -368,7 +376,7 @@ var WaypointAnnotationPopover = (() => {
     popover.innerHTML = `
       <div class="waypoint-drag-handle"></div>
       <div class="waypoint-popover-title">
-        <span>Editing <code>${escapeHTML(selectorLabel)}</code></span>
+        <span>${isHistorical ? `Viewing ${historicalStatus} annotation` : 'Editing'} <code>${escapeHTML(selectorLabel)}</code></span>
         <button class="waypoint-design-reset" type="button" title="${presentationLocked ? 'Finalized Variant presentation' : 'Reset all'}" ${presentationLocked ? 'disabled' : ''}>${ICONS.reset}</button>
       </div>
       <div class="waypoint-tab-bar">${tabBarHTML}</div>
@@ -377,11 +385,12 @@ var WaypointAnnotationPopover = (() => {
       </div>
       ${warningHTML}
       ${workNoticeHTML}
+      ${readOnlyNoticeHTML}
       <div class="waypoint-popover-body">
         ${resolutionHTML}
         <div class="waypoint-input-wrap">
-          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000" ${isHistorical ? 'disabled' : ''}>${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
-          <span class="waypoint-kbd-hint">${kbdHint} to save</span>
+          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000" ${isHistorical ? 'readonly aria-describedby="waypoint-readonly-notice"' : ''}>${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
+          ${isHistorical ? '' : `<span class="waypoint-kbd-hint">${kbdHint} to save</span>`}
         </div>
         <div class="waypoint-annotation-options" role="group" aria-label="Annotation options">
           <div class="waypoint-annotation-attachments">
@@ -430,7 +439,7 @@ var WaypointAnnotationPopover = (() => {
           <span class="waypoint-viewport-info">${getDeviceIcon(window.innerWidth)} ${window.innerWidth}w</span>
         </div>
         <div class="waypoint-footer-right">
-          <button class="waypoint-btn waypoint-btn-secondary waypoint-cancel-btn">Cancel</button>
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-cancel-btn">${isHistorical ? 'Close' : 'Cancel'}</button>
           <button class="waypoint-btn waypoint-btn-primary waypoint-save-btn">${isEdit ? 'Save' : 'Save as pointer'}</button>
         </div>
       </div>
@@ -470,9 +479,9 @@ var WaypointAnnotationPopover = (() => {
     activeElType = elType;
 
     if (lifecycleLocked) {
-      textarea.disabled = true;
-      designIntentInput.disabled = true;
-      variantIntentInput.disabled = true;
+      if (!isHistorical) textarea.disabled = true;
+      designIntentInput?.setAttribute('disabled', '');
+      variantIntentInput?.setAttribute('disabled', '');
       imageInput.disabled = true;
     }
 
@@ -773,9 +782,19 @@ var WaypointAnnotationPopover = (() => {
     updateAttachmentStatus();
     updateSave();
     if (isHistorical) {
-      popover.querySelectorAll('input, textarea, .waypoint-tab, .waypoint-design-reset').forEach(control => {
+      popover.querySelectorAll(`
+        .waypoint-design-toolbar input,
+        .waypoint-design-toolbar select,
+        .waypoint-design-toolbar textarea,
+        .waypoint-design-toolbar button:not(.waypoint-raw-css-toggle),
+        .waypoint-annotation-options input,
+        .waypoint-annotation-options button,
+        .waypoint-design-reset
+      `).forEach(control => {
         control.disabled = true;
       });
+      popover.querySelector('.waypoint-attachment-button')?.classList.add('waypoint-control-readonly');
+      popover.querySelectorAll('.waypoint-variant-intent-label').forEach(label => label.classList.add('waypoint-control-readonly'));
       saveBtn.remove();
     }
     requestAnimationFrame(() => autoResizeCommentInput(textarea));
