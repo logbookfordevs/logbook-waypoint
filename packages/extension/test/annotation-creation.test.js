@@ -220,11 +220,15 @@ test('annotation options group aligns attachment help and an accessible Variants
   assert.match(styles, /\.waypoint-variant-intent:focus-visible/);
 });
 
-test('sizing labels scrub adjacent numeric values through the public input event seam', async () => {
+test('sizing and spacing labels scrub adjacent numeric values through the public input event seam', async () => {
   const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
   const styles = await readFile(new URL('../public/content/modules/styles.js', import.meta.url), 'utf8');
 
   assert.match(source, /data-scrub-target="width"/);
+  assert.match(source, /data-scrub-target="paddingVertical"/);
+  assert.match(source, /data-scrub-target="paddingTop"/);
+  assert.match(source, /data-scrub-target="marginHorizontal"/);
+  assert.match(source, /data-scrub-target="marginLeft"/);
   assert.match(source, /wireScrubbableSizingLabels\(popover\)/);
   assert.match(source, /new Event\('input', \{ bubbles: true \}\)/);
   assert.match(styles, /\.waypoint-scrubbable-label\s*\{[^}]*cursor:\s*ew-resize/s);
