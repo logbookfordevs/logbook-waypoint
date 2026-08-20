@@ -339,6 +339,7 @@ test('expired Variant work can be finalized, reclaimed, verified, and resolved w
     await server.applyAnnotationsUpdate(annotations => {
       Object.assign(annotations[0], { design_intent: designIntent, variant_intent: variantIntent });
     });
+    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'generator' });
     await server.requestVariants({
       id,
@@ -373,6 +374,14 @@ test('expired Variant work can be finalized, reclaimed, verified, and resolved w
     assert.deepEqual(resolved.resolution_record, resolutionRecord);
     assert.equal(resolved.variant_request.active_variant_key, 'balanced');
     assert.equal('scaffold' in resolved.variant_request, false);
+    const read = (await server.readAnnotations({ status: 'resolved' })).annotations[0];
+    assert.deepEqual(read.design_intent, designIntent);
+    assert.deepEqual(read.resolution_record, resolutionRecord);
+    const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
+    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, {
+      summary: resolutionRecord.summary,
+    });
+    assert.equal('variant_presentation' in watched.changes.at(-1).annotation, false);
     const persisted = JSON.parse(await readFile(path.join(directory, 'annotations.json'), 'utf8'))[0];
     assert.deepEqual(persisted.variant_request.scaffold, []);
   } finally {

@@ -146,7 +146,7 @@ The HTTP API and MCP tools share one Annotation lifecycle: Pending Annotations m
 
 Waypoint owns the workflow and lifecycle. Design Intent records Freeform or one named Design Action on an ordinary Annotation. Variant Intent separately asks an agent to generate alternatives; once complete candidates exist, Waypoint owns the resulting Variant Set, Active Variant, cancellation, and Finalization cleanup.
 
-An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action resolves only after Finalization and retains a provider-neutral Resolution Record with its outcome and verification evidence. Explicit Read returns the complete evidence; Watch projects only the concise routing and outcome fields.
+An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action retains a provider-neutral Resolution Record with its outcome and verification evidence. When Variant Intent produced a Variant Set, that set must reach Finalization before resolution. Explicit Read returns the complete evidence; Watch projects only the concise routing and outcome fields.
 
 Data is stored in `~/.logbook-waypoint/annotations.json`.
 
