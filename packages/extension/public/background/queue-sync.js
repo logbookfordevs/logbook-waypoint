@@ -15,7 +15,16 @@ var WaypointQueueSync = (() => {
     return merged;
   }
 
-  function mergeVariantFields(local, server) {
+  function withPreservedDesignIntent(candidate, local, server, removeDesignIntent = false) {
+    if (removeDesignIntent) {
+      const withoutDesignIntent = { ...candidate };
+      delete withoutDesignIntent.design_intent;
+      return withoutDesignIntent;
+    }
+    return WaypointDesignIntent.preserve(server, WaypointDesignIntent.preserve(local, candidate));
+  }
+
+  function mergeVariantFields(local, server, removeDesignIntent) {
     const localTime = new Date(local.updated_at || local.created_at || 0).getTime();
     const serverTime = new Date(server.updated_at || server.created_at || 0).getTime();
     const merged = { ...(serverTime > localTime ? server : local) };
@@ -24,13 +33,14 @@ var WaypointQueueSync = (() => {
       if (field in variantOwner) merged[field] = variantOwner[field];
       else delete merged[field];
     }
-    const lifecycleMerged = withServerLifecycle(merged, server);
+    const lifecycleMerged = withPreservedDesignIntent(withServerLifecycle(merged, server), local, server, removeDesignIntent);
     const matchesServer = JSON.stringify(withoutSyncFlag(lifecycleMerged)) === JSON.stringify(withoutSyncFlag(server));
     return { ...lifecycleMerged, _synced: matchesServer };
   }
 
-  function merge(localAnnotations, serverAnnotations, deletedAnnotationIds = []) {
+  function merge(localAnnotations, serverAnnotations, deletedAnnotationIds = [], removedDesignIntentIds = []) {
     const deletedIds = new Set(deletedAnnotationIds.filter(WaypointAnnotationId.isValid));
+    const designIntentRemovals = new Set(removedDesignIntentIds.filter(WaypointAnnotationId.isValid));
     const localMap = new Map(WaypointAnnotationCollection.canonicalize(localAnnotations).map(annotation => [annotation.id, annotation]));
     const serverMap = new Map(WaypointAnnotationCollection.canonicalize(serverAnnotations).map(annotation => [annotation.id, annotation]));
     const allIds = new Set([...localMap.keys(), ...serverMap.keys()]);
@@ -47,16 +57,18 @@ var WaypointQueueSync = (() => {
       const local = localMap.get(id);
       const server = serverMap.get(id);
       if (local && server) {
+        const removeDesignIntent = designIntentRemovals.has(id);
+        if (removeDesignIntent && server.design_intent !== undefined) changed = true;
         const localOwnsVariant = hasVariantOwnedState(local);
         const serverOwnsVariant = hasVariantOwnedState(server);
         if (localOwnsVariant && !serverOwnsVariant) {
-          const merged = withServerLifecycle(local, server);
+          const merged = withPreservedDesignIntent(withServerLifecycle(local, server), local, server, removeDesignIntent);
           annotations.push(merged);
           if (JSON.stringify(merged) !== JSON.stringify(local)) changed = true;
           continue;
         }
         if (localOwnsVariant || serverOwnsVariant) {
-          const merged = mergeVariantFields(local, server);
+          const merged = mergeVariantFields(local, server, removeDesignIntent);
           annotations.push(merged);
           if (JSON.stringify(merged) !== JSON.stringify(local) || !merged._synced) changed = true;
           continue;
@@ -64,10 +76,10 @@ var WaypointQueueSync = (() => {
         const localTime = new Date(local.updated_at || local.created_at || 0).getTime();
         const serverTime = new Date(server.updated_at || server.created_at || 0).getTime();
         if (serverTime > localTime) {
-          annotations.push({ ...server, _synced: true });
+          annotations.push({ ...withPreservedDesignIntent(server, local, server, removeDesignIntent), _synced: !removeDesignIntent });
           changed = true;
         } else {
-          const merged = withServerLifecycle(local, server);
+          const merged = withPreservedDesignIntent(withServerLifecycle(local, server), local, server, removeDesignIntent);
           const matchesServer = JSON.stringify(withoutSyncFlag(merged)) === JSON.stringify(withoutSyncFlag(server));
           if (!matchesServer) flagsChanged = true;
           annotations.push({ ...merged, _synced: matchesServer });

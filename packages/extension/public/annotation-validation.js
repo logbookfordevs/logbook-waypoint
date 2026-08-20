@@ -29,6 +29,7 @@ globalThis.WaypointAnnotationValidation = (() => {
     if (!hasMeaningfulContent(annotation)) {
       throw new TypeError('Annotation must include a comment, visual change, screenshot, or attachment');
     }
+    WaypointDesignIntent.assertAnnotation(annotation);
     return annotation;
   }
 

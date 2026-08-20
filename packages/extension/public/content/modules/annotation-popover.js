@@ -366,6 +366,13 @@ var WaypointAnnotationPopover = (() => {
             </span>
             <input class="waypoint-variant-intent" type="checkbox">
           </label>
+          <label class="waypoint-variant-intent-label waypoint-design-intent-label">
+            <span class="waypoint-variant-intent-copy">
+              <span class="waypoint-variant-intent-title">Design Actions</span>
+              <span class="waypoint-variant-intent-description">Use this brief as Freeform Design Intent</span>
+            </span>
+            <input class="waypoint-variant-intent waypoint-design-intent" type="checkbox" ${existingAnnotation?.design_intent ? 'checked' : ''}>
+          </label>
         </div>
       </div>
       <div class="waypoint-popover-footer">
@@ -400,6 +407,7 @@ var WaypointAnnotationPopover = (() => {
     const attachmentStatus = popover.querySelector('.waypoint-attachment-status');
     const attachmentButtonLabel = popover.querySelector('.waypoint-attachment-button-label');
     const variantIntentInput = popover.querySelector('.waypoint-variant-intent');
+    const designIntentInput = popover.querySelector('.waypoint-design-intent');
     let attachments = Array.isArray(existingAnnotation?.attachments)
       ? existingAnnotation.attachments.filter(isImageAttachmentMetadata)
       : [];
@@ -629,7 +637,8 @@ var WaypointAnnotationPopover = (() => {
         const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value : '';
         const cssRulesChanged = cssRulesVal !== cssRulesOriginal;
         const attachmentsChanged = JSON.stringify(attachments) !== originalAttachments;
-        saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged && !attachmentsChanged;
+        const designIntentChanged = designIntentInput.checked !== Boolean(existingAnnotation.design_intent);
+        saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged && !attachmentsChanged && !designIntentChanged;
         saveBtn.textContent = 'Save';
       } else {
         const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value.trim() : '';
@@ -651,6 +660,7 @@ var WaypointAnnotationPopover = (() => {
       addImageAttachments(imageInput.files || []);
       imageInput.value = '';
     });
+    designIntentInput.addEventListener('change', updateSave);
 
     // Expose updateSave and updateResetVisibility to toolbar wiring
     popover._updateSave = updateSave;
@@ -731,6 +741,7 @@ var WaypointAnnotationPopover = (() => {
       if (isEdit) {
         const updates = WaypointVariantPicker.buildAnnotationUpdates(existingAnnotation, comment, pendingChanges, cssField);
         updates.attachments = attachments;
+        updates.design_intent = designIntentInput.checked ? WaypointDesignIntent.createFreeform() : null;
         await WaypointAPI.updateAnnotation(existingAnnotation.id, updates);
         WaypointEvents.emit('annotation:updated', {
           id: existingAnnotation.id,
@@ -738,6 +749,7 @@ var WaypointAnnotationPopover = (() => {
           pending_changes: presentationLocked ? existingAnnotation.pending_changes : pendingChanges,
           css: presentationLocked ? existingAnnotation.css : cssField,
           attachments,
+          design_intent: updates.design_intent,
         });
       } else {
         const annotation = buildAnnotation(context, comment, pendingChanges);
@@ -745,6 +757,7 @@ var WaypointAnnotationPopover = (() => {
         if (attachments.length) annotation.attachments = attachments;
         const variantIntent = getExplicitVariantIntent(variantIntentInput);
         if (variantIntent) annotation.variant_intent = variantIntent;
+        if (designIntentInput.checked) annotation.design_intent = WaypointDesignIntent.createFreeform();
         if (clickX != null) {
           const r = targetElement.getBoundingClientRect();
           annotation.badge_offset = { x: clickX - r.left, y: clickY - r.top };

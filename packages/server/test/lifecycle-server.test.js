@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -191,6 +191,187 @@ test('permanent deletion returns 404 for a missing canonical Annotation', async 
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch without replacing lifecycle', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-design-intent-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const server = new LocalAnnotationsServer({
+    annotationsFile,
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+  const designIntent = {
+    schema_version: 1,
+    workflow: 'impeccable',
+    action: null,
+  };
+  const annotation = {
+    id,
+    url: 'http://localhost:3000/app',
+    comment: 'Make the hierarchy feel intentional',
+    status: 'pending',
+    design_intent: designIntent,
+  };
+
+  try {
+    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const response = await fetch(`${baseUrl}/api/annotations`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(annotation),
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).annotation.design_intent, designIntent);
+
+    const persisted = JSON.parse(await readFile(annotationsFile, 'utf8'));
+    assert.deepEqual(persisted[0].design_intent, designIntent);
+    assert.equal(persisted[0].status, 'pending');
+
+    const read = await server.readAnnotations({ status: 'pending' });
+    assert.deepEqual(read.annotations[0].design_intent, designIntent);
+    assert.equal(read.annotations[0].comment, annotation.comment);
+
+    const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
+    assert.deepEqual(watched.changes.at(-1).annotation.design_intent, designIntent);
+    assert.equal(watched.changes.at(-1).annotation.status, 'pending');
+
+    let callTool;
+    server.setupMCPHandlersForServer({
+      setRequestHandler(schema, handler) {
+        if (schema === CallToolRequestSchema) callTool = handler;
+      },
+    });
+    const mcpRead = await callTool({
+      params: { name: 'read_annotations', arguments: { status: 'pending' } },
+    });
+    const payload = JSON.parse(mcpRead.content[0].text);
+    assert.deepEqual(payload.data.annotations[0].design_intent, designIntent);
+
+    const ordinarySync = await fetch(`${baseUrl}/api/annotations/sync`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ annotations: [{ ...annotation, design_intent: undefined }] }),
+    });
+    assert.equal(ordinarySync.status, 200);
+    assert.deepEqual(
+      (await server.readAnnotations({ status: 'pending' })).annotations[0].design_intent,
+      designIntent,
+    );
+
+    const removalResponse = await fetch(`${baseUrl}/api/annotations/sync`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        annotations: [{ ...annotation, design_intent: undefined }],
+        design_intent_removals: [annotation.id],
+      }),
+    });
+    assert.equal(removalResponse.status, 200);
+    assert.equal(
+      'design_intent' in (await server.readAnnotations({ status: 'pending' })).annotations[0],
+      false,
+    );
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('HTTP rejects malformed Design Intent while ordinary Annotations remain compatible', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-design-intent-validation-'));
+  const server = new LocalAnnotationsServer({
+    annotationsFile: path.join(directory, 'annotations.json'),
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+  const ordinary = { id, url: 'http://localhost:3000/app', comment: 'Ordinary', status: 'pending' };
+
+  try {
+    for (const design_intent of [
+      { schema_version: 2, workflow: 'impeccable', action: null },
+      { schema_version: 1, workflow: 'other', action: null },
+      { schema_version: 1, workflow: 'impeccable', action: 'polish' },
+      { schema_version: 1, workflow: 'impeccable', action: null, extra: true },
+    ]) {
+      const response = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...ordinary, design_intent }),
+      });
+      assert.equal(response.status, 400);
+      assert.match((await response.json()).error, /Design Intent/i);
+    }
+
+    const ordinaryResponse = await fetch(`${baseUrl}/api/annotations`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(ordinary),
+    });
+    assert.equal(ordinaryResponse.status, 200);
+    assert.equal('design_intent' in (await ordinaryResponse.json()).annotation, false);
+
+    const invalidUpdate = await fetch(`${baseUrl}/api/annotations/${id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        design_intent: { schema_version: 2, workflow: 'impeccable', action: null },
+      }),
+    });
+    assert.equal(invalidUpdate.status, 400);
+    assert.match((await invalidUpdate.json()).error, /Design Intent schema version/i);
+
+    const validUpdate = await fetch(`${baseUrl}/api/annotations/${id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        design_intent: { schema_version: 1, workflow: 'impeccable', action: null },
+      }),
+    });
+    assert.equal(validUpdate.status, 200);
+    const removeUpdate = await fetch(`${baseUrl}/api/annotations/${id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ design_intent: null }),
+    });
+    assert.equal(removeUpdate.status, 200);
+    assert.equal('design_intent' in (await removeUpdate.json()).annotation, false);
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('persisted malformed Design Intent is rejected before HTTP, MCP, or Watch can expose it', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-design-intent-persisted-invalid-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  await writeFile(annotationsFile, JSON.stringify([{
+    id,
+    url: 'http://localhost:3000/app',
+    comment: 'Malformed persisted intent',
+    status: 'pending',
+    design_intent: { schema_version: 1, workflow: 'other', action: null },
+  }]));
+  const server = new LocalAnnotationsServer({
+    annotationsFile,
+    watchHistoryFile: path.join(directory, 'watch.json'),
+    attachmentRoot: path.join(directory, 'attachments'),
+  });
+
+  try {
+    await assert.rejects(() => server.readAnnotations({ status: 'all' }), /Design Intent workflow/i);
+    await assert.rejects(() => server.watchAnnotations({ timeout_ms: 0 }), /Design Intent workflow/i);
+  } finally {
     await rm(directory, { recursive: true, force: true });
   }
 });

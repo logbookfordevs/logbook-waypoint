@@ -1,12 +1,26 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, realpath } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import test from 'node:test';
 import vm from 'node:vm';
+
+const wxtPackage = await realpath(new URL('../node_modules/wxt/package.json', import.meta.url));
+const requireFromWxt = createRequire(wxtPackage);
+const { parseHTML } = requireFromWxt('linkedom');
 
 async function loadScript(context, relativePath) {
   if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationStatus) {
     await loadScript(context, 'annotation-status.js');
     await loadScript(context, 'annotation-collection.js');
+  }
+  if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointDesignIntent) {
+    await loadScript(context, 'design-intent.js');
+  }
+  if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationValidation) {
+    await loadScript(context, 'annotation-validation.js');
+  }
+  if (relativePath === 'annotation-validation.js' && !context.WaypointDesignIntent) {
+    await loadScript(context, 'design-intent.js');
   }
   const source = await readFile(new URL(`../.output/chrome-mv3/${relativePath}`, import.meta.url), 'utf8');
   vm.runInContext(source, context, { filename: relativePath });
@@ -126,6 +140,12 @@ test('shared extension validation rejects URL-less and empty imported Annotation
     comment: '',
     pending_changes: { color: { value: '#201a16' } },
   }));
+  assert.throws(() => context.WaypointAnnotationValidation.assertAnnotation({
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/app',
+    comment: 'Malformed intent',
+    design_intent: { schema_version: 1, workflow: 'other', action: null },
+  }), /Design Intent workflow/);
 });
 
 test('annotation popover only permits a commentless save with a visual edit or validated image attachment', async () => {
@@ -231,4 +251,122 @@ test('ordinary annotation comments do not create a Variant request without struc
   assert.match(source, /input\?\.checked === true/);
   assert.match(source, /annotation\.variant_intent = variantIntent/);
   assert.doesNotMatch(source, /comment\.match\([^\n]*(variant|variants)/i);
+});
+
+test('rendered editor creates and restores Freeform Design Intent through save and update interfaces', async () => {
+  const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
+  const handlers = new Map();
+  const emitted = [];
+  const saved = [];
+  const updated = [];
+  const computedStyle = new Proxy({ display: 'block' }, { get: (styles, key) => styles[key] ?? '' });
+  const context = vm.createContext({
+    window,
+    document: window.document,
+    navigator: { platform: 'MacIntel' },
+    Node: window.Node,
+    URL,
+    console,
+    requestAnimationFrame: () => 1,
+    cancelAnimationFrame() {},
+    getComputedStyle: () => computedStyle,
+  });
+  context.globalThis = context;
+  context.window.innerWidth = 1280;
+  context.window.innerHeight = 800;
+  context.window.location = new URL('http://localhost:3000/app');
+  context.window.getComputedStyle = () => computedStyle;
+  context.window.HTMLTextAreaElement.prototype.select = function select() {};
+  context.WaypointEvents = {
+    on(name, handler) { handlers.set(name, handler); },
+    emit(name, payload) { emitted.push({ name, payload }); },
+  };
+  context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#root') };
+  context.WaypointInspectionMode = { tempDisable() {}, reEnable() {} };
+  context.WaypointVariantPicker = {
+    handles: () => false,
+    locksPresentation: () => false,
+    buildAnnotationUpdates: (_annotation, comment, pendingChanges, css) => ({
+      comment,
+      pending_changes: pendingChanges,
+      css,
+    }),
+  };
+  context.WaypointAPI = {
+    isFileProtocol: () => false,
+    saveAnnotation: async annotation => { saved.push(annotation); },
+    updateAnnotation: async (annotationId, updates) => { updated.push({ annotationId, updates }); },
+  };
+  context.WaypointAnnotationId = { create: () => 'waypoint_1750000000000_abc123xyz' };
+
+  const source = await readFile(new URL('../.output/chrome-mv3/content/modules/annotation-popover.js', import.meta.url), 'utf8');
+  const designIntentSource = await readFile(new URL('../.output/chrome-mv3/design-intent.js', import.meta.url), 'utf8');
+  vm.runInContext(designIntentSource, context);
+  vm.runInContext(source, context);
+  context.WaypointAnnotationPopover.init();
+
+  const target = context.document.querySelector('#target');
+  target.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 40, right: 100, bottom: 40 });
+  const targetContext = {
+    selector: '#target',
+    tag: 'button',
+    classes: [],
+    text: 'Target',
+    styles: computedStyle,
+    position: { x: 0, y: 0, width: 100, height: 40 },
+    viewport: { width: 1280, height: 800 },
+  };
+  context.WaypointElementContext = { generate: async () => targetContext };
+
+  await handlers.get('inspection:elementClicked')({ element: target, clientX: 10, clientY: 10 });
+  const createToggle = context.document.querySelector('.waypoint-design-intent');
+  assert.equal(createToggle.hasAttribute('checked'), false);
+  createToggle.checked = false;
+  context.document.querySelector('.waypoint-textarea').value = 'Make the hierarchy feel intentional';
+  context.document.querySelector('.waypoint-textarea').dispatchEvent(new window.Event('input'));
+  createToggle.checked = true;
+  createToggle.dispatchEvent(new window.Event('change'));
+  context.document.querySelector('.waypoint-save-btn').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(JSON.parse(JSON.stringify(saved[0].design_intent)), {
+    schema_version: 1,
+    workflow: 'impeccable',
+    action: null,
+  });
+  assert.equal(saved[0].comment, 'Make the hierarchy feel intentional');
+
+  await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
+  const editToggle = context.document.querySelector('.waypoint-design-intent');
+  assert.equal(editToggle.hasAttribute('checked'), true);
+  editToggle.checked = true;
+  context.document.querySelector('.waypoint-textarea').value = 'Keep the hierarchy quiet and intentional';
+  context.document.querySelector('.waypoint-textarea').dispatchEvent(new window.Event('input'));
+  context.document.querySelector('.waypoint-save-btn').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(JSON.parse(JSON.stringify(updated[0].updates.design_intent)), {
+    schema_version: 1,
+    workflow: 'impeccable',
+    action: null,
+  });
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(emitted.find(event => event.name === 'annotation:updated').payload.design_intent)),
+    JSON.parse(JSON.stringify(updated[0].updates.design_intent)),
+  );
+
+  await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
+  const removeToggle = context.document.querySelector('.waypoint-design-intent');
+  removeToggle.checked = false;
+  removeToggle.dispatchEvent(new window.Event('change'));
+  context.document.querySelector('.waypoint-save-btn').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(updated[1].updates.design_intent, null);
+});
+
+test('live Annotation consumers retain Design Intent after editor updates', async () => {
+  const content = await readFile(new URL('../.output/chrome-mv3/content/content.js', import.meta.url), 'utf8');
+  const badges = await readFile(new URL('../.output/chrome-mv3/content/modules/badge-manager.js', import.meta.url), 'utf8');
+
+  assert.match(content, /annotation:updated[^]*design_intent[^]*WaypointDesignIntent\.applyUpdate/);
+  assert.match(badges, /function onUpdated\(\{ id, comment, pending_changes, css, design_intent \}\)/);
+  assert.match(badges, /entry\.annotation = WaypointDesignIntent\.applyUpdate/);
 });

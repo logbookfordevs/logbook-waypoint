@@ -251,14 +251,15 @@ console.log('[Waypoint] content.js loaded');
     });
 
     // Annotation updated
-    WaypointEvents.on('annotation:updated', ({ id, comment, pending_changes, css }) => {
+    WaypointEvents.on('annotation:updated', ({ id, comment, pending_changes, css, design_intent }) => {
       localSaveCount++;
       const idx = annotations.findIndex(a => a.id === id);
       if (idx !== -1) {
         const updates = { comment, updated_at: new Date().toISOString() };
         if (pending_changes !== undefined) updates.pending_changes = pending_changes;
         if (css !== undefined) updates.css = css;
-        annotations[idx] = { ...annotations[idx], ...updates };
+        if (design_intent !== undefined) updates.design_intent = design_intent;
+        annotations[idx] = WaypointDesignIntent.applyUpdate(annotations[idx], updates);
       }
     });
 
