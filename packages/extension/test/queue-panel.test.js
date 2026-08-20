@@ -90,6 +90,9 @@ test('toolbar Queue button opens an anchored panel with current-route Annotation
       comment: 'Make the invitation action easier to scan',
       selector: '#target',
       screenshot: { id: 'screenshot_1' },
+      attachments: [{ id: 'attachment_1', name: 'reference.png', mime_type: 'image/png', size_bytes: 1200 }],
+      design_intent: { schema_version: 1, workflow: 'impeccable', action: 'polish' },
+      css: '.invite-button { letter-spacing: 0.02em; }',
     },
   ];
   const { context, root } = createHarness(annotations);
@@ -110,7 +113,17 @@ test('toolbar Queue button opens an anchored panel with current-route Annotation
   assert.match(panel.textContent, /Queue/);
   assert.match(panel.textContent, /Make the invitation action easier to scan/);
   assert.match(panel.textContent, /Pending/);
-  assert.match(panel.textContent, /Screenshot/);
+  const legend = panel.querySelector('.waypoint-queue-signal-key');
+  assert.match(legend.textContent, /File/);
+  assert.match(legend.textContent, /Design action/);
+  assert.match(legend.textContent, /CSS/);
+  assert.match(legend.textContent, /Screenshot/);
+
+  const signals = panel.querySelector('.waypoint-queue-signals');
+  assert.equal(signals.querySelector('[data-signal="attachment"]').getAttribute('aria-label'), '1 uploaded file');
+  assert.equal(signals.querySelector('[data-signal="design-action"]').getAttribute('aria-label'), 'Design Action: Polish');
+  assert.equal(signals.querySelector('[data-signal="css"]').getAttribute('aria-label'), 'Custom CSS override');
+  assert.equal(signals.querySelector('[data-signal="screenshot"]').getAttribute('aria-label'), 'Automatic screenshot');
 });
 
 test('Queue remains available on an empty current route so other-route work stays reachable', async () => {

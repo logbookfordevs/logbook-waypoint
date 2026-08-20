@@ -1104,6 +1104,8 @@ var WAYPOINT_STYLES = `
 
 .waypoint-queue-header h2 span { color: var(--waypoint-text-secondary); font-weight: 500; }
 .waypoint-queue-header p { margin: 3px 0 0; color: var(--waypoint-text-secondary); font: 11px/1.4 var(--waypoint-font-mono); }
+.waypoint-queue-signal-key { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 10px; padding: 7px 16px; border-bottom: 1px solid var(--waypoint-outline); background: var(--waypoint-surface-2); color: var(--waypoint-text-secondary); font-size: 10px; line-height: 1.3; }
+.waypoint-queue-signal-key .waypoint-queue-signal { margin-right: -7px; }
 .waypoint-queue-header-actions { display: flex; align-items: center; gap: 4px; }
 .waypoint-queue-other-routes, .waypoint-queue-current-route { min-height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--waypoint-accent); font-size: 11px; font-weight: 600; cursor: pointer; }
 .waypoint-queue-other-routes:hover, .waypoint-queue-current-route:hover { background: var(--waypoint-surface-2); }
@@ -1118,6 +1120,8 @@ var WAYPOINT_STYLES = `
 .waypoint-queue-copy { min-width: 0; display: grid; gap: 4px; }
 .waypoint-queue-comment { overflow: hidden; color: var(--waypoint-text-primary); font-size: 13px; font-weight: 600; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
 .waypoint-queue-meta { overflow: hidden; color: var(--waypoint-text-secondary); font-size: 11px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.waypoint-queue-signals { display: flex; align-items: center; gap: 7px; min-height: 14px; color: var(--waypoint-text-secondary); }
+.waypoint-queue-signal { display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .waypoint-queue-open { border: 0; background: transparent; color: var(--waypoint-accent); font-size: 12px; font-weight: 600; cursor: pointer; padding: 2px 0; }
 .waypoint-queue-row-actions { display: flex; align-items: center; gap: 5px; }
 .waypoint-queue-delete { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--waypoint-text-secondary); cursor: pointer; }

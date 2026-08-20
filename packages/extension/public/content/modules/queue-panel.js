@@ -12,11 +12,8 @@ var WaypointQueuePanel = (() => {
     return `${status.charAt(0).toUpperCase()}${status.slice(1)}`;
   }
 
-  function attachmentLabels(annotation) {
+  function variantLabels(annotation) {
     const labels = [];
-    if (annotation.screenshot || annotation.has_screenshot) labels.push('Screenshot');
-    if (annotation.attachments?.length) labels.push(`${annotation.attachments.length} image${annotation.attachments.length === 1 ? '' : 's'}`);
-    else if (annotation.has_attachments) labels.push('Images');
     if (annotation.variant_request) {
       const activeKey = annotation.variant_request.active_variant_key;
       const active = annotation.variant_request.variants?.find(variant => variant.key === activeKey);
@@ -25,14 +22,51 @@ var WaypointQueuePanel = (() => {
     return labels;
   }
 
+  function signalIcon(type, label, path) {
+    return `<span class="waypoint-queue-signal" data-signal="${type}" role="img" aria-label="${escapeHTML(label)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg></span>`;
+  }
+
+  function renderSignals(annotation) {
+    const signals = [];
+    const attachmentCount = annotation.attachments?.length;
+    if (attachmentCount || annotation.has_attachments) {
+      const label = attachmentCount ? `${attachmentCount} uploaded file${attachmentCount === 1 ? '' : 's'}` : 'Uploaded files';
+      signals.push(signalIcon('attachment', label, '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>'));
+    }
+    if (annotation.design_intent) {
+      const action = annotation.design_intent.action;
+      const actionLabel = action ? `${action.charAt(0).toUpperCase()}${action.slice(1)}` : 'Freeform';
+      signals.push(signalIcon('design-action', `Design Action: ${actionLabel}`, '<path d="m12 3-1.4 3.6L7 8l3.6 1.4L12 13l1.4-3.6L17 8l-3.6-1.4L12 3Z"/><path d="m5 14-.9 2.1L2 17l2.1.9L5 20l.9-2.1L8 17l-2.1-.9L5 14Z"/><path d="m19 13-1 2.5-2.5 1 2.5 1 1 2.5 1-2.5 2.5-1-2.5-1-1-2.5Z"/>'));
+    }
+    if (typeof annotation.css === 'string' ? annotation.css.trim() : annotation.css) {
+      signals.push(signalIcon('css', 'Custom CSS override', '<path d="m8 3-5 9 5 9"/><path d="m16 3 5 9-5 9"/><path d="m14 4-4 16"/>'));
+    }
+    if (annotation.screenshot || annotation.has_screenshot) {
+      signals.push(signalIcon('screenshot', 'Automatic screenshot', '<path d="M14.5 4 16 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l1.5-3h5Z"/><circle cx="12" cy="13" r="3"/>'));
+    }
+    return signals.length ? `<span class="waypoint-queue-signals">${signals.join('')}</span>` : '';
+  }
+
+  function renderSignalKey() {
+    return `
+      <div class="waypoint-queue-signal-key" aria-label="Annotation context indicators">
+        ${signalIcon('attachment-key', 'File', '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>')}<span>File</span>
+        ${signalIcon('design-action-key', 'Design action', '<path d="m12 3-1.4 3.6L7 8l3.6 1.4L12 13l1.4-3.6L17 8l-3.6-1.4L12 3Z"/>')}<span>Design action</span>
+        ${signalIcon('css-key', 'CSS', '<path d="m8 3-5 9 5 9"/><path d="m16 3 5 9-5 9"/>')}<span>CSS</span>
+        ${signalIcon('screenshot-key', 'Screenshot', '<path d="M14.5 4 16 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l1.5-3h5Z"/>')}<span>Screenshot</span>
+      </div>
+    `;
+  }
+
   function renderAnnotation(annotation) {
-    const details = [statusLabel(annotation.status), annotation.selector || annotation.element || 'Target', ...attachmentLabels(annotation)];
+    const details = [statusLabel(annotation.status), annotation.selector || annotation.element || 'Target', ...variantLabels(annotation)];
     return `
       <div class="waypoint-queue-row" data-annotation-id="${escapeHTML(annotation.id)}">
         <input class="waypoint-queue-select" type="checkbox" value="${escapeHTML(annotation.id)}" aria-label="Select annotation: ${escapeHTML(annotation.comment || 'Untitled annotation')}">
         <span class="waypoint-queue-copy">
           <span class="waypoint-queue-comment">${escapeHTML(annotation.comment || 'Untitled annotation')}</span>
           <span class="waypoint-queue-meta">${details.map(escapeHTML).join(' · ')}</span>
+          ${renderSignals(annotation)}
         </span>
         <span class="waypoint-queue-row-actions">
           <button class="waypoint-queue-open" type="button" data-annotation-id="${escapeHTML(annotation.id)}">Open</button>
@@ -112,6 +146,7 @@ var WaypointQueuePanel = (() => {
           <button class="waypoint-queue-close" type="button" aria-label="Close Queue">×</button>
         </div>
       </header>
+      ${annotations.length ? renderSignalKey() : ''}
       <div class="waypoint-queue-list">
         ${annotations.length ? annotations.map(renderAnnotation).join('') : '<p class="waypoint-queue-empty">No annotations on this route.</p>'}
       </div>
