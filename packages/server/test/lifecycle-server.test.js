@@ -325,6 +325,61 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
   }
 });
 
+test('expired Variant work can be finalized, reclaimed, verified, and resolved without losing intent history', async () => {
+  const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
+  const { directory, server } = await fixture(now);
+  const designIntent = { schema_version: 1, workflow: 'impeccable', action: 'polish' };
+  const variantIntent = { requested: true, default_count: 3 };
+  const resolutionRecord = {
+    summary: 'Finalized the selected hierarchy treatment.',
+    verification: ['Focused lifecycle and Variant tests pass'],
+  };
+
+  try {
+    await server.applyAnnotationsUpdate(annotations => {
+      Object.assign(annotations[0], { design_intent: designIntent, variant_intent: variantIntent });
+    });
+    await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'generator' });
+    await server.requestVariants({
+      id,
+      variants: [
+        { key: 'quiet', name: 'Quiet', implementation: { css: '.card { gap: 8px; }' }, scaffold: ['catalog'] },
+        { key: 'balanced', name: 'Balanced', implementation: { css: '.card { gap: 12px; }' }, scaffold: ['catalog'] },
+        { key: 'bold', name: 'Bold', implementation: { css: '.card { gap: 16px; }' }, scaffold: ['catalog'] },
+      ],
+    });
+
+    now.value += 1_001;
+    const expired = (await server.readAnnotations({ status: 'pending' })).annotations[0];
+    assert.equal(expired.status, 'pending');
+    assert.equal(expired.variant_request.status, 'unresolved');
+    assert.deepEqual(expired.design_intent, designIntent);
+
+    const finalized = await server.finalizeVariant({ id, key: 'balanced' });
+    assert.equal(finalized.status, 'pending');
+    assert.equal(finalized.variant_request.status, 'finalized');
+    assert.deepEqual(finalized.variant_request.scaffold, []);
+
+    await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'verifier' });
+    const resolved = await server.changeAnnotationLifecycle({
+      id,
+      operation: 'resolve',
+      owner: 'verifier',
+      resolution_record: resolutionRecord,
+    });
+
+    assert.equal(resolved.status, 'resolved');
+    assert.deepEqual(resolved.design_intent, designIntent);
+    assert.deepEqual(resolved.resolution_record, resolutionRecord);
+    assert.equal(resolved.variant_request.active_variant_key, 'balanced');
+    assert.equal('scaffold' in resolved.variant_request, false);
+    const persisted = JSON.parse(await readFile(path.join(directory, 'annotations.json'), 'utf8'))[0];
+    assert.deepEqual(persisted.variant_request.scaffold, []);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('Design Actions require safe Resolution Records while ordinary resolution stays compatible', async () => {
   const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
   const { directory, server } = await fixture(now);
