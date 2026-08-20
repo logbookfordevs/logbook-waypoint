@@ -229,7 +229,7 @@ var WaypointAnnotationPopover = (() => {
 
   async function onElementClicked({ element, clientX, clientY }) {
     const context = await WaypointElementContext.generate(element);
-    show(element, context, null, clientX, clientY);
+    return show(element, context, null, clientX, clientY);
   }
 
   async function onEditRequested({ annotation, element }) {
@@ -240,7 +240,7 @@ var WaypointAnnotationPopover = (() => {
       return;
     }
     const context = await WaypointElementContext.generate(element);
-    show(element, context, annotation);
+    return show(element, context, annotation);
   }
 
   // --- Show popover ---
@@ -254,8 +254,10 @@ var WaypointAnnotationPopover = (() => {
     const isEdit = !!existingAnnotation;
     const lifecycleLocked = isEdit && existingAnnotation.status !== 'pending';
     const presentationLocked = lifecycleLocked || WaypointVariantPicker.locksPresentation(existingAnnotation);
+    const isHistorical = ['resolved', 'discarded'].includes(existingAnnotation?.status);
     const isFile = WaypointAPI.isFileProtocol();
     const elType = classifyElement(targetElement);
+    const showDesignActions = !!existingAnnotation?.design_intent || await WaypointAPI.getShowDesignActions();
 
     // Target highlight
     currentTargetHighlight = document.createElement('div');
@@ -351,6 +353,17 @@ var WaypointAnnotationPopover = (() => {
     const selectorLabel = context.classes.length
       ? `${context.tag}.${context.classes[0]}`
       : context.tag;
+    const resolutionRecord = existingAnnotation?.resolution_record;
+    const resolutionHTML = resolutionRecord ? `
+      <section class="waypoint-resolution-record" aria-label="Resolution history">
+        <div class="waypoint-resolution-label">Resolution</div>
+        <p class="waypoint-resolution-summary">${escapeHTML(resolutionRecord.summary)}</p>
+        <div class="waypoint-resolution-label">Verification</div>
+        <ul class="waypoint-resolution-verification">
+          ${resolutionRecord.verification.map(item => `<li>${escapeHTML(item)}</li>`).join('')}
+        </ul>
+      </section>
+    ` : '';
 
     popover.innerHTML = `
       <div class="waypoint-drag-handle"></div>
@@ -365,8 +378,9 @@ var WaypointAnnotationPopover = (() => {
       ${warningHTML}
       ${workNoticeHTML}
       <div class="waypoint-popover-body">
+        ${resolutionHTML}
         <div class="waypoint-input-wrap">
-          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000">${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
+          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000" ${isHistorical ? 'disabled' : ''}>${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
           <span class="waypoint-kbd-hint">${kbdHint} to save</span>
         </div>
         <div class="waypoint-annotation-options" role="group" aria-label="Annotation options">
@@ -383,15 +397,31 @@ var WaypointAnnotationPopover = (() => {
               <span class="waypoint-variant-intent-title">Request Variants</span>
               <span class="waypoint-variant-intent-description">Explore multiple named directions</span>
             </span>
-            <input class="waypoint-variant-intent" type="checkbox">
+            <input class="waypoint-variant-intent" type="checkbox" ${existingAnnotation?.variant_intent ? 'checked' : ''} ${isHistorical ? 'disabled' : ''}>
           </label>
-          <label class="waypoint-variant-intent-label waypoint-design-intent-label">
-            <span class="waypoint-variant-intent-copy">
-              <span class="waypoint-variant-intent-title">Design Actions</span>
-              <span class="waypoint-variant-intent-description">Use this brief as Freeform Design Intent</span>
-            </span>
-            <input class="waypoint-variant-intent waypoint-design-intent" type="checkbox" ${existingAnnotation?.design_intent ? 'checked' : ''}>
-          </label>
+          ${showDesignActions ? `
+            <section class="waypoint-design-actions waypoint-design-intent-row">
+              <label class="waypoint-variant-intent-label waypoint-design-intent-label">
+                <span class="waypoint-variant-intent-copy">
+                  <span class="waypoint-variant-intent-title">Design Actions</span>
+                  <span class="waypoint-variant-intent-description">Use this brief as Impeccable direction</span>
+                </span>
+                <input class="waypoint-variant-intent waypoint-design-intent" type="checkbox" aria-label="Use Design Actions" ${existingAnnotation?.design_intent ? 'checked' : ''} ${isHistorical ? 'disabled' : ''}>
+              </label>
+              <div class="waypoint-design-action-catalog" ${existingAnnotation?.design_intent ? '' : 'hidden'}>
+                <div class="waypoint-design-action-heading">
+                  <span class="waypoint-design-action-state" aria-live="polite"></span>
+                  <a class="waypoint-design-action-dependency waypoint-design-intent-dependency" href="https://github.com/pbakaus/impeccable" target="_blank" rel="noopener">Requires Impeccable</a>
+                </div>
+                <div class="waypoint-design-action-grid" role="group" aria-label="Choose one Design Action">
+                  ${WaypointDesignIntent.catalog.map(item => `
+                    <button class="waypoint-design-action" type="button" data-action="${item.action}" aria-pressed="${existingAnnotation?.design_intent?.action === item.action}" ${isHistorical ? 'disabled' : ''}>${item.label}</button>
+                  `).join('')}
+                </div>
+                <span class="waypoint-design-action-description" role="status" aria-live="polite"></span>
+              </div>
+            </section>
+          ` : ''}
         </div>
       </div>
       <div class="waypoint-popover-footer">
@@ -681,7 +711,8 @@ var WaypointAnnotationPopover = (() => {
         const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value : '';
         const cssRulesChanged = cssRulesVal !== cssRulesOriginal;
         const attachmentsChanged = JSON.stringify(attachments) !== originalAttachments;
-        const designIntentChanged = designIntentInput.checked !== Boolean(existingAnnotation.design_intent);
+        const nextDesignIntent = designIntentInput?.checked ? WaypointDesignIntent.create(selectedDesignAction) : null;
+        const designIntentChanged = JSON.stringify(nextDesignIntent) !== JSON.stringify(existingAnnotation.design_intent || null);
         saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged && !attachmentsChanged && !designIntentChanged;
         saveBtn.textContent = 'Save';
       } else {
@@ -704,13 +735,49 @@ var WaypointAnnotationPopover = (() => {
       addImageAttachments(imageInput.files || []);
       imageInput.value = '';
     });
-    designIntentInput.addEventListener('change', updateSave);
+    const designActionCatalog = popover.querySelector('.waypoint-design-action-catalog');
+    const designActionState = popover.querySelector('.waypoint-design-action-state');
+    const designActionDescription = popover.querySelector('.waypoint-design-action-description');
+    const designActionButtons = [...popover.querySelectorAll('.waypoint-design-action')];
+    let selectedDesignAction = existingAnnotation?.design_intent?.action || null;
+    if (designIntentInput) designIntentInput.checked = Boolean(existingAnnotation?.design_intent);
+    const updateDesignActions = () => {
+      if (!designIntentInput) return;
+      if (!designIntentInput.checked) selectedDesignAction = null;
+      designActionCatalog.hidden = !designIntentInput.checked;
+      const selectedItem = WaypointDesignIntent.catalog.find(item => item.action === selectedDesignAction);
+      designActionState.textContent = selectedItem
+        ? `Design Action · ${selectedItem.label}`
+        : 'Design Actions · Freeform';
+      designActionDescription.textContent = selectedItem?.description || '';
+      designActionButtons.forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.action === selectedDesignAction));
+      });
+    };
+    designIntentInput?.addEventListener('change', () => {
+        updateDesignActions();
+        updateSave();
+      });
+    designActionButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        selectedDesignAction = selectedDesignAction === button.dataset.action ? null : button.dataset.action;
+        updateDesignActions();
+        updateSave();
+      });
+    });
+    updateDesignActions();
 
     // Expose updateSave and updateResetVisibility to toolbar wiring
     popover._updateSave = updateSave;
     popover._updateResetVisibility = updateResetVisibility;
     updateAttachmentStatus();
     updateSave();
+    if (isHistorical) {
+      popover.querySelectorAll('input, textarea, .waypoint-tab, .waypoint-design-reset').forEach(control => {
+        control.disabled = true;
+      });
+      saveBtn.remove();
+    }
     requestAnimationFrame(() => autoResizeCommentInput(textarea));
 
     // Focus textarea ASAP — temporarily block blur/focusout so framework doesn't react
@@ -788,7 +855,8 @@ var WaypointAnnotationPopover = (() => {
       if (isEdit) {
         const updates = WaypointVariantPicker.buildAnnotationUpdates(existingAnnotation, comment, pendingChanges, cssField);
         updates.attachments = attachments;
-        updates.design_intent = designIntentInput.checked ? WaypointDesignIntent.createFreeform() : null;
+        updates.design_intent = designIntentInput?.checked ? WaypointDesignIntent.create(selectedDesignAction) : null;
+        updates.variant_intent = getExplicitVariantIntent(variantIntentInput);
         await WaypointAPI.updateAnnotation(existingAnnotation.id, updates);
         WaypointEvents.emit('annotation:updated', {
           id: existingAnnotation.id,
@@ -797,6 +865,7 @@ var WaypointAnnotationPopover = (() => {
           css: presentationLocked ? existingAnnotation.css : cssField,
           attachments,
           design_intent: updates.design_intent,
+          variant_intent: updates.variant_intent,
         });
       } else {
         const annotation = buildAnnotation(context, comment, pendingChanges);
@@ -804,7 +873,7 @@ var WaypointAnnotationPopover = (() => {
         if (attachments.length) annotation.attachments = attachments;
         const variantIntent = getExplicitVariantIntent(variantIntentInput);
         if (variantIntent) annotation.variant_intent = variantIntent;
-        if (designIntentInput.checked) annotation.design_intent = WaypointDesignIntent.createFreeform();
+        if (designIntentInput?.checked) annotation.design_intent = WaypointDesignIntent.create(selectedDesignAction);
         if (clickX != null) {
           const r = targetElement.getBoundingClientRect();
           annotation.badge_offset = { x: clickX - r.left, y: clickY - r.top };
@@ -894,7 +963,7 @@ var WaypointAnnotationPopover = (() => {
   }
 
   function getExplicitVariantIntent(input) {
-    return input?.checked === true ? { kind: 'variant_request', source: 'annotation_popover' } : null;
+    return input?.checked === true ? { requested: true, default_count: 3 } : null;
   }
 
   function wireContentToolbar(popover, targetElement, pc, resetBtn) {

@@ -6,6 +6,8 @@ import path from 'node:path';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertAnnotationLifecycleState } from './annotation-lifecycle.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
+import { assertResolutionRecordSummary } from './resolution-record.js';
+import { assertAnnotationVariantIntent } from './variant-intent.js';
 
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
@@ -34,6 +36,7 @@ function portableAnnotation(annotation, hasScreenshot) {
     variant_request,
     pending_changes,
     css,
+    resolution_record,
     ...portableFields
   } = annotation;
   const portableVariantRequest = variant_request && {
@@ -46,6 +49,7 @@ function portableAnnotation(annotation, hasScreenshot) {
     ...(!variant_request && pending_changes !== undefined ? { pending_changes } : {}),
     ...(!variant_request && css !== undefined ? { css } : {}),
     ...(portableVariantRequest ? { variant_request: portableVariantRequest } : {}),
+    ...(resolution_record ? { resolution_record: { summary: resolution_record.summary } } : {}),
     has_screenshot: hasScreenshot,
   };
 }
@@ -60,9 +64,12 @@ export function toWatchAnnotation(annotation) {
 
 export function toReadAnnotation(annotation) {
   const portable = toWatchAnnotation(annotation);
-  if (!annotation.variant_request) return portable;
+  const withResolutionRecord = annotation.resolution_record
+    ? { ...portable, resolution_record: structuredClone(annotation.resolution_record) }
+    : portable;
+  if (!annotation.variant_request) return withResolutionRecord;
   return {
-    ...portable,
+    ...withResolutionRecord,
     ...(annotation.variant_presentation !== undefined ? { variant_presentation: structuredClone(annotation.variant_presentation) } : {}),
     ...(annotation.pending_changes !== undefined ? { pending_changes: structuredClone(annotation.pending_changes) } : {}),
     ...(annotation.css !== undefined ? { css: annotation.css } : {}),
@@ -98,6 +105,8 @@ function validateSavedQueue(saved) {
     const annotation = normalizeJournalAnnotation(change.annotation);
     assertAnnotationLifecycleState(annotation);
     assertAnnotationDesignIntent(annotation);
+    if (annotation.resolution_record !== undefined) assertResolutionRecordSummary(annotation.resolution_record);
+    assertAnnotationVariantIntent(annotation);
     return { ...change, annotation };
   });
   return { initialCursor: saved.initialCursor, history };

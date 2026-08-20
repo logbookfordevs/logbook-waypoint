@@ -20,11 +20,13 @@ test('generated background requests the complete Queue during smart sync', async
   assert.match(source, /api\/annotations\?limit=0/);
 });
 
-test('generated forced sync carries and clears pending Design Intent removals', async () => {
+test('generated forced sync carries and clears pending intent removals', async () => {
   const source = await readFile(new URL('../.output/chrome-mv3/background/background.js', import.meta.url), 'utf8');
   const forceSync = source.slice(source.indexOf('async forceAPISync()'), source.indexOf('async importAnnotations('));
 
   assert.match(forceSync, /waypointDesignIntentRemovalIds/);
-  assert.match(forceSync, /syncAnnotationsToAPI\(annotations, designIntentRemovalIds\)/);
+  assert.match(forceSync, /waypointVariantIntentRemovalIds/);
+  assert.match(forceSync, /syncAnnotationsToAPI\(annotations, designIntentRemovalIds, variantIntentRemovalIds\)/);
   assert.match(forceSync, /waypointDesignIntentRemovalIds: \[\]/);
+  assert.match(forceSync, /waypointVariantIntentRemovalIds: \[\]/);
 });

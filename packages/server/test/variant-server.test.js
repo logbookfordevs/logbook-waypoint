@@ -9,7 +9,13 @@ import { LocalAnnotationsServer } from '../lib/server.js';
 
 function createServer() {
   const server = new LocalAnnotationsServer();
-  let annotations = [{ id: 'waypoint_1750000000000_abc123xyz', url: 'http://localhost:3000', comment: 'Compare', status: 'pending' }];
+  let annotations = [{
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000',
+    comment: 'Create two variants',
+    status: 'pending',
+    variant_intent: { requested: true, default_count: 3 },
+  }];
   server.loadAnnotations = async () => structuredClone(annotations);
   server.saveAnnotations = async next => { annotations = structuredClone(next); };
   server.applyAnnotationsUpdate = async mutator => {
@@ -39,6 +45,45 @@ const candidates = [
     scaffold: ['switcher'],
   },
 ];
+
+test('server atomically replaces authored Variant Intent with the complete generated Variant Set', async () => {
+  const { server, read } = createServer();
+
+  const requested = await server.requestVariants({
+    id: 'waypoint_1750000000000_abc123xyz',
+    variants: candidates,
+  });
+
+  assert.equal('variant_intent' in requested, false);
+  assert.equal(requested.variant_request.variants.length, 2);
+  assert.equal('variant_intent' in read()[0], false);
+  assert.equal(read()[0].variant_request.variants.length, 2);
+});
+
+test('server retains authored Variant Intent when generated candidates are incomplete or persistence fails', async () => {
+  const { server, read } = createServer();
+
+  await assert.rejects(
+    () => server.requestVariants({
+      id: 'waypoint_1750000000000_abc123xyz',
+      variants: candidates.slice(0, 1),
+    }),
+    /requires 2 complete Variants/i,
+  );
+  assert.deepEqual(read()[0].variant_intent, { requested: true, default_count: 3 });
+  assert.equal('variant_request' in read()[0], false);
+
+  const persisted = read();
+  const diskServer = new LocalAnnotationsServer();
+  diskServer.loadAnnotations = async () => structuredClone(persisted);
+  diskServer._saveAnnotationsInternal = async () => { throw new Error('disk unavailable'); };
+  await assert.rejects(
+    () => diskServer.requestVariants({ id: persisted[0].id, variants: candidates }),
+    /disk unavailable/,
+  );
+  assert.deepEqual(persisted[0].variant_intent, { requested: true, default_count: 3 });
+  assert.equal('variant_request' in persisted[0], false);
+});
 
 test('server persists request, activation, reopen, discard, and finalization through the Variant seam', async () => {
   const { server, read } = createServer();

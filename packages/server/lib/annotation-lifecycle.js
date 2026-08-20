@@ -93,7 +93,7 @@ export class AnnotationLifecycle {
     this.claimTtlMs = claimTtlMs;
   }
 
-  apply(annotation, { operation, owner, reason } = {}) {
+  apply(annotation, { operation, owner, reason, resolution_record: resolutionRecord } = {}) {
     const nowMs = this.now();
     const timestamp = new Date(nowMs).toISOString();
     const current = this.current(annotation, nowMs);
@@ -143,7 +143,12 @@ export class AnnotationLifecycle {
       const identity = requireOwner(owner);
       if (current.status !== 'claimed') throw new LifecycleError('invalid_transition', 'Annotation must be claimed before it can be Resolved');
       if (current.claim.owner !== identity) throw new LifecycleError('claim_conflict', 'Only the Claim owner can resolve the Annotation');
-      return { ...withoutClaim(current), status: 'resolved', updated_at: timestamp };
+      return {
+        ...withoutClaim(current),
+        status: 'resolved',
+        ...(resolutionRecord !== undefined ? { resolution_record: structuredClone(resolutionRecord) } : {}),
+        updated_at: timestamp,
+      };
     }
 
     if (operation === 'discard') {

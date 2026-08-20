@@ -159,23 +159,34 @@ var WaypointAPI = (() => {
       }
       const result = await chrome.storage.local.get([
         'waypointAnnotations',
-        'waypointDesignIntentRemovalIds'
+        'waypointDesignIntentRemovalIds',
+        'waypointVariantIntentRemovalIds'
       ]);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       const idx = all.findIndex(a => a.id === id);
       if (idx !== -1) {
         WaypointAnnotationStatus.assertUpdateAllowed(all[idx]);
         WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
-        const updatedAnnotation = WaypointDesignIntent.applyUpdate(all[idx], updates);
+        const updatedDesignIntent = WaypointDesignIntent.applyUpdate(all[idx], updates);
+        const variantIntentUpdate = Object.hasOwn(updates, 'variant_intent')
+          ? { variant_intent: updates.variant_intent }
+          : {};
+        const updatedAnnotation = WaypointVariantIntent.applyUpdate(updatedDesignIntent, variantIntentUpdate);
         all[idx] = updatedAnnotation;
         const designIntentRemovalIds = WaypointDesignIntent.updateRemovalIds(
           result.waypointDesignIntentRemovalIds || [],
           id,
           updates
         );
+        const variantIntentRemovalIds = WaypointVariantIntent.updateRemovalIds(
+          result.waypointVariantIntentRemovalIds || [],
+          id,
+          updates
+        );
         await chrome.storage.local.set({
           waypointAnnotations: all,
-          waypointDesignIntentRemovalIds: designIntentRemovalIds
+          waypointDesignIntentRemovalIds: designIntentRemovalIds,
+          waypointVariantIntentRemovalIds: variantIntentRemovalIds
         });
       }
       return true;
@@ -291,6 +302,21 @@ var WaypointAPI = (() => {
   async function saveScreenshotEnabled(enabled) {
     try {
       await chrome.storage.local.set({ waypointScreenshotEnabled: enabled });
+    } catch {}
+  }
+
+  async function getShowDesignActions() {
+    try {
+      const result = await chrome.storage.local.get(['waypointShowDesignActions']);
+      return result.waypointShowDesignActions !== false;
+    } catch {
+      return true;
+    }
+  }
+
+  async function saveShowDesignActions(enabled) {
+    try {
+      await chrome.storage.local.set({ waypointShowDesignActions: Boolean(enabled) });
     } catch { /* ignore */ }
   }
 
@@ -421,6 +447,8 @@ var WaypointAPI = (() => {
     onAnnotationsChanged,
     getScreenshotEnabled,
     saveScreenshotEnabled,
+    getShowDesignActions,
+    saveShowDesignActions,
     getToolbarPosition,
     saveToolbarPosition,
     getToolbarCollapsed,

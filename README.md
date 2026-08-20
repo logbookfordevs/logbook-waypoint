@@ -99,6 +99,16 @@ For JSON-based MCP clients:
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
+### Design Actions setup
+
+Design Actions require [Impeccable](https://github.com/pbakaus/impeccable). Install it through Impeccable's current agent-specific instructions; Waypoint neither installs it nor detects whether it is available.
+
+- **Tested:** no agent-specific Impeccable installation path is certified by Waypoint in this initial integration.
+- **Expected:** paths documented by Impeccable should work when the coding agent can load the installed skill and access Waypoint through MCP.
+- **Unknown:** unlisted agents, custom skill locations, and future Impeccable versions remain unverified.
+
+The `Show Design Actions` preference only controls authoring UI for new Annotations. Reopening an Annotation with saved Design Intent always reveals its Design Actions state.
+
 ## Security boundary
 
 The server binds only to IPv4 loopback, validates local Host and Origin headers, enables MCP DNS-rebinding protection, validates Annotation IDs, and labels page-derived MCP output as untrusted. The extension exposes no public page-world automation bridge. See [SECURITY.md](SECURITY.md) for the active boundary.

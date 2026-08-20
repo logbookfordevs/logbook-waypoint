@@ -1,5 +1,17 @@
 const DESIGN_INTENT_SCHEMA_VERSION = 1;
 const IMPECCABLE_WORKFLOW = 'impeccable';
+const DESIGN_ACTIONS = new Set([
+  'bolder',
+  'quieter',
+  'distill',
+  'polish',
+  'typeset',
+  'colorize',
+  'layout',
+  'animate',
+  'delight',
+  'overdrive',
+]);
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -12,11 +24,15 @@ function hasExactKeys(value, expectedKeys) {
 }
 
 export function createFreeformDesignIntent() {
-  return {
+  return createDesignIntent(null);
+}
+
+export function createDesignIntent(action) {
+  return assertDesignIntent({
     schema_version: DESIGN_INTENT_SCHEMA_VERSION,
     workflow: IMPECCABLE_WORKFLOW,
-    action: null,
-  };
+    action,
+  });
 }
 
 export function assertDesignIntent(value) {
@@ -29,8 +45,8 @@ export function assertDesignIntent(value) {
   if (value.workflow !== IMPECCABLE_WORKFLOW) {
     throw new TypeError(`Design Intent workflow must be ${IMPECCABLE_WORKFLOW}`);
   }
-  if (value.action !== null) {
-    throw new TypeError('Design Intent action must be Freeform');
+  if (value.action !== null && !DESIGN_ACTIONS.has(value.action)) {
+    throw new TypeError('Design Intent action must be Freeform or a canonical Design Action');
   }
   return value;
 }

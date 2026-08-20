@@ -23,6 +23,7 @@ const CONTENT_MODULES = [
   'annotation-status.js',
   'annotation-collection.js',
   'design-intent.js',
+  'variant-intent.js',
   'annotation-validation.js',
   'export-codec.js',
   'agent-setup-config.js',
