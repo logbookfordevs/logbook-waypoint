@@ -41,25 +41,34 @@ globalThis.WaypointAnnotationStatus = (() => {
 
   function normalizeUpdate(updates) {
     if (!updates || typeof updates !== 'object') return updates;
-    if (Object.hasOwn(updates, 'status') || Object.hasOwn(updates, 'claim')) {
-      throw new TypeError('Annotation lifecycle state and Claim change only through lifecycle operations');
+    if (Object.hasOwn(updates, 'status') || Object.hasOwn(updates, 'claim') || Object.hasOwn(updates, 'work_notice')) {
+      throw new TypeError('Annotation lifecycle state, Claim, and Work Notice change only through lifecycle operations');
     }
     return { ...updates };
   }
 
   function assertSaveAllowed(existing, incoming) {
     if (!existing) {
-      if (incoming?.status !== 'pending' || Object.hasOwn(incoming, 'claim')) {
-        throw new TypeError('New Annotations must start Pending without a Claim');
+      if (incoming?.status !== 'pending' || Object.hasOwn(incoming, 'claim') || Object.hasOwn(incoming, 'work_notice')) {
+        throw new TypeError('New Annotations must start Pending without a Claim or Work Notice');
       }
       return incoming;
     }
     const existingClaim = Object.hasOwn(existing, 'claim') ? JSON.stringify(existing.claim) : null;
     const incomingClaim = Object.hasOwn(incoming, 'claim') ? JSON.stringify(incoming.claim) : null;
-    if (existing.status !== incoming?.status || existingClaim !== incomingClaim) {
-      throw new TypeError('Annotation lifecycle state and Claim change only through lifecycle operations');
+    const existingNotice = Object.hasOwn(existing, 'work_notice') ? JSON.stringify(existing.work_notice) : null;
+    const incomingNotice = Object.hasOwn(incoming, 'work_notice') ? JSON.stringify(incoming.work_notice) : null;
+    if (existing.status !== incoming?.status || existingClaim !== incomingClaim || existingNotice !== incomingNotice) {
+      throw new TypeError('Annotation lifecycle state, Claim, and Work Notice change only through lifecycle operations');
     }
     return incoming;
+  }
+
+  function assertUpdateAllowed(annotation) {
+    if (normalizeStatus(annotation?.status) !== 'pending') {
+      throw new TypeError('Only Pending Annotations can be edited');
+    }
+    return annotation;
   }
 
   function assertFilter(status) {
@@ -77,6 +86,16 @@ globalThis.WaypointAnnotationStatus = (() => {
     return normalizeAll(annotations).filter(isActionable);
   }
 
+  function isRenderable(annotation) {
+    const normalized = normalize(annotation);
+    return ACTIONABLE_STATUSES.has(normalized.status)
+      || normalized.design_intent !== undefined && ['resolved', 'discarded'].includes(normalized.status);
+  }
+
+  function filterRenderable(annotations) {
+    return normalizeAll(annotations).filter(isRenderable);
+  }
+
   function countActionable(annotations) {
     return filterActionable(annotations).reduce(
       (counts, annotation) => ({ ...counts, [annotation.status]: counts[annotation.status] + 1 }),
@@ -88,10 +107,13 @@ globalThis.WaypointAnnotationStatus = (() => {
     ACTIONABLE_STATUSES: Object.freeze([...ACTIONABLE_STATUSES]),
     CANONICAL_STATUSES,
     assertSaveAllowed,
+    assertUpdateAllowed,
     assertFilter,
     countActionable,
     filterActionable,
+    filterRenderable,
     isActionable,
+    isRenderable,
     migrateLegacy,
     migrateLegacyAll,
     normalize,

@@ -120,10 +120,27 @@ class AnnotationsPopup {
     const claimOwner = annotation.claim?.owner
       ? ` · ${this.escapeHtml(annotation.claim.owner)}`
       : '';
+    const workNoticeTitle = annotation.work_notice?.code === 'workflow_unavailable'
+      ? 'Design workflow unavailable'
+      : 'Design workflow needs attention';
+    const workNoticeGuidance = annotation.work_notice?.code === 'workflow_unavailable'
+      ? 'Set up Impeccable, then claim this Annotation again.'
+      : 'Review the notice, then claim this Annotation to retry.';
+    const workNotice = annotation.status === 'pending' && annotation.work_notice ? `
+      <div class="work-notice" role="status">
+        <div class="work-notice-copy">
+          <strong>${workNoticeTitle}</strong>
+          <span>${this.escapeHtml(annotation.work_notice.summary)}</span>
+          <span>${workNoticeGuidance}</span>
+        </div>
+        <button class="work-notice-dismiss" data-id="${annotation.id}" type="button">Dismiss</button>
+      </div>
+    ` : '';
 
     return `
       <div class="annotation-item status-${annotation.status}" data-id="${annotation.id}">
         <div class="annotation-comment" data-full-comment="${this.escapeHtml(annotation.comment)}" title="Click to edit">${this.escapeHtml(annotation.comment)}</div>
+        ${workNotice}
         <div class="annotation-meta">
           <span class="annotation-timestamp"><span class="status-dot"></span>${statusLabel}${claimOwner} · ${timeAgo} · ${viewportWidth}w</span>
           <div class="annotation-actions">
@@ -193,6 +210,12 @@ class AnnotationsPopup {
       this.updateClearOnCopySetting(e.target.checked);
     });
     this.updateClearOnCopyToggle();
+
+    const showDesignActionsToggle = document.getElementById('show-design-actions-toggle');
+    showDesignActionsToggle.addEventListener('change', (e) => {
+      this.updateShowDesignActionsSetting(e.target.checked);
+    });
+    this.updateShowDesignActionsToggle();
 
     document.querySelectorAll('input[name="badge-color"]').forEach(input => {
       input.addEventListener('change', (e) => {
@@ -308,6 +331,20 @@ class AnnotationsPopup {
       });
     });
 
+    document.querySelectorAll('.work-notice-dismiss').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        btn.disabled = true;
+        try {
+          await this.dismissWorkNotice(btn.dataset.id);
+        } catch {
+          btn.disabled = false;
+          btn.textContent = 'Try again';
+          btn.title = 'The Work Notice could not be dismissed';
+        }
+      });
+    });
+
     // Annotation items (click anywhere to edit)
     document.querySelectorAll('.annotation-item').forEach(item => {
       item.addEventListener('click', (e) => {
@@ -322,6 +359,8 @@ class AnnotationsPopup {
         if (!this.serverOnline) {
           return;
         }
+        const annotation = this.annotations.find(candidate => candidate.id === item.dataset.id);
+        if (annotation?.status !== 'pending') return;
         
         // Don't start editing if already in edit mode
         const commentDiv = item.querySelector('.annotation-comment');
@@ -370,6 +409,14 @@ class AnnotationsPopup {
         alert('Error: Make sure you are on a local development page and refresh if needed.');
       }
     }
+  }
+
+  async dismissWorkNotice(id) {
+    const response = await chrome.runtime.sendMessage({ action: 'dismissWorkNotice', id });
+    if (!response?.success) throw new Error(response?.error || 'Unable to dismiss Work Notice');
+    const annotation = this.annotations.find(candidate => candidate.id === id);
+    if (annotation) delete annotation.work_notice;
+    this.render();
   }
 
   async stopAnnotationMode() {
@@ -910,6 +957,24 @@ class AnnotationsPopup {
       document.getElementById('clear-on-copy-toggle').checked = Boolean(result.waypointClearOnCopy);
     } catch (error) {
       console.error('Error loading clear-on-copy setting:', error);
+    }
+  }
+
+  async updateShowDesignActionsSetting(enabled) {
+    try {
+      await chrome.storage.local.set({ waypointShowDesignActions: Boolean(enabled) });
+    } catch (error) {
+      console.error('Error saving Design Actions visibility:', error);
+    }
+  }
+
+  async updateShowDesignActionsToggle() {
+    try {
+      const result = await chrome.storage.local.get(['waypointShowDesignActions']);
+      document.getElementById('show-design-actions-toggle').checked = result.waypointShowDesignActions !== false;
+    } catch (error) {
+      console.error('Error loading Design Actions visibility:', error);
+      document.getElementById('show-design-actions-toggle').checked = true;
     }
   }
 

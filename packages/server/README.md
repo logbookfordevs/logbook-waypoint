@@ -140,6 +140,16 @@ The server provides:
 
 The HTTP API and MCP tools share one Annotation lifecycle: Pending Annotations may be claimed, Claims may be refreshed by the same owner or released, and Claimed Annotations may be resolved. Pending or owner-claimed Annotations may be discarded. Resolved and Discarded records are retained; deletion is a separate permanent operation.
 
+### Design Actions workflow
+
+[Impeccable](https://github.com/pbakaus/impeccable) is an external dependency for executing Design Actions. Waypoint does not install it, detect it, or promise compatibility with a particular coding agent or future Impeccable version.
+
+Developers author the request in the browser extension. See [Use Design Actions](../../docs/DESIGN_ACTIONS.md) for the action catalog, authoring flow, Variant behavior, and user-visible recovery states.
+
+Waypoint owns the workflow and lifecycle. Design Intent records Freeform or one named Design Action on an ordinary Annotation. Variant Intent separately asks an agent to generate alternatives; once complete candidates exist, Waypoint owns the resulting Variant Set, Active Variant, cancellation, and Finalization cleanup.
+
+An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action retains a provider-neutral Resolution Record with its outcome and verification evidence. When Variant Intent produced a Variant Set, that set must reach Finalization before resolution. Explicit Read returns the complete evidence; Watch projects only the concise routing and outcome fields.
+
 Data is stored in `~/.logbook-waypoint/annotations.json`.
 
 ## Development

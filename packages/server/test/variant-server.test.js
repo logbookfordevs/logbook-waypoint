@@ -9,7 +9,13 @@ import { LocalAnnotationsServer } from '../lib/server.js';
 
 function createServer() {
   const server = new LocalAnnotationsServer();
-  let annotations = [{ id: 'waypoint_1750000000000_abc123xyz', url: 'http://localhost:3000', comment: 'Compare', status: 'pending' }];
+  let annotations = [{
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000',
+    comment: 'Create two variants',
+    status: 'pending',
+    variant_intent: { requested: true, default_count: 3 },
+  }];
   server.loadAnnotations = async () => structuredClone(annotations);
   server.saveAnnotations = async next => { annotations = structuredClone(next); };
   server.applyAnnotationsUpdate = async mutator => {
@@ -40,10 +46,56 @@ const candidates = [
   },
 ];
 
-test('server persists request, activation, reopen, discard, and finalization through the Variant seam', async () => {
+test('server atomically replaces authored Variant Intent with the complete generated Variant Set', async () => {
   const { server, read } = createServer();
 
-  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+  const requested = await server.requestVariants({
+    id: 'waypoint_1750000000000_abc123xyz',
+    variants: candidates,
+  });
+
+  assert.equal('variant_intent' in requested, false);
+  assert.equal(requested.variant_request.variants.length, 2);
+  assert.equal('variant_intent' in read()[0], false);
+  assert.equal(read()[0].variant_request.variants.length, 2);
+});
+
+test('server retains authored Variant Intent when generated candidates are incomplete or persistence fails', async () => {
+  const { server, read } = createServer();
+
+  await assert.rejects(
+    () => server.requestVariants({
+      id: 'waypoint_1750000000000_abc123xyz',
+      variants: candidates.slice(0, 1),
+    }),
+    /requires 2 complete Variants/i,
+  );
+  assert.deepEqual(read()[0].variant_intent, { requested: true, default_count: 3 });
+  assert.equal('variant_request' in read()[0], false);
+
+  const persisted = read();
+  const diskServer = new LocalAnnotationsServer();
+  diskServer.loadAnnotations = async () => structuredClone(persisted);
+  diskServer._saveAnnotationsInternal = async () => { throw new Error('disk unavailable'); };
+  await assert.rejects(
+    () => diskServer.requestVariants({ id: persisted[0].id, variants: candidates }),
+    /disk unavailable/,
+  );
+  assert.deepEqual(persisted[0].variant_intent, { requested: true, default_count: 3 });
+  assert.equal('variant_request' in persisted[0], false);
+});
+
+test('server persists request, activation, reopen, discard, and finalization through the Variant seam', async () => {
+  const { server, read, write } = createServer();
+  const stored = read();
+  stored[0].comment = 'Create three variants';
+  write(stored);
+  const threeCandidates = [
+    ...candidates,
+    { key: 'c', name: 'Gamma', implementation: { css: '.card { color: green; }' }, scaffold: ['switcher'] },
+  ];
+
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: threeCandidates });
   await server.activateVariant({ id: 'waypoint_1750000000000_abc123xyz', key: 'b' });
   assert.equal(read()[0].variant_request.active_variant_key, 'b');
 
@@ -51,6 +103,82 @@ test('server persists request, activation, reopen, discard, and finalization thr
   const finalized = await server.finalizeVariant({ id: 'waypoint_1750000000000_abc123xyz', key: 'b' });
   assert.equal(finalized.variant_request.status, 'finalized');
   assert.deepEqual(read()[0].variant_request.scaffold, []);
+});
+
+test('server atomically cancels an unresolved Variant Set while preserving its Pending Annotation', async () => {
+  const { server } = createServer();
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+
+  const cancelled = await server.cancelVariantRequest({ id: 'waypoint_1750000000000_abc123xyz' });
+
+  assert.equal(cancelled.status, 'pending');
+  assert.equal('variant_request' in cancelled, false);
+  assert.equal('variant_presentation' in cancelled, false);
+  assert.equal('pending_changes' in cancelled, false);
+  const read = await server.readAnnotations({ status: 'pending' });
+  assert.equal('variant_request' in read.annotations[0], false);
+  assert.equal(read.annotations[0].status, 'pending');
+});
+
+test('HTTP cancellation is distinct from Annotation Discard', async () => {
+  const { server, read } = createServer();
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+  const listener = await new Promise(resolve => {
+    const opened = server.app.listen(0, '127.0.0.1', () => resolve(opened));
+  });
+  try {
+    const { port } = listener.address();
+    const response = await fetch(`http://127.0.0.1:${port}/api/annotations/waypoint_1750000000000_abc123xyz/variants`, {
+      method: 'DELETE',
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.annotation.status, 'pending');
+    assert.equal('variant_request' in body.annotation, false);
+    assert.equal(read()[0].status, 'pending');
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+  }
+});
+
+test('MCP cancellation removes the unresolved Variant Set through the canonical operation', async () => {
+  const { server } = createServer();
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+  let callTool;
+  server.setupMCPHandlersForServer({
+    setRequestHandler(schema, handler) {
+      if (schema === CallToolRequestSchema) callTool = handler;
+    },
+  });
+
+  const response = await callTool({
+    params: {
+      name: 'cancel_variant_request',
+      arguments: { id: 'waypoint_1750000000000_abc123xyz' },
+    },
+  });
+  const payload = JSON.parse(response.content[0].text);
+
+  assert.equal(response.isError, undefined);
+  assert.equal(payload.data.annotation.status, 'pending');
+  assert.equal('variant_request' in payload.data.annotation, false);
+});
+
+test('failed persistence cannot partially cancel unresolved Variant state', async () => {
+  const server = new LocalAnnotationsServer();
+  const requested = await createServer().server.requestVariants({
+    id: 'waypoint_1750000000000_abc123xyz',
+    variants: candidates,
+  });
+  const persisted = [structuredClone(requested)];
+  server.loadAnnotations = async () => structuredClone(persisted);
+  server._saveAnnotationsInternal = async () => { throw new Error('disk unavailable'); };
+
+  await assert.rejects(() => server.cancelVariantRequest({ id: persisted[0].id }), /disk unavailable/);
+  assert.equal(persisted[0].variant_request.status, 'unresolved');
+  assert.deepEqual(persisted[0].variant_request.scaffold, ['switcher']);
 });
 
 test('server leaves persisted state untouched when cleanup is incomplete', async () => {
@@ -317,6 +445,29 @@ test('committed Variant mutations publish safe Watch activity and survive Watch 
     const committed = JSON.parse(await readFile(annotationsFile, 'utf8'));
     assert.equal(activated.variant_request.active_variant_key, 'b');
     assert.equal(committed[0].variant_request.active_variant_key, 'b');
+  } finally {
+    await rm(directory, { recursive: true });
+  }
+});
+
+test('Variant Set cancellation publishes Pending state through Watch without candidate data', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-cancel-watch-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const watchHistoryFile = path.join(directory, 'watch-history.json');
+  const initial = createServer().read();
+  await writeFile(annotationsFile, JSON.stringify(initial));
+  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
+
+  try {
+    await server.requestVariants({ id: initial[0].id, variants: candidates });
+    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    await server.cancelVariantRequest({ id: initial[0].id });
+    const cancellation = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
+
+    assert.equal(cancellation.changes.length, 1);
+    assert.equal(cancellation.changes[0].annotation.status, 'pending');
+    assert.equal('variant_request' in cancellation.changes[0].annotation, false);
+    assert.doesNotMatch(JSON.stringify(cancellation), /implementation|scaffold|pending_changes/);
   } finally {
     await rm(directory, { recursive: true });
   }

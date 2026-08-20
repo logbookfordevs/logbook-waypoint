@@ -253,6 +253,65 @@ test('persistent Watch journal excludes screenshots and Source Identity hints', 
   }
 });
 
+test('persistent Watch quarantines malformed Design Intent before delivery', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-design-intent-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const designIntent = {
+    schema_version: 1,
+    workflow: 'impeccable',
+    action: null,
+  };
+
+  try {
+    const first = new PersistentWatchQueue({ historyFile });
+    await first.recordChanges([annotation({ design_intent: designIntent })]);
+    const journal = await readFile(historyFile, 'utf8');
+    await writeFile(historyFile, journal.replace('"workflow":"impeccable"', '"workflow":"other"'));
+
+    const restored = new PersistentWatchQueue({ historyFile });
+    const delivered = await restored.watch(
+      { timeoutMs: 0 },
+      async () => [annotation({ design_intent: designIntent })],
+    );
+
+    assert.equal(delivered.changes.length, 1);
+    assert.deepEqual(delivered.changes[0].annotation.design_intent, designIntent);
+    assert.equal((await readdir(directory)).some(file => file.includes('.corrupted.')), true);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('persistent Watch quarantines malformed lifecycle and Work Notice metadata before delivery', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-work-notice-'));
+  const historyFile = path.join(directory, 'watch-history.json');
+  const workNotice = {
+    code: 'execution_failed',
+    summary: 'Review the notice, then claim to retry.',
+    created_at: '2026-08-19T12:00:00.000Z',
+  };
+
+  try {
+    const first = new PersistentWatchQueue({ historyFile });
+    await first.recordChanges([annotation({ work_notice: workNotice })]);
+    const journal = await readFile(historyFile, 'utf8');
+    await writeFile(historyFile, journal.replace('"status":"pending"', '"status":"blocked"'));
+
+    const restored = new PersistentWatchQueue({ historyFile });
+    const delivered = await restored.watch(
+      { timeoutMs: 0 },
+      async () => [annotation({ work_notice: workNotice })],
+    );
+
+    assert.equal(delivered.changes.length, 1);
+    assert.equal(delivered.changes[0].annotation.status, 'pending');
+    assert.deepEqual(delivered.changes[0].annotation.work_notice, workNotice);
+    assert.equal((await readdir(directory)).some(file => file.includes('.corrupted.')), true);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('portable Watch activity excludes Variant implementation and Scaffold data', () => {
   const portable = toWatchAnnotation(annotation({
     component_name: 'SecretCard',

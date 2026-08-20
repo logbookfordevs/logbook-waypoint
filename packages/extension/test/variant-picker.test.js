@@ -13,7 +13,8 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   const context = vm.createContext({ window, document: window.document, globalThis: null });
   context.globalThis = context;
   context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#root') };
-  context.WaypointEvents = { emit() {} };
+  const emitted = [];
+  context.WaypointEvents = { emit: (name, payload) => emitted.push({ name, payload }) };
   context.WaypointAPI = {};
   const source = await readFile(new URL('../.output/chrome-mv3/content/modules/variant-picker.js', import.meta.url), 'utf8');
   vm.runInContext(source, context);
@@ -45,6 +46,7 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
     ['Calm · Active', 'Bold'],
   );
   assert.equal(context.document.querySelector('[data-variant-key="calm"] .waypoint-variant-discard').disabled, true);
+  assert.equal(context.document.querySelector('.waypoint-variant-cancel').textContent.trim(), 'Cancel Variant Set');
 
   context.WaypointAPI.activateVariant = async () => {
     throw new Error('Cleanup incomplete: scaffold switcher remains');
@@ -83,6 +85,16 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
     /cannot become Resolved/,
   );
   assert.throws(
+    () => context.WaypointVariantPolicy.assertUpdateAllowed(variants, {
+      design_intent: { schema_version: 1, workflow: 'impeccable', action: 'layout' },
+    }),
+    /work contract/i,
+  );
+  assert.throws(
+    () => context.WaypointVariantPolicy.assertUpdateAllowed(variants, { comment: 'Change the brief' }),
+    /work contract/i,
+  );
+  assert.throws(
     () => context.WaypointVariantPolicy.assertSaveAllowed(null, variants),
     /Variant-owned state/,
   );
@@ -106,6 +118,17 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
     backgroundSource,
     /agent-setup-config\.js[\s\S]*background\/variant-policy\.js[\s\S]*content\/modules\/api-bridge\.js[\s\S]*content\/modules\/variant-picker\.js[\s\S]*content\/modules\/annotation-popover\.js/,
   );
+  let cancelledId;
+  context.WaypointAPI.cancelVariantRequest = async id => {
+    cancelledId = id;
+    return { id, comment: variants.comment, status: 'pending' };
+  };
+  context.document.querySelector('.waypoint-variant-cancel').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(cancelledId, variants.id);
+  assert.equal(emitted.at(-1).name, 'annotation:variant-updated');
+  assert.equal('variant_request' in emitted.at(-1).payload.annotation, false);
+  assert.equal(context.document.querySelector('.waypoint-variant-picker'), null);
   const popupSource = await readFile(new URL('../.output/chrome-mv3/popup/popup.js', import.meta.url), 'utf8');
   assert.match(popupSource, /sendMessage\(\{\s*action: 'updateAnnotation',[\s\S]*updates: \{ comment: newComment/);
   assert.doesNotMatch(popupSource, /allAnnotations\[index\] = updatedAnnotation/);

@@ -44,3 +44,23 @@ test('runtime contains no promotional update or remote registry machinery', asyn
   assert.doesNotMatch(runtime, /setBadgeText\s*\(\s*\{[^}]*text:\s*['"]NEW['"]/s);
   assert.doesNotMatch(runtime, /update it if annotation sync behaves unexpectedly/i);
 });
+
+test('active guides explain the complete Design Actions workflow without claiming agent compatibility', async () => {
+  const rootGuide = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
+  const serverGuide = await readFile(path.join(repositoryRoot, 'packages/server/README.md'), 'utf8');
+  const guides = `${rootGuide}\n${serverGuide}`;
+
+  for (const contract of [
+    /Waypoint owns[^.\n]*(?:lifecycle|workflow)/i,
+    /Variant Intent/i,
+    /Variant Set/i,
+    /Work Notice/i,
+    /Finalization/i,
+    /Resolution Record/i,
+  ]) {
+    assert.match(guides, contract);
+  }
+  assert.match(rootGuide, /Tested:[^\n]*no agent-specific Impeccable installation path is certified/i);
+  assert.match(rootGuide, /Unknown:[^\n]*future Impeccable versions remain unverified/i);
+  assert.match(serverGuide, /Impeccable[^\n]*external dependency/i);
+});

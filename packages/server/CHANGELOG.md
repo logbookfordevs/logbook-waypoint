@@ -5,14 +5,28 @@ All notable changes to the `@logbookfordevs/waypoint` package will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Next Release
 
 ### Added
-- Version information in health endpoint
-- Dynamic version reading from package.json in CLI
+- Waypoint annotation lifecycle, Watch, Variant, Design Action, Work Notice, and Resolution Record contracts
+- MCP tools for durable annotation watching, screenshot retrieval, lifecycle updates, Variant delivery, and finalization
+- HTTP, JSON, and legacy SSE connection guidance for MCP clients
+- Version information in the health endpoint and package-derived CLI version output
+
+### Changed
+- Renamed the package and commands for Logbook Waypoint while retaining loopback port compatibility
+- Hardened host, origin, payload, attachment, annotation ID, and persistence validation
+- Made Watch recovery durable across server restarts and annotation recreation
+- Replaced remote update checks with local extension compatibility guidance
+
+### Fixed
+- Preserved lifecycle, Variant, screenshot, attachment, and Design Action state during full synchronization
+- Prevented unresolved Variant Sets from being mutated or deleted through ordinary annotation operations
+- Prevented deleted annotations from being resurrected by stale extension state
 
 ### Removed
 - Automatic remote release checks and promotional console notices
+- LAN and WSL binding support
 
 ## [0.1.3] - 2025-08-05
 

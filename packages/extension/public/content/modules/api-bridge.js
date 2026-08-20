@@ -96,6 +96,7 @@ var WaypointAPI = (() => {
     try {
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
+      all.forEach(WaypointDesignIntent.assertAnnotation);
       return all.filter(a => a.url === window.location.href);
     } catch {
       return [];
@@ -106,6 +107,7 @@ var WaypointAPI = (() => {
     try {
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
+      all.forEach(WaypointDesignIntent.assertAnnotation);
       const origin = window.location.origin;
       return all.filter(a => {
         try { return new URL(a.url).origin === origin; } catch { return false; }
@@ -117,6 +119,7 @@ var WaypointAPI = (() => {
 
   async function saveAnnotation(annotation) {
     annotation = WaypointAnnotationStatus.normalize(annotation);
+    WaypointDesignIntent.assertAnnotation(annotation);
     validateAnnotationAttachments(annotation);
     try {
       const r = await chrome.runtime.sendMessage({ action: 'saveAnnotation', annotation });
@@ -154,13 +157,37 @@ var WaypointAPI = (() => {
       if (updates?.id !== undefined && updates.id !== id) {
         throw new Error('Annotation ID cannot be changed');
       }
-      const result = await chrome.storage.local.get(['waypointAnnotations']);
+      const result = await chrome.storage.local.get([
+        'waypointAnnotations',
+        'waypointDesignIntentRemovalIds',
+        'waypointVariantIntentRemovalIds'
+      ]);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       const idx = all.findIndex(a => a.id === id);
       if (idx !== -1) {
+        WaypointAnnotationStatus.assertUpdateAllowed(all[idx]);
         WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
-        all[idx] = { ...all[idx], ...updates };
-        await chrome.storage.local.set({ waypointAnnotations: all });
+        const updatedDesignIntent = WaypointDesignIntent.applyUpdate(all[idx], updates);
+        const variantIntentUpdate = Object.hasOwn(updates, 'variant_intent')
+          ? { variant_intent: updates.variant_intent }
+          : {};
+        const updatedAnnotation = WaypointVariantIntent.applyUpdate(updatedDesignIntent, variantIntentUpdate);
+        all[idx] = updatedAnnotation;
+        const designIntentRemovalIds = WaypointDesignIntent.updateRemovalIds(
+          result.waypointDesignIntentRemovalIds || [],
+          id,
+          updates
+        );
+        const variantIntentRemovalIds = WaypointVariantIntent.updateRemovalIds(
+          result.waypointVariantIntentRemovalIds || [],
+          id,
+          updates
+        );
+        await chrome.storage.local.set({
+          waypointAnnotations: all,
+          waypointDesignIntentRemovalIds: designIntentRemovalIds,
+          waypointVariantIntentRemovalIds: variantIntentRemovalIds
+        });
       }
       return true;
     }
@@ -186,7 +213,9 @@ var WaypointAPI = (() => {
   }
 
   async function runVariantOperation(action, id, key) {
-    const response = await chrome.runtime.sendMessage({ action, id, key });
+    const request = { action, id };
+    if (key !== undefined) request.key = key;
+    const response = await chrome.runtime.sendMessage(request);
     if (!response?.success || !response.annotation) throw new Error(response?.error || `${action} failed`);
     return response.annotation;
   }
@@ -199,13 +228,18 @@ var WaypointAPI = (() => {
     return runVariantOperation('discardVariant', id, key);
   }
 
+  function cancelVariantRequest(id) {
+    return runVariantOperation('cancelVariantRequest', id);
+  }
+
   function finalizeVariant(id, key) {
     return runVariantOperation('finalizeVariant', id, key);
   }
 
-  async function runLifecycleOperation(action, id, owner, url = window.location?.href) {
+  async function runLifecycleOperation(action, id, { owner, reason, url = window.location?.href } = {}) {
     const request = { action, id };
     if (owner !== undefined) request.owner = owner;
+    if (reason !== undefined) request.reason = reason;
     if (url) request.url = url;
     const response = await chrome.runtime.sendMessage(request);
     if (!response?.success || !response.annotation) throw new Error(response?.error || `${action} failed`);
@@ -213,19 +247,23 @@ var WaypointAPI = (() => {
   }
 
   function claimAnnotation(id, owner, url) {
-    return runLifecycleOperation('claimAnnotation', id, owner, url);
+    return runLifecycleOperation('claimAnnotation', id, { owner, url });
   }
 
-  function releaseAnnotation(id, owner, url) {
-    return runLifecycleOperation('releaseAnnotation', id, owner, url);
+  function releaseAnnotation(id, owner, reason, url) {
+    return runLifecycleOperation('releaseAnnotation', id, { owner, reason, url });
   }
 
   function resolveAnnotation(id, owner, url) {
-    return runLifecycleOperation('resolveAnnotation', id, owner, url);
+    return runLifecycleOperation('resolveAnnotation', id, { owner, url });
   }
 
   function discardAnnotation(id, owner, url) {
-    return runLifecycleOperation('discardAnnotation', id, owner, url);
+    return runLifecycleOperation('discardAnnotation', id, { owner, url });
+  }
+
+  function dismissWorkNotice(id, url) {
+    return runLifecycleOperation('dismissWorkNotice', id, { url });
   }
 
   async function deleteAnnotationsByUrl() {
@@ -270,6 +308,21 @@ var WaypointAPI = (() => {
   async function saveScreenshotEnabled(enabled) {
     try {
       await chrome.storage.local.set({ waypointScreenshotEnabled: enabled });
+    } catch {}
+  }
+
+  async function getShowDesignActions() {
+    try {
+      const result = await chrome.storage.local.get(['waypointShowDesignActions']);
+      return result.waypointShowDesignActions !== false;
+    } catch {
+      return true;
+    }
+  }
+
+  async function saveShowDesignActions(enabled) {
+    try {
+      await chrome.storage.local.set({ waypointShowDesignActions: Boolean(enabled) });
     } catch { /* ignore */ }
   }
 
@@ -393,12 +446,16 @@ var WaypointAPI = (() => {
     releaseAnnotation,
     resolveAnnotation,
     discardAnnotation,
+    dismissWorkNotice,
     discardVariant,
+    cancelVariantRequest,
     finalizeVariant,
     deleteAnnotationsByUrl,
     onAnnotationsChanged,
     getScreenshotEnabled,
     saveScreenshotEnabled,
+    getShowDesignActions,
+    saveShowDesignActions,
     getToolbarPosition,
     saveToolbarPosition,
     getToolbarCollapsed,

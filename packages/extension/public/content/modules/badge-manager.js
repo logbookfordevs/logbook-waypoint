@@ -120,12 +120,12 @@ var WaypointBadgeManager = (() => {
   }
 
   function render(annotations) {
-    const actionableAnnotations = WaypointAnnotationStatus.filterActionable(annotations);
+    const renderableAnnotations = WaypointAnnotationStatus.filterRenderable(annotations);
     removeProvisional();
-    rollbackChangedTargets(actionableAnnotations);
-    syncStyleAnnotations(actionableAnnotations);
+    rollbackChangedTargets(renderableAnnotations);
+    syncStyleAnnotations(renderableAnnotations);
 
-    const sorted = [...actionableAnnotations].sort((a, b) =>
+    const sorted = [...renderableAnnotations].sort((a, b) =>
       new Date(a.created_at) - new Date(b.created_at)
     );
     const previousBadges = new Map(badges.map(entry => [entry.annotation.id, entry]));
@@ -174,8 +174,8 @@ var WaypointBadgeManager = (() => {
     }
     if (!badges.length) stopRAF();
 
-    lastTotal = actionableAnnotations.length;
-    WaypointEvents.emit('badges:rendered', { count: badges.length, total: actionableAnnotations.length, styleCount: styleInjections.filter(s => s.annotation.type === 'stylesheet').length });
+    lastTotal = renderableAnnotations.length;
+    WaypointEvents.emit('badges:rendered', { count: badges.length, total: renderableAnnotations.length, styleCount: styleInjections.filter(s => s.annotation.type === 'stylesheet').length });
   }
 
   function injectStyleAnnotation(annotation) {
@@ -348,14 +348,17 @@ var WaypointBadgeManager = (() => {
     });
   }
 
-  function onUpdated({ id, comment, pending_changes, css }) {
+  function onUpdated({ id, comment, pending_changes, css, design_intent, variant_intent }) {
     const entry = badges.find(b => b.annotation.id === id);
     if (entry) {
       const tooltip = entry.el.querySelector('.waypoint-badge-tooltip');
       if (tooltip) tooltip.textContent = comment;
       const oldPC = entry.annotation.pending_changes;
       // Revert old copy change before applying new state
-      entry.annotation = { ...entry.annotation, comment, pending_changes, css };
+      entry.annotation = WaypointDesignIntent.applyUpdate(
+        entry.annotation,
+        { comment, pending_changes, css, design_intent, variant_intent },
+      );
       restorePendingChanges(entry.targetElement, oldPC);
       if (pending_changes) {
         for (const prop of getStyleProps(pending_changes)) {

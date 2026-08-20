@@ -38,6 +38,15 @@ test('annotation status adapter migrates legacy lifecycle values into canonical 
   assert.equal(status.isActionable({ status: 'claimed' }), true);
   assert.equal(status.isActionable({ status: 'resolved' }), false);
   assert.equal(status.isActionable({ status: 'discarded' }), false);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(status.filterRenderable([
+      { id: 'pending', status: 'pending' },
+      { id: 'ordinary-resolved', status: 'resolved' },
+      { id: 'design-resolved', status: 'resolved', design_intent: { schema_version: 1, workflow: 'impeccable', action: null } },
+      { id: 'design-discarded', status: 'discarded', design_intent: { schema_version: 1, workflow: 'impeccable', action: null } },
+    ]).map(annotation => annotation.id))),
+    ['pending', 'design-resolved', 'design-discarded'],
+  );
   assert.throws(() => status.normalize({ id: 'completed', status: 'completed' }), /invalid annotation status/i);
   assert.throws(() => status.normalize({ id: 'unknown', status: 'future' }), /invalid annotation status/i);
 });
@@ -103,6 +112,33 @@ test('lifecycle API calls delegate transitions to the background and normalize i
       url: 'http://localhost:3000/review',
     });
   }
+
+  await context.WaypointAPI.dismissWorkNotice('waypoint_1750000000000_abc123xyz');
+  assert.deepEqual(JSON.parse(JSON.stringify(messages.at(-1))), {
+    action: 'dismissWorkNotice',
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/review',
+  });
+
+
+  await context.WaypointAPI.releaseAnnotation(
+    'waypoint_1750000000000_abc123xyz',
+    'agent-one',
+    {
+      code: 'workflow_unavailable',
+      summary: 'Install Impeccable, then claim to retry.',
+    },
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(messages.at(-1))), {
+    action: 'releaseAnnotation',
+    id: 'waypoint_1750000000000_abc123xyz',
+    owner: 'agent-one',
+    reason: {
+      code: 'workflow_unavailable',
+      summary: 'Install Impeccable, then claim to retry.',
+    },
+    url: 'http://localhost:3000/review',
+  });
 });
 
 test('generic extension updates reject lifecycle state and Claim changes', async () => {
@@ -115,6 +151,17 @@ test('generic extension updates reject lifecycle state and Claim changes', async
   assert.throws(
     () => context.WaypointAnnotationStatus.normalizeUpdate({ claim: { owner: 'agent-one' } }),
     /lifecycle operations/i,
+  );
+  assert.throws(
+    () => context.WaypointAnnotationStatus.normalizeUpdate({ work_notice: null }),
+    /lifecycle operations/i,
+  );
+  assert.throws(
+    () => context.WaypointAnnotationStatus.assertUpdateAllowed({ status: 'claimed' }),
+    /Pending/i,
+  );
+  assert.doesNotThrow(
+    () => context.WaypointAnnotationStatus.assertUpdateAllowed({ status: 'pending' }),
   );
 });
 

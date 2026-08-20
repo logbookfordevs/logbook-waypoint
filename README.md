@@ -99,6 +99,24 @@ For JSON-based MCP clients:
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
+### Design Actions setup
+
+Design Actions let you pair the normal Annotation comment with one Impeccable design discipline—such as Polish, Layout, Typeset, or Animate—or leave the action in Freeform. Turn on **Design Actions** in the Annotation editor, choose an action if one fits, and save the request to the normal Waypoint Queue.
+
+See [Use Design Actions](docs/DESIGN_ACTIONS.md) for the complete authoring flow, action catalog, Variant behavior, Queue outcomes, and troubleshooting expectations.
+
+Design Actions require [Impeccable](https://github.com/pbakaus/impeccable). Install it through Impeccable's current agent-specific instructions; Waypoint neither installs it nor detects whether it is available.
+
+- **Tested:** no agent-specific Impeccable installation path is certified by Waypoint in this initial integration.
+- **Expected:** paths documented by Impeccable should work when the coding agent can load the installed skill and access Waypoint through MCP.
+- **Unknown:** unlisted agents, custom skill locations, and future Impeccable versions remain unverified.
+
+The `Show Design Actions` preference only controls authoring UI for new Annotations. Reopening an Annotation with saved Design Intent always reveals its Design Actions state.
+
+Waypoint owns the Design Actions workflow and Annotation lifecycle; Impeccable supplies the external design discipline, not a second work-state system. An authored Design Intent may include separate Variant Intent. After an agent generates candidates and submits the complete set, Waypoint stores and governs the Variant Set, its Active Variant, and Finalization cleanup.
+
+If the requested workflow is unavailable or execution fails recoverably, the agent releases the Annotation to Pending with a safe Work Notice. Successful Design Actions retain a provider-neutral Resolution Record with a short outcome and verification evidence. Read exposes the complete record, while Watch keeps delivery concise.
+
 ## Security boundary
 
 The server binds only to IPv4 loopback, validates local Host and Origin headers, enables MCP DNS-rebinding protection, validates Annotation IDs, and labels page-derived MCP output as untrusted. The extension exposes no public page-world automation bridge. See [SECURITY.md](SECURITY.md) for the active boundary.

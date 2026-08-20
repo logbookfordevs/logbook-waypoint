@@ -342,7 +342,8 @@ test('HTTP media writes roll back staged files and preserve superseded files unt
         body: JSON.stringify({
           id,
           url: 'http://localhost:3000/app',
-          comment: 'Keep original on a failed replacement',
+          comment: 'Create two variants and keep original on a failed replacement',
+          variant_intent: { requested: true, default_count: 3 },
           attachments: [{ name: 'original.png', mime_type: 'image/png', size_bytes: 8, data_url: 'data:image/png;base64,b3JpZ2luYWw=' }],
         }),
       });
@@ -351,7 +352,10 @@ test('HTTP media writes roll back staged files and preserve superseded files unt
       const requestVariants = await fetch(`${baseUrl}/api/annotations/${id}/variants/request`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ variants: [{ key: 'a', name: 'A', implementation: {} }] }),
+        body: JSON.stringify({ variants: [
+          { key: 'a', name: 'A', implementation: {} },
+          { key: 'b', name: 'B', implementation: {} },
+        ] }),
       });
       assert.equal(requestVariants.status, 200);
       const variantFailure = await fetch(`${baseUrl}/api/annotations`, {

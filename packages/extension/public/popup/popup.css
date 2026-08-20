@@ -241,6 +241,44 @@ body {
   background-color: transparent;
 }
 
+.work-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin: 0 var(--spacing-lg) var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--theme-warning);
+  border-radius: var(--border-radius-sm);
+  background: var(--theme-warning-container);
+  color: var(--theme-on-warning-container);
+}
+
+.work-notice-copy {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.work-notice-dismiss {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.work-notice-dismiss:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .annotation-edit-textarea {
   width: 100%;
   padding: 0;

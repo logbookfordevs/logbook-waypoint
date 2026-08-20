@@ -1,0 +1,47 @@
+{
+  "scope": "component",
+  "isRedesign": false,
+  "targetPath": "packages/extension/public/content/modules/annotation-popover.js",
+  "targetName": "PT-301 Impeccable action row",
+  "painPoints": [
+    "Impeccable must remain visibly optional",
+    "One Design Action must not be confused with Request Variants",
+    "The action catalog must remain usable in a 340px floating editor"
+  ],
+  "inspiration": {
+    "visual": ["Waypoint field instrument"],
+    "functional": ["progressive disclosure", "keyboard-first controls"]
+  },
+  "brand": {
+    "adjectives": ["crafted", "compact", "precise", "native"],
+    "density": "compact",
+    "darkMode": false
+  },
+  "persona": {
+    "primary": "Developer",
+    "context": "responsive browser overlay",
+    "keyTasks": [
+      "Write an ordinary annotation",
+      "Optionally invoke Impeccable with freeform intent",
+      "Select exactly one Design Action",
+      "Separately request named variants"
+    ]
+  },
+  "constraints": {
+    "mustKeep": [
+      "existing comment field",
+      "existing annotation editor",
+      "separate Request Variants control",
+      "one primary action"
+    ],
+    "technical": [
+      "no persistence",
+      "no MCP payloads",
+      "no lifecycle changes",
+      "no new dependencies"
+    ]
+  },
+  "framework": "standalone HTML prototype",
+  "packageManager": "pnpm",
+  "stylingSystem": "incumbent Waypoint CSS tokens"
+}
