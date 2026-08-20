@@ -313,7 +313,11 @@ test('rendered editor serializes and restores Design Intent and Variant Intent i
     on(name, handler) { handlers.set(name, handler); },
     emit(name, payload) { emitted.push({ name, payload }); },
   };
-  context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#root') };
+  context.WaypointShadowHost = {
+    getRoot: () => context.document.querySelector('#root'),
+    enterInteractionContext() {},
+    leaveInteractionContext() {},
+  };
   context.WaypointInspectionMode = { tempDisable() {}, reEnable() {} };
   context.WaypointVariantPicker = {
     handles: () => false,
@@ -514,7 +518,11 @@ test('rendered editor selects one named Design Action, explains it, and returns 
     on(name, handler) { handlers.set(name, handler); },
     emit() {},
   };
-  context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#root') };
+  context.WaypointShadowHost = {
+    getRoot: () => context.document.querySelector('#root'),
+    enterInteractionContext() {},
+    leaveInteractionContext() {},
+  };
   context.WaypointInspectionMode = { tempDisable() {}, reEnable() {} };
   context.WaypointVariantPicker = {
     handles: () => false,

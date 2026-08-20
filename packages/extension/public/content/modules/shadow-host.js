@@ -5,6 +5,7 @@ var WaypointShadowHost = (() => {
   let shadowRoot = null;
   let hidden = false;
   let visibilityAnimation = null;
+  let defaultParent = null;
 
   function init(initiallyHidden = false) {
     if (hostEl) return shadowRoot;
@@ -33,7 +34,8 @@ var WaypointShadowHost = (() => {
 
     if (hidden) hostEl.style.display = 'none';
 
-    document.body.appendChild(hostEl);
+    defaultParent = document.body;
+    defaultParent.appendChild(hostEl);
 
     // Contain composed events at shadow boundary — prevents frameworks
     // from interpreting shadow DOM interactions as "outside clicks"
@@ -52,12 +54,23 @@ var WaypointShadowHost = (() => {
     return hostEl;
   }
 
+  function enterInteractionContext(target) {
+    const modal = target?.closest?.('.modal.show');
+    if (hostEl && modal && hostEl.parentNode !== modal) modal.appendChild(hostEl);
+  }
+
+  function leaveInteractionContext() {
+    if (!hostEl || hostEl.parentNode === defaultParent) return;
+    (defaultParent?.isConnected === false ? document.body : defaultParent)?.appendChild(hostEl);
+  }
+
   function destroy() {
     if (hostEl && hostEl.parentNode) {
       hostEl.parentNode.removeChild(hostEl);
     }
     hostEl = null;
     shadowRoot = null;
+    defaultParent = null;
   }
 
   function animateToolbar(opening) {
@@ -114,5 +127,16 @@ var WaypointShadowHost = (() => {
     if (isVisible()) { hide(); } else { show(); }
   }
 
-  return { init, getRoot, getHost, destroy, hide, show, isVisible, toggle };
+  return {
+    init,
+    getRoot,
+    getHost,
+    enterInteractionContext,
+    leaveInteractionContext,
+    destroy,
+    hide,
+    show,
+    isVisible,
+    toggle,
+  };
 })();

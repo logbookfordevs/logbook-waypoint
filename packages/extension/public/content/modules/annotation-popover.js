@@ -250,6 +250,7 @@ var WaypointAnnotationPopover = (() => {
 
     const root = WaypointShadowHost.getRoot();
     if (!root) return;
+    WaypointShadowHost.enterInteractionContext(targetElement);
 
     const isEdit = !!existingAnnotation;
     const lifecycleLocked = isEdit && existingAnnotation.status !== 'pending';
@@ -2275,6 +2276,7 @@ var WaypointAnnotationPopover = (() => {
     stopHighlightRAF();
     if (currentTargetHighlight) { currentTargetHighlight.remove(); currentTargetHighlight = null; }
     if (escHandler) { document.removeEventListener('keydown', escHandler); escHandler = null; }
+    WaypointShadowHost.leaveInteractionContext();
     activeElement = null;
     activeExistingAnnotation = null;
     activeElType = null;

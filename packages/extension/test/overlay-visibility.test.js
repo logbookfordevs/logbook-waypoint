@@ -16,6 +16,11 @@ async function loadShadowHost({ initiallyReducedMotion = false } = {}) {
     appendChild() {},
     querySelector(selector) { return selector === '.waypoint-toolbar' ? toolbar : null; },
   };
+  const body = {
+    appendChild(node) {
+      node.parentNode = body;
+    },
+  };
   const host = {
     id: '',
     style: { cssText: '', display: '' },
@@ -28,7 +33,7 @@ async function loadShadowHost({ initiallyReducedMotion = false } = {}) {
       if (tag === 'div') return host;
       return { textContent: '' };
     },
-    body: { appendChild() {} },
+    body,
   };
   const context = vm.createContext({
     document,
@@ -40,6 +45,31 @@ async function loadShadowHost({ initiallyReducedMotion = false } = {}) {
   vm.runInContext(source, context);
   return { host: context.WaypointShadowHost, hostElement: host, animations, saved };
 }
+
+test('Bootstrap modal keeps Waypoint interactions inside its focus boundary', async () => {
+  const harness = await loadShadowHost();
+  const modal = {
+    appendChild(node) {
+      node.parentNode = modal;
+    },
+    contains(node) {
+      return node === harness.hostElement;
+    },
+  };
+  const target = {
+    closest(selector) {
+      assert.equal(selector, '.modal.show');
+      return modal;
+    },
+  };
+
+  harness.host.init();
+  harness.host.enterInteractionContext(target);
+  assert.equal(modal.contains(harness.hostElement), true);
+
+  harness.host.leaveInteractionContext();
+  assert.notEqual(harness.hostElement.parentNode, modal);
+});
 
 test('persisted closed state starts hidden and survives through the extension storage seam', async () => {
   const harness = await loadShadowHost();
