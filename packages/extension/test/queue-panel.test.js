@@ -114,8 +114,9 @@ test('toolbar Queue button opens an anchored panel with current-route Annotation
   assert.match(panel.textContent, /Make the invitation action easier to scan/);
   assert.match(panel.textContent, /Pending/);
   const legend = panel.querySelector('.waypoint-queue-signal-key');
+  assert.match(legend.textContent, /Indicators/);
   assert.match(legend.textContent, /File/);
-  assert.match(legend.textContent, /Design action/);
+  assert.equal(legend.querySelector('[data-signal="design-action-key"]').getAttribute('aria-label'), 'Design action');
   assert.match(legend.textContent, /CSS/);
   assert.match(legend.textContent, /Screenshot/);
 
