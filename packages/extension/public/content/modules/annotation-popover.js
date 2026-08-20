@@ -364,7 +364,7 @@ var WaypointAnnotationPopover = (() => {
               <span class="waypoint-variant-intent-title">Request Variants</span>
               <span class="waypoint-variant-intent-description">Explore multiple named directions</span>
             </span>
-            <input class="waypoint-variant-intent" type="checkbox">
+            <input class="waypoint-variant-intent" type="checkbox" ${existingAnnotation?.variant_intent ? 'checked' : ''}>
           </label>
           <label class="waypoint-variant-intent-label waypoint-design-intent-label">
             <span class="waypoint-variant-intent-copy">
@@ -742,6 +742,7 @@ var WaypointAnnotationPopover = (() => {
         const updates = WaypointVariantPicker.buildAnnotationUpdates(existingAnnotation, comment, pendingChanges, cssField);
         updates.attachments = attachments;
         updates.design_intent = designIntentInput.checked ? WaypointDesignIntent.createFreeform() : null;
+        updates.variant_intent = getExplicitVariantIntent(variantIntentInput);
         await WaypointAPI.updateAnnotation(existingAnnotation.id, updates);
         WaypointEvents.emit('annotation:updated', {
           id: existingAnnotation.id,
@@ -750,6 +751,7 @@ var WaypointAnnotationPopover = (() => {
           css: presentationLocked ? existingAnnotation.css : cssField,
           attachments,
           design_intent: updates.design_intent,
+          variant_intent: updates.variant_intent,
         });
       } else {
         const annotation = buildAnnotation(context, comment, pendingChanges);
@@ -847,7 +849,7 @@ var WaypointAnnotationPopover = (() => {
   }
 
   function getExplicitVariantIntent(input) {
-    return input?.checked === true ? { kind: 'variant_request', source: 'annotation_popover' } : null;
+    return input?.checked === true ? { requested: true, default_count: 3 } : null;
   }
 
   function wireContentToolbar(popover, targetElement, pc, resetBtn) {

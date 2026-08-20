@@ -253,7 +253,7 @@ test('ordinary annotation comments do not create a Variant request without struc
   assert.doesNotMatch(source, /comment\.match\([^\n]*(variant|variants)/i);
 });
 
-test('rendered editor creates and restores Freeform Design Intent through save and update interfaces', async () => {
+test('rendered editor serializes and restores Design Intent and Variant Intent independently', async () => {
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
   const handlers = new Map();
   const emitted = [];
@@ -320,12 +320,16 @@ test('rendered editor creates and restores Freeform Design Intent through save a
 
   await handlers.get('inspection:elementClicked')({ element: target, clientX: 10, clientY: 10 });
   const createToggle = context.document.querySelector('.waypoint-design-intent');
+  const createVariantToggle = context.document.querySelector('.waypoint-variant-intent:not(.waypoint-design-intent)');
   assert.equal(createToggle.hasAttribute('checked'), false);
+  assert.equal(createVariantToggle.hasAttribute('checked'), false);
   createToggle.checked = false;
   context.document.querySelector('.waypoint-textarea').value = 'Make the hierarchy feel intentional';
   context.document.querySelector('.waypoint-textarea').dispatchEvent(new window.Event('input'));
   createToggle.checked = true;
   createToggle.dispatchEvent(new window.Event('change'));
+  createVariantToggle.checked = true;
+  createVariantToggle.dispatchEvent(new window.Event('change'));
   context.document.querySelector('.waypoint-save-btn').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(JSON.parse(JSON.stringify(saved[0].design_intent)), {
@@ -333,12 +337,19 @@ test('rendered editor creates and restores Freeform Design Intent through save a
     workflow: 'impeccable',
     action: null,
   });
+  assert.deepEqual(JSON.parse(JSON.stringify(saved[0].variant_intent)), {
+    requested: true,
+    default_count: 3,
+  });
   assert.equal(saved[0].comment, 'Make the hierarchy feel intentional');
 
   await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
   const editToggle = context.document.querySelector('.waypoint-design-intent');
+  const editVariantToggle = context.document.querySelector('.waypoint-variant-intent:not(.waypoint-design-intent)');
   assert.equal(editToggle.hasAttribute('checked'), true);
+  assert.equal(editVariantToggle.hasAttribute('checked'), true);
   editToggle.checked = true;
+  editVariantToggle.checked = true;
   context.document.querySelector('.waypoint-textarea').value = 'Keep the hierarchy quiet and intentional';
   context.document.querySelector('.waypoint-textarea').dispatchEvent(new window.Event('input'));
   context.document.querySelector('.waypoint-save-btn').click();
@@ -352,21 +363,34 @@ test('rendered editor creates and restores Freeform Design Intent through save a
     JSON.parse(JSON.stringify(emitted.find(event => event.name === 'annotation:updated').payload.design_intent)),
     JSON.parse(JSON.stringify(updated[0].updates.design_intent)),
   );
+  assert.deepEqual(JSON.parse(JSON.stringify(updated[0].updates.variant_intent)), {
+    requested: true,
+    default_count: 3,
+  });
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(emitted.find(event => event.name === 'annotation:updated').payload.variant_intent)),
+    JSON.parse(JSON.stringify(updated[0].updates.variant_intent)),
+  );
 
   await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
   const removeToggle = context.document.querySelector('.waypoint-design-intent');
+  const removeVariantToggle = context.document.querySelector('.waypoint-variant-intent:not(.waypoint-design-intent)');
   removeToggle.checked = false;
   removeToggle.dispatchEvent(new window.Event('change'));
+  removeVariantToggle.checked = false;
+  removeVariantToggle.dispatchEvent(new window.Event('change'));
   context.document.querySelector('.waypoint-save-btn').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(updated[1].updates.design_intent, null);
+  assert.equal(updated[1].updates.variant_intent, null);
 });
 
-test('live Annotation consumers retain Design Intent after editor updates', async () => {
+test('live Annotation consumers retain Design Intent and Variant Intent after editor updates', async () => {
   const content = await readFile(new URL('../.output/chrome-mv3/content/content.js', import.meta.url), 'utf8');
   const badges = await readFile(new URL('../.output/chrome-mv3/content/modules/badge-manager.js', import.meta.url), 'utf8');
 
   assert.match(content, /annotation:updated[^]*design_intent[^]*WaypointDesignIntent\.applyUpdate/);
-  assert.match(badges, /function onUpdated\(\{ id, comment, pending_changes, css, design_intent \}\)/);
+  assert.match(content, /annotation:updated[^]*variant_intent[^]*WaypointDesignIntent\.applyUpdate/);
+  assert.match(badges, /function onUpdated\(\{ id, comment, pending_changes, css, design_intent, variant_intent \}\)/);
   assert.match(badges, /entry\.annotation = WaypointDesignIntent\.applyUpdate/);
 });

@@ -251,7 +251,7 @@ console.log('[Waypoint] content.js loaded');
     });
 
     // Annotation updated
-    WaypointEvents.on('annotation:updated', ({ id, comment, pending_changes, css, design_intent }) => {
+    WaypointEvents.on('annotation:updated', ({ id, comment, pending_changes, css, design_intent, variant_intent }) => {
       localSaveCount++;
       const idx = annotations.findIndex(a => a.id === id);
       if (idx !== -1) {
@@ -259,6 +259,7 @@ console.log('[Waypoint] content.js loaded');
         if (pending_changes !== undefined) updates.pending_changes = pending_changes;
         if (css !== undefined) updates.css = css;
         if (design_intent !== undefined) updates.design_intent = design_intent;
+        if (variant_intent !== undefined) updates.variant_intent = variant_intent;
         annotations[idx] = WaypointDesignIntent.applyUpdate(annotations[idx], updates);
       }
     });
