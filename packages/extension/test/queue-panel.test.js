@@ -142,8 +142,41 @@ test('Queue remains available on an empty current route so other-route work stay
   queueButton.click();
   await new Promise(resolve => setImmediate(resolve));
 
-  assert.match(root.querySelector('.waypoint-queue-list').textContent, /No annotations on this route/);
+  assert.match(root.querySelector('.waypoint-queue-list').textContent, /No active annotations on this route/);
   assert.match(root.querySelector('.waypoint-queue-header').textContent, /1 other route/);
+});
+
+test('Queue separates actionable Annotations from retained History', async () => {
+  const annotations = [
+    { id: 'waypoint_1750000000000_pending', url: 'http://localhost:3000/settings/members', status: 'pending', comment: 'Pending request', selector: '#target' },
+    { id: 'waypoint_1750000000001_claimed', url: 'http://localhost:3000/settings/members', status: 'claimed', comment: 'Claimed request', selector: '#target', claim: { owner: 'agent' } },
+    { id: 'waypoint_1750000000002_resolved', url: 'http://localhost:3000/settings/members', status: 'resolved', comment: 'Resolved request', selector: '#target' },
+    { id: 'waypoint_1750000000003_discarded', url: 'http://localhost:3000/settings/members', status: 'discarded', comment: 'Discarded request', selector: '#target' },
+  ];
+  const { context, root } = createHarness(annotations);
+  const [queuePanelSource, toolbarSource] = await Promise.all([
+    readFile(queuePanelUrl, 'utf8'),
+    readFile(toolbarUrl, 'utf8'),
+  ]);
+  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
+  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
+
+  await context.WaypointToolbar.init();
+  root.querySelector('.waypoint-tb-queue').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const list = root.querySelector('.waypoint-queue-list');
+  assert.match(list.textContent, /Pending request/);
+  assert.match(list.textContent, /Claimed request/);
+  assert.doesNotMatch(list.textContent, /Resolved request/);
+  assert.doesNotMatch(list.textContent, /Discarded request/);
+
+  root.querySelector('.waypoint-queue-history-view').click();
+  const historyList = root.querySelector('.waypoint-queue-list');
+  assert.doesNotMatch(historyList.textContent, /Pending request/);
+  assert.doesNotMatch(historyList.textContent, /Claimed request/);
+  assert.match(historyList.textContent, /Resolved request/);
+  assert.match(historyList.textContent, /Discarded request/);
 });
 
 test('Queue keeps permanent deletion secondary and requires an explicit confirmation', async () => {
@@ -165,6 +198,7 @@ test('Queue keeps permanent deletion secondary and requires an explicit confirma
   await context.WaypointToolbar.init();
   root.querySelector('.waypoint-tb-queue').click();
   await new Promise(resolve => setImmediate(resolve));
+  root.querySelector('.waypoint-queue-history-view').click();
   root.querySelector('.waypoint-queue-delete').click();
   assert.equal(deleted.length, 0);
   assert.match(root.querySelector('.waypoint-queue-row-menu').textContent, /Delete this annotation permanently\?/);
@@ -173,6 +207,44 @@ test('Queue keeps permanent deletion secondary and requires an explicit confirma
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(deleted, [annotation.id]);
   assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+});
+
+test('Queue previews and confirms scoped permanent history cleanup', async () => {
+  const now = Date.now();
+  const annotations = [
+    { id: 'waypoint_1750000000000_olddiscarded', url: 'http://localhost:3000/settings/members', status: 'discarded', comment: 'Old discarded', selector: '#target', updated_at: new Date(now - 45 * 86400000).toISOString() },
+    { id: 'waypoint_1750000000001_oldresolved', url: 'http://localhost:3000/settings/members', status: 'resolved', comment: 'Old resolved', selector: '#target', updated_at: new Date(now - 45 * 86400000).toISOString() },
+    { id: 'waypoint_1750000000002_recentdiscarded', url: 'http://localhost:3000/settings/members', status: 'discarded', comment: 'Recent discarded', selector: '#target', updated_at: new Date(now - 2 * 86400000).toISOString() },
+  ];
+  const { context, deleted, root } = createHarness(annotations);
+  const [queuePanelSource, toolbarSource] = await Promise.all([
+    readFile(queuePanelUrl, 'utf8'),
+    readFile(toolbarUrl, 'utf8'),
+  ]);
+  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
+  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
+
+  await context.WaypointToolbar.init();
+  root.querySelector('.waypoint-tb-queue').click();
+  await new Promise(resolve => setImmediate(resolve));
+  root.querySelector('.waypoint-queue-history-view').click();
+  root.querySelector('.waypoint-queue-clear-history').click();
+
+  const status = root.querySelector('.waypoint-queue-cleanup-status');
+  const age = root.querySelector('.waypoint-queue-cleanup-age');
+  status.querySelector('[value="discarded"]').removeAttribute('selected');
+  status.querySelector('[value="terminal"]').setAttribute('selected', '');
+  status.dispatchEvent(new context.window.Event('change'));
+  age.dispatchEvent(new context.window.Event('change'));
+
+  assert.match(root.querySelector('.waypoint-queue-cleanup-preview').textContent, /2 annotations/);
+  assert.equal(deleted.length, 0);
+  root.querySelector('.waypoint-queue-confirm-cleanup').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.deepEqual(deleted, [annotations[0].id, annotations[1].id]);
+  assert.doesNotMatch(root.querySelector('.waypoint-queue-list').textContent, /Old discarded|Old resolved/);
+  assert.match(root.querySelector('.waypoint-queue-list').textContent, /Recent discarded/);
 });
 
 test('Queue offers compact access to other routes without replacing its route-first opening view', async () => {

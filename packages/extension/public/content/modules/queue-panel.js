@@ -66,11 +66,11 @@ var WaypointQueuePanel = (() => {
     `;
   }
 
-  function renderAnnotation(annotation) {
+  function renderAnnotation(annotation, selectable = true) {
     const details = [statusLabel(annotation.status), annotation.selector || annotation.element || 'Target', ...variantLabels(annotation)];
     return `
-      <div class="waypoint-queue-row" data-annotation-id="${escapeHTML(annotation.id)}">
-        <input class="waypoint-queue-select" type="checkbox" value="${escapeHTML(annotation.id)}" aria-label="Select annotation: ${escapeHTML(annotation.comment || 'Untitled annotation')}">
+      <div class="waypoint-queue-row${selectable ? '' : ' waypoint-queue-row-history'}" data-annotation-id="${escapeHTML(annotation.id)}">
+        ${selectable ? `<input class="waypoint-queue-select" type="checkbox" value="${escapeHTML(annotation.id)}" aria-label="Select annotation: ${escapeHTML(annotation.comment || 'Untitled annotation')}">` : ''}
         <span class="waypoint-queue-copy">
           <span class="waypoint-queue-comment">${escapeHTML(annotation.comment || 'Untitled annotation')}</span>
           <span class="waypoint-queue-meta">${details.map(escapeHTML).join(' · ')}</span>
@@ -142,7 +142,10 @@ var WaypointQueuePanel = (() => {
     panel.querySelector('.waypoint-queue-close')?.focus();
   }
 
-  function renderRouteView(annotations, route, otherRoutes, actions, currentRoute) {
+  function renderRouteView(annotations, route, otherRoutes, actions, currentRoute, view = 'active') {
+    const activeAnnotations = annotations.filter(annotation => ['pending', 'claimed'].includes(annotation.status));
+    const historyAnnotations = annotations.filter(annotation => ['resolved', 'discarded'].includes(annotation.status));
+    const visibleAnnotations = view === 'history' ? historyAnnotations : activeAnnotations;
     panel.innerHTML = `
       <header class="waypoint-queue-header">
         <div>
@@ -154,33 +157,125 @@ var WaypointQueuePanel = (() => {
           <button class="waypoint-queue-close" type="button" aria-label="Close Queue">×</button>
         </div>
       </header>
-      ${annotations.length ? renderSignalKey() : ''}
+      <nav class="waypoint-queue-views" aria-label="Queue views">
+        <button class="waypoint-queue-active-view" type="button" aria-pressed="${view === 'active'}">Active <span>${activeAnnotations.length}</span></button>
+        <button class="waypoint-queue-history-view" type="button" aria-pressed="${view === 'history'}">History <span>${historyAnnotations.length}</span></button>
+      </nav>
+      ${visibleAnnotations.length ? renderSignalKey() : ''}
       <div class="waypoint-queue-list">
-        ${annotations.length ? annotations.map(renderAnnotation).join('') : '<p class="waypoint-queue-empty">No annotations on this route.</p>'}
+        ${visibleAnnotations.length ? visibleAnnotations.map(annotation => renderAnnotation(annotation, view === 'active')).join('') : `<p class="waypoint-queue-empty">No ${view === 'history' ? 'history' : 'active annotations'} on this route.</p>`}
       </div>
-      ${annotations.length ? `
+      ${view === 'active' && visibleAnnotations.length ? `
         <footer class="waypoint-queue-actions">
           <span class="waypoint-queue-copy-feedback" role="status" aria-live="polite"></span>
           <button class="waypoint-queue-select-all" type="button">Select all</button>
           <button class="waypoint-queue-discard-selected" type="button" disabled>Discard</button>
           <button class="waypoint-queue-copy-selected" type="button" disabled>Copy</button>
         </footer>
+      ` : view === 'history' && visibleAnnotations.length ? `
+        <footer class="waypoint-queue-actions waypoint-queue-history-actions">
+          <span>History stays until you remove it.</span>
+          <button class="waypoint-queue-clear-history" type="button">Clear history</button>
+        </footer>
       ` : ''}
     `;
     panel.querySelector('.waypoint-queue-close').addEventListener('click', close);
     panel.querySelector('.waypoint-queue-other-routes')?.addEventListener('click', () => renderRouteList(otherRoutes, actions, currentRoute));
+    panel.querySelector('.waypoint-queue-active-view').addEventListener('click', () => renderRouteView(annotations, route, otherRoutes, actions, currentRoute, 'active'));
+    panel.querySelector('.waypoint-queue-history-view').addEventListener('click', () => renderRouteView(annotations, route, otherRoutes, actions, currentRoute, 'history'));
     panel.querySelectorAll('.waypoint-queue-open').forEach(button => {
       button.addEventListener('click', () => {
-        const annotation = annotations.find(candidate => candidate.id === button.dataset.annotationId);
+        const annotation = visibleAnnotations.find(candidate => candidate.id === button.dataset.annotationId);
         if (!annotation) return;
         close(false);
         actions.open?.(annotation);
       });
     });
     panel.querySelectorAll('.waypoint-queue-delete').forEach(button => {
-      button.addEventListener('click', () => openDeleteConfirm(button, annotations, actions));
+      button.addEventListener('click', () => openDeleteConfirm(button, visibleAnnotations, actions));
     });
-    if (annotations.length) wireSelection(annotations, actions);
+    if (view === 'active' && visibleAnnotations.length) wireSelection(visibleAnnotations, actions);
+    if (view === 'history' && visibleAnnotations.length) {
+      panel.querySelector('.waypoint-queue-clear-history').addEventListener('click', () => {
+        openHistoryCleanup(annotations, route, otherRoutes, actions, currentRoute);
+      });
+    }
+  }
+
+  function historyCleanupMatches(annotation, statusScope, ageScope) {
+    const statusMatches = statusScope === 'terminal'
+      ? ['resolved', 'discarded'].includes(annotation.status)
+      : annotation.status === 'discarded';
+    if (!statusMatches) return false;
+    if (ageScope === 'all') return true;
+    const timestamp = Date.parse(annotation.updated_at || annotation.created_at || '');
+    if (!Number.isFinite(timestamp)) return false;
+    return timestamp <= Date.now() - Number(ageScope) * 86400000;
+  }
+
+  function openHistoryCleanup(annotations, route, otherRoutes, actions, currentRoute) {
+    const actionBar = panel.querySelector('.waypoint-queue-history-actions');
+    actionBar.classList.add('waypoint-queue-cleanup');
+    actionBar.innerHTML = `
+      <div class="waypoint-queue-cleanup-fields">
+        <label>Status
+          <select class="waypoint-queue-cleanup-status">
+            <option value="discarded">Discarded only</option>
+            <option value="terminal">Resolved and discarded</option>
+          </select>
+        </label>
+        <label>Older than
+          <select class="waypoint-queue-cleanup-age">
+            <option value="7">7 days</option>
+            <option value="30" selected>30 days</option>
+            <option value="90">90 days</option>
+            <option value="all">Everything</option>
+          </select>
+        </label>
+      </div>
+      <div class="waypoint-queue-cleanup-confirmation">
+        <span class="waypoint-queue-cleanup-preview" role="status" aria-live="polite"></span>
+        <button class="waypoint-queue-cancel-cleanup" type="button">Cancel</button>
+        <button class="waypoint-queue-confirm-cleanup" type="button">Delete permanently</button>
+      </div>
+    `;
+    const status = actionBar.querySelector('.waypoint-queue-cleanup-status');
+    const age = actionBar.querySelector('.waypoint-queue-cleanup-age');
+    const preview = actionBar.querySelector('.waypoint-queue-cleanup-preview');
+    const confirm = actionBar.querySelector('.waypoint-queue-confirm-cleanup');
+    const matches = () => annotations.filter(annotation => historyCleanupMatches(annotation, status.value, age.value));
+    const updatePreview = () => {
+      const count = matches().length;
+      preview.textContent = `${count} annotation${count === 1 ? '' : 's'} will be permanently deleted.`;
+      confirm.disabled = count === 0;
+    };
+    status.addEventListener('change', updatePreview);
+    age.addEventListener('change', updatePreview);
+    actionBar.querySelector('.waypoint-queue-cancel-cleanup').addEventListener('click', () => {
+      renderRouteView(annotations, route, otherRoutes, actions, currentRoute, 'history');
+    });
+    confirm.addEventListener('click', async () => {
+      const selected = matches();
+      if (!selected.length) return;
+      confirm.disabled = true;
+      confirm.textContent = 'Deleting…';
+      try {
+        await Promise.all(selected.map(annotation => actions.delete?.(annotation)));
+        const deletedIds = new Set(selected.map(annotation => annotation.id));
+        const remaining = annotations.filter(annotation => !deletedIds.has(annotation.id));
+        renderRouteView(remaining, route, otherRoutes, actions, currentRoute, 'history');
+      } catch (error) {
+        actionBar.querySelector('.waypoint-queue-action-error')?.remove();
+        const message = document.createElement('span');
+        message.className = 'waypoint-queue-action-error';
+        message.setAttribute('role', 'alert');
+        message.textContent = error?.message || 'Could not clear history.';
+        actionBar.appendChild(message);
+        confirm.disabled = false;
+        confirm.textContent = 'Delete permanently';
+      }
+    });
+    updatePreview();
   }
 
   function openDeleteConfirm(button, annotations, actions) {
