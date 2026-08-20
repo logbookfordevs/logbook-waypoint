@@ -619,7 +619,7 @@ var WAYPOINT_STYLES = `
 .waypoint-design-action-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
 .waypoint-design-action { min-width:0; min-height:30px; padding:5px 8px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-1); color:var(--waypoint-text-primary); font:600 10px/1.2 var(--waypoint-font); text-align:left; cursor:pointer; transition:border-color .15s ease,background .15s ease,color .15s ease; }
 .waypoint-design-action:hover { border-color:var(--waypoint-outline-highlight); background:var(--waypoint-surface-hover); }
-.waypoint-design-action[aria-pressed="true"] { border-color:var(--waypoint-accent); background:var(--waypoint-accent-soft); color:var(--waypoint-accent); }
+.waypoint-design-action[aria-pressed="true"] { border-color:var(--waypoint-accent); background:color-mix(in srgb,var(--waypoint-accent) 14%,var(--waypoint-surface-1)); color:var(--waypoint-accent); }
 .waypoint-design-action:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }
 .waypoint-design-action-description { min-height:14px; color:var(--waypoint-text-secondary); font-size:9px; line-height:1.4; }
 
