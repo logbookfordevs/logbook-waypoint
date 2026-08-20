@@ -639,6 +639,10 @@ var WAYPOINT_STYLES = `
 .waypoint-color-palette-swatch { width:22px; height:22px; border-radius:4px; border:1px solid var(--waypoint-outline); cursor:pointer; padding:0; transition:transform .1s; }
 .waypoint-color-palette-swatch:hover { transform:scale(1.15); border-color:var(--waypoint-outline-highlight); }
 .waypoint-color-palette-swatch.active { outline:2px solid var(--waypoint-accent); outline-offset:1px; }
+.waypoint-resolution-record { margin-bottom:12px; padding:12px; border:1px solid var(--waypoint-outline); border-radius:8px; background:var(--waypoint-surface-hover); }
+.waypoint-resolution-label { font-size:11px; font-weight:600; color:var(--waypoint-text-secondary); text-transform:uppercase; letter-spacing:.04em; }
+.waypoint-resolution-summary { margin:4px 0 10px; color:var(--waypoint-text-primary); }
+.waypoint-resolution-verification { margin:4px 0 0; padding-left:18px; color:var(--waypoint-text-primary); }
 .waypoint-color-palette-empty { font-size:11px; color:var(--waypoint-text-secondary); padding:4px; grid-column:1/-1; }
 
 /* Warning bar */

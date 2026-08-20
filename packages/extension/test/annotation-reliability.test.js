@@ -502,6 +502,21 @@ test('Queue conflict resolution preserves server-owned lifecycle state and Claim
     assert.deepEqual(merged.claim, server.claim);
     assert.equal(merged._synced, false);
   }
+
+  const resolvedDesignAction = {
+    ...local,
+    status: 'resolved',
+    design_intent: { schema_version: 1, workflow: 'impeccable', action: null },
+    resolution_record: {
+      summary: 'Clarified the hierarchy.',
+      verification: ['Focused tests pass'],
+    },
+  };
+  const resolvedMerge = context.WaypointQueueSync.merge([local], [resolvedDesignAction], []).annotations[0];
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(resolvedMerge.resolution_record)),
+    resolvedDesignAction.resolution_record,
+  );
 });
 
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {

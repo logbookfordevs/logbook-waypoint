@@ -252,6 +252,7 @@ var WaypointAnnotationPopover = (() => {
     if (!root) return;
 
     const isEdit = !!existingAnnotation;
+    const isHistorical = ['resolved', 'discarded'].includes(existingAnnotation?.status);
     const presentationLocked = WaypointVariantPicker.locksPresentation(existingAnnotation);
     const isFile = WaypointAPI.isFileProtocol();
     const elType = classifyElement(targetElement);
@@ -334,6 +335,17 @@ var WaypointAnnotationPopover = (() => {
     const selectorLabel = context.classes.length
       ? `${context.tag}.${context.classes[0]}`
       : context.tag;
+    const resolutionRecord = existingAnnotation?.resolution_record;
+    const resolutionHTML = resolutionRecord ? `
+      <section class="waypoint-resolution-record" aria-label="Resolution history">
+        <div class="waypoint-resolution-label">Resolution</div>
+        <p class="waypoint-resolution-summary">${escapeHTML(resolutionRecord.summary)}</p>
+        <div class="waypoint-resolution-label">Verification</div>
+        <ul class="waypoint-resolution-verification">
+          ${resolutionRecord.verification.map(item => `<li>${escapeHTML(item)}</li>`).join('')}
+        </ul>
+      </section>
+    ` : '';
 
     popover.innerHTML = `
       <div class="waypoint-drag-handle"></div>
@@ -347,8 +359,9 @@ var WaypointAnnotationPopover = (() => {
       </div>
       ${warningHTML}
       <div class="waypoint-popover-body">
+        ${resolutionHTML}
         <div class="waypoint-input-wrap">
-          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000">${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
+          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000" ${isHistorical ? 'disabled' : ''}>${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
           <span class="waypoint-kbd-hint">${kbdHint} to save</span>
         </div>
         <div class="waypoint-annotation-options" role="group" aria-label="Annotation options">
@@ -365,7 +378,7 @@ var WaypointAnnotationPopover = (() => {
               <span class="waypoint-variant-intent-title">Request Variants</span>
               <span class="waypoint-variant-intent-description">Explore multiple named directions</span>
             </span>
-            <input class="waypoint-variant-intent" type="checkbox">
+            <input class="waypoint-variant-intent" type="checkbox" ${isHistorical ? 'disabled' : ''}>
           </label>
           ${showDesignActions ? `
             <section class="waypoint-design-actions waypoint-design-intent-row">
@@ -374,7 +387,7 @@ var WaypointAnnotationPopover = (() => {
                   <span class="waypoint-variant-intent-title">Design Actions</span>
                   <span class="waypoint-variant-intent-description">Use this brief as Impeccable direction</span>
                 </span>
-                <input class="waypoint-variant-intent waypoint-design-intent" type="checkbox" aria-label="Use Design Actions" ${existingAnnotation?.design_intent ? 'checked' : ''}>
+                <input class="waypoint-variant-intent waypoint-design-intent" type="checkbox" aria-label="Use Design Actions" ${existingAnnotation?.design_intent ? 'checked' : ''} ${isHistorical ? 'disabled' : ''}>
               </label>
               <div class="waypoint-design-action-catalog" ${existingAnnotation?.design_intent ? '' : 'hidden'}>
                 <div class="waypoint-design-action-heading">
@@ -383,7 +396,7 @@ var WaypointAnnotationPopover = (() => {
                 </div>
                 <div class="waypoint-design-action-grid" role="group" aria-label="Choose one Design Action">
                   ${WaypointDesignIntent.catalog.map(item => `
-                    <button class="waypoint-design-action" type="button" data-action="${item.action}" aria-pressed="${existingAnnotation?.design_intent?.action === item.action}">${item.label}</button>
+                    <button class="waypoint-design-action" type="button" data-action="${item.action}" aria-pressed="${existingAnnotation?.design_intent?.action === item.action}" ${isHistorical ? 'disabled' : ''}>${item.label}</button>
                   `).join('')}
                 </div>
                 <span class="waypoint-design-action-description" role="status" aria-live="polite"></span>
@@ -715,6 +728,12 @@ var WaypointAnnotationPopover = (() => {
     popover._updateResetVisibility = updateResetVisibility;
     updateAttachmentStatus();
     updateSave();
+    if (isHistorical) {
+      popover.querySelectorAll('input, textarea, .waypoint-tab, .waypoint-design-reset').forEach(control => {
+        control.disabled = true;
+      });
+      saveBtn.remove();
+    }
     requestAnimationFrame(() => autoResizeCommentInput(textarea));
 
     // Focus textarea ASAP — temporarily block blur/focusout so framework doesn't react
