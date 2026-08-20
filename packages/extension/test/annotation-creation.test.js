@@ -259,6 +259,7 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   const emitted = [];
   const saved = [];
   const updated = [];
+  const dismissed = [];
   const computedStyle = new Proxy({ display: 'block' }, { get: (styles, key) => styles[key] ?? '' });
   const context = vm.createContext({
     window,
@@ -296,6 +297,7 @@ test('rendered editor creates and restores Freeform Design Intent through save a
     isFileProtocol: () => false,
     saveAnnotation: async annotation => { saved.push(annotation); },
     updateAnnotation: async (annotationId, updates) => { updated.push({ annotationId, updates }); },
+    dismissWorkNotice: async annotationId => { dismissed.push(annotationId); },
   };
   context.WaypointAnnotationId = { create: () => 'waypoint_1750000000000_abc123xyz' };
 
@@ -334,6 +336,41 @@ test('rendered editor creates and restores Freeform Design Intent through save a
     action: null,
   });
   assert.equal(saved[0].comment, 'Make the hierarchy feel intentional');
+
+  await handlers.get('annotation:edit')({
+    annotation: {
+      ...saved[0],
+      work_notice: {
+        code: 'workflow_unavailable',
+        summary: 'Install Impeccable, then claim this Annotation again.',
+        created_at: '2026-08-19T12:00:00.000Z',
+      },
+    },
+    element: target,
+  });
+  const notice = context.document.querySelector('.waypoint-work-notice');
+  assert.match(notice.textContent, /Design workflow unavailable/);
+  assert.match(notice.textContent, /Install Impeccable, then claim this Annotation again/);
+  notice.querySelector('.waypoint-work-notice-dismiss').click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(dismissed, ['waypoint_1750000000000_abc123xyz']);
+  assert.equal(context.document.querySelector('.waypoint-work-notice'), null);
+
+  await handlers.get('annotation:edit')({
+    annotation: {
+      ...saved[0],
+      status: 'claimed',
+      claim: {
+        owner: 'agent-one',
+        refreshed_at: '2026-08-19T12:00:00.000Z',
+        expires_at: '2026-08-19T12:05:00.000Z',
+      },
+    },
+    element: target,
+  });
+  assert.equal(context.document.querySelector('.waypoint-textarea').disabled, true);
+  assert.equal(context.document.querySelector('.waypoint-design-intent').disabled, true);
+  assert.equal(context.document.querySelector('.waypoint-save-btn').disabled, true);
 
   await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
   const editToggle = context.document.querySelector('.waypoint-design-intent');

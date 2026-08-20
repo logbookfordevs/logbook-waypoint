@@ -175,7 +175,8 @@ class WaypointAnnotationsBackground {
         case 'releaseAnnotation':
         case 'resolveAnnotation':
         case 'discardAnnotation':
-          this.runLifecycleOperation(request.action, request.id, request.owner, request.url)
+        case 'dismissWorkNotice':
+          this.runLifecycleOperation(request.action, request.id, request.owner, request.url, request.reason)
             .then(annotation => sendResponse({ success: true, annotation }))
             .catch(error => sendResponse({ success: false, error: error.message }));
           break;
@@ -413,12 +414,13 @@ class WaypointAnnotationsBackground {
     return WaypointAnnotationStatus.normalize(result.annotation);
   }
 
-  async runLifecycleOperation(action, id, owner, url) {
+  async runLifecycleOperation(action, id, owner, url, reason) {
     const operation = {
       claimAnnotation: 'claim',
       releaseAnnotation: 'release',
       resolveAnnotation: 'resolve',
       discardAnnotation: 'discard',
+      dismissWorkNotice: 'work-notice/dismiss',
     }[action];
     if (!operation) throw new Error('Unknown lifecycle operation');
     if (!WaypointAnnotationId.isValid(id)) throw new Error('Invalid Waypoint annotation ID');
@@ -426,7 +428,7 @@ class WaypointAnnotationsBackground {
     const response = await fetch(`${this.apiServerUrl}/api/annotations/${encodeURIComponent(id)}/${operation}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ owner, url }),
+      body: JSON.stringify({ owner, url, reason }),
     });
     const result = await response.json();
     if (!response.ok || !result.annotation) {

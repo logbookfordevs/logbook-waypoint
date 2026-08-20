@@ -41,23 +41,25 @@ globalThis.WaypointAnnotationStatus = (() => {
 
   function normalizeUpdate(updates) {
     if (!updates || typeof updates !== 'object') return updates;
-    if (Object.hasOwn(updates, 'status') || Object.hasOwn(updates, 'claim')) {
-      throw new TypeError('Annotation lifecycle state and Claim change only through lifecycle operations');
+    if (Object.hasOwn(updates, 'status') || Object.hasOwn(updates, 'claim') || Object.hasOwn(updates, 'work_notice')) {
+      throw new TypeError('Annotation lifecycle state, Claim, and Work Notice change only through lifecycle operations');
     }
     return { ...updates };
   }
 
   function assertSaveAllowed(existing, incoming) {
     if (!existing) {
-      if (incoming?.status !== 'pending' || Object.hasOwn(incoming, 'claim')) {
-        throw new TypeError('New Annotations must start Pending without a Claim');
+      if (incoming?.status !== 'pending' || Object.hasOwn(incoming, 'claim') || Object.hasOwn(incoming, 'work_notice')) {
+        throw new TypeError('New Annotations must start Pending without a Claim or Work Notice');
       }
       return incoming;
     }
     const existingClaim = Object.hasOwn(existing, 'claim') ? JSON.stringify(existing.claim) : null;
     const incomingClaim = Object.hasOwn(incoming, 'claim') ? JSON.stringify(incoming.claim) : null;
-    if (existing.status !== incoming?.status || existingClaim !== incomingClaim) {
-      throw new TypeError('Annotation lifecycle state and Claim change only through lifecycle operations');
+    const existingNotice = Object.hasOwn(existing, 'work_notice') ? JSON.stringify(existing.work_notice) : null;
+    const incomingNotice = Object.hasOwn(incoming, 'work_notice') ? JSON.stringify(incoming.work_notice) : null;
+    if (existing.status !== incoming?.status || existingClaim !== incomingClaim || existingNotice !== incomingNotice) {
+      throw new TypeError('Annotation lifecycle state, Claim, and Work Notice change only through lifecycle operations');
     }
     return incoming;
   }

@@ -252,7 +252,8 @@ var WaypointAnnotationPopover = (() => {
     if (!root) return;
 
     const isEdit = !!existingAnnotation;
-    const presentationLocked = WaypointVariantPicker.locksPresentation(existingAnnotation);
+    const lifecycleLocked = isEdit && existingAnnotation.status !== 'pending';
+    const presentationLocked = lifecycleLocked || WaypointVariantPicker.locksPresentation(existingAnnotation);
     const isFile = WaypointAPI.isFileProtocol();
     const elType = classifyElement(targetElement);
 
@@ -276,6 +277,19 @@ var WaypointAnnotationPopover = (() => {
     if (isFile) {
       warningHTML = `<div class="waypoint-warning">${ICONS.warning}<span>Local file mode</span></div>`;
     }
+    const workNotice = existingAnnotation?.status === 'pending' ? existingAnnotation.work_notice : null;
+    const workNoticeTitle = workNotice?.code === 'workflow_unavailable'
+      ? 'Design workflow unavailable'
+      : 'Design workflow needs attention';
+    const workNoticeHTML = workNotice ? `
+      <div class="waypoint-work-notice" role="status">
+        <div class="waypoint-work-notice-copy">
+          <strong>${workNoticeTitle}</strong>
+          <span>${escapeHTML(workNotice.summary)}</span>
+        </div>
+        <button class="waypoint-work-notice-dismiss" type="button">Dismiss</button>
+      </div>
+    ` : '';
 
     // Original computed values — use pending_changes.*.original when editing
     const pc = isEdit ? existingAnnotation.pending_changes : null;
@@ -345,6 +359,7 @@ var WaypointAnnotationPopover = (() => {
         ${panelsHTML}
       </div>
       ${warningHTML}
+      ${workNoticeHTML}
       <div class="waypoint-popover-body">
         <div class="waypoint-input-wrap">
           <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000">${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
@@ -408,6 +423,7 @@ var WaypointAnnotationPopover = (() => {
     const attachmentButtonLabel = popover.querySelector('.waypoint-attachment-button-label');
     const variantIntentInput = popover.querySelector('.waypoint-variant-intent');
     const designIntentInput = popover.querySelector('.waypoint-design-intent');
+    const workNoticeDismiss = popover.querySelector('.waypoint-work-notice-dismiss');
     let attachments = Array.isArray(existingAnnotation?.attachments)
       ? existingAnnotation.attachments.filter(isImageAttachmentMetadata)
       : [];
@@ -418,6 +434,25 @@ var WaypointAnnotationPopover = (() => {
     activeOriginalCssText = targetElement.style.cssText;
     activeExistingAnnotation = existingAnnotation;
     activeElType = elType;
+
+    if (lifecycleLocked) {
+      textarea.disabled = true;
+      designIntentInput.disabled = true;
+      variantIntentInput.disabled = true;
+      imageInput.disabled = true;
+    }
+
+    workNoticeDismiss?.addEventListener('click', async () => {
+      workNoticeDismiss.disabled = true;
+      try {
+        await WaypointAPI.dismissWorkNotice(existingAnnotation.id);
+        popover.querySelector('.waypoint-work-notice')?.remove();
+        delete activeExistingAnnotation.work_notice;
+      } catch {
+        workNoticeDismiss.disabled = false;
+        workNoticeDismiss.textContent = 'Try again';
+      }
+    });
 
     // Tab switching — cold start: toolbar hidden, no active tab. Reclick deselects.
     const tabBtns = popover.querySelectorAll('.waypoint-tab');
@@ -626,6 +661,11 @@ var WaypointAnnotationPopover = (() => {
 
     // Enable/disable save
     const updateSave = () => {
+      if (lifecycleLocked) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Read only';
+        return;
+      }
       const text = textarea.value.trim();
 
       // Server status is informational only — annotations save to chrome.storage
@@ -679,8 +719,11 @@ var WaypointAnnotationPopover = (() => {
     };
     document.addEventListener('blur', blurBlocker, true);
     document.addEventListener('focusout', blurBlocker, true);
-    textarea.focus();
-    if (isEdit) textarea.select();
+    if (lifecycleLocked) cancelBtn.focus();
+    else {
+      textarea.focus();
+      if (isEdit) textarea.select();
+    }
     document.removeEventListener('blur', blurBlocker, true);
     document.removeEventListener('focusout', blurBlocker, true);
 

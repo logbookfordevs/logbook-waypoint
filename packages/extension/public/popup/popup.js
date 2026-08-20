@@ -120,10 +120,23 @@ class AnnotationsPopup {
     const claimOwner = annotation.claim?.owner
       ? ` · ${this.escapeHtml(annotation.claim.owner)}`
       : '';
+    const workNoticeTitle = annotation.work_notice?.code === 'workflow_unavailable'
+      ? 'Design workflow unavailable'
+      : 'Design workflow needs attention';
+    const workNotice = annotation.status === 'pending' && annotation.work_notice ? `
+      <div class="work-notice" role="status">
+        <div class="work-notice-copy">
+          <strong>${workNoticeTitle}</strong>
+          <span>${this.escapeHtml(annotation.work_notice.summary)}</span>
+        </div>
+        <button class="work-notice-dismiss" data-id="${annotation.id}" type="button">Dismiss</button>
+      </div>
+    ` : '';
 
     return `
       <div class="annotation-item status-${annotation.status}" data-id="${annotation.id}">
         <div class="annotation-comment" data-full-comment="${this.escapeHtml(annotation.comment)}" title="Click to edit">${this.escapeHtml(annotation.comment)}</div>
+        ${workNotice}
         <div class="annotation-meta">
           <span class="annotation-timestamp"><span class="status-dot"></span>${statusLabel}${claimOwner} · ${timeAgo} · ${viewportWidth}w</span>
           <div class="annotation-actions">
@@ -308,6 +321,20 @@ class AnnotationsPopup {
       });
     });
 
+    document.querySelectorAll('.work-notice-dismiss').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        btn.disabled = true;
+        try {
+          await this.dismissWorkNotice(btn.dataset.id);
+        } catch {
+          btn.disabled = false;
+          btn.textContent = 'Try again';
+          btn.title = 'The Work Notice could not be dismissed';
+        }
+      });
+    });
+
     // Annotation items (click anywhere to edit)
     document.querySelectorAll('.annotation-item').forEach(item => {
       item.addEventListener('click', (e) => {
@@ -370,6 +397,14 @@ class AnnotationsPopup {
         alert('Error: Make sure you are on a local development page and refresh if needed.');
       }
     }
+  }
+
+  async dismissWorkNotice(id) {
+    const response = await chrome.runtime.sendMessage({ action: 'dismissWorkNotice', id });
+    if (!response?.success) throw new Error(response?.error || 'Unable to dismiss Work Notice');
+    const annotation = this.annotations.find(candidate => candidate.id === id);
+    if (annotation) delete annotation.work_notice;
+    this.render();
   }
 
   async stopAnnotationMode() {

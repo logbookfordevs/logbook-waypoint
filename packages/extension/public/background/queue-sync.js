@@ -12,6 +12,8 @@ var WaypointQueueSync = (() => {
     const merged = { ...candidate, status: server.status };
     if (Object.hasOwn(server, 'claim')) merged.claim = server.claim;
     else delete merged.claim;
+    if (Object.hasOwn(server, 'work_notice')) merged.work_notice = server.work_notice;
+    else delete merged.work_notice;
     return merged;
   }
 

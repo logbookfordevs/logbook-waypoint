@@ -218,9 +218,10 @@ var WaypointAPI = (() => {
     return runVariantOperation('finalizeVariant', id, key);
   }
 
-  async function runLifecycleOperation(action, id, owner, url = window.location?.href) {
+  async function runLifecycleOperation(action, id, { owner, reason, url = window.location?.href } = {}) {
     const request = { action, id };
     if (owner !== undefined) request.owner = owner;
+    if (reason !== undefined) request.reason = reason;
     if (url) request.url = url;
     const response = await chrome.runtime.sendMessage(request);
     if (!response?.success || !response.annotation) throw new Error(response?.error || `${action} failed`);
@@ -228,19 +229,23 @@ var WaypointAPI = (() => {
   }
 
   function claimAnnotation(id, owner, url) {
-    return runLifecycleOperation('claimAnnotation', id, owner, url);
+    return runLifecycleOperation('claimAnnotation', id, { owner, url });
   }
 
-  function releaseAnnotation(id, owner, url) {
-    return runLifecycleOperation('releaseAnnotation', id, owner, url);
+  function releaseAnnotation(id, owner, reason, url) {
+    return runLifecycleOperation('releaseAnnotation', id, { owner, reason, url });
   }
 
   function resolveAnnotation(id, owner, url) {
-    return runLifecycleOperation('resolveAnnotation', id, owner, url);
+    return runLifecycleOperation('resolveAnnotation', id, { owner, url });
   }
 
   function discardAnnotation(id, owner, url) {
-    return runLifecycleOperation('discardAnnotation', id, owner, url);
+    return runLifecycleOperation('discardAnnotation', id, { owner, url });
+  }
+
+  function dismissWorkNotice(id, url) {
+    return runLifecycleOperation('dismissWorkNotice', id, { url });
   }
 
   async function deleteAnnotationsByUrl() {
@@ -408,6 +413,7 @@ var WaypointAPI = (() => {
     releaseAnnotation,
     resolveAnnotation,
     discardAnnotation,
+    dismissWorkNotice,
     discardVariant,
     finalizeVariant,
     deleteAnnotationsByUrl,
