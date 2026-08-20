@@ -6,8 +6,22 @@ import vm from 'node:vm';
 import {
   applyDesignIntentUpdate,
   assertDesignIntent,
+  createDesignIntent,
   createFreeformDesignIntent,
 } from '../../server/lib/design-intent.js';
+
+const actions = [
+  'bolder',
+  'quieter',
+  'distill',
+  'polish',
+  'typeset',
+  'colorize',
+  'layout',
+  'animate',
+  'delight',
+  'overdrive',
+];
 
 test('server and extension enforce the same versioned Freeform Design Intent contract', async () => {
   const context = vm.createContext({});
@@ -20,9 +34,10 @@ test('server and extension enforce the same versioned Freeform Design Intent con
 
   const cases = [
     valid,
+    ...actions.map(action => createDesignIntent(action)),
     { schema_version: 2, workflow: 'impeccable', action: null },
     { schema_version: 1, workflow: 'other', action: null },
-    { schema_version: 1, workflow: 'impeccable', action: 'polish' },
+    { schema_version: 1, workflow: 'impeccable', action: 'unknown' },
     { schema_version: 1, workflow: 'impeccable', action: null, extra: true },
   ];
 
@@ -33,6 +48,11 @@ test('server and extension enforce the same versioned Freeform Design Intent con
     try { context.WaypointDesignIntent.assert(designIntent); } catch { extensionAccepted = false; }
     assert.equal(extensionAccepted, serverAccepted);
   }
+
+  assert.deepEqual(
+    Array.from(context.WaypointDesignIntent.actions),
+    actions,
+  );
 
   const annotation = { id: 'waypoint_1_abcdefghi', design_intent: valid };
   assert.equal('design_intent' in applyDesignIntentUpdate(annotation, { design_intent: null }), false);

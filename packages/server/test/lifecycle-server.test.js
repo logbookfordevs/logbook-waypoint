@@ -300,7 +300,7 @@ test('HTTP rejects malformed Design Intent while ordinary Annotations remain com
     for (const design_intent of [
       { schema_version: 2, workflow: 'impeccable', action: null },
       { schema_version: 1, workflow: 'other', action: null },
-      { schema_version: 1, workflow: 'impeccable', action: 'polish' },
+      { schema_version: 1, workflow: 'impeccable', action: 'unknown' },
       { schema_version: 1, workflow: 'impeccable', action: null, extra: true },
     ]) {
       const response = await fetch(`${baseUrl}/api/annotations`, {
@@ -319,6 +319,19 @@ test('HTTP rejects malformed Design Intent while ordinary Annotations remain com
     });
     assert.equal(ordinaryResponse.status, 200);
     assert.equal('design_intent' in (await ordinaryResponse.json()).annotation, false);
+
+    for (const action of ['bolder', 'quieter', 'distill', 'polish', 'typeset', 'colorize', 'layout', 'animate', 'delight', 'overdrive']) {
+      const response = await fetch(`${baseUrl}/api/annotations`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ...ordinary,
+          id: `waypoint_1750000000000_${action.padEnd(9, 'x')}`,
+          design_intent: { schema_version: 1, workflow: 'impeccable', action },
+        }),
+      });
+      assert.equal(response.status, 200, action);
+    }
 
     const invalidUpdate = await fetch(`${baseUrl}/api/annotations/${id}`, {
       method: 'PUT',

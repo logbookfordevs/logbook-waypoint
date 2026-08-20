@@ -1,6 +1,20 @@
 globalThis.WaypointDesignIntent = (() => {
   const SCHEMA_VERSION = 1;
   const WORKFLOW = 'impeccable';
+  const catalog = [
+    ['bolder', 'Bolder', 'Increase visual impact and confidence.'],
+    ['quieter', 'Quieter', 'Reduce visual intensity and distraction.'],
+    ['distill', 'Distill', 'Remove complexity and keep only what matters.'],
+    ['polish', 'Polish', 'Refine hierarchy, spacing, and visual details.'],
+    ['typeset', 'Typeset', 'Improve typography, scale, and rhythm.'],
+    ['colorize', 'Colorize', 'Add purposeful color and clearer emphasis.'],
+    ['layout', 'Layout', 'Improve structure, spacing, and alignment.'],
+    ['animate', 'Animate', 'Add purposeful motion and transitions.'],
+    ['delight', 'Delight', 'Add personality through thoughtful details.'],
+    ['overdrive', 'Overdrive', 'Push the design beyond conventional limits.'],
+  ].map(([action, label, description]) => ({ action, label, description }));
+  const actions = catalog.map(item => item.action);
+  const actionSet = new Set(actions);
 
   function isRecord(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -13,11 +27,15 @@ globalThis.WaypointDesignIntent = (() => {
   }
 
   function createFreeform() {
-    return {
+    return create(null);
+  }
+
+  function create(action) {
+    return assert({
       schema_version: SCHEMA_VERSION,
       workflow: WORKFLOW,
-      action: null,
-    };
+      action,
+    });
   }
 
   function assert(value) {
@@ -28,8 +46,8 @@ globalThis.WaypointDesignIntent = (() => {
       throw new TypeError(`Design Intent schema version must be ${SCHEMA_VERSION}`);
     }
     if (value.workflow !== WORKFLOW) throw new TypeError(`Design Intent workflow must be ${WORKFLOW}`);
-    if (value.action !== null) {
-      throw new TypeError('Design Intent action must be Freeform');
+    if (value.action !== null && !actionSet.has(value.action)) {
+      throw new TypeError('Design Intent action must be Freeform or a canonical Design Action');
     }
     return value;
   }
@@ -66,9 +84,12 @@ globalThis.WaypointDesignIntent = (() => {
   }
 
   return {
+    actions,
     applyUpdate,
     assert,
     assertAnnotation,
+    catalog,
+    create,
     createFreeform,
     preserve,
     removeIds,
