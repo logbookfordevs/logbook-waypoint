@@ -22,6 +22,8 @@ var WaypointToolbar = (() => {
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const defaultShortcutHint = isMac ? '\u2318\u21E7,' : 'Ctrl+Shift+,';
   let shortcutHint = defaultShortcutHint;
+  let collapseShortcutHint = '';
+  let settingsShortcutHint = '';
   let customShortcut = null;
 
   const ICONS = {
@@ -73,8 +75,14 @@ var WaypointToolbar = (() => {
     showDesignActions = await WaypointAPI.getShowDesignActions();
     badgeColor = await WaypointAPI.getBadgeColor();
     applyBadgeColor(badgeColor);
-    customShortcut = await WaypointAPI.getCustomShortcut();
+    const [savedShortcut, commandShortcuts] = await Promise.all([
+      WaypointAPI.getCustomShortcut(),
+      WaypointAPI.getCommandShortcuts(),
+    ]);
+    customShortcut = savedShortcut;
     if (customShortcut) shortcutHint = formatShortcut(customShortcut);
+    collapseShortcutHint = formatBrowserShortcut(commandShortcuts['toggle-toolbar-collapse']);
+    settingsShortcutHint = formatBrowserShortcut(commandShortcuts['toggle-toolbar-settings']);
     await refreshServerStatus();
 
     buildToolbar(root);
@@ -104,9 +112,9 @@ var WaypointToolbar = (() => {
     toolbarEl.className = 'waypoint-toolbar' + (isCollapsed ? ' collapsed' : '');
 
     toolbarEl.innerHTML = `
-      <button class="waypoint-toolbar-btn waypoint-tb-collapse" title="${isCollapsed ? 'Expand' : 'Collapse'}">
+      <button class="waypoint-toolbar-btn waypoint-tb-collapse" title="${commandLabel(isCollapsed ? 'Expand' : 'Collapse', collapseShortcutHint)}">
         ${isCollapsed ? ICONS.collapsed : ICONS.collapse}
-        <span class="waypoint-toolbar-tip">${isCollapsed ? 'Expand' : 'Collapse'}</span>
+        <span class="waypoint-toolbar-tip">${commandLabel(isCollapsed ? 'Expand' : 'Collapse', collapseShortcutHint)}</span>
       </button>
       <div class="waypoint-toolbar-inner">
         <div class="waypoint-toolbar-divider"></div>
@@ -127,9 +135,9 @@ var WaypointToolbar = (() => {
           <span class="waypoint-toolbar-tip">Delete all</span>
         </button>
         <div class="waypoint-toolbar-drag-handle" title="Drag to move"></div>
-        <button class="waypoint-toolbar-btn waypoint-tb-settings" title="Settings">
+        <button class="waypoint-toolbar-btn waypoint-tb-settings" title="${commandLabel('Settings', settingsShortcutHint)}">
           ${ICONS.settings}
-          <span class="waypoint-toolbar-tip">Settings</span>
+          <span class="waypoint-toolbar-tip">${commandLabel('Settings', settingsShortcutHint)}</span>
         </button>
       </div>
     `;
@@ -782,9 +790,10 @@ var WaypointToolbar = (() => {
     WaypointQueuePanel.close();
 
     const btn = toolbarEl.querySelector('.waypoint-tb-collapse');
+    const collapseLabel = commandLabel(isCollapsed ? 'Expand' : 'Collapse', collapseShortcutHint);
     btn.innerHTML = (isCollapsed ? ICONS.collapsed : ICONS.collapse) +
-      `<span class="waypoint-toolbar-tip">${isCollapsed ? 'Expand' : 'Collapse'}</span>`;
-    btn.title = isCollapsed ? 'Expand' : 'Collapse';
+      `<span class="waypoint-toolbar-tip">${collapseLabel}</span>`;
+    btn.title = collapseLabel;
 
     WaypointAPI.saveToolbarCollapsed(isCollapsed);
   }
@@ -1282,6 +1291,29 @@ var WaypointToolbar = (() => {
     const keyLabel = keyMap[sc.key] || (sc.key.length === 1 ? sc.key.toUpperCase() : sc.key);
     parts.push(keyLabel);
     return isMac ? parts.join('') : parts.join('+');
+  }
+
+  function formatBrowserShortcut(shortcut) {
+    if (!shortcut) return '';
+    if (!isMac) return shortcut;
+
+    const keyLabels = {
+      Command: '\u2318',
+      MacCtrl: '\u2303',
+      Ctrl: '\u2303',
+      Alt: '\u2325',
+      Option: '\u2325',
+      Shift: '\u21E7',
+      Up: '\u2191',
+      Down: '\u2193',
+      Left: '\u2190',
+      Right: '\u2192',
+    };
+    return shortcut.split('+').map(part => keyLabels[part] || part).join('');
+  }
+
+  function commandLabel(label, shortcut) {
+    return shortcut ? `${label} (${shortcut})` : label;
   }
 
   // --- Clipboard format ---

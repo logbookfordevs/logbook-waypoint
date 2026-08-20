@@ -130,6 +130,15 @@ class WaypointAnnotationsBackground {
             .catch(error => sendResponse({ success: false, error: error.message }));
           break;
 
+        case 'getCommandShortcuts':
+          chrome.commands.getAll()
+            .then(commands => sendResponse({
+              success: true,
+              shortcuts: Object.fromEntries(commands.map(command => [command.name, command.shortcut || ''])),
+            }))
+            .catch(error => sendResponse({ success: false, shortcuts: {}, error: error.message }));
+          break;
+
         case 'clearInterventionPopup':
           WaypointActionController.clearIntervention(request.tabId)
             .then(() => sendResponse({ success: true }))
