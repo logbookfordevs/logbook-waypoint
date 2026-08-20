@@ -217,8 +217,8 @@ export function assertGenericAnnotationUpdateAllowed(current, updates) {
   }
   if ('claim' in updates) fail('Annotation Claim can only change through the lifecycle module');
   if ('work_notice' in updates) fail('Work Notice can only change through the lifecycle module');
-  if (current?.status === 'claimed' && ['comment', 'design_intent'].some(field => field in updates)) {
-    fail('Claimed Annotation comment and Design Intent are locked');
+  if (current?.status !== 'pending' && ['comment', 'design_intent'].some(field => field in updates)) {
+    fail('Claimed and terminal Annotation comments and Design Intent are read-only');
   }
   if (hasVariantOwnedFields(updates)) fail('Variant-owned fields can only be changed through the Variant module');
   if (current?.variant_request && ['pending_changes', 'css'].some(field => field in updates)) {

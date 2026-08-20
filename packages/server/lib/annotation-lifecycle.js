@@ -151,7 +151,7 @@ export class AnnotationLifecycle {
         const identity = requireOwner(owner);
         if (current.claim.owner !== identity) throw new LifecycleError('claim_conflict', 'Only the Claim owner can discard a claimed Annotation');
       }
-      return { ...withoutClaim(current), status: 'discarded', updated_at: timestamp };
+      return { ...withoutWorkNotice(withoutClaim(current)), status: 'discarded', updated_at: timestamp };
     }
 
     throw new LifecycleError('invalid_operation', 'Unknown Annotation lifecycle operation');

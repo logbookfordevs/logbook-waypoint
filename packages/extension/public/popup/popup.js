@@ -353,6 +353,8 @@ class AnnotationsPopup {
         if (!this.serverOnline) {
           return;
         }
+        const annotation = this.annotations.find(candidate => candidate.id === item.dataset.id);
+        if (annotation?.status !== 'pending') return;
         
         // Don't start editing if already in edit mode
         const commentDiv = item.querySelector('.annotation-comment');

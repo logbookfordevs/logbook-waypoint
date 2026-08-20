@@ -64,6 +64,13 @@ globalThis.WaypointAnnotationStatus = (() => {
     return incoming;
   }
 
+  function assertUpdateAllowed(annotation) {
+    if (normalizeStatus(annotation?.status) !== 'pending') {
+      throw new TypeError('Only Pending Annotations can be edited');
+    }
+    return annotation;
+  }
+
   function assertFilter(status) {
     if (status !== 'all' && !CANONICAL_STATUSES.includes(status)) {
       throw new TypeError('Invalid export status');
@@ -90,6 +97,7 @@ globalThis.WaypointAnnotationStatus = (() => {
     ACTIONABLE_STATUSES: Object.freeze([...ACTIONABLE_STATUSES]),
     CANONICAL_STATUSES,
     assertSaveAllowed,
+    assertUpdateAllowed,
     assertFilter,
     countActionable,
     filterActionable,

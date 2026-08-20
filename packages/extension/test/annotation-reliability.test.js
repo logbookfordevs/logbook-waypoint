@@ -601,6 +601,20 @@ test('rendered Queue shows recovery guidance and dismisses Work Notices through 
     id: 'waypoint_1750000000001_abcdefghi',
   }]);
   assert.equal('work_notice' in popup.annotations[0], false);
+
+  let editCount = 0;
+  popup.serverOnline = true;
+  popup.startInlineEdit = () => { editCount += 1; };
+  popup.annotations = [{
+    id: 'waypoint_1750000000001_abcdefghi',
+    status: 'claimed',
+    comment: 'Claimed contract',
+    created_at: '2026-08-19T12:00:00.000Z',
+  }];
+  container.innerHTML = popup.renderAnnotationItem(popup.annotations[0]);
+  popup.setupAnnotationListeners();
+  container.querySelector('.annotation-item').click();
+  assert.equal(editCount, 0);
 });
 
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {

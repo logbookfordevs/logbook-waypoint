@@ -164,6 +164,7 @@ var WaypointAPI = (() => {
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       const idx = all.findIndex(a => a.id === id);
       if (idx !== -1) {
+        WaypointAnnotationStatus.assertUpdateAllowed(all[idx]);
         WaypointVariantPolicy.assertUpdateAllowed(all[idx], updates);
         const updatedAnnotation = WaypointDesignIntent.applyUpdate(all[idx], updates);
         all[idx] = updatedAnnotation;

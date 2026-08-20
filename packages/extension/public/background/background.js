@@ -666,6 +666,7 @@ class WaypointAnnotationsBackground {
         if (annotationIndex === -1) {
           throw new Error('Annotation not found');
         }
+        WaypointAnnotationStatus.assertUpdateAllowed(annotations[annotationIndex]);
         WaypointVariantPolicy.assertUpdateAllowed(annotations[annotationIndex], updates);
 
         const updatedAnnotation = WaypointDesignIntent.applyUpdate(annotations[annotationIndex], {

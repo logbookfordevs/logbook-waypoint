@@ -190,7 +190,7 @@ test('Claim locks the Design Intent and comment work contract', async () => {
     });
 
     assert.equal(response.status, 409);
-    assert.match((await response.json()).error, /Claimed Annotation/i);
+    assert.match((await response.json()).error, /Claimed.*Annotation/i);
     const retained = (await server.readAnnotations({ status: 'claimed' })).annotations[0];
     assert.equal(retained.comment, 'Retain me');
     assert.equal('design_intent' in retained, false);
@@ -202,6 +202,32 @@ test('Claim locks the Design Intent and comment work contract', async () => {
     });
     assert.equal(syncResponse.status, 409);
     assert.match((await syncResponse.json()).error, /work contract/i);
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('terminal Annotation history rejects generic comment and Design Intent updates', async () => {
+  const now = { value: Date.parse('2026-08-19T12:00:00.000Z') };
+  const { directory, server } = await fixture(now);
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
+  const baseUrl = `http://127.0.0.1:${listener.address().port}`;
+
+  try {
+    await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
+    await server.changeAnnotationLifecycle({ id, operation: 'resolve', owner: 'agent-one' });
+    const response = await fetch(`${baseUrl}/api/annotations/${id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ comment: 'Rewrite retained history' }),
+    });
+
+    assert.equal(response.status, 409);
+    assert.match((await response.json()).error, /read-only/i);
+    assert.equal((await server.readAnnotations({ status: 'resolved' })).annotations[0].comment, 'Retain me');
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));

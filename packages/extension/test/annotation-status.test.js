@@ -147,6 +147,13 @@ test('generic extension updates reject lifecycle state and Claim changes', async
     () => context.WaypointAnnotationStatus.normalizeUpdate({ work_notice: null }),
     /lifecycle operations/i,
   );
+  assert.throws(
+    () => context.WaypointAnnotationStatus.assertUpdateAllowed({ status: 'claimed' }),
+    /Pending/i,
+  );
+  assert.doesNotThrow(
+    () => context.WaypointAnnotationStatus.assertUpdateAllowed({ status: 'pending' }),
+  );
 });
 
 test('extension saves cannot create or replace lifecycle-owned state', async () => {

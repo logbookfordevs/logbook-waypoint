@@ -22,16 +22,20 @@ var WaypointQueueSync = (() => {
     return merged;
   }
 
-  function withServerLifecycle(candidate, server, local = candidate) {
-    const localTime = new Date(local.updated_at || local.created_at || 0).getTime();
-    const serverTime = new Date(server.updated_at || server.created_at || 0).getTime();
+  function annotationTime(annotation) {
+    return new Date(annotation.updated_at || annotation.created_at || 0).getTime();
+  }
+
+  function reconcileLifecycleFields(candidate, server, local = candidate) {
+    const localTime = annotationTime(local);
+    const serverTime = annotationTime(server);
     const source = local._synced && localTime > serverTime ? local : server;
     return applyLifecycleFields(candidate, source);
   }
 
   function applyServerLifecycle(local, server) {
-    const localTime = new Date(local.updated_at || local.created_at || 0).getTime();
-    const serverTime = new Date(server.updated_at || server.created_at || 0).getTime();
+    const localTime = annotationTime(local);
+    const serverTime = annotationTime(server);
     return {
       ...applyLifecycleFields(local, server),
       updated_at: localTime > serverTime ? local.updated_at : server.updated_at,
@@ -58,7 +62,7 @@ var WaypointQueueSync = (() => {
       if (field in variantOwner) merged[field] = variantOwner[field];
       else delete merged[field];
     }
-    const lifecycleMerged = withPreservedDesignIntent(withServerLifecycle(merged, server, local), local, server, removeDesignIntent);
+    const lifecycleMerged = withPreservedDesignIntent(reconcileLifecycleFields(merged, server, local), local, server, removeDesignIntent);
     const matchesServer = JSON.stringify(withoutSyncFlag(lifecycleMerged)) === JSON.stringify(withoutSyncFlag(server));
     return { ...lifecycleMerged, _synced: matchesServer };
   }
@@ -87,7 +91,7 @@ var WaypointQueueSync = (() => {
         const localOwnsVariant = hasVariantOwnedState(local);
         const serverOwnsVariant = hasVariantOwnedState(server);
         if (localOwnsVariant && !serverOwnsVariant) {
-          const merged = withPreservedDesignIntent(withServerLifecycle(local, server, local), local, server, removeDesignIntent);
+          const merged = withPreservedDesignIntent(reconcileLifecycleFields(local, server, local), local, server, removeDesignIntent);
           annotations.push(merged);
           if (JSON.stringify(merged) !== JSON.stringify(local)) changed = true;
           continue;
@@ -104,7 +108,7 @@ var WaypointQueueSync = (() => {
           annotations.push({ ...withPreservedDesignIntent(server, local, server, removeDesignIntent), _synced: !removeDesignIntent });
           changed = true;
         } else {
-          const merged = withPreservedDesignIntent(withServerLifecycle(local, server, local), local, server, removeDesignIntent);
+          const merged = withPreservedDesignIntent(reconcileLifecycleFields(local, server, local), local, server, removeDesignIntent);
           const matchesServer = JSON.stringify(withoutSyncFlag(merged)) === JSON.stringify(withoutSyncFlag(server));
           if (!matchesServer) flagsChanged = true;
           annotations.push({ ...merged, _synced: matchesServer });

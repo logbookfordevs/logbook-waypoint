@@ -120,11 +120,20 @@ test('Annotation lifecycle retains resolution and discard while terminal states 
   const claimed = lifecycle.apply(base(), { operation: 'claim', owner: 'agent-one' });
   const resolved = lifecycle.apply(claimed, { operation: 'resolve', owner: 'agent-one' });
   const discarded = lifecycle.apply(base(), { operation: 'discard' });
+  const discardedWithNotice = lifecycle.apply({
+    ...base(),
+    work_notice: {
+      code: 'execution_failed',
+      summary: 'Review the notice, then claim to retry.',
+      created_at: '2026-08-19T11:55:00.000Z',
+    },
+  }, { operation: 'discard' });
 
   assert.equal(resolved.status, 'resolved');
   assert.equal(discarded.status, 'discarded');
   assert.equal('claim' in resolved, false);
   assert.equal('claim' in discarded, false);
+  assert.equal('work_notice' in discardedWithNotice, false);
   assert.throws(() => lifecycle.apply(base(), { operation: 'resolve', owner: 'agent-one' }), /must be claimed/i);
   assert.throws(() => lifecycle.apply(resolved, { operation: 'discard' }), /terminal/i);
   assert.throws(() => lifecycle.apply(discarded, { operation: 'claim', owner: 'agent-one' }), /terminal/i);
