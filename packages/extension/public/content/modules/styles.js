@@ -1124,6 +1124,13 @@ var WAYPOINT_STYLES = `
   line-height: 1.35;
 }
 
+.waypoint-setting-help {
+  color: var(--waypoint-accent);
+  font-size: 11px;
+  line-height: 1.35;
+  text-underline-offset: 2px;
+}
+
 .waypoint-site-permission-status {
   min-height: 15px;
   margin: -2px 14px 6px 38px;

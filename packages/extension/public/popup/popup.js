@@ -194,6 +194,12 @@ class AnnotationsPopup {
     });
     this.updateClearOnCopyToggle();
 
+    const showDesignActionsToggle = document.getElementById('show-design-actions-toggle');
+    showDesignActionsToggle.addEventListener('change', (e) => {
+      this.updateShowDesignActionsSetting(e.target.checked);
+    });
+    this.updateShowDesignActionsToggle();
+
     document.querySelectorAll('input[name="badge-color"]').forEach(input => {
       input.addEventListener('change', (e) => {
         if (e.target.checked) this.updateBadgeColorSetting(e.target.value);
@@ -910,6 +916,24 @@ class AnnotationsPopup {
       document.getElementById('clear-on-copy-toggle').checked = Boolean(result.waypointClearOnCopy);
     } catch (error) {
       console.error('Error loading clear-on-copy setting:', error);
+    }
+  }
+
+  async updateShowDesignActionsSetting(enabled) {
+    try {
+      await chrome.storage.local.set({ waypointShowDesignActions: Boolean(enabled) });
+    } catch (error) {
+      console.error('Error saving Design Actions visibility:', error);
+    }
+  }
+
+  async updateShowDesignActionsToggle() {
+    try {
+      const result = await chrome.storage.local.get(['waypointShowDesignActions']);
+      document.getElementById('show-design-actions-toggle').checked = result.waypointShowDesignActions !== false;
+    } catch (error) {
+      console.error('Error loading Design Actions visibility:', error);
+      document.getElementById('show-design-actions-toggle').checked = true;
     }
   }
 
