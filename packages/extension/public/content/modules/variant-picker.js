@@ -48,6 +48,7 @@ globalThis.WaypointVariantPicker = (() => {
           <div class="waypoint-footer-left"><span class="waypoint-variant-status">Choose the implementation to present.</span></div>
           <div class="waypoint-footer-right">
             <button class="waypoint-btn waypoint-btn-secondary waypoint-variant-close" type="button">Close</button>
+            <button class="waypoint-btn waypoint-btn-secondary waypoint-variant-cancel" type="button">Cancel Variant Set</button>
             <button class="waypoint-btn waypoint-btn-primary waypoint-variant-finalize" type="button">Finalize Active</button>
           </div>
         </div>
@@ -69,6 +70,12 @@ globalThis.WaypointVariantPicker = (() => {
     };
 
     anchor.querySelector('.waypoint-variant-close').addEventListener('click', () => anchor.remove());
+    anchor.querySelector('.waypoint-variant-cancel').addEventListener('click', async () => {
+      const updated = await applyOperation(() => WaypointAPI.cancelVariantRequest(annotation.id));
+      if (!updated) return;
+      anchor.remove();
+      WaypointEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
+    });
     anchor.querySelectorAll('.waypoint-variant-activate').forEach(button => button.addEventListener('click', async () => {
       const key = button.closest('[data-variant-key]').dataset.variantKey;
       if (key === request.active_variant_key) return;

@@ -4,10 +4,10 @@ import test from 'node:test';
 import {
   VariantContractError,
   activateVariant,
-  addVariant,
   assertAnnotationResolvable,
   assertGenericAnnotationUpdateAllowed,
   assertSyncedAnnotationAllowed,
+  cancelVariantRequest,
   createVariantRequest,
   discardVariant,
   finalizeVariant,
@@ -54,18 +54,18 @@ test('activation changes the presented implementation without a lifecycle transi
   assert.equal(reopened.variant_request.variants.filter(variant => variant.state === 'active').length, 1);
 });
 
-test('create adds a uniquely named stable candidate without changing the Active Variant', () => {
-  const requested = createVariantRequest(annotation(), candidates);
-  const created = addVariant(requested, {
-    key: 'balanced',
-    name: 'Balanced',
-    implementation: { css: '.card { gap: 16px; }' },
-    scaffold: ['variant-shell'],
-  });
-
-  assert.deepEqual(created.variant_request.variants.map(variant => variant.key), ['compact', 'spacious', 'balanced']);
-  assert.equal(created.variant_request.active_variant_key, 'compact');
-  assert.equal(created.variant_request.variants.filter(variant => variant.state === 'active').length, 1);
+test('an unresolved Variant Set never grows beyond six complete candidates', () => {
+  assert.throws(
+    () => createVariantRequest({ ...annotation(), comment: 'Create six variants' }, [
+      ...candidates,
+      { key: 'balanced', name: 'Balanced', implementation: {} },
+      { key: 'focused', name: 'Focused', implementation: {} },
+      { key: 'playful', name: 'Playful', implementation: {} },
+      { key: 'quiet', name: 'Quiet', implementation: {} },
+      { key: 'seventh', name: 'Seventh', implementation: {} },
+    ]),
+    /at most 6/i,
+  );
 });
 
 test('discard removes a candidate and its exclusive Scaffold but protects the Active Variant', () => {
@@ -75,10 +75,7 @@ test('discard removes a candidate and its exclusive Scaffold but protects the Ac
   ]);
 
   assert.throws(() => discardVariant(requested, 'compact'), /activate another/i);
-  const discarded = discardVariant(requested, 'spacious');
-
-  assert.deepEqual(discarded.variant_request.variants.map(variant => variant.key), ['compact']);
-  assert.deepEqual(discarded.variant_request.scaffold, ['compact-only']);
+  assert.throws(() => discardVariant(requested, 'spacious'), /at least 2/i);
 });
 
 test('finalization preserves one implementation and removes all Scaffold', () => {
@@ -89,6 +86,40 @@ test('finalization preserves one implementation and removes all Scaffold', () =>
   assert.deepEqual(finalized.variant_request.variants.map(variant => variant.key), ['spacious']);
   assert.deepEqual(finalized.variant_request.scaffold, []);
   assert.deepEqual(finalized.variant_request.variants[0].scaffold, []);
+});
+
+test('cancellation restores a recoverable Pending Annotation without candidate state', () => {
+  const original = {
+    ...annotation(),
+    pending_changes: { color: { original: 'black', value: 'green' } },
+    css: '.card { color: green; }',
+  };
+  const requested = activateVariant(createVariantRequest(original, candidates), 'spacious');
+  const cancelled = cancelVariantRequest(requested);
+
+  assert.equal(cancelled.status, 'pending');
+  assert.equal('variant_request' in cancelled, false);
+  assert.equal('variant_presentation' in cancelled, false);
+  assert.deepEqual(cancelled.pending_changes, original.pending_changes);
+  assert.equal(cancelled.css, original.css);
+  assert.equal(requested.variant_request.status, 'unresolved');
+});
+
+test('unresolved evaluation locks Design Intent across generic and synchronized updates', () => {
+  const requested = createVariantRequest({
+    ...annotation(),
+    design_intent: { schema_version: 1, workflow: 'impeccable', action: 'polish' },
+  }, candidates);
+  const changedIntent = { schema_version: 1, workflow: 'impeccable', action: 'layout' };
+
+  assert.throws(
+    () => assertGenericAnnotationUpdateAllowed(requested, { design_intent: changedIntent }),
+    /unresolved Variant/i,
+  );
+  assert.throws(
+    () => assertSyncedAnnotationAllowed(requested, { ...requested, design_intent: changedIntent }),
+    /unresolved Variant/i,
+  );
 });
 
 test('cleanup failure leaves the input unresolved and reports remaining cleanup', () => {

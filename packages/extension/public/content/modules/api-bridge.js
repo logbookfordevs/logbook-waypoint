@@ -213,7 +213,9 @@ var WaypointAPI = (() => {
   }
 
   async function runVariantOperation(action, id, key) {
-    const response = await chrome.runtime.sendMessage({ action, id, key });
+    const request = { action, id };
+    if (key !== undefined) request.key = key;
+    const response = await chrome.runtime.sendMessage(request);
     if (!response?.success || !response.annotation) throw new Error(response?.error || `${action} failed`);
     return response.annotation;
   }
@@ -224,6 +226,10 @@ var WaypointAPI = (() => {
 
   function discardVariant(id, key) {
     return runVariantOperation('discardVariant', id, key);
+  }
+
+  function cancelVariantRequest(id) {
+    return runVariantOperation('cancelVariantRequest', id);
   }
 
   function finalizeVariant(id, key) {
@@ -442,6 +448,7 @@ var WaypointAPI = (() => {
     discardAnnotation,
     dismissWorkNotice,
     discardVariant,
+    cancelVariantRequest,
     finalizeVariant,
     deleteAnnotationsByUrl,
     onAnnotationsChanged,
