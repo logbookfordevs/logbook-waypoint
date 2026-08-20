@@ -51,6 +51,33 @@ test('content can request the current site permission through the background bou
   }]);
 });
 
+test('Design Actions visibility defaults on and persists through the extension preference boundary', async () => {
+  const writes = [];
+  let stored = {};
+  const context = vm.createContext({
+    window: { location: { protocol: 'https:' } },
+    chrome: {
+      runtime: { sendMessage: async () => ({ success: true }) },
+      storage: {
+        local: {
+          get: async () => stored,
+          set: async update => {
+            stored = { ...stored, ...update };
+            writes.push(update);
+          },
+        },
+      },
+    },
+  });
+  context.globalThis = context;
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  assert.equal(await context.WaypointAPI.getShowDesignActions(), true);
+  await context.WaypointAPI.saveShowDesignActions(false);
+  assert.equal(await context.WaypointAPI.getShowDesignActions(), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(writes)), [{ waypointShowDesignActions: false }]);
+});
+
 test('content rejects non-image or oversized attachment payloads before they reach the background', async () => {
   const messages = [];
   const context = vm.createContext({
