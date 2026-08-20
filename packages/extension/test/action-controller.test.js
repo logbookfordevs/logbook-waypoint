@@ -62,3 +62,49 @@ test('generated action has no default popup while retaining intervention UI', as
   assert.equal(manifest.action.default_popup, undefined);
   assert.match(intervention, /Logbook Waypoint/);
 });
+
+test('generated manifest offers three default toolbar commands and one user-assigned visibility command', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../.output/chrome-mv3/manifest.json', import.meta.url), 'utf8'));
+
+  assert.deepEqual(manifest.commands, {
+    'toggle-annotate': {
+      suggested_key: { default: 'Ctrl+Shift+Comma', mac: 'Command+Shift+Comma' },
+      description: 'Toggle annotation mode',
+    },
+    'toggle-toolbar-collapse': {
+      suggested_key: { default: 'Ctrl+Shift+Period', mac: 'Command+Shift+Period' },
+      description: 'Collapse or expand the Waypoint toolbar',
+    },
+    'toggle-toolbar-settings': {
+      suggested_key: { default: 'Ctrl+Shift+L', mac: 'Command+Shift+L' },
+      description: 'Open or close Waypoint settings',
+    },
+    'toggle-waypoint-visibility': {
+      description: 'Hide or show Logbook Waypoint',
+    },
+  });
+});
+
+test('extension commands route supported tabs through the content-script command seam', async () => {
+  const messages = [];
+  const chrome = {
+    tabs: {
+      async sendMessage(tabId, message) { messages.push({ tabId, message }); },
+    },
+  };
+  const controller = await loadController(chrome);
+
+  for (const [command, action] of [
+    ['toggle-annotate', 'toggleAnnotate'],
+    ['toggle-toolbar-collapse', 'toggleToolbarCollapse'],
+    ['toggle-toolbar-settings', 'toggleToolbarSettings'],
+    ['toggle-waypoint-visibility', 'toggleOverlay'],
+  ]) {
+    await controller.handleCommand(command, { id: 12, url: 'http://localhost:3000/review' }, async () => true);
+    assert.deepEqual(JSON.parse(JSON.stringify(messages.at(-1))), { tabId: 12, message: { action } });
+  }
+
+  const before = messages.length;
+  await controller.handleCommand('toggle-toolbar-collapse', { id: 13, url: 'https://example.com' }, async () => false);
+  assert.equal(messages.length, before);
+});

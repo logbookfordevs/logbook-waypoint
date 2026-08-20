@@ -58,6 +58,7 @@ function createHarness(annotations, { projectAnnotations } = {}) {
     getCustomShortcut: async () => null,
     checkServerStatus: async () => ({ connected: true }),
     getToolbarPosition: async () => null,
+    saveToolbarCollapsed: async () => {},
     loadAnnotations: async () => annotations,
     loadProjectAnnotations: async () => projectAnnotations || [
       ...annotations,
@@ -397,4 +398,19 @@ test('Queue supports keyboard dismissal with Escape', async () => {
   panel.onkeydown({ key: 'Escape' });
 
   assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+});
+
+test('toolbar command interface toggles collapse and reveals settings from the compact state', async () => {
+  const { context, root } = await openQueue([]);
+  const toolbar = root.querySelector('.waypoint-toolbar');
+
+  context.WaypointToolbar.toggleCollapse();
+  assert.equal(toolbar.classList.contains('collapsed'), true);
+
+  context.WaypointToolbar.toggleSettings();
+  assert.equal(toolbar.classList.contains('collapsed'), false);
+  assert.notEqual(root.querySelector('.waypoint-settings-dropdown'), null);
+
+  context.WaypointToolbar.toggleSettings();
+  assert.equal(root.querySelector('.waypoint-settings-dropdown'), null);
 });

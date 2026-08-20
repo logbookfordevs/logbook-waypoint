@@ -79,6 +79,23 @@ export default defineConfig({
         },
         description: 'Toggle annotation mode',
       },
+      'toggle-toolbar-collapse': {
+        suggested_key: {
+          default: 'Ctrl+Shift+Period',
+          mac: 'Command+Shift+Period',
+        },
+        description: 'Collapse or expand the Waypoint toolbar',
+      },
+      'toggle-toolbar-settings': {
+        suggested_key: {
+          default: 'Ctrl+Shift+L',
+          mac: 'Command+Shift+L',
+        },
+        description: 'Open or close Waypoint settings',
+      },
+      'toggle-waypoint-visibility': {
+        description: 'Hide or show Logbook Waypoint',
+      },
     },
     background: {
       service_worker: 'background/background.js',

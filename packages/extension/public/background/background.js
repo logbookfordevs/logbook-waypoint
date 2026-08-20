@@ -1335,9 +1335,5 @@ chrome.action.onClicked.addListener((tab) => {
 
 // Keyboard shortcut commands (chrome.commands)
 chrome.commands.onCommand.addListener(async (command, tab) => {
-  if (command === 'toggle-annotate' && tab?.id && await bg.isSupportedUrl(tab.url)) {
-    try {
-      await chrome.tabs.sendMessage(tab.id, { action: 'toggleAnnotate' });
-    } catch { /* Content script not loaded */ }
-  }
+  await WaypointActionController.handleCommand(command, tab, url => bg.isSupportedUrl(url));
 });

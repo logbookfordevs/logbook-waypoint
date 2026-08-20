@@ -789,6 +789,12 @@ var WaypointToolbar = (() => {
     WaypointAPI.saveToolbarCollapsed(isCollapsed);
   }
 
+  function toggleSettingsFromCommand() {
+    if (!toolbarEl) return;
+    if (isCollapsed) toggleCollapse();
+    toggleSettings();
+  }
+
   function updateUI() {
     if (!toolbarEl) return;
 
@@ -1442,6 +1448,8 @@ var WaypointToolbar = (() => {
 
   return {
     init,
+    toggleCollapse,
+    toggleSettings: toggleSettingsFromCommand,
     createExportEnvelope: (...args) => WaypointExportCodec.createExportEnvelope(...args),
     normalizeImportEnvelope: (...args) => WaypointExportCodec.normalizeImportEnvelope(...args),
     formatAnnotationsAsMarkdown: (annotations, options) => WaypointExportCodec.formatAnnotationsAsMarkdown(annotations, { ...options, formatGroups: formatAnnotationsForClipboard }),

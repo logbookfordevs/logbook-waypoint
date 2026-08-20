@@ -24,5 +24,23 @@ var WaypointActionController = (() => {
     if (tabId) await chrome.action.setPopup({ tabId, popup: '' });
   }
 
-  return { handleClick, clearIntervention };
+  const COMMAND_ACTIONS = Object.freeze({
+    'toggle-annotate': 'toggleAnnotate',
+    'toggle-toolbar-collapse': 'toggleToolbarCollapse',
+    'toggle-toolbar-settings': 'toggleToolbarSettings',
+    'toggle-waypoint-visibility': 'toggleOverlay',
+  });
+
+  async function handleCommand(command, tab, isSupportedUrl) {
+    const action = COMMAND_ACTIONS[command];
+    if (!action || !tab?.id || !await isSupportedUrl(tab.url)) return false;
+    try {
+      await chrome.tabs.sendMessage(tab.id, { action });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return { handleClick, handleCommand, clearIntervention };
 })();
