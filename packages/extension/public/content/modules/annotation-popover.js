@@ -643,7 +643,7 @@ var WaypointAnnotationPopover = (() => {
         const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value : '';
         const cssRulesChanged = cssRulesVal !== cssRulesOriginal;
         const attachmentsChanged = JSON.stringify(attachments) !== originalAttachments;
-        const designIntentChanged = designIntentInput.checked !== Boolean(existingAnnotation.design_intent);
+        const designIntentChanged = Boolean(designIntentInput?.checked) !== Boolean(existingAnnotation.design_intent);
         saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged && !attachmentsChanged && !designIntentChanged;
         saveBtn.textContent = 'Save';
       } else {

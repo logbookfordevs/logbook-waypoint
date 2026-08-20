@@ -369,6 +369,13 @@ test('rendered editor creates and restores Freeform Design Intent through save a
   assert.equal(Boolean(context.document.querySelector('.waypoint-design-intent-label')), false);
   context.document.querySelector('.waypoint-cancel-btn').click();
 
+  const ordinaryExistingAnnotation = { ...saved[0] };
+  delete ordinaryExistingAnnotation.design_intent;
+  await handlers.get('annotation:edit')({ annotation: ordinaryExistingAnnotation, element: target });
+  assert.equal(Boolean(context.document.querySelector('.waypoint-design-intent-label')), false);
+  assert.equal(context.document.querySelector('.waypoint-save-btn').disabled, true);
+  context.document.querySelector('.waypoint-cancel-btn').click();
+
   await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
   const editToggle = context.document.querySelector('.waypoint-design-intent');
   assert.match(context.document.querySelector('.waypoint-design-intent-row').textContent, /Requires Impeccable/);

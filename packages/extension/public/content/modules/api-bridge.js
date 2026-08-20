@@ -285,7 +285,7 @@ var WaypointAPI = (() => {
   async function saveScreenshotEnabled(enabled) {
     try {
       await chrome.storage.local.set({ waypointScreenshotEnabled: enabled });
-    } catch { /* ignore */ }
+    } catch {}
   }
 
   async function getShowDesignActions() {
