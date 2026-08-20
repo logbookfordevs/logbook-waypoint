@@ -1,6 +1,7 @@
 globalThis.WaypointAnnotationStatus = (() => {
   const CANONICAL_STATUSES = Object.freeze(['pending', 'claimed', 'resolved', 'discarded']);
   const ACTIONABLE_STATUSES = new Set(['pending', 'claimed']);
+  const HISTORICAL_STATUSES = new Set(['resolved', 'discarded']);
   const LEGACY_STATUSES = new Map([
     ['completed', 'resolved'],
     ['archived', 'discarded'],
@@ -86,6 +87,10 @@ globalThis.WaypointAnnotationStatus = (() => {
     return normalizeAll(annotations).filter(isActionable);
   }
 
+  function isHistorical(annotation) {
+    return HISTORICAL_STATUSES.has(normalizeStatus(annotation?.status));
+  }
+
   function isRenderable(annotation) {
     const normalized = normalize(annotation);
     return ACTIONABLE_STATUSES.has(normalized.status)
@@ -113,6 +118,7 @@ globalThis.WaypointAnnotationStatus = (() => {
     filterActionable,
     filterRenderable,
     isActionable,
+    isHistorical,
     isRenderable,
     migrateLegacy,
     migrateLegacyAll,

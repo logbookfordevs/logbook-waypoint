@@ -176,6 +176,7 @@ var WaypointToolbar = (() => {
         copy: copyAnnotations,
         delete: deleteAnnotation,
         discard: discardAnnotations,
+        navigate: annotation => { window.location.href = annotation.url; },
         open: openAnnotation,
       });
     });

@@ -38,6 +38,10 @@ test('annotation status adapter migrates legacy lifecycle values into canonical 
   assert.equal(status.isActionable({ status: 'claimed' }), true);
   assert.equal(status.isActionable({ status: 'resolved' }), false);
   assert.equal(status.isActionable({ status: 'discarded' }), false);
+  assert.equal(status.isHistorical({ status: 'pending' }), false);
+  assert.equal(status.isHistorical({ status: 'claimed' }), false);
+  assert.equal(status.isHistorical({ status: 'resolved' }), true);
+  assert.equal(status.isHistorical({ status: 'discarded' }), true);
   assert.deepEqual(
     JSON.parse(JSON.stringify(status.filterRenderable([
       { id: 'pending', status: 'pending' },

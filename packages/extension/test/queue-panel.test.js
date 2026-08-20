@@ -10,8 +10,9 @@ const { parseHTML } = requireFromWxt('linkedom');
 
 const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel.js', import.meta.url);
 const toolbarUrl = new URL('../.output/chrome-mv3/content/modules/floating-toolbar.js', import.meta.url);
+const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
 
-function createHarness(annotations) {
+function createHarness(annotations, { projectAnnotations } = {}) {
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
   window.innerHeight = 900;
   window.innerWidth = 1200;
@@ -58,7 +59,7 @@ function createHarness(annotations) {
     checkServerStatus: async () => ({ connected: true }),
     getToolbarPosition: async () => null,
     loadAnnotations: async () => annotations,
-    loadProjectAnnotations: async () => [
+    loadProjectAnnotations: async () => projectAnnotations || [
       ...annotations,
       {
         id: 'waypoint_1750000000009_otherroute',
@@ -81,6 +82,22 @@ function createHarness(annotations) {
   return { clipboardWrites, context, deleted, discarded, emitted, root };
 }
 
+async function openQueue(annotations, options) {
+  const harness = createHarness(annotations, options);
+  const [statusSource, queuePanelSource, toolbarSource] = await Promise.all([
+    readFile(statusUrl, 'utf8'),
+    readFile(queuePanelUrl, 'utf8'),
+    readFile(toolbarUrl, 'utf8'),
+  ]);
+  vm.runInContext(statusSource, harness.context, { filename: 'annotation-status.js' });
+  vm.runInContext(queuePanelSource, harness.context, { filename: 'queue-panel.js' });
+  vm.runInContext(toolbarSource, harness.context, { filename: 'floating-toolbar.js' });
+  await harness.context.WaypointToolbar.init();
+  harness.root.querySelector('.waypoint-tb-queue').click();
+  await new Promise(resolve => setImmediate(resolve));
+  return harness;
+}
+
 test('toolbar Queue button opens an anchored panel with current-route Annotations', async () => {
   const annotations = [
     {
@@ -95,17 +112,7 @@ test('toolbar Queue button opens an anchored panel with current-route Annotation
       pending_changes: { width: { original: '576px', value: '678.42px' } },
     },
   ];
-  const { context, root } = createHarness(annotations);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
-  root.querySelector('.waypoint-tb-queue').click();
-  await new Promise(resolve => setImmediate(resolve));
+  const { root } = await openQueue(annotations);
 
   const panel = root.querySelector('.waypoint-queue-panel');
   assert.notEqual(panel, null);
@@ -128,19 +135,9 @@ test('toolbar Queue button opens an anchored panel with current-route Annotation
 });
 
 test('Queue remains available on an empty current route so other-route work stays reachable', async () => {
-  const { context, root } = createHarness([]);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
+  const { root } = await openQueue([]);
   const queueButton = root.querySelector('.waypoint-tb-queue');
   assert.equal(queueButton.disabled, false);
-  queueButton.click();
-  await new Promise(resolve => setImmediate(resolve));
 
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /No active annotations on this route/);
   assert.match(root.querySelector('.waypoint-queue-header').textContent, /1 other route/);
@@ -153,17 +150,7 @@ test('Queue separates actionable Annotations from retained History', async () =>
     { id: 'waypoint_1750000000002_resolved', url: 'http://localhost:3000/settings/members', status: 'resolved', comment: 'Resolved request', selector: '#target' },
     { id: 'waypoint_1750000000003_discarded', url: 'http://localhost:3000/settings/members', status: 'discarded', comment: 'Discarded request', selector: '#target' },
   ];
-  const { context, root } = createHarness(annotations);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
-  root.querySelector('.waypoint-tb-queue').click();
-  await new Promise(resolve => setImmediate(resolve));
+  const { root } = await openQueue(annotations);
 
   const list = root.querySelector('.waypoint-queue-list');
   assert.match(list.textContent, /Pending request/);
@@ -179,6 +166,35 @@ test('Queue separates actionable Annotations from retained History', async () =>
   assert.match(historyList.textContent, /Discarded request/);
 });
 
+test('Queue summarizes captured Target context and pending Variant Intent', async () => {
+  const annotations = [
+    {
+      id: 'waypoint_1750000000000_context',
+      url: 'http://localhost:3000/settings/members',
+      status: 'pending',
+      comment: 'Try multiple treatments',
+      selector: '#opaque-generated-selector',
+      element_context: { tag: 'button', text: 'Send invitation', classes: ['primary'] },
+      variant_intent: { requested: true, default_count: 3 },
+    },
+    {
+      id: 'waypoint_1750000000001_component',
+      url: 'http://localhost:3000/settings/members',
+      status: 'pending',
+      comment: 'Polish the checkout action',
+      selector: '#checkout-action',
+      component_name: 'CheckoutButton',
+    },
+  ];
+  const { root } = await openQueue(annotations);
+
+  const queueText = root.querySelector('.waypoint-queue-list').textContent;
+  assert.match(queueText, /<button> “Send invitation”/);
+  assert.match(queueText, /Variants requested/);
+  assert.match(queueText, /CheckoutButton/);
+  assert.doesNotMatch(queueText, /opaque-generated-selector|checkout-action/);
+});
+
 test('Queue keeps permanent deletion secondary and requires an explicit confirmation', async () => {
   const annotation = {
     id: 'waypoint_1750000000000_abc123xyz',
@@ -187,17 +203,7 @@ test('Queue keeps permanent deletion secondary and requires an explicit confirma
     comment: 'Historical request',
     selector: '#target',
   };
-  const { context, deleted, root } = createHarness([annotation]);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
-  root.querySelector('.waypoint-tb-queue').click();
-  await new Promise(resolve => setImmediate(resolve));
+  const { deleted, root } = await openQueue([annotation]);
   root.querySelector('.waypoint-queue-history-view').click();
   root.querySelector('.waypoint-queue-delete').click();
   assert.equal(deleted.length, 0);
@@ -218,17 +224,8 @@ test('Queue previews and confirms scoped permanent history cleanup', async () =>
     { id: 'waypoint_1750000000001_oldresolved', url: 'http://localhost:3000/settings/members', status: 'resolved', comment: 'Old resolved', selector: '#target', updated_at: new Date(now - 45 * 86400000).toISOString() },
     { id: 'waypoint_1750000000002_recentdiscarded', url: 'http://localhost:3000/settings/members', status: 'discarded', comment: 'Recent discarded', selector: '#target', updated_at: new Date(now - 2 * 86400000).toISOString() },
   ];
-  const { context, deleted, root } = createHarness(annotations);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
-  root.querySelector('.waypoint-tb-queue').click();
-  await new Promise(resolve => setImmediate(resolve));
+  const deletedIds = annotations.slice(0, 2).map(annotation => annotation.id);
+  const { context, deleted, root } = await openQueue(annotations);
   root.querySelector('.waypoint-queue-history-view').click();
   root.querySelector('.waypoint-queue-clear-history').click();
 
@@ -245,7 +242,7 @@ test('Queue previews and confirms scoped permanent history cleanup', async () =>
   root.querySelector('.waypoint-queue-confirm-cleanup').click();
   await new Promise(resolve => setImmediate(resolve));
 
-  assert.deepEqual(deleted, [annotations[0].id, annotations[1].id]);
+  assert.deepEqual(deleted, deletedIds);
   assert.doesNotMatch(root.querySelector('.waypoint-queue-list').textContent, /Old discarded|Old resolved/);
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /Recent discarded/);
 });
@@ -258,17 +255,7 @@ test('Queue offers compact access to other routes without replacing its route-fi
     comment: 'Current route request',
     selector: '#target',
   };
-  const { context, root } = createHarness([annotation]);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
-  root.querySelector('.waypoint-tb-queue').click();
-  await new Promise(resolve => setImmediate(resolve));
+  const { root } = await openQueue([annotation]);
 
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /Current route request/);
   assert.doesNotMatch(root.querySelector('.waypoint-queue-list').textContent, /Other route request/);
@@ -281,6 +268,56 @@ test('Queue offers compact access to other routes without replacing its route-fi
   assert.match(root.querySelector('.waypoint-queue-header').textContent, /dashboard\?tab=activity#today/);
 });
 
+test('Queue navigates to another route without resolving its Target in the current document', async () => {
+  const current = {
+    id: 'waypoint_1750000000000_current',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: 'Current route request',
+    selector: '#target',
+  };
+  const other = {
+    id: 'waypoint_1750000000001_other',
+    url: 'http://localhost:3000/dashboard?tab=activity#today',
+    status: 'pending',
+    comment: 'Other route request',
+    selector: '#target',
+  };
+  const { context, emitted, root } = await openQueue([current], { projectAnnotations: [current, other] });
+
+  root.querySelector('.waypoint-queue-other-routes').click();
+  root.querySelector('[data-route="/dashboard?tab=activity#today"]').click();
+  const routeAction = root.querySelector('.waypoint-queue-open');
+  assert.equal(routeAction.textContent, 'Go to route');
+  routeAction.click();
+
+  assert.equal(context.window.location.href, other.url);
+  assert.equal(emitted.some(event => event.name === 'annotation:edit'), false);
+});
+
+test('Queue history cleanup mutates its route collection so deleted rows do not return after navigation', async () => {
+  const old = {
+    id: 'waypoint_1750000000000_old',
+    url: 'http://localhost:3000/settings/members',
+    status: 'discarded',
+    comment: 'Delete for good',
+    selector: '#target',
+    updated_at: new Date(Date.now() - 45 * 86400000).toISOString(),
+  };
+  const { root } = await openQueue([old]);
+
+  root.querySelector('.waypoint-queue-history-view').click();
+  root.querySelector('.waypoint-queue-clear-history').click();
+  root.querySelector('.waypoint-queue-cleanup-age [value="30"]').setAttribute('selected', '');
+  root.querySelector('.waypoint-queue-confirm-cleanup').click();
+  await new Promise(resolve => setImmediate(resolve));
+  root.querySelector('.waypoint-queue-other-routes').click();
+  root.querySelector('.waypoint-queue-current-route').click();
+  root.querySelector('.waypoint-queue-history-view').click();
+
+  assert.doesNotMatch(root.querySelector('.waypoint-queue-list').textContent, /Delete for good/);
+});
+
 test('Queue requires confirmation before discarding selected Annotations through lifecycle operations', async () => {
   const annotation = {
     id: 'waypoint_1750000000000_abc123xyz',
@@ -289,17 +326,7 @@ test('Queue requires confirmation before discarding selected Annotations through
     comment: 'Remove this request',
     selector: '#target',
   };
-  const { context, discarded, root } = createHarness([annotation]);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
-  root.querySelector('.waypoint-tb-queue').click();
-  await new Promise(resolve => setImmediate(resolve));
+  const { context, discarded, root } = await openQueue([annotation]);
   const input = root.querySelector('.waypoint-queue-select');
   input.checked = true;
   input.dispatchEvent(new context.window.Event('click'));
@@ -324,17 +351,7 @@ test('Queue selection copies only the selected Annotations', async () => {
     { id: 'waypoint_1750000000000_abc123xyz', url: 'http://localhost:3000/settings/members', status: 'pending', comment: 'First request', selector: '#first' },
     { id: 'waypoint_1750000000001_abc123xyz', url: 'http://localhost:3000/settings/members', status: 'pending', comment: 'Second request', selector: '#second' },
   ];
-  const { clipboardWrites, context, root } = createHarness(annotations);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
-  root.querySelector('.waypoint-tb-queue').click();
-  await new Promise(resolve => setImmediate(resolve));
+  const { clipboardWrites, context, root } = await openQueue(annotations);
   const selected = root.querySelector(`[value="${annotations[1].id}"]`);
   selected.checked = true;
   selected.dispatchEvent(new context.window.Event('click'));
@@ -358,17 +375,7 @@ test('Queue Open resolves the Target and reopens the existing Annotation editor'
     comment: 'Reopen me',
     selector: '#target',
   };
-  const { context, emitted, root } = createHarness([annotation]);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
-  root.querySelector('.waypoint-tb-queue').click();
-  await new Promise(resolve => setImmediate(resolve));
+  const { emitted, root } = await openQueue([annotation]);
   root.querySelector('.waypoint-queue-open').click();
 
   const editEvent = emitted.find(event => event.name === 'annotation:edit');
@@ -385,17 +392,7 @@ test('Queue supports keyboard dismissal with Escape', async () => {
     comment: 'Keyboard request',
     selector: '#target',
   };
-  const { context, root } = createHarness([annotation]);
-  const [queuePanelSource, toolbarSource] = await Promise.all([
-    readFile(queuePanelUrl, 'utf8'),
-    readFile(toolbarUrl, 'utf8'),
-  ]);
-  vm.runInContext(queuePanelSource, context, { filename: 'queue-panel.js' });
-  vm.runInContext(toolbarSource, context, { filename: 'floating-toolbar.js' });
-
-  await context.WaypointToolbar.init();
-  root.querySelector('.waypoint-tb-queue').click();
-  await new Promise(resolve => setImmediate(resolve));
+  const { root } = await openQueue([annotation]);
   const panel = root.querySelector('.waypoint-queue-panel');
   panel.onkeydown({ key: 'Escape' });
 
