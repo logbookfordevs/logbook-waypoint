@@ -238,6 +238,7 @@ test('Queue previews and confirms scoped permanent history cleanup', async () =>
   age.dispatchEvent(new context.window.Event('change'));
 
   assert.match(root.querySelector('.waypoint-queue-cleanup-preview').textContent, /2 annotations/);
+  assert.equal(root.querySelector('.waypoint-queue-confirm-cleanup').textContent, 'Delete');
   assert.equal(deleted.length, 0);
   root.querySelector('.waypoint-queue-confirm-cleanup').click();
   await new Promise(resolve => setImmediate(resolve));

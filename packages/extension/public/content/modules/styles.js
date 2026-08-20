@@ -1155,14 +1155,15 @@ var WAYPOINT_STYLES = `
 .waypoint-queue-copy-selected { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
 .waypoint-queue-history-actions { justify-content: space-between; color: var(--waypoint-text-secondary); font-size: 11px; }
 .waypoint-queue-clear-history { color: var(--waypoint-danger) !important; }
-.waypoint-queue-cleanup { display: grid; gap: 10px; }
-.waypoint-queue-cleanup-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.waypoint-queue-cleanup { display: grid; gap: 12px; padding: 12px 16px 14px; }
+.waypoint-queue-cleanup-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .waypoint-queue-cleanup-fields label { display: grid; gap: 4px; color: var(--waypoint-text-secondary); font-size: 10px; font-weight: 600; }
-.waypoint-queue-cleanup-fields select { min-width: 0; height: 34px; padding: 0 28px 0 9px; border: 1px solid var(--waypoint-outline); border-radius: 8px; background: var(--waypoint-surface-1); color: var(--waypoint-text-primary); font: 11px var(--waypoint-font-sans); }
+.waypoint-queue-cleanup-fields select { min-width: 0; height: 36px; padding: 0 30px 0 10px; border: 1px solid var(--waypoint-outline); border-radius: 8px; background: var(--waypoint-surface-1); color: var(--waypoint-text-primary); font: 600 11px var(--waypoint-font-sans); }
 .waypoint-queue-cleanup-fields select:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
-.waypoint-queue-cleanup-confirmation { display: flex; align-items: center; gap: 6px; }
-.waypoint-queue-cleanup-preview { margin-right: auto; color: var(--waypoint-text-secondary); font-size: 11px; }
-.waypoint-queue-confirm-cleanup { background: var(--waypoint-danger) !important; color: #fff !important; }
+.waypoint-queue-cleanup-confirmation { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; }
+.waypoint-queue-cleanup-preview { color: var(--waypoint-text-secondary); font-size: 11px; line-height: 1.4; }
+.waypoint-queue-cleanup-confirmation button { min-width: 70px; }
+.waypoint-queue-confirm-cleanup { min-width: 76px !important; background: var(--waypoint-danger) !important; color: #fff !important; }
 .waypoint-queue-confirm-copy { color: var(--waypoint-text-primary); font-size: 12px; font-weight: 600; }
 .waypoint-queue-cancel-discard { margin-left: auto; }
 .waypoint-queue-confirm-discard { background: var(--waypoint-danger) !important; color: #fff !important; }

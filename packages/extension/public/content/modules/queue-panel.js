@@ -236,7 +236,7 @@ var WaypointQueuePanel = (() => {
       <div class="waypoint-queue-cleanup-confirmation">
         <span class="waypoint-queue-cleanup-preview" role="status" aria-live="polite"></span>
         <button class="waypoint-queue-cancel-cleanup" type="button">Cancel</button>
-        <button class="waypoint-queue-confirm-cleanup" type="button">Delete permanently</button>
+        <button class="waypoint-queue-confirm-cleanup" type="button">Delete</button>
       </div>
     `;
     const status = actionBar.querySelector('.waypoint-queue-cleanup-status');
@@ -272,7 +272,7 @@ var WaypointQueuePanel = (() => {
         message.textContent = error?.message || 'Could not clear history.';
         actionBar.appendChild(message);
         confirm.disabled = false;
-        confirm.textContent = 'Delete permanently';
+        confirm.textContent = 'Delete';
       }
     });
     updatePreview();
