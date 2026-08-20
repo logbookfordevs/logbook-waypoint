@@ -22,6 +22,9 @@ async function loadScript(context, relativePath) {
   if (relativePath === 'annotation-validation.js' && !context.WaypointDesignIntent) {
     await loadScript(context, 'design-intent.js');
   }
+  if (relativePath === 'annotation-validation.js' && !context.WaypointVariantIntent) {
+    await loadScript(context, 'variant-intent.js');
+  }
   const source = await readFile(new URL(`../.output/chrome-mv3/${relativePath}`, import.meta.url), 'utf8');
   vm.runInContext(source, context, { filename: relativePath });
 }

@@ -12,8 +12,26 @@ const COUNT_WORDS = new Map([
   ['ten', 10],
   ['eleven', 11],
   ['twelve', 12],
+  ['thirteen', 13],
+  ['fourteen', 14],
+  ['fifteen', 15],
+  ['sixteen', 16],
+  ['seventeen', 17],
+  ['eighteen', 18],
+  ['nineteen', 19],
+  ['twenty', 20],
+  ['thirty', 30],
+  ['forty', 40],
+  ['fifty', 50],
+  ['sixty', 60],
+  ['seventy', 70],
+  ['eighty', 80],
+  ['ninety', 90],
+  ['hundred', 100],
+  ['dozen', 12],
 ]);
-const COUNT_TOKEN = '(\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)';
+const COUNT_WORD = [...COUNT_WORDS.keys()].join('|');
+const COUNT_TOKEN = `(\\d+|(?:${COUNT_WORD})(?:[ -](?:${COUNT_WORD}))*)`;
 const VARIANT_NOUN = '(?:variants?|candidates?|directions?|alternatives?)';
 
 function isRecord(value) {
@@ -54,7 +72,14 @@ export function preserveVariantIntent(existing, incoming) {
 }
 
 function parseCount(value) {
-  return COUNT_WORDS.get(value.toLocaleLowerCase()) ?? Number(value);
+  if (/^\d+$/.test(value)) return Number(value);
+  const values = value.toLocaleLowerCase().split(/[ -]/).map(word => COUNT_WORDS.get(word));
+  if (values.includes(100)) {
+    const hundredIndex = values.indexOf(100);
+    const hundreds = hundredIndex === 0 ? 100 : values.slice(0, hundredIndex).reduce((sum, part) => sum + part, 0) * 100;
+    return hundreds + values.slice(hundredIndex + 1).reduce((sum, part) => sum + part, 0);
+  }
+  return values.reduce((sum, part) => sum + part, 0);
 }
 
 export function requestedVariantCount(annotation) {

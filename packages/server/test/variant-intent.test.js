@@ -15,6 +15,7 @@ test('Variant Intent defaults to three and accepts bounded natural-language coun
 test('Variant Intent asks for clarification instead of truncating unsupported or ambiguous counts', () => {
   for (const comment of [
     'Create 7 variants',
+    'Create thirteen variants',
     'Create one candidate',
     'Show 2 variants on desktop and 4 variants on mobile',
   ]) {

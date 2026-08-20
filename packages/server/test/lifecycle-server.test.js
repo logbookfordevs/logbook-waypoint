@@ -331,6 +331,20 @@ test('canonical Variant Intent crosses HTTP, persistence, MCP Read, and Watch', 
     });
     const payload = JSON.parse(mcpRead.content[0].text);
     assert.deepEqual(payload.data.annotations[0].variant_intent, variantIntent);
+
+    const removalResponse = await fetch(`${baseUrl}/api/annotations/sync`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        annotations: [{ ...annotation, variant_intent: undefined }],
+        variant_intent_removals: [annotation.id],
+      }),
+    });
+    assert.equal(removalResponse.status, 200);
+    assert.equal(
+      'variant_intent' in (await server.readAnnotations({ status: 'pending' })).annotations[0],
+      false,
+    );
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));
