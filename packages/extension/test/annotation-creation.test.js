@@ -220,6 +220,88 @@ test('annotation options group aligns attachment help and an accessible Variants
   assert.match(styles, /\.waypoint-variant-intent:focus-visible/);
 });
 
+test('rendered Element edits follow the Brief and adapt their drawer to the Target type', async () => {
+  const { window } = parseHTML('<html><body><div id="root"></div><h2 id="text-target">Heading</h2><section id="container-target"></section><button id="mixed-target">Continue</button></body></html>');
+  const handlers = new Map();
+  const computedStyle = new Proxy({ display: 'block' }, { get: (styles, key) => styles[key] ?? '' });
+  const context = vm.createContext({
+    window,
+    document: window.document,
+    navigator: { platform: 'MacIntel' },
+    Node: window.Node,
+    URL,
+    console,
+    requestAnimationFrame: () => 1,
+    cancelAnimationFrame() {},
+    getComputedStyle: () => computedStyle,
+  });
+  context.globalThis = context;
+  context.window.innerWidth = 1280;
+  context.window.innerHeight = 800;
+  context.window.location = new URL('http://localhost:3000/app');
+  context.window.getComputedStyle = () => computedStyle;
+  context.window.HTMLTextAreaElement.prototype.select = function select() {};
+  context.WaypointEvents = { on(name, handler) { handlers.set(name, handler); }, emit() {} };
+  context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#root') };
+  context.WaypointInspectionMode = { tempDisable() {}, reEnable() {} };
+  context.WaypointVariantPicker = {
+    handles: () => false,
+    locksPresentation: () => false,
+    buildAnnotationUpdates: (_annotation, comment, pendingChanges, css) => ({ comment, pending_changes: pendingChanges, css }),
+  };
+  context.WaypointAPI = {
+    isFileProtocol: () => false,
+    getShowDesignActions: async () => false,
+    saveAnnotation: async () => {},
+  };
+  context.WaypointAnnotationId = { create: () => 'waypoint_1750000000000_abc123xyz' };
+  context.WaypointElementContext = { generate: async element => ({
+    selector: `#${element.id}`,
+    tag: element.tagName.toLowerCase(),
+    classes: [],
+    text: element.textContent,
+    styles: computedStyle,
+    position: { x: 0, y: 0, width: 100, height: 40 },
+    viewport: { width: 1280, height: 800 },
+  }) };
+
+  const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
+  vm.runInContext(source, context);
+  context.WaypointAnnotationPopover.init();
+
+  const open = async id => {
+    const element = context.document.querySelector(`#${id}`);
+    element.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 40, right: 100, bottom: 40 });
+    await handlers.get('inspection:elementClicked')({ element, clientX: 10, clientY: 10 });
+    return context.document.querySelector('.waypoint-popover');
+  };
+  const tabLabels = popover => [...popover.querySelectorAll('.waypoint-tab')].map(tab => tab.textContent.trim());
+
+  const textPopover = await open('text-target');
+  const bodyChildren = [...textPopover.querySelector('.waypoint-popover-body').children];
+  assert.ok(bodyChildren.indexOf(textPopover.querySelector('.waypoint-input-wrap')) < bodyChildren.indexOf(textPopover.querySelector('.waypoint-element-edits')));
+  assert.ok(bodyChildren.indexOf(textPopover.querySelector('.waypoint-element-edits')) < bodyChildren.indexOf(textPopover.querySelector('.waypoint-annotation-options')));
+  assert.match(textPopover.querySelector('.waypoint-element-edits-heading').textContent, /Element edits/);
+  assert.deepEqual(tabLabels(textPopover), ['Content', 'Typography', 'Dimensions', 'Spacing', 'Advanced CSS']);
+  assert.ok([...textPopover.querySelectorAll('.waypoint-tab')].every(tab => tab.querySelector('.waypoint-tab-icon')));
+  assert.ok([...textPopover.querySelectorAll('.waypoint-tab')].every(tab => tab.querySelector('.waypoint-tab-label')));
+  assert.ok([...textPopover.querySelectorAll('.waypoint-tab')].every(tab => tab.getAttribute('title') === tab.textContent.trim()));
+
+  const typography = textPopover.querySelector('[data-tab="font"]');
+  typography.click();
+  assert.equal(typography.getAttribute('aria-selected'), 'true');
+  assert.notEqual(textPopover.querySelector('.waypoint-design-toolbar').style.display, 'none');
+
+  const containerPopover = await open('container-target');
+  assert.deepEqual(tabLabels(containerPopover), ['Dimensions', 'Spacing', 'Layout', 'Appearance', 'Advanced CSS']);
+
+  const mixedPopover = await open('mixed-target');
+  assert.deepEqual(tabLabels(mixedPopover), ['Content', 'Typography', 'Dimensions', 'Spacing', 'Layout', 'Appearance', 'Advanced CSS']);
+  assert.equal(mixedPopover.querySelectorAll('.waypoint-tab').length, 7);
+  assert.ok(mixedPopover.querySelector('.waypoint-annotation-attachments'));
+  assert.ok(mixedPopover.querySelector('.waypoint-variant-intent-label'));
+});
+
 test('sizing and spacing labels scrub adjacent numeric values through the public input event seam', async () => {
   const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
   const styles = await readFile(new URL('../public/content/modules/styles.js', import.meta.url), 'utf8');

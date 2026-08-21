@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Rebuilt the product from the final MIT-licensed foundation under the Logbook Waypoint identity
 - Reworked the extension around the Atlantic Chartroom Driftwood palette, with Day Chart and Night Watch appearances and product-role colors for actions, navigation, signals, and pins
+- Reorganized Element edits below the annotation brief with adaptive, icon-labeled controls for text, container, and mixed Targets
 - Hardened the local server to loopback-only access with strict host, origin, request-size, and identifier validation
 - Made annotation routes preserve full paths, queries, and hashes
 - Improved selector portability, target re-anchoring, keyboard navigation, design rollback, and queues larger than 50 annotations
