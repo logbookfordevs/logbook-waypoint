@@ -667,26 +667,35 @@ var WAYPOINT_STYLES = `
 .waypoint-image-attachment-input { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
 .waypoint-attachment-status { min-width:0; color:var(--waypoint-text-secondary); font-size:10px; line-height:1.3; }
 .waypoint-attachment-status[role="alert"] { color:var(--waypoint-danger); }
-.waypoint-variant-intent-label { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; padding:8px 10px; border:1px solid transparent; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+.waypoint-agent-direction { display:grid; gap:7px; }
+.waypoint-agent-direction-heading { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.waypoint-agent-direction-heading strong { color:var(--waypoint-text-primary); font-size:11px; line-height:1.35; font-weight:600; }
+.waypoint-agent-direction-heading span { color:var(--waypoint-text-secondary); font-size:9px; line-height:1.35; }
+.waypoint-agent-direction-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.waypoint-variant-intent-label { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:6px; min-height:40px; padding:6px 7px; border:1px solid transparent; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+.waypoint-variant-intent-label:only-child { grid-column:1 / -1; }
 .waypoint-variant-intent-label:hover { border-color:var(--waypoint-outline); background:var(--waypoint-surface-hover); }
-.waypoint-design-intent-row { display:grid; gap:4px; }
+.waypoint-agent-direction-icon { display:grid; place-items:center; width:22px; height:22px; border-radius:var(--waypoint-radius-xs); color:var(--waypoint-accent); background:var(--waypoint-surface-hover); }
+.waypoint-agent-direction-icon svg { width:12px; height:12px; }
+.waypoint-design-intent-row { display:grid; gap:7px; }
 .waypoint-design-intent-dependency { justify-self:start; color:var(--waypoint-accent); font-size:11px; line-height:1.35; text-underline-offset:2px; }
 .waypoint-design-intent-dependency:focus-visible { outline:2px solid var(--waypoint-accent); outline-offset:2px; border-radius:2px; }
-.waypoint-variant-intent-copy { display:grid; gap:1px; min-width:0; }
-.waypoint-variant-intent-title { color:var(--waypoint-text-primary); font-size:11px; line-height:1.35; font-weight:600; }
-.waypoint-variant-intent-description { color:var(--waypoint-text-secondary); font-size:10px; line-height:1.35; }
+.waypoint-variant-intent-title { min-width:0; overflow:hidden; color:var(--waypoint-text-primary); font-size:10px; line-height:1.2; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
 .waypoint-variant-intent { appearance:none; -webkit-appearance:none; width:18px; height:18px; flex:0 0 auto; border:1.5px solid var(--waypoint-outline-highlight); border-radius:5px; background:var(--waypoint-surface-1); cursor:pointer; position:relative; transition:background .15s ease, border-color .15s ease; }
 .waypoint-variant-intent:checked { border-color:var(--waypoint-highlight); background:var(--waypoint-highlight); }
 .waypoint-variant-intent:checked::after { content:''; position:absolute; left:5px; top:2px; width:4px; height:8px; border:solid var(--waypoint-on-accent); border-width:0 1.5px 1.5px 0; transform:rotate(45deg); }
 .waypoint-variant-intent:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }
+.waypoint-variant-intent-note { display:flex; align-items:center; gap:6px; padding:7px 8px; border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-hover); color:var(--waypoint-text-secondary); font-size:9px; line-height:1.35; }
+.waypoint-variant-intent-note[hidden] { display:none; }
+.waypoint-variant-intent-note svg { width:12px; height:12px; flex:0 0 auto; color:var(--waypoint-accent); }
 .waypoint-design-actions { display:grid; gap:8px; }
-.waypoint-design-action-catalog { display:grid; gap:7px; padding:0 2px 2px; }
+.waypoint-design-action-catalog { display:grid; gap:7px; padding:9px; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); }
 .waypoint-design-action-catalog[hidden] { display:none; }
 .waypoint-design-action-heading { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
 .waypoint-design-action-state { color:var(--waypoint-text-primary); font-size:10px; line-height:1.35; font-weight:600; }
 .waypoint-design-action-dependency { color:var(--waypoint-text-secondary); font-size:9px; line-height:1.35; }
-.waypoint-design-action-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
-.waypoint-design-action { min-width:0; min-height:30px; padding:5px 8px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-1); color:var(--waypoint-text-primary); font:600 10px/1.2 var(--waypoint-font); text-align:left; cursor:pointer; transition:border-color .15s ease,background .15s ease,color .15s ease; }
+.waypoint-design-action-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
+.waypoint-design-action { min-width:0; min-height:32px; padding:6px 5px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-1); color:var(--waypoint-text-primary); font:600 9.5px/1.2 var(--waypoint-font); text-align:center; cursor:pointer; transition:border-color .15s ease,background .15s ease,color .15s ease; }
 .waypoint-design-action:hover { border-color:var(--waypoint-outline-highlight); background:var(--waypoint-surface-hover); }
 .waypoint-design-action[aria-pressed="true"] { border-color:var(--waypoint-accent); background:var(--waypoint-accent); color:var(--waypoint-on-accent); }
 .waypoint-design-action:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }

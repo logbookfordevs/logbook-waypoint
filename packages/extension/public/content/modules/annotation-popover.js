@@ -110,6 +110,8 @@ var WaypointAnnotationPopover = (() => {
     spacing: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3"/><path d="M15 2v3"/><path d="M9 19v3"/><path d="M15 19v3"/></svg>',
     layout: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>',
     code: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 9-3 3 3 3"/><path d="m16 9 3 3-3 3"/><path d="m14 5-4 14"/></svg>',
+    variants: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M8 7.2 11 16"/><path d="m16 7.2-3 8.8"/></svg>',
+    sparkles: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.4 3.6L7 8l3.6 1.4L12 13l1.4-3.6L17 8l-3.6-1.4Z"/><path d="m19 14-.9 2.1L16 17l2.1.9L19 20l.9-2.1L22 17l-2.1-.9Z"/><path d="m5 14-.7 1.3L3 16l1.3.7L5 18l.7-1.3L7 16l-1.3-.7Z"/></svg>',
   };
 
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -411,22 +413,29 @@ var WaypointAnnotationPopover = (() => {
             </label>
             <span class="waypoint-attachment-status" aria-live="polite"></span>
           </div>
-          <label class="waypoint-variant-intent-label">
-            <span class="waypoint-variant-intent-copy">
-              <span class="waypoint-variant-intent-title">Request Variants</span>
-              <span class="waypoint-variant-intent-description">Explore multiple named directions</span>
-            </span>
-            <input class="waypoint-variant-intent" type="checkbox" ${existingAnnotation?.variant_intent ? 'checked' : ''} ${isHistorical ? 'disabled' : ''}>
-          </label>
-          ${showDesignActions ? `
-            <section class="waypoint-design-actions waypoint-design-intent-row">
+          <section class="waypoint-agent-direction waypoint-design-actions waypoint-design-intent-row" aria-labelledby="waypoint-agent-direction-title">
+            <div class="waypoint-agent-direction-heading">
+              <strong id="waypoint-agent-direction-title">Agent direction</strong>
+              <span>Optional guided workflow</span>
+            </div>
+            <div class="waypoint-agent-direction-choices">
+              <label class="waypoint-variant-intent-label">
+                <span class="waypoint-agent-direction-icon">${ICONS.variants}</span>
+                <span class="waypoint-variant-intent-title">Variants</span>
+                <input class="waypoint-variant-intent" type="checkbox" ${existingAnnotation?.variant_intent ? 'checked' : ''} ${isHistorical ? 'disabled' : ''}>
+              </label>
+              ${showDesignActions ? `
               <label class="waypoint-variant-intent-label waypoint-design-intent-label">
-                <span class="waypoint-variant-intent-copy">
-                  <span class="waypoint-variant-intent-title">Design Actions</span>
-                  <span class="waypoint-variant-intent-description">Use this brief as Impeccable direction</span>
-                </span>
+                <span class="waypoint-agent-direction-icon">${ICONS.sparkles}</span>
+                <span class="waypoint-variant-intent-title">Design Actions</span>
                 <input class="waypoint-variant-intent waypoint-design-intent" type="checkbox" aria-label="Use Design Actions" ${existingAnnotation?.design_intent ? 'checked' : ''} ${isHistorical ? 'disabled' : ''}>
               </label>
+              ` : ''}
+            </div>
+            <div class="waypoint-variant-intent-note" ${existingAnnotation?.variant_intent ? '' : 'hidden'}>
+              ${ICONS.variants}<span>3 by default · Ask for 2–6 in your brief.</span>
+            </div>
+            ${showDesignActions ? `
               <div class="waypoint-design-action-catalog" ${existingAnnotation?.design_intent ? '' : 'hidden'}>
                 <div class="waypoint-design-action-heading">
                   <span class="waypoint-design-action-state" aria-live="polite"></span>
@@ -439,8 +448,8 @@ var WaypointAnnotationPopover = (() => {
                 </div>
                 <span class="waypoint-design-action-description" role="status" aria-live="polite"></span>
               </div>
-            </section>
-          ` : ''}
+            ` : ''}
+          </section>
         </div>
       </div>
       <div class="waypoint-popover-footer">
@@ -736,7 +745,11 @@ var WaypointAnnotationPopover = (() => {
         const attachmentsChanged = JSON.stringify(attachments) !== originalAttachments;
         const nextDesignIntent = designIntentInput?.checked ? WaypointDesignIntent.create(selectedDesignAction) : null;
         const designIntentChanged = JSON.stringify(nextDesignIntent) !== JSON.stringify(existingAnnotation.design_intent || null);
-        saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged && !attachmentsChanged && !designIntentChanged;
+        const nextVariantIntent = getExplicitVariantIntent(variantIntentInput);
+        const savedVariantIntent = existingAnnotation.variant_intent || null;
+        const variantIntentChanged = nextVariantIntent?.requested !== savedVariantIntent?.requested
+          || nextVariantIntent?.default_count !== savedVariantIntent?.default_count;
+        saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged && !attachmentsChanged && !designIntentChanged && !variantIntentChanged;
         saveBtn.textContent = 'Save';
       } else {
         const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value.trim() : '';
@@ -762,6 +775,15 @@ var WaypointAnnotationPopover = (() => {
     const designActionState = popover.querySelector('.waypoint-design-action-state');
     const designActionDescription = popover.querySelector('.waypoint-design-action-description');
     const designActionButtons = [...popover.querySelectorAll('.waypoint-design-action')];
+    const variantIntentNote = popover.querySelector('.waypoint-variant-intent-note');
+    variantIntentInput.checked = Boolean(existingAnnotation?.variant_intent);
+    const updateVariantIntentPresentation = () => {
+      variantIntentNote.hidden = !variantIntentInput.checked;
+    };
+    variantIntentInput.addEventListener('change', () => {
+      updateVariantIntentPresentation();
+      updateSave();
+    });
     let selectedDesignAction = existingAnnotation?.design_intent?.action || null;
     if (designIntentInput) designIntentInput.checked = Boolean(existingAnnotation?.design_intent);
     const updateDesignActions = () => {
@@ -788,6 +810,7 @@ var WaypointAnnotationPopover = (() => {
         updateSave();
       });
     });
+    updateVariantIntentPresentation();
     updateDesignActions();
 
     // Expose updateSave and updateResetVisibility to toolbar wiring

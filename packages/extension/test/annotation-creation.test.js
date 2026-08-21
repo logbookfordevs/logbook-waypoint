@@ -208,16 +208,20 @@ test('annotation popover presents a branded attachment control and restores save
   assert.match(styles, /\.waypoint-attachment-button:focus-within/);
 });
 
-test('annotation options group aligns attachment help and an accessible Variants choice', async () => {
+test('annotation options group keeps its guided workflow choices compact and accessible', async () => {
   const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
   const styles = await readFile(new URL('../public/content/modules/styles.js', import.meta.url), 'utf8');
 
   assert.match(source, /class="waypoint-annotation-options" role="group" aria-label="Annotation options"/);
-  assert.match(source, /class="waypoint-variant-intent-copy"/);
-  assert.match(source, /Explore multiple named directions/);
+  assert.match(source, /class="waypoint-variant-intent-title">Variants</);
+  assert.doesNotMatch(source, /waypoint-variant-intent-description/);
+  assert.match(source, /3 by default · Ask for 2–6 in your brief\./);
   assert.match(styles, /\.waypoint-annotation-options\s*\{[^}]*display:\s*grid/s);
+  assert.match(styles, /\.waypoint-variant-intent-label\s*\{[^}]*min-height:\s*40px/s);
+  assert.match(styles, /\.waypoint-variant-intent-title\s*\{[^}]*white-space:\s*nowrap/s);
   assert.match(styles, /\.waypoint-variant-intent\s*\{[^}]*appearance:\s*none/s);
   assert.match(styles, /\.waypoint-variant-intent:focus-visible/);
+  assert.match(styles, /\.waypoint-design-action-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,minmax\(0,1fr\)\)/s);
 });
 
 test('rendered Element edits follow the Brief and adapt their drawer to the Target type', async () => {
@@ -439,6 +443,19 @@ test('rendered editor serializes and restores Design Intent and Variant Intent i
   context.WaypointElementContext = { generate: async () => targetContext };
 
   await handlers.get('inspection:elementClicked')({ element: target, clientX: 10, clientY: 10 });
+  const agentDirection = context.document.querySelector('.waypoint-agent-direction');
+  const agentDirectionChoices = agentDirection.querySelector('.waypoint-agent-direction-choices');
+  assert.match(agentDirection.querySelector('.waypoint-agent-direction-heading').textContent, /Agent direction/);
+  assert.equal(agentDirectionChoices.children.length, 2);
+  assert.ok(agentDirectionChoices.querySelector('.waypoint-variant-intent-label'));
+  assert.ok(agentDirectionChoices.querySelector('.waypoint-design-intent-label'));
+  assert.deepEqual(
+    [...agentDirectionChoices.querySelectorAll('.waypoint-variant-intent-title')].map(element => element.textContent.trim()),
+    ['Variants', 'Design Actions'],
+  );
+  assert.equal(agentDirectionChoices.querySelector('.waypoint-variant-intent-description'), null);
+  assert.equal(agentDirection.querySelector('.waypoint-variant-intent-note').hidden, true);
+  assert.equal(agentDirection.querySelector('.waypoint-design-action-catalog').hidden, true);
   const createToggle = context.document.querySelector('.waypoint-design-intent');
   const createVariantToggle = context.document.querySelector('.waypoint-variant-intent:not(.waypoint-design-intent)');
   assert.equal(createToggle.hasAttribute('checked'), false);
@@ -450,6 +467,8 @@ test('rendered editor serializes and restores Design Intent and Variant Intent i
   createToggle.dispatchEvent(new window.Event('change'));
   createVariantToggle.checked = true;
   createVariantToggle.dispatchEvent(new window.Event('change'));
+  assert.equal(agentDirection.querySelector('.waypoint-design-action-catalog').hidden, false);
+  assert.equal(agentDirection.querySelector('.waypoint-variant-intent-note').hidden, false);
   context.document.querySelector('.waypoint-save-btn').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(JSON.parse(JSON.stringify(saved[0].design_intent)), {
@@ -508,6 +527,10 @@ test('rendered editor serializes and restores Design Intent and Variant Intent i
   await handlers.get('annotation:edit')({ annotation: ordinaryExistingAnnotation, element: target });
   assert.equal(Boolean(context.document.querySelector('.waypoint-design-intent-label')), false);
   assert.equal(context.document.querySelector('.waypoint-save-btn').disabled, true);
+  const ordinaryVariantToggle = context.document.querySelector('.waypoint-variant-intent');
+  ordinaryVariantToggle.checked = false;
+  ordinaryVariantToggle.dispatchEvent(new window.Event('change'));
+  assert.equal(context.document.querySelector('.waypoint-save-btn').disabled, false);
   context.document.querySelector('.waypoint-cancel-btn').click();
 
   await handlers.get('annotation:edit')({ annotation: saved[0], element: target });
