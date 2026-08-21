@@ -25,7 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved selector portability, target re-anchoring, keyboard navigation, design rollback, and queues larger than 50 annotations
 - Replaced remote update promotion with local extension/server compatibility guidance
 - Added HTTP and JSON MCP connection guidance for coding agents
-- Displayed assigned browser shortcuts in the matching toolbar tooltips, including user remaps
 
 ### Fixed
 - Prevented deleted annotations from returning during synchronization

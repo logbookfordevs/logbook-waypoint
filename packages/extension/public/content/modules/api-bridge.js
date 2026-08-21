@@ -425,15 +425,6 @@ var WaypointAPI = (() => {
     }
   }
 
-  async function getCommandShortcuts() {
-    try {
-      const response = await chrome.runtime.sendMessage({ action: 'getCommandShortcuts' });
-      return response?.success ? response.shortcuts : {};
-    } catch {
-      return {};
-    }
-  }
-
   async function saveCustomShortcut(shortcut) {
     try {
       await chrome.storage.local.set({ waypointCustomShortcut: shortcut });
@@ -478,7 +469,6 @@ var WaypointAPI = (() => {
     getSkipDeleteConfirm,
     saveSkipDeleteConfirm,
     getCustomShortcut,
-    getCommandShortcuts,
     saveCustomShortcut
   };
 })();

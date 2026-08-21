@@ -12,7 +12,7 @@ const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel
 const toolbarUrl = new URL('../.output/chrome-mv3/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
 
-function createHarness(annotations, { projectAnnotations, commandShortcuts } = {}) {
+function createHarness(annotations, { projectAnnotations } = {}) {
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
   window.innerHeight = 900;
   window.innerWidth = 1200;
@@ -56,7 +56,6 @@ function createHarness(annotations, { projectAnnotations, commandShortcuts } = {
     getShowDesignActions: async () => true,
     getBadgeColor: async () => '#4b5563',
     getCustomShortcut: async () => null,
-    getCommandShortcuts: async () => commandShortcuts || {},
     checkServerStatus: async () => ({ connected: true }),
     getToolbarPosition: async () => null,
     saveToolbarCollapsed: async () => {},
@@ -414,24 +413,4 @@ test('toolbar command interface toggles collapse and reveals settings from the c
 
   context.WaypointToolbar.toggleSettings();
   assert.equal(root.querySelector('.waypoint-settings-dropdown'), null);
-});
-
-test('toolbar tooltips show the browser shortcuts assigned to toolbar commands', async () => {
-  const { context, root } = await openQueue([], {
-    commandShortcuts: {
-      'toggle-toolbar-collapse': 'Command+Shift+.',
-      'toggle-toolbar-settings': 'Command+Shift+L',
-    },
-  });
-
-  const collapse = root.querySelector('.waypoint-tb-collapse');
-  const settings = root.querySelector('.waypoint-tb-settings');
-  assert.equal(collapse.title, 'Collapse (⌘⇧.)');
-  assert.equal(collapse.querySelector('.waypoint-toolbar-tip').textContent, 'Collapse (⌘⇧.)');
-  assert.equal(settings.title, 'Settings (⌘⇧L)');
-  assert.equal(settings.querySelector('.waypoint-toolbar-tip').textContent, 'Settings (⌘⇧L)');
-
-  context.WaypointToolbar.toggleCollapse();
-  assert.equal(collapse.title, 'Expand (⌘⇧.)');
-  assert.equal(collapse.querySelector('.waypoint-toolbar-tip').textContent, 'Expand (⌘⇧.)');
 });
