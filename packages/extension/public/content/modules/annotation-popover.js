@@ -114,6 +114,22 @@ var WaypointAnnotationPopover = (() => {
     sparkles: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.4 3.6L7 8l3.6 1.4L12 13l1.4-3.6L17 8l-3.6-1.4Z"/><path d="m19 14-.9 2.1L16 17l2.1.9L19 20l.9-2.1L22 17l-2.1-.9Z"/><path d="m5 14-.7 1.3L3 16l1.3.7L5 18l.7-1.3L7 16l-1.3-.7Z"/></svg>',
   };
 
+  const EDIT_CATEGORY_CATALOG = {
+    content: { label: 'Content', icon: ICONS.textContent, description: 'Rewrite what the Target says' },
+    font: { label: 'Typography', icon: ICONS.typeSize, description: 'Shape how the text reads' },
+    sizing: { label: 'Dimensions', icon: ICONS.dimension, description: 'Control the Target footprint' },
+    spacing: { label: 'Spacing', icon: ICONS.spacing, description: 'Tune space inside and around it' },
+    layout: { label: 'Layout', icon: ICONS.layout, description: 'Arrange children and alignment' },
+    appearance: { label: 'Appearance', icon: ICONS.droplet, description: 'Tune surface, border, and color' },
+    'raw-css': { label: 'Advanced CSS', icon: ICONS.code, description: 'Add a precise override' },
+  };
+
+  const EDIT_CATEGORY_KEYS = {
+    text: ['content', 'font', 'sizing', 'spacing', 'raw-css'],
+    container: ['sizing', 'spacing', 'layout', 'appearance', 'raw-css'],
+    both: ['content', 'font', 'sizing', 'spacing', 'layout', 'appearance', 'raw-css'],
+  };
+
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const kbdHint = isMac ? '\u2318\u21A9' : 'Ctrl+Enter';
   const MAX_IMAGE_ATTACHMENT_BYTES = 1024 * 1024;
@@ -149,30 +165,7 @@ var WaypointAnnotationPopover = (() => {
   }
 
   function getTabsForType(elType) {
-    if (elType === 'text') return [
-      { key: 'content', label: 'Content', icon: ICONS.textContent, description: 'Rewrite what the Target says' },
-      { key: 'font', label: 'Typography', icon: ICONS.typeSize, description: 'Shape how the text reads' },
-      { key: 'sizing', label: 'Dimensions', icon: ICONS.dimension, description: 'Control the Target footprint' },
-      { key: 'spacing', label: 'Spacing', icon: ICONS.spacing, description: 'Tune space inside and around it' },
-      { key: 'raw-css', label: 'Advanced CSS', icon: ICONS.code, description: 'Add a precise override' }
-    ];
-    if (elType === 'container') return [
-      { key: 'sizing', label: 'Dimensions', icon: ICONS.dimension, description: 'Control the Target footprint' },
-      { key: 'spacing', label: 'Spacing', icon: ICONS.spacing, description: 'Tune space inside and around it' },
-      { key: 'layout', label: 'Layout', icon: ICONS.layout, description: 'Arrange children and alignment' },
-      { key: 'appearance', label: 'Appearance', icon: ICONS.droplet, description: 'Tune surface, border, and color' },
-      { key: 'raw-css', label: 'Advanced CSS', icon: ICONS.code, description: 'Add a precise override' }
-    ];
-    // 'both' (button)
-    return [
-      { key: 'content', label: 'Content', icon: ICONS.textContent, description: 'Rewrite what the Target says' },
-      { key: 'font', label: 'Typography', icon: ICONS.typeSize, description: 'Shape how the text reads' },
-      { key: 'sizing', label: 'Dimensions', icon: ICONS.dimension, description: 'Control the Target footprint' },
-      { key: 'spacing', label: 'Spacing', icon: ICONS.spacing, description: 'Tune space inside and around it' },
-      { key: 'layout', label: 'Layout', icon: ICONS.layout, description: 'Arrange children and alignment' },
-      { key: 'appearance', label: 'Appearance', icon: ICONS.droplet, description: 'Tune surface, border, and color' },
-      { key: 'raw-css', label: 'Advanced CSS', icon: ICONS.code, description: 'Add a precise override' }
-    ];
+    return EDIT_CATEGORY_KEYS[elType].map(key => ({ key, ...EDIT_CATEGORY_CATALOG[key] }));
   }
 
   // Raw CSS properties to show — expanded computed styles
@@ -357,10 +350,10 @@ var WaypointAnnotationPopover = (() => {
     // Build tabs — cold start: no active tab, all panels hidden
     const tabs = getTabsForType(elType);
     const tabBarHTML = tabs.map(t =>
-      `<button class="waypoint-tab" data-tab="${t.key}" type="button" role="tab" aria-selected="false" title="${t.label}" ${tabsLocked ? 'disabled' : ''}><span class="waypoint-tab-icon">${t.icon}</span><span class="waypoint-tab-label">${t.label}</span></button>`
+      `<button class="waypoint-tab" id="waypoint-edit-${t.key}-control" data-tab="${t.key}" type="button" aria-expanded="false" aria-controls="waypoint-edit-${t.key}-panel" title="${t.label}" ${tabsLocked ? 'disabled' : ''}><span class="waypoint-tab-icon">${t.icon}</span><span class="waypoint-tab-label">${t.label}</span></button>`
     ).join('');
     const panelsHTML = tabs.map(t =>
-      `<div class="waypoint-tab-panel" data-tab-panel="${t.key}" role="tabpanel" style="display:none"><div class="waypoint-tab-panel-heading"><strong>${t.label}</strong><span>${t.description}</span></div>${panelContent[t.key] || ''}</div>`
+      `<div class="waypoint-tab-panel" id="waypoint-edit-${t.key}-panel" data-tab-panel="${t.key}" role="region" aria-labelledby="waypoint-edit-${t.key}-control" style="display:none"><div class="waypoint-tab-panel-heading"><strong>${t.label}</strong><span>${t.description}</span></div>${panelContent[t.key] || ''}</div>`
     ).join('');
 
     // Build short selector label for title
@@ -401,7 +394,7 @@ var WaypointAnnotationPopover = (() => {
               <small>Preview precise changes on the page</small>
             </span>
           </div>
-          <div class="waypoint-tab-bar" role="tablist" aria-label="Element edit categories">${tabBarHTML}</div>
+          <div class="waypoint-tab-bar" role="group" aria-label="Element edit categories">${tabBarHTML}</div>
           <div class="waypoint-design-toolbar">${panelsHTML}</div>
         </section>
         <div class="waypoint-annotation-options" role="group" aria-label="Annotation options">
@@ -502,6 +495,9 @@ var WaypointAnnotationPopover = (() => {
       designIntentInput?.setAttribute('disabled', '');
       variantIntentInput?.setAttribute('disabled', '');
       imageInput.disabled = true;
+      popover.querySelectorAll('.waypoint-design-action').forEach(button => {
+        button.disabled = true;
+      });
     }
 
     workNoticeDismiss?.addEventListener('click', async () => {
@@ -526,7 +522,7 @@ var WaypointAnnotationPopover = (() => {
         const wasActive = tab.classList.contains('active');
         tabBtns.forEach(t => {
           t.classList.remove('active');
-          t.setAttribute('aria-selected', 'false');
+          t.setAttribute('aria-expanded', 'false');
         });
         if (wasActive) {
           // Deselect — back to cold start
@@ -534,7 +530,7 @@ var WaypointAnnotationPopover = (() => {
           tabPanels.forEach(p => p.style.display = 'none');
         } else {
           tab.classList.add('active');
-          tab.setAttribute('aria-selected', 'true');
+          tab.setAttribute('aria-expanded', 'true');
           designToolbar.style.display = '';
           tabPanels.forEach(p => p.style.display = p.dataset.tabPanel === tab.dataset.tab ? '' : 'none');
           // Auto-resize content textarea when switching to Content tab
