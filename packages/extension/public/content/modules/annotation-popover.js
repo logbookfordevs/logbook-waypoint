@@ -106,6 +106,66 @@ var WaypointAnnotationPopover = (() => {
     tablet: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
     monitor: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
     attachment: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
+    dimension: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M8 12h8"/><path d="m10 10-2 2 2 2"/><path d="m14 10 2 2-2 2"/></svg>',
+    spacing: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3"/><path d="M15 2v3"/><path d="M9 19v3"/><path d="M15 19v3"/></svg>',
+    layout: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>',
+    code: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 9-3 3 3 3"/><path d="m16 9 3 3-3 3"/><path d="m14 5-4 14"/></svg>',
+    variants: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M8 7.2 11 16"/><path d="m16 7.2-3 8.8"/></svg>',
+    sparkles: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.4 3.6L7 8l3.6 1.4L12 13l1.4-3.6L17 8l-3.6-1.4Z"/><path d="m19 14-.9 2.1L16 17l2.1.9L19 20l.9-2.1L22 17l-2.1-.9Z"/><path d="m5 14-.7 1.3L3 16l1.3.7L5 18l.7-1.3L7 16l-1.3-.7Z"/></svg>',
+  };
+
+  const EDIT_CATEGORY_CATALOG = {
+    content: { label: 'Content', icon: ICONS.textContent, description: 'Rewrite what the Target says' },
+    font: { label: 'Typography', icon: ICONS.typeSize, description: 'Shape how the text reads' },
+    sizing: { label: 'Dimensions', icon: ICONS.dimension, description: 'Control the Target footprint' },
+    spacing: { label: 'Spacing', icon: ICONS.spacing, description: 'Tune space inside and around it' },
+    layout: { label: 'Layout', icon: ICONS.layout, description: 'Arrange children and alignment' },
+    appearance: { label: 'Appearance', icon: ICONS.droplet, description: 'Tune surface, border, and color' },
+    'raw-css': { label: 'Advanced CSS', icon: ICONS.code, description: 'Add a precise override' },
+  };
+
+  const EDIT_CATEGORY_KEYS = {
+    text: ['content', 'font', 'sizing', 'spacing', 'raw-css'],
+    container: ['sizing', 'spacing', 'layout', 'appearance', 'raw-css'],
+    both: ['content', 'font', 'sizing', 'spacing', 'layout', 'appearance', 'raw-css'],
+  };
+
+  const EDIT_PROPERTY_CATEGORIES = {
+    copyChange: 'content',
+    fontSize: 'font',
+    fontWeight: 'font',
+    lineHeight: 'font',
+    textAlign: 'font',
+    color: 'font',
+    width: 'sizing',
+    minWidth: 'sizing',
+    maxWidth: 'sizing',
+    height: 'sizing',
+    minHeight: 'sizing',
+    maxHeight: 'sizing',
+    paddingTop: 'spacing',
+    paddingRight: 'spacing',
+    paddingBottom: 'spacing',
+    paddingLeft: 'spacing',
+    marginTop: 'spacing',
+    marginRight: 'spacing',
+    marginBottom: 'spacing',
+    marginLeft: 'spacing',
+    display: 'layout',
+    flexDirection: 'layout',
+    flexWrap: 'layout',
+    gap: 'layout',
+    columnGap: 'layout',
+    rowGap: 'layout',
+    justifyContent: 'layout',
+    alignItems: 'layout',
+    gridTemplateColumns: 'layout',
+    gridTemplateRows: 'layout',
+    backgroundColor: 'appearance',
+    borderColor: 'appearance',
+    borderWidth: 'appearance',
+    borderRadius: 'appearance',
+    borderStyle: 'appearance',
   };
 
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -143,30 +203,18 @@ var WaypointAnnotationPopover = (() => {
   }
 
   function getTabsForType(elType) {
-    if (elType === 'text') return [
-      { key: 'content', label: 'Content' },
-      { key: 'font', label: 'Font' },
-      { key: 'sizing', label: 'Sizing' },
-      { key: 'spacing', label: 'Spacing' },
-      { key: 'raw-css', label: 'CSS' }
-    ];
-    if (elType === 'container') return [
-      { key: 'sizing', label: 'Sizing' },
-      { key: 'spacing', label: 'Spacing' },
-      { key: 'layout', label: 'Layout' },
-      { key: 'appearance', label: 'Appearance' },
-      { key: 'raw-css', label: 'CSS' }
-    ];
-    // 'both' (button)
-    return [
-      { key: 'content', label: 'Content' },
-      { key: 'font', label: 'Font' },
-      { key: 'sizing', label: 'Sizing' },
-      { key: 'spacing', label: 'Spacing' },
-      { key: 'layout', label: 'Layout' },
-      { key: 'appearance', label: 'Appearance' },
-      { key: 'raw-css', label: 'CSS' }
-    ];
+    return EDIT_CATEGORY_KEYS[elType].map(key => ({ key, ...EDIT_CATEGORY_CATALOG[key] }));
+  }
+
+  function getSavedEditCategories(annotation, tabs) {
+    const availableCategories = new Set(tabs.map(tab => tab.key));
+    const savedCategories = new Set();
+    for (const property of Object.keys(annotation?.pending_changes || {})) {
+      const category = EDIT_PROPERTY_CATEGORIES[property];
+      savedCategories.add(availableCategories.has(category) ? category : 'raw-css');
+    }
+    if (typeof annotation?.css === 'string' && annotation.css.trim()) savedCategories.add('raw-css');
+    return savedCategories;
   }
 
   // Raw CSS properties to show — expanded computed styles
@@ -350,11 +398,19 @@ var WaypointAnnotationPopover = (() => {
 
     // Build tabs — cold start: no active tab, all panels hidden
     const tabs = getTabsForType(elType);
-    const tabBarHTML = tabs.map(t =>
-      `<button class="waypoint-tab" data-tab="${t.key}" type="button" ${tabsLocked ? 'disabled' : ''}>${t.label}</button>`
-    ).join('');
+    const savedEditCategories = getSavedEditCategories(existingAnnotation, tabs);
+    const tabBarHTML = tabs.map(t => {
+      const hasSavedChanges = savedEditCategories.has(t.key);
+      const savedChangesAttributes = hasSavedChanges
+        ? ` data-saved-changes="true" aria-label="${t.label}, contains saved changes"`
+        : ` aria-label="${t.label}"`;
+      const savedChangesDot = hasSavedChanges
+        ? '<span class="waypoint-tab-saved-dot" aria-hidden="true"></span>'
+        : '';
+      return `<button class="waypoint-tab" id="waypoint-edit-${t.key}-control" data-tab="${t.key}" type="button" aria-expanded="false" aria-controls="waypoint-edit-${t.key}-panel" title="${t.label}"${savedChangesAttributes} ${tabsLocked ? 'disabled' : ''}>${savedChangesDot}<span class="waypoint-tab-icon">${t.icon}</span><span class="waypoint-tab-label">${t.label}</span></button>`;
+    }).join('');
     const panelsHTML = tabs.map(t =>
-      `<div class="waypoint-tab-panel" data-tab-panel="${t.key}" style="display:none">${panelContent[t.key] || ''}</div>`
+      `<div class="waypoint-tab-panel" id="waypoint-edit-${t.key}-panel" data-tab-panel="${t.key}" role="region" aria-labelledby="waypoint-edit-${t.key}-control" style="display:none"><div class="waypoint-tab-panel-heading"><strong>${t.label}</strong><span>${t.description}</span></div>${panelContent[t.key] || ''}</div>`
     ).join('');
 
     // Build short selector label for title
@@ -379,10 +435,6 @@ var WaypointAnnotationPopover = (() => {
         <span>${isHistorical ? `Viewing ${historicalStatus} annotation` : 'Editing'} <code>${escapeHTML(selectorLabel)}</code></span>
         <button class="waypoint-design-reset" type="button" title="${presentationLocked ? 'Finalized Variant presentation' : 'Reset all'}" ${presentationLocked ? 'disabled' : ''}>${ICONS.reset}</button>
       </div>
-      <div class="waypoint-tab-bar">${tabBarHTML}</div>
-      <div class="waypoint-design-toolbar">
-        ${panelsHTML}
-      </div>
       ${warningHTML}
       ${workNoticeHTML}
       ${readOnlyNoticeHTML}
@@ -392,6 +444,16 @@ var WaypointAnnotationPopover = (() => {
           <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000" ${isHistorical ? 'readonly aria-describedby="waypoint-readonly-notice"' : ''}>${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
           ${isHistorical ? '' : `<span class="waypoint-kbd-hint">${kbdHint} to save</span>`}
         </div>
+        <section class="waypoint-element-edits" aria-labelledby="waypoint-element-edits-title">
+          <div class="waypoint-element-edits-heading">
+            <span>
+              <strong id="waypoint-element-edits-title">Element edits</strong>
+              <small>Preview precise changes on the page</small>
+            </span>
+          </div>
+          <div class="waypoint-tab-bar" role="group" aria-label="Element edit categories">${tabBarHTML}</div>
+          <div class="waypoint-design-toolbar">${panelsHTML}</div>
+        </section>
         <div class="waypoint-annotation-options" role="group" aria-label="Annotation options">
           <div class="waypoint-annotation-attachments">
             <label class="waypoint-attachment-button">
@@ -401,22 +463,29 @@ var WaypointAnnotationPopover = (() => {
             </label>
             <span class="waypoint-attachment-status" aria-live="polite"></span>
           </div>
-          <label class="waypoint-variant-intent-label">
-            <span class="waypoint-variant-intent-copy">
-              <span class="waypoint-variant-intent-title">Request Variants</span>
-              <span class="waypoint-variant-intent-description">Explore multiple named directions</span>
-            </span>
-            <input class="waypoint-variant-intent" type="checkbox" ${existingAnnotation?.variant_intent ? 'checked' : ''} ${isHistorical ? 'disabled' : ''}>
-          </label>
-          ${showDesignActions ? `
-            <section class="waypoint-design-actions waypoint-design-intent-row">
+          <section class="waypoint-agent-direction waypoint-design-actions waypoint-design-intent-row" aria-labelledby="waypoint-agent-direction-title">
+            <div class="waypoint-agent-direction-heading">
+              <strong id="waypoint-agent-direction-title">Agent direction</strong>
+              <span>Optional guided workflow</span>
+            </div>
+            <div class="waypoint-agent-direction-choices">
+              <label class="waypoint-variant-intent-label">
+                <span class="waypoint-agent-direction-icon">${ICONS.variants}</span>
+                <span class="waypoint-variant-intent-title">Variants</span>
+                <input class="waypoint-variant-intent" type="checkbox" ${existingAnnotation?.variant_intent ? 'checked' : ''} ${isHistorical ? 'disabled' : ''}>
+              </label>
+              ${showDesignActions ? `
               <label class="waypoint-variant-intent-label waypoint-design-intent-label">
-                <span class="waypoint-variant-intent-copy">
-                  <span class="waypoint-variant-intent-title">Design Actions</span>
-                  <span class="waypoint-variant-intent-description">Use this brief as Impeccable direction</span>
-                </span>
+                <span class="waypoint-agent-direction-icon">${ICONS.sparkles}</span>
+                <span class="waypoint-variant-intent-title">Design Actions</span>
                 <input class="waypoint-variant-intent waypoint-design-intent" type="checkbox" aria-label="Use Design Actions" ${existingAnnotation?.design_intent ? 'checked' : ''} ${isHistorical ? 'disabled' : ''}>
               </label>
+              ` : ''}
+            </div>
+            <div class="waypoint-variant-intent-note" ${existingAnnotation?.variant_intent ? '' : 'hidden'}>
+              ${ICONS.variants}<span>3 by default · Ask for 2–6 in your brief.</span>
+            </div>
+            ${showDesignActions ? `
               <div class="waypoint-design-action-catalog" ${existingAnnotation?.design_intent ? '' : 'hidden'}>
                 <div class="waypoint-design-action-heading">
                   <span class="waypoint-design-action-state" aria-live="polite"></span>
@@ -429,8 +498,8 @@ var WaypointAnnotationPopover = (() => {
                 </div>
                 <span class="waypoint-design-action-description" role="status" aria-live="polite"></span>
               </div>
-            </section>
-          ` : ''}
+            ` : ''}
+          </section>
         </div>
       </div>
       <div class="waypoint-popover-footer">
@@ -483,6 +552,9 @@ var WaypointAnnotationPopover = (() => {
       designIntentInput?.setAttribute('disabled', '');
       variantIntentInput?.setAttribute('disabled', '');
       imageInput.disabled = true;
+      popover.querySelectorAll('.waypoint-design-action').forEach(button => {
+        button.disabled = true;
+      });
     }
 
     workNoticeDismiss?.addEventListener('click', async () => {
@@ -505,13 +577,17 @@ var WaypointAnnotationPopover = (() => {
     tabBtns.forEach(tab => {
       tab.addEventListener('click', () => {
         const wasActive = tab.classList.contains('active');
-        tabBtns.forEach(t => t.classList.remove('active'));
+        tabBtns.forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-expanded', 'false');
+        });
         if (wasActive) {
           // Deselect — back to cold start
           designToolbar.style.display = 'none';
           tabPanels.forEach(p => p.style.display = 'none');
         } else {
           tab.classList.add('active');
+          tab.setAttribute('aria-expanded', 'true');
           designToolbar.style.display = '';
           tabPanels.forEach(p => p.style.display = p.dataset.tabPanel === tab.dataset.tab ? '' : 'none');
           // Auto-resize content textarea when switching to Content tab
@@ -722,7 +798,11 @@ var WaypointAnnotationPopover = (() => {
         const attachmentsChanged = JSON.stringify(attachments) !== originalAttachments;
         const nextDesignIntent = designIntentInput?.checked ? WaypointDesignIntent.create(selectedDesignAction) : null;
         const designIntentChanged = JSON.stringify(nextDesignIntent) !== JSON.stringify(existingAnnotation.design_intent || null);
-        saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged && !attachmentsChanged && !designIntentChanged;
+        const nextVariantIntent = getExplicitVariantIntent(variantIntentInput);
+        const savedVariantIntent = existingAnnotation.variant_intent || null;
+        const variantIntentChanged = nextVariantIntent?.requested !== savedVariantIntent?.requested
+          || nextVariantIntent?.default_count !== savedVariantIntent?.default_count;
+        saveBtn.disabled = !commentChanged && !designChanged && !cssRulesChanged && !attachmentsChanged && !designIntentChanged && !variantIntentChanged;
         saveBtn.textContent = 'Save';
       } else {
         const cssRulesVal = cssRulesTextarea ? cssRulesTextarea.value.trim() : '';
@@ -748,6 +828,15 @@ var WaypointAnnotationPopover = (() => {
     const designActionState = popover.querySelector('.waypoint-design-action-state');
     const designActionDescription = popover.querySelector('.waypoint-design-action-description');
     const designActionButtons = [...popover.querySelectorAll('.waypoint-design-action')];
+    const variantIntentNote = popover.querySelector('.waypoint-variant-intent-note');
+    variantIntentInput.checked = Boolean(existingAnnotation?.variant_intent);
+    const updateVariantIntentPresentation = () => {
+      variantIntentNote.hidden = !variantIntentInput.checked;
+    };
+    variantIntentInput.addEventListener('change', () => {
+      updateVariantIntentPresentation();
+      updateSave();
+    });
     let selectedDesignAction = existingAnnotation?.design_intent?.action || null;
     if (designIntentInput) designIntentInput.checked = Boolean(existingAnnotation?.design_intent);
     const updateDesignActions = () => {
@@ -774,6 +863,7 @@ var WaypointAnnotationPopover = (() => {
         updateSave();
       });
     });
+    updateVariantIntentPresentation();
     updateDesignActions();
 
     // Expose updateSave and updateResetVisibility to toolbar wiring
