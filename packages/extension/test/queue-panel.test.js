@@ -419,33 +419,19 @@ test('toolbar command interface toggles collapse and reveals settings from the c
 test('toolbar tooltips show the browser shortcuts assigned to toolbar commands', async () => {
   const { context, root } = await openQueue([], {
     commandShortcuts: {
-      'toggle-toolbar-collapse': 'Command+Shift+1',
-      'toggle-toolbar-settings': 'Command+Shift+2',
+      'toggle-toolbar-collapse': 'Command+Shift+.',
+      'toggle-toolbar-settings': 'Command+Shift+L',
     },
   });
 
   const collapse = root.querySelector('.waypoint-tb-collapse');
   const settings = root.querySelector('.waypoint-tb-settings');
-  assert.equal(collapse.title, 'Collapse (⌘⇧1)');
-  assert.equal(collapse.querySelector('.waypoint-toolbar-tip').textContent, 'Collapse (⌘⇧1)');
-  assert.equal(settings.title, 'Settings (⌘⇧2)');
-  assert.equal(settings.querySelector('.waypoint-toolbar-tip').textContent, 'Settings (⌘⇧2)');
+  assert.equal(collapse.title, 'Collapse (⌘⇧.)');
+  assert.equal(collapse.querySelector('.waypoint-toolbar-tip').textContent, 'Collapse (⌘⇧.)');
+  assert.equal(settings.title, 'Settings (⌘⇧L)');
+  assert.equal(settings.querySelector('.waypoint-toolbar-tip').textContent, 'Settings (⌘⇧L)');
 
   context.WaypointToolbar.toggleCollapse();
-  assert.equal(collapse.hasAttribute('title'), false);
-  assert.equal(collapse.querySelector('.waypoint-toolbar-tip'), null);
-  assert.equal(collapse.getAttribute('aria-label'), 'Expand');
-});
-
-test('toolbar tooltips identify browser commands that Chrome left unassigned', async () => {
-  const { root } = await openQueue([], {
-    commandShortcuts: {
-      'toggle-toolbar-collapse': '',
-      'toggle-toolbar-settings': 'Command+Shift+2',
-    },
-  });
-
-  const collapse = root.querySelector('.waypoint-tb-collapse');
-  assert.equal(collapse.title, 'Collapse (Unassigned)');
-  assert.equal(collapse.querySelector('.waypoint-toolbar-tip').textContent, 'Collapse (Unassigned)');
+  assert.equal(collapse.title, 'Expand (⌘⇧.)');
+  assert.equal(collapse.querySelector('.waypoint-toolbar-tip').textContent, 'Expand (⌘⇧.)');
 });

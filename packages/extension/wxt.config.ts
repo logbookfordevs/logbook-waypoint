@@ -72,25 +72,28 @@ export default defineConfig({
       },
     ],
     commands: {
+      'toggle-annotate': {
+        suggested_key: {
+          default: 'Ctrl+Shift+Comma',
+          mac: 'Command+Shift+Comma',
+        },
+        description: 'Toggle annotation mode',
+      },
       'toggle-toolbar-collapse': {
         suggested_key: {
-          default: 'Ctrl+Shift+1',
-          mac: 'Command+Shift+1',
+          default: 'Ctrl+Shift+Period',
+          mac: 'Command+Shift+Period',
         },
         description: 'Collapse or expand the Waypoint toolbar',
       },
       'toggle-toolbar-settings': {
         suggested_key: {
-          default: 'Ctrl+Shift+2',
-          mac: 'Command+Shift+2',
+          default: 'Ctrl+Shift+L',
+          mac: 'Command+Shift+L',
         },
         description: 'Open or close Waypoint settings',
       },
       'toggle-waypoint-visibility': {
-        suggested_key: {
-          default: 'Ctrl+Shift+0',
-          mac: 'Command+Shift+0',
-        },
         description: 'Hide or show Logbook Waypoint',
       },
     },

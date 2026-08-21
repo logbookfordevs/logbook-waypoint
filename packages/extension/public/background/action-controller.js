@@ -25,6 +25,7 @@ var WaypointActionController = (() => {
   }
 
   const COMMAND_ACTIONS = Object.freeze({
+    'toggle-annotate': 'toggleAnnotate',
     'toggle-toolbar-collapse': 'toggleToolbarCollapse',
     'toggle-toolbar-settings': 'toggleToolbarSettings',
     'toggle-waypoint-visibility': 'toggleOverlay',

@@ -1021,6 +1021,7 @@ var WAYPOINT_STYLES = `
 .waypoint-toolbar.collapsed .waypoint-tb-collapse {
   width: 34px;
   height: 34px;
+  overflow: hidden;
   border-radius: 50%;
 }
 
@@ -1028,7 +1029,6 @@ var WAYPOINT_STYLES = `
   display: block;
   width: 28px;
   height: 28px;
-  border-radius: 50%;
   object-fit: contain;
   pointer-events: none;
 }
