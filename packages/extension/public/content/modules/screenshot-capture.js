@@ -45,7 +45,7 @@ var WaypointScreenshotCapture = (() => {
         canvas.width,
         canvas.height,
       );
-      context.strokeStyle = '#d97757';
+      context.strokeStyle = '#3f8580';
       context.lineWidth = Math.max(2, Math.round(2 * scaleX));
       context.strokeRect(
         Math.max(0, (rect.left - crop.x) * scaleX),

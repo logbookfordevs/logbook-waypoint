@@ -393,7 +393,7 @@ var WaypointBadgeManager = (() => {
     const el = WaypointElementContext.findElementBySelector(annotation);
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    el.style.outline = '3px solid #d97757';
+    el.style.outline = '3px solid #3f8580';
     el.style.outlineOffset = '2px';
     setTimeout(() => {
       el.style.outline = '';

@@ -4,48 +4,48 @@
 var WaypointThemeManager = (() => {
   const themes = {
     light: {
-      'waypoint-surface': '#f8f9fc',
-      'waypoint-surface-1': '#fcfcfd',
-      'waypoint-text-primary': '#0c111b',
-      'waypoint-text-secondary': '#697586',
-      'waypoint-outline': '#00000014',
-      'waypoint-outline-highlight': '#00000028',
-      'waypoint-accent': '#d97757',
-      'waypoint-on-accent': '#ffffff',
-      'waypoint-surface-hover': '#0d0f1c14',
-      'waypoint-secondary-btn-bg': '#0000000d',
-      'waypoint-textarea-bg': '#0000000d',
-      'waypoint-warning': '#f79009',
-      'waypoint-on-warning': '#ffffff',
-      'waypoint-warning-container': '#f7900919',
-      'waypoint-on-warning-container': '#93370c',
-      'waypoint-danger': '#dc2626',
-      'waypoint-danger-hover': '#dc26260d',
-      'waypoint-highlight': '#2563eb',
-      'waypoint-badge-bg': '#4b5563',
-      'waypoint-tooltip-bg': '#111827'
+      'waypoint-surface': '#e9e1d3',
+      'waypoint-surface-1': '#f3ede3',
+      'waypoint-text-primary': '#211d19',
+      'waypoint-text-secondary': '#6f6258',
+      'waypoint-outline': '#bbaa99',
+      'waypoint-outline-highlight': '#6f6258',
+      'waypoint-accent': '#102c2c',
+      'waypoint-on-accent': '#f4efde',
+      'waypoint-surface-hover': '#102c2c12',
+      'waypoint-secondary-btn-bg': '#102c2c0d',
+      'waypoint-textarea-bg': '#102c2c0d',
+      'waypoint-warning': '#b8573c',
+      'waypoint-on-warning': '#f4efde',
+      'waypoint-warning-container': '#b8573c18',
+      'waypoint-on-warning-container': '#211d19',
+      'waypoint-danger': '#a63d32',
+      'waypoint-danger-hover': '#a63d3214',
+      'waypoint-highlight': '#3f8580',
+      'waypoint-badge-bg': '#173f5f',
+      'waypoint-tooltip-bg': '#102c2c'
     },
     dark: {
-      'waypoint-surface': '#0C0E12',
-      'waypoint-surface-1': '#191D24',
-      'waypoint-text-primary': '#fcfcfd',
-      'waypoint-text-secondary': '#9AA4B2',
-      'waypoint-outline': '#ffffff0d',
-      'waypoint-outline-highlight': '#ffffff26',
-      'waypoint-accent': '#d97757',
-      'waypoint-on-accent': '#ffffff',
-      'waypoint-surface-hover': '#fcfcfd14',
-      'waypoint-secondary-btn-bg': '#ffffff0d',
-      'waypoint-textarea-bg': '#ffffff0d',
-      'waypoint-warning': '#f79009',
-      'waypoint-on-warning': '#ffffff',
-      'waypoint-warning-container': '#f7900914',
-      'waypoint-on-warning-container': '#f79009',
-      'waypoint-danger': '#dc2626',
-      'waypoint-danger-hover': '#dc26261a',
-      'waypoint-highlight': '#3b82f6',
-      'waypoint-badge-bg': '#6b7280',
-      'waypoint-tooltip-bg': '#1f2937'
+      'waypoint-surface': '#152827',
+      'waypoint-surface-1': '#24312e',
+      'waypoint-text-primary': '#f2eadc',
+      'waypoint-text-secondary': '#baa894',
+      'waypoint-outline': '#665548',
+      'waypoint-outline-highlight': '#baa894',
+      'waypoint-accent': '#0a2325',
+      'waypoint-on-accent': '#f4efde',
+      'waypoint-surface-hover': '#f4efde12',
+      'waypoint-secondary-btn-bg': '#f4efde0d',
+      'waypoint-textarea-bg': '#f4efde0d',
+      'waypoint-warning': '#d56a4d',
+      'waypoint-on-warning': '#071b1d',
+      'waypoint-warning-container': '#d56a4d1f',
+      'waypoint-on-warning-container': '#f2eadc',
+      'waypoint-danger': '#f08a73',
+      'waypoint-danger-hover': '#f08a731a',
+      'waypoint-highlight': '#69aaa4',
+      'waypoint-badge-bg': '#1b4668',
+      'waypoint-tooltip-bg': '#071b1d'
     }
   };
 
@@ -63,6 +63,8 @@ var WaypointThemeManager = (() => {
     if (!root) return;
 
     const host = root.host;
+    host.setAttribute('data-lfd-recipe', 'driftwood');
+    host.setAttribute('data-lfd-theme', getEffective() === 'dark' ? 'night' : 'day');
     const tokens = themes[getEffective()];
     for (const [key, value] of Object.entries(tokens)) {
       host.style.setProperty(`--${key}`, value);
