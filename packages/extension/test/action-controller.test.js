@@ -63,23 +63,20 @@ test('generated action has no default popup while retaining intervention UI', as
   assert.match(intervention, /Logbook Waypoint/);
 });
 
-test('generated manifest offers three default toolbar commands and one user-assigned visibility command', async () => {
+test('generated manifest keeps Annotate in-app and assigns three browser toolbar commands', async () => {
   const manifest = JSON.parse(await readFile(new URL('../.output/chrome-mv3/manifest.json', import.meta.url), 'utf8'));
 
   assert.deepEqual(manifest.commands, {
-    'toggle-annotate': {
-      suggested_key: { default: 'Ctrl+Shift+Comma', mac: 'Command+Shift+Comma' },
-      description: 'Toggle annotation mode',
-    },
     'toggle-toolbar-collapse': {
-      suggested_key: { default: 'Ctrl+Shift+Period', mac: 'Command+Shift+Period' },
+      suggested_key: { default: 'Ctrl+Shift+1', mac: 'Command+Shift+1' },
       description: 'Collapse or expand the Waypoint toolbar',
     },
     'toggle-toolbar-settings': {
-      suggested_key: { default: 'Ctrl+Shift+L', mac: 'Command+Shift+L' },
+      suggested_key: { default: 'Ctrl+Shift+2', mac: 'Command+Shift+2' },
       description: 'Open or close Waypoint settings',
     },
     'toggle-waypoint-visibility': {
+      suggested_key: { default: 'Ctrl+Shift+0', mac: 'Command+Shift+0' },
       description: 'Hide or show Logbook Waypoint',
     },
   });
@@ -95,7 +92,6 @@ test('extension commands route supported tabs through the content-script command
   const controller = await loadController(chrome);
 
   for (const [command, action] of [
-    ['toggle-annotate', 'toggleAnnotate'],
     ['toggle-toolbar-collapse', 'toggleToolbarCollapse'],
     ['toggle-toolbar-settings', 'toggleToolbarSettings'],
     ['toggle-waypoint-visibility', 'toggleOverlay'],

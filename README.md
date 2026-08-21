@@ -72,16 +72,15 @@ pnpm --filter @logbookfordevs/waypoint start
 
 ### Browser shortcuts
 
-Waypoint registers browser-managed extension commands so shortcuts do not compete with the inspected page's own keyboard handling.
+Annotate keeps its configurable in-app shortcut. Toolbar-level actions use browser-managed extension commands so they do not compete with the inspected page's own keyboard handling.
 
 | Action | macOS default | Other platforms |
 | --- | --- | --- |
-| Toggle annotation mode | `Command+Shift+Comma` | `Ctrl+Shift+Comma` |
-| Collapse or expand the toolbar | `Command+Shift+Period` | `Ctrl+Shift+Period` |
-| Open or close Settings | `Command+Shift+L` | `Ctrl+Shift+L` |
-| Hide or show Waypoint | Unassigned | Unassigned |
+| Collapse or expand the toolbar | `Command+Shift+1` | `Ctrl+Shift+1` |
+| Open or close Settings | `Command+Shift+2` | `Ctrl+Shift+2` |
+| Hide or show Waypoint | `Command+Shift+0` | `Ctrl+Shift+0` |
 
-Open `chrome://extensions/shortcuts` to change any assignment or add a shortcut for hide/show. The Settings command restores Waypoint and expands the toolbar before opening Settings when necessary.
+Open `chrome://extensions/shortcuts` to change any assignment. The Settings command restores Waypoint and expands the toolbar before opening Settings when necessary.
 
 ### MCP connection
 

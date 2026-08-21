@@ -81,8 +81,8 @@ var WaypointToolbar = (() => {
     ]);
     customShortcut = savedShortcut;
     if (customShortcut) shortcutHint = formatShortcut(customShortcut);
-    collapseShortcutHint = formatBrowserShortcut(commandShortcuts['toggle-toolbar-collapse']);
-    settingsShortcutHint = formatBrowserShortcut(commandShortcuts['toggle-toolbar-settings']);
+    collapseShortcutHint = formatBrowserShortcut(commandShortcuts['toggle-toolbar-collapse']) || 'Unassigned';
+    settingsShortcutHint = formatBrowserShortcut(commandShortcuts['toggle-toolbar-settings']) || 'Unassigned';
     await refreshServerStatus();
 
     buildToolbar(root);
@@ -112,9 +112,9 @@ var WaypointToolbar = (() => {
     toolbarEl.className = 'waypoint-toolbar' + (isCollapsed ? ' collapsed' : '');
 
     toolbarEl.innerHTML = `
-      <button class="waypoint-toolbar-btn waypoint-tb-collapse" title="${commandLabel(isCollapsed ? 'Expand' : 'Collapse', collapseShortcutHint)}">
+      <button class="waypoint-toolbar-btn waypoint-tb-collapse" aria-label="${isCollapsed ? 'Expand' : 'Collapse'}"${isCollapsed ? '' : ` title="${commandLabel('Collapse', collapseShortcutHint)}"`}>
         ${isCollapsed ? ICONS.collapsed : ICONS.collapse}
-        <span class="waypoint-toolbar-tip">${commandLabel(isCollapsed ? 'Expand' : 'Collapse', collapseShortcutHint)}</span>
+        ${isCollapsed ? '' : `<span class="waypoint-toolbar-tip">${commandLabel('Collapse', collapseShortcutHint)}</span>`}
       </button>
       <div class="waypoint-toolbar-inner">
         <div class="waypoint-toolbar-divider"></div>
@@ -790,10 +790,15 @@ var WaypointToolbar = (() => {
     WaypointQueuePanel.close();
 
     const btn = toolbarEl.querySelector('.waypoint-tb-collapse');
-    const collapseLabel = commandLabel(isCollapsed ? 'Expand' : 'Collapse', collapseShortcutHint);
-    btn.innerHTML = (isCollapsed ? ICONS.collapsed : ICONS.collapse) +
-      `<span class="waypoint-toolbar-tip">${collapseLabel}</span>`;
-    btn.title = collapseLabel;
+    btn.setAttribute('aria-label', isCollapsed ? 'Expand' : 'Collapse');
+    if (isCollapsed) {
+      btn.innerHTML = ICONS.collapsed;
+      btn.removeAttribute('title');
+    } else {
+      const collapseLabel = commandLabel('Collapse', collapseShortcutHint);
+      btn.innerHTML = ICONS.collapse + `<span class="waypoint-toolbar-tip">${collapseLabel}</span>`;
+      btn.title = collapseLabel;
+    }
 
     WaypointAPI.saveToolbarCollapsed(isCollapsed);
   }

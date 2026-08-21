@@ -20,9 +20,12 @@ test('toolbar uses Thelu as a functional settings icon without a decorative pet 
 
 test('collapsed toolbar uses the selected Thelu inside Waypoint control', async () => {
   const toolbar = await readFile(new URL('../public/content/modules/floating-toolbar.js', import.meta.url), 'utf8');
+  const styles = await readFile(new URL('../public/content/modules/styles.js', import.meta.url), 'utf8');
 
   assert.match(toolbar, /assets\/thelu\/thelu-waypoint-collapsed\.png/);
   assert.match(toolbar, /waypoint-collapsed-icon/);
   assert.match(toolbar, /isCollapsed \? ICONS\.collapsed : ICONS\.collapse/);
   assert.match(toolbar, /isCollapsed \? 'Expand' : 'Collapse'/);
+  assert.doesNotMatch(styles, /\.waypoint-toolbar\.collapsed \.waypoint-tb-collapse\s*\{[^}]*overflow:\s*hidden/s);
+  assert.match(styles, /\.waypoint-collapsed-icon\s*\{[^}]*border-radius:\s*50%/s);
 });
