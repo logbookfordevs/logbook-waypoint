@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/logbook-waypoint-banner.png" alt="Thelu charts visual annotations from a luminous waypoint across an Atlantic navigation map toward a coding agent's field instrument">
+</p>
+
 # Logbook Waypoint
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-b9502f.svg)](LICENSE)
