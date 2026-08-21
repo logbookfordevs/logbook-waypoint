@@ -293,6 +293,7 @@ var WAYPOINT_STYLES = `
   background: var(--waypoint-textarea-bg);
 }
 .waypoint-tab {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -313,6 +314,16 @@ var WAYPOINT_STYLES = `
   white-space: nowrap;
   overflow: hidden;
   transition: color .15s, background .15s, flex-basis .15s;
+}
+.waypoint-tab-saved-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--waypoint-surface-1);
+  border-radius: var(--waypoint-radius-full);
+  background: var(--waypoint-warning);
 }
 .waypoint-tab-icon {
   display: grid;

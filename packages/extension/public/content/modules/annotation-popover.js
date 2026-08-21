@@ -130,6 +130,44 @@ var WaypointAnnotationPopover = (() => {
     both: ['content', 'font', 'sizing', 'spacing', 'layout', 'appearance', 'raw-css'],
   };
 
+  const EDIT_PROPERTY_CATEGORIES = {
+    copyChange: 'content',
+    fontSize: 'font',
+    fontWeight: 'font',
+    lineHeight: 'font',
+    textAlign: 'font',
+    color: 'font',
+    width: 'sizing',
+    minWidth: 'sizing',
+    maxWidth: 'sizing',
+    height: 'sizing',
+    minHeight: 'sizing',
+    maxHeight: 'sizing',
+    paddingTop: 'spacing',
+    paddingRight: 'spacing',
+    paddingBottom: 'spacing',
+    paddingLeft: 'spacing',
+    marginTop: 'spacing',
+    marginRight: 'spacing',
+    marginBottom: 'spacing',
+    marginLeft: 'spacing',
+    display: 'layout',
+    flexDirection: 'layout',
+    flexWrap: 'layout',
+    gap: 'layout',
+    columnGap: 'layout',
+    rowGap: 'layout',
+    justifyContent: 'layout',
+    alignItems: 'layout',
+    gridTemplateColumns: 'layout',
+    gridTemplateRows: 'layout',
+    backgroundColor: 'appearance',
+    borderColor: 'appearance',
+    borderWidth: 'appearance',
+    borderRadius: 'appearance',
+    borderStyle: 'appearance',
+  };
+
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const kbdHint = isMac ? '\u2318\u21A9' : 'Ctrl+Enter';
   const MAX_IMAGE_ATTACHMENT_BYTES = 1024 * 1024;
@@ -166,6 +204,17 @@ var WaypointAnnotationPopover = (() => {
 
   function getTabsForType(elType) {
     return EDIT_CATEGORY_KEYS[elType].map(key => ({ key, ...EDIT_CATEGORY_CATALOG[key] }));
+  }
+
+  function getSavedEditCategories(annotation, tabs) {
+    const availableCategories = new Set(tabs.map(tab => tab.key));
+    const savedCategories = new Set();
+    for (const property of Object.keys(annotation?.pending_changes || {})) {
+      const category = EDIT_PROPERTY_CATEGORIES[property];
+      savedCategories.add(availableCategories.has(category) ? category : 'raw-css');
+    }
+    if (annotation?.css?.trim()) savedCategories.add('raw-css');
+    return savedCategories;
   }
 
   // Raw CSS properties to show — expanded computed styles
@@ -349,9 +398,17 @@ var WaypointAnnotationPopover = (() => {
 
     // Build tabs — cold start: no active tab, all panels hidden
     const tabs = getTabsForType(elType);
-    const tabBarHTML = tabs.map(t =>
-      `<button class="waypoint-tab" id="waypoint-edit-${t.key}-control" data-tab="${t.key}" type="button" aria-expanded="false" aria-controls="waypoint-edit-${t.key}-panel" title="${t.label}" ${tabsLocked ? 'disabled' : ''}><span class="waypoint-tab-icon">${t.icon}</span><span class="waypoint-tab-label">${t.label}</span></button>`
-    ).join('');
+    const savedEditCategories = getSavedEditCategories(existingAnnotation, tabs);
+    const tabBarHTML = tabs.map(t => {
+      const hasSavedChanges = savedEditCategories.has(t.key);
+      const savedChangesAttributes = hasSavedChanges
+        ? ` data-saved-changes="true" aria-label="${t.label}, contains saved changes"`
+        : ` aria-label="${t.label}"`;
+      const savedChangesDot = hasSavedChanges
+        ? '<span class="waypoint-tab-saved-dot" aria-hidden="true"></span>'
+        : '';
+      return `<button class="waypoint-tab" id="waypoint-edit-${t.key}-control" data-tab="${t.key}" type="button" aria-expanded="false" aria-controls="waypoint-edit-${t.key}-panel" title="${t.label}"${savedChangesAttributes} ${tabsLocked ? 'disabled' : ''}>${savedChangesDot}<span class="waypoint-tab-icon">${t.icon}</span><span class="waypoint-tab-label">${t.label}</span></button>`;
+    }).join('');
     const panelsHTML = tabs.map(t =>
       `<div class="waypoint-tab-panel" id="waypoint-edit-${t.key}-panel" data-tab-panel="${t.key}" role="region" aria-labelledby="waypoint-edit-${t.key}-control" style="display:none"><div class="waypoint-tab-panel-heading"><strong>${t.label}</strong><span>${t.description}</span></div>${panelContent[t.key] || ''}</div>`
     ).join('');

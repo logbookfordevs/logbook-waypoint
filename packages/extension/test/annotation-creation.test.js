@@ -328,6 +328,68 @@ test('rendered Element edits follow the Brief and adapt their drawer to the Targ
   assert.ok(mixedPopover.querySelector('.waypoint-variant-intent-label'));
 });
 
+test('reopened Annotations mark Element edit categories that contain saved changes', async () => {
+  const { context, handlers, computedStyle } = createEditorTestContext(
+    '<html><body><div id="root"></div><button id="target">Continue</button></body></html>',
+  );
+  context.WaypointAPI = {
+    isFileProtocol: () => false,
+    getShowDesignActions: async () => false,
+    updateAnnotation: async () => {},
+  };
+  context.WaypointElementContext = { generate: async () => ({
+    selector: '#target',
+    tag: 'button',
+    classes: [],
+    text: 'Continue',
+    styles: computedStyle,
+    position: { x: 0, y: 0, width: 100, height: 40 },
+    viewport: { width: 1280, height: 800 },
+  }) };
+
+  const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
+  vm.runInContext(source, context);
+  context.WaypointAnnotationPopover.init();
+
+  const target = context.document.querySelector('#target');
+  target.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 40, right: 100, bottom: 40 });
+  await handlers.get('annotation:edit')({
+    annotation: {
+      id: 'waypoint_1750000000000_abc123xyz',
+      status: 'pending',
+      comment: 'Refine this action',
+      pending_changes: {
+        copyChange: { original: 'Continue', value: 'Get started' },
+        fontWeight: { original: '400', value: '600' },
+        width: { original: '100px', value: '140px' },
+        marginTop: { original: '0px', value: '12px' },
+        backgroundColor: { original: 'transparent', value: '#102c2c' },
+      },
+      css: '#target:hover { transform: translateY(-1px); }',
+    },
+    element: target,
+  });
+
+  const editedCategories = [...context.document.querySelectorAll('.waypoint-tab[data-saved-changes="true"]')]
+    .map(tab => tab.dataset.tab);
+  assert.deepEqual(editedCategories, ['content', 'font', 'sizing', 'spacing', 'appearance', 'raw-css']);
+  assert.ok([...context.document.querySelectorAll('.waypoint-tab[data-saved-changes="true"]')]
+    .every(tab => tab.querySelector('.waypoint-tab-saved-dot')));
+  assert.match(context.document.querySelector('[data-tab="spacing"]').getAttribute('aria-label'), /saved changes/i);
+
+  await handlers.get('annotation:edit')({
+    annotation: {
+      id: 'waypoint_1750000000001_def456uvw',
+      status: 'pending',
+      comment: 'Comment only',
+      pending_changes: {},
+      css: null,
+    },
+    element: target,
+  });
+  assert.equal(context.document.querySelectorAll('.waypoint-tab[data-saved-changes="true"]').length, 0);
+});
+
 test('sizing and spacing labels scrub adjacent numeric values through the public input event seam', async () => {
   const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
   const styles = await readFile(new URL('../public/content/modules/styles.js', import.meta.url), 'utf8');
