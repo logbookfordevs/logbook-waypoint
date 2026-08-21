@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/logbook-waypoint-banner.png" alt="Thelu charts visual annotations from a luminous waypoint across an Atlantic navigation map toward a coding agent's field instrument">
+  <img src="docs/images/logbook-waypoint-banner-handoff.png" alt="A Waypoint annotation moves through a local queue to a coding agent while Thelu observes the workflow">
 </p>
 
 # Logbook Waypoint
