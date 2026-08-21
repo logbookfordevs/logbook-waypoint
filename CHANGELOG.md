@@ -28,7 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Displayed assigned browser shortcuts in the matching toolbar tooltips, including user remaps
 
 ### Fixed
-- Made browser shortcuts work in browsers that omit the active tab from command events
 - Prevented deleted annotations from returning during synchronization
 - Preserved annotation lifecycle, Variant, screenshot, and attachment data across sync and restart boundaries
 - Kept unresolved Variant Sets protected from ordinary mutation or deletion
