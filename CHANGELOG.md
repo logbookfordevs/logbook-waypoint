@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Design Actions for freeform or guided Impeccable workflows, with resolution records and optional Variant Intent
 - Element screenshots, image attachments, and refined floating-toolbar controls
 - Optional JSON import/export, project context, bulk cleanup, keyboard inspection, and annotation appearance settings
-- Browser-managed shortcuts for annotation mode, toolbar collapse, Settings, and Waypoint visibility
 
 ### Changed
 - Rebuilt the product from the final MIT-licensed foundation under the Logbook Waypoint identity

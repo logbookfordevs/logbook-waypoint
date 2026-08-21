@@ -110,20 +110,6 @@ console.log('[Waypoint] content.js loaded');
           sendResponse({ success: true });
           break;
 
-        case 'toggleToolbarCollapse':
-          WaypointToolbar.toggleCollapse();
-          sendResponse({ success: true });
-          break;
-
-        case 'toggleToolbarSettings':
-          if (!WaypointShadowHost.isVisible()) {
-            WaypointShadowHost.show();
-            WaypointEvents.emit('overlay:opened');
-          }
-          WaypointToolbar.toggleSettings();
-          sendResponse({ success: true });
-          break;
-
         case 'highlightAnnotation':
           WaypointBadgeManager.highlightElement(request.annotation);
           sendResponse({ success: true });

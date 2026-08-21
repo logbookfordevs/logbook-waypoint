@@ -70,19 +70,6 @@ pnpm --filter @logbookfordevs/waypoint start
 3. Choose **Load unpacked**.
 4. Select this repository's `packages/extension/.output/chrome-mv3/` directory.
 
-### Browser shortcuts
-
-Waypoint registers browser-managed extension commands so shortcuts do not compete with the inspected page's own keyboard handling.
-
-| Action | macOS default | Other platforms |
-| --- | --- | --- |
-| Toggle annotation mode | `Command+Shift+Comma` | `Ctrl+Shift+Comma` |
-| Collapse or expand the toolbar | `Command+Shift+Period` | `Ctrl+Shift+Period` |
-| Open or close Settings | `Command+Shift+L` | `Ctrl+Shift+L` |
-| Hide or show Waypoint | Unassigned | Unassigned |
-
-Open `chrome://extensions/shortcuts` to change any assignment or add a shortcut for hide/show. The Settings command restores Waypoint and expands the toolbar before opening Settings when necessary.
-
 ### MCP connection
 
 Use the HTTP endpoint when your coding agent supports streamable HTTP:
