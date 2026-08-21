@@ -220,11 +220,15 @@ test('annotation options group aligns attachment help and an accessible Variants
   assert.match(styles, /\.waypoint-variant-intent:focus-visible/);
 });
 
-test('sizing labels scrub adjacent numeric values through the public input event seam', async () => {
+test('sizing and spacing labels scrub adjacent numeric values through the public input event seam', async () => {
   const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
   const styles = await readFile(new URL('../public/content/modules/styles.js', import.meta.url), 'utf8');
 
   assert.match(source, /data-scrub-target="width"/);
+  assert.match(source, /data-scrub-target="paddingVertical"/);
+  assert.match(source, /data-scrub-target="paddingTop"/);
+  assert.match(source, /data-scrub-target="marginHorizontal"/);
+  assert.match(source, /data-scrub-target="marginLeft"/);
   assert.match(source, /wireScrubbableSizingLabels\(popover\)/);
   assert.match(source, /new Event\('input', \{ bubbles: true \}\)/);
   assert.match(styles, /\.waypoint-scrubbable-label\s*\{[^}]*cursor:\s*ew-resize/s);
@@ -469,6 +473,22 @@ test('rendered editor serializes and restores Design Intent and Variant Intent i
   await handlers.get('annotation:edit')({
     annotation: {
       ...saved[0],
+      pending_changes: {
+        marginTop: { original: '12px', value: '144px' },
+      },
+    },
+    element: target,
+  });
+  const marginTopInput = context.document.querySelector('[data-prop="marginTop"]');
+  assert.equal(marginTopInput.value, '144');
+  context.document.querySelector('.waypoint-design-reset').click();
+  assert.equal(target.style.marginTop, '');
+  assert.equal(marginTopInput.value, '12');
+  context.document.querySelector('.waypoint-cancel-btn').click();
+
+  await handlers.get('annotation:edit')({
+    annotation: {
+      ...saved[0],
       status: 'resolved',
       resolution_record: {
         summary: 'Clarified the heading hierarchy and supporting copy.',
@@ -483,9 +503,27 @@ test('rendered editor serializes and restores Design Intent and Variant Intent i
     [...resolvedPopover.querySelectorAll('.waypoint-resolution-verification li')].map(item => item.textContent),
     ['Focused lifecycle tests pass', 'Reviewed at 390px'],
   );
-  assert.equal(resolvedPopover.querySelector('.waypoint-textarea').disabled, true);
+  assert.match(resolvedPopover.querySelector('.waypoint-popover-title').textContent, /Viewing resolved annotation/);
+  assert.match(resolvedPopover.querySelector('.waypoint-readonly-notice').textContent, /Read-only history/);
+  assert.match(resolvedPopover.querySelector('.waypoint-readonly-notice').textContent, /resolved and can no longer be edited/);
+  assert.equal(resolvedPopover.querySelector('.waypoint-textarea').disabled, false);
+  assert.equal(resolvedPopover.querySelector('.waypoint-textarea').hasAttribute('readonly'), true);
   assert.equal(resolvedPopover.querySelector('.waypoint-design-intent').disabled, true);
+  assert.equal(resolvedPopover.querySelector('.waypoint-tab').disabled, false);
   assert.equal(resolvedPopover.querySelector('.waypoint-save-btn'), null);
+  assert.equal(resolvedPopover.querySelector('.waypoint-cancel-btn').textContent, 'Close');
+
+  await handlers.get('annotation:edit')({
+    annotation: { ...saved[0], status: 'discarded' },
+    element: target,
+  });
+  const discardedPopover = context.document.querySelector('.waypoint-popover');
+  assert.match(discardedPopover.querySelector('.waypoint-popover-title').textContent, /Viewing discarded annotation/);
+  assert.match(discardedPopover.querySelector('.waypoint-readonly-notice').textContent, /discarded and can no longer be edited/);
+  discardedPopover.querySelector('.waypoint-tab').click();
+  assert.notEqual(discardedPopover.querySelector('.waypoint-design-toolbar').style.display, 'none');
+  assert.equal(discardedPopover.querySelector('.waypoint-textarea').hasAttribute('readonly'), true);
+  assert.equal(discardedPopover.querySelector('.waypoint-save-btn'), null);
 });
 
 test('rendered editor selects one named Design Action, explains it, and returns to Freeform', async () => {

@@ -255,6 +255,7 @@ var WaypointAnnotationPopover = (() => {
     const lifecycleLocked = isEdit && existingAnnotation.status !== 'pending';
     const presentationLocked = lifecycleLocked || WaypointVariantPicker.locksPresentation(existingAnnotation);
     const isHistorical = ['resolved', 'discarded'].includes(existingAnnotation?.status);
+    const tabsLocked = presentationLocked && !isHistorical;
     const isFile = WaypointAPI.isFileProtocol();
     const elType = classifyElement(targetElement);
     const showDesignActions = !!existingAnnotation?.design_intent || await WaypointAPI.getShowDesignActions();
@@ -294,6 +295,13 @@ var WaypointAnnotationPopover = (() => {
           <span>${workNoticeGuidance}</span>
         </div>
         <button class="waypoint-work-notice-dismiss" type="button">Dismiss</button>
+      </div>
+    ` : '';
+    const historicalStatus = isHistorical ? existingAnnotation.status : null;
+    const readOnlyNoticeHTML = isHistorical ? `
+      <div class="waypoint-readonly-notice" id="waypoint-readonly-notice" role="note">
+        <strong>Read-only history</strong>
+        <span>This annotation was ${historicalStatus} and can no longer be edited.</span>
       </div>
     ` : '';
 
@@ -343,7 +351,7 @@ var WaypointAnnotationPopover = (() => {
     // Build tabs — cold start: no active tab, all panels hidden
     const tabs = getTabsForType(elType);
     const tabBarHTML = tabs.map(t =>
-      `<button class="waypoint-tab" data-tab="${t.key}" type="button" ${presentationLocked ? 'disabled' : ''}>${t.label}</button>`
+      `<button class="waypoint-tab" data-tab="${t.key}" type="button" ${tabsLocked ? 'disabled' : ''}>${t.label}</button>`
     ).join('');
     const panelsHTML = tabs.map(t =>
       `<div class="waypoint-tab-panel" data-tab-panel="${t.key}" style="display:none">${panelContent[t.key] || ''}</div>`
@@ -368,7 +376,7 @@ var WaypointAnnotationPopover = (() => {
     popover.innerHTML = `
       <div class="waypoint-drag-handle"></div>
       <div class="waypoint-popover-title">
-        <span>Editing <code>${escapeHTML(selectorLabel)}</code></span>
+        <span>${isHistorical ? `Viewing ${historicalStatus} annotation` : 'Editing'} <code>${escapeHTML(selectorLabel)}</code></span>
         <button class="waypoint-design-reset" type="button" title="${presentationLocked ? 'Finalized Variant presentation' : 'Reset all'}" ${presentationLocked ? 'disabled' : ''}>${ICONS.reset}</button>
       </div>
       <div class="waypoint-tab-bar">${tabBarHTML}</div>
@@ -377,11 +385,12 @@ var WaypointAnnotationPopover = (() => {
       </div>
       ${warningHTML}
       ${workNoticeHTML}
+      ${readOnlyNoticeHTML}
       <div class="waypoint-popover-body">
         ${resolutionHTML}
         <div class="waypoint-input-wrap">
-          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000" ${isHistorical ? 'disabled' : ''}>${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
-          <span class="waypoint-kbd-hint">${kbdHint} to save</span>
+          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000" ${isHistorical ? 'readonly aria-describedby="waypoint-readonly-notice"' : ''}>${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
+          ${isHistorical ? '' : `<span class="waypoint-kbd-hint">${kbdHint} to save</span>`}
         </div>
         <div class="waypoint-annotation-options" role="group" aria-label="Annotation options">
           <div class="waypoint-annotation-attachments">
@@ -430,7 +439,7 @@ var WaypointAnnotationPopover = (() => {
           <span class="waypoint-viewport-info">${getDeviceIcon(window.innerWidth)} ${window.innerWidth}w</span>
         </div>
         <div class="waypoint-footer-right">
-          <button class="waypoint-btn waypoint-btn-secondary waypoint-cancel-btn">Cancel</button>
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-cancel-btn">${isHistorical ? 'Close' : 'Cancel'}</button>
           <button class="waypoint-btn waypoint-btn-primary waypoint-save-btn">${isEdit ? 'Save' : 'Save as pointer'}</button>
         </div>
       </div>
@@ -470,9 +479,9 @@ var WaypointAnnotationPopover = (() => {
     activeElType = elType;
 
     if (lifecycleLocked) {
-      textarea.disabled = true;
-      designIntentInput.disabled = true;
-      variantIntentInput.disabled = true;
+      if (!isHistorical) textarea.disabled = true;
+      designIntentInput?.setAttribute('disabled', '');
+      variantIntentInput?.setAttribute('disabled', '');
       imageInput.disabled = true;
     }
 
@@ -773,9 +782,19 @@ var WaypointAnnotationPopover = (() => {
     updateAttachmentStatus();
     updateSave();
     if (isHistorical) {
-      popover.querySelectorAll('input, textarea, .waypoint-tab, .waypoint-design-reset').forEach(control => {
+      popover.querySelectorAll(`
+        .waypoint-design-toolbar input,
+        .waypoint-design-toolbar select,
+        .waypoint-design-toolbar textarea,
+        .waypoint-design-toolbar button:not(.waypoint-raw-css-toggle),
+        .waypoint-annotation-options input,
+        .waypoint-annotation-options button,
+        .waypoint-design-reset
+      `).forEach(control => {
         control.disabled = true;
       });
+      popover.querySelector('.waypoint-attachment-button')?.classList.add('waypoint-control-readonly');
+      popover.querySelectorAll('.waypoint-variant-intent-label').forEach(label => label.classList.add('waypoint-control-readonly'));
       saveBtn.remove();
     }
     requestAnimationFrame(() => autoResizeCommentInput(textarea));
@@ -1770,15 +1789,15 @@ var WaypointAnnotationPopover = (() => {
       <div class="waypoint-section-header"><span class="waypoint-section-label">Padding</span></div>
       <div class="waypoint-spacing-row waypoint-padding-vh-row" ${padNeedsSplit ? 'style="display:none"' : ''}>
         <div class="waypoint-spacing-inputs">
-          <span class="waypoint-design-icon" title="Padding vertical">${ICONS.paddingV}</span>
+          <span class="waypoint-design-icon waypoint-scrubbable-label" data-scrub-target="paddingVertical" data-scrub-min="0" title="Drag to change vertical padding">${ICONS.paddingV}</span>
           <div class="waypoint-stepper waypoint-stepper-grow">
-            <input class="waypoint-stepper-text waypoint-pad-v" type="text" value="${padV}" title="Top, Bottom">
+            <input class="waypoint-stepper-text waypoint-pad-v" data-scrub-value="paddingVertical" type="text" value="${padV}" title="Top, Bottom">
             <span class="waypoint-stepper-unit">px</span>
           </div>
           <div class="waypoint-prop-spacer"></div>
-          <span class="waypoint-design-icon" title="Padding horizontal">${ICONS.paddingH}</span>
+          <span class="waypoint-design-icon waypoint-scrubbable-label" data-scrub-target="paddingHorizontal" data-scrub-min="0" title="Drag to change horizontal padding">${ICONS.paddingH}</span>
           <div class="waypoint-stepper waypoint-stepper-grow">
-            <input class="waypoint-stepper-text waypoint-pad-h" type="text" value="${padH}" title="Left, Right">
+            <input class="waypoint-stepper-text waypoint-pad-h" data-scrub-value="paddingHorizontal" type="text" value="${padH}" title="Left, Right">
             <span class="waypoint-stepper-unit">px</span>
           </div>
         </div>
@@ -1786,21 +1805,21 @@ var WaypointAnnotationPopover = (() => {
       </div>
       <div class="waypoint-spacing-row waypoint-padding-split-row" ${padNeedsSplit ? '' : 'style="display:none"'}>
         <div class="waypoint-spacing-inputs">
-          <span class="waypoint-design-icon-label" title="Top">T</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="paddingTop" data-scrub-min="0" title="Drag to change top padding">T</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
-            <input class="waypoint-stepper-input" data-prop="paddingTop" type="number" min="0" max="999" value="${Math.round(curPT)}">
+            <input class="waypoint-stepper-input" data-prop="paddingTop" data-scrub-value="paddingTop" type="number" min="0" max="999" value="${Math.round(curPT)}">
           </div>
-          <span class="waypoint-design-icon-label" title="Right">R</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="paddingRight" data-scrub-min="0" title="Drag to change right padding">R</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
-            <input class="waypoint-stepper-input" data-prop="paddingRight" type="number" min="0" max="999" value="${Math.round(curPR)}">
+            <input class="waypoint-stepper-input" data-prop="paddingRight" data-scrub-value="paddingRight" type="number" min="0" max="999" value="${Math.round(curPR)}">
           </div>
-          <span class="waypoint-design-icon-label" title="Bottom">B</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="paddingBottom" data-scrub-min="0" title="Drag to change bottom padding">B</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
-            <input class="waypoint-stepper-input" data-prop="paddingBottom" type="number" min="0" max="999" value="${Math.round(curPB)}">
+            <input class="waypoint-stepper-input" data-prop="paddingBottom" data-scrub-value="paddingBottom" type="number" min="0" max="999" value="${Math.round(curPB)}">
           </div>
-          <span class="waypoint-design-icon-label" title="Left">L</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="paddingLeft" data-scrub-min="0" title="Drag to change left padding">L</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
-            <input class="waypoint-stepper-input" data-prop="paddingLeft" type="number" min="0" max="999" value="${Math.round(curPL)}">
+            <input class="waypoint-stepper-input" data-prop="paddingLeft" data-scrub-value="paddingLeft" type="number" min="0" max="999" value="${Math.round(curPL)}">
           </div>
         </div>
         <button class="waypoint-split-btn waypoint-pad-split-btn active" type="button" title="Merge padding">${ICONS.merge}</button>
@@ -1808,15 +1827,15 @@ var WaypointAnnotationPopover = (() => {
       <div class="waypoint-section-header"><span class="waypoint-section-label">Margin</span></div>
       <div class="waypoint-spacing-row waypoint-margin-vh-row" ${marNeedsSplit ? 'style="display:none"' : ''}>
         <div class="waypoint-spacing-inputs">
-          <span class="waypoint-design-icon" title="Margin vertical">${ICONS.marginV}</span>
+          <span class="waypoint-design-icon waypoint-scrubbable-label" data-scrub-target="marginVertical" data-scrub-min="-999" title="Drag to change vertical margin">${ICONS.marginV}</span>
           <div class="waypoint-stepper waypoint-stepper-grow">
-            <input class="waypoint-stepper-text waypoint-mar-v" type="text" value="${marV}" title="Top, Bottom">
+            <input class="waypoint-stepper-text waypoint-mar-v" data-scrub-value="marginVertical" type="text" value="${marV}" title="Top, Bottom">
             <span class="waypoint-stepper-unit">px</span>
           </div>
           <div class="waypoint-prop-spacer"></div>
-          <span class="waypoint-design-icon" title="Margin horizontal">${ICONS.marginH}</span>
+          <span class="waypoint-design-icon waypoint-scrubbable-label" data-scrub-target="marginHorizontal" data-scrub-min="-999" title="Drag to change horizontal margin">${ICONS.marginH}</span>
           <div class="waypoint-stepper waypoint-stepper-grow">
-            <input class="waypoint-stepper-text waypoint-mar-h" type="text" value="${marH}" title="Left, Right">
+            <input class="waypoint-stepper-text waypoint-mar-h" data-scrub-value="marginHorizontal" type="text" value="${marH}" title="Left, Right">
             <span class="waypoint-stepper-unit">px</span>
           </div>
         </div>
@@ -1824,21 +1843,21 @@ var WaypointAnnotationPopover = (() => {
       </div>
       <div class="waypoint-spacing-row waypoint-margin-split-row" ${marNeedsSplit ? '' : 'style="display:none"'}>
         <div class="waypoint-spacing-inputs">
-          <span class="waypoint-design-icon-label" title="Top">T</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="marginTop" data-scrub-min="-999" title="Drag to change top margin">T</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
-            <input class="waypoint-stepper-input" data-prop="marginTop" type="number" min="-999" max="999" value="${Math.round(curMT)}">
+            <input class="waypoint-stepper-input" data-prop="marginTop" data-scrub-value="marginTop" type="number" min="-999" max="999" value="${Math.round(curMT)}">
           </div>
-          <span class="waypoint-design-icon-label" title="Right">R</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="marginRight" data-scrub-min="-999" title="Drag to change right margin">R</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
-            <input class="waypoint-stepper-input" data-prop="marginRight" type="number" min="-999" max="999" value="${Math.round(curMR)}">
+            <input class="waypoint-stepper-input" data-prop="marginRight" data-scrub-value="marginRight" type="number" min="-999" max="999" value="${Math.round(curMR)}">
           </div>
-          <span class="waypoint-design-icon-label" title="Bottom">B</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="marginBottom" data-scrub-min="-999" title="Drag to change bottom margin">B</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
-            <input class="waypoint-stepper-input" data-prop="marginBottom" type="number" min="-999" max="999" value="${Math.round(curMB)}">
+            <input class="waypoint-stepper-input" data-prop="marginBottom" data-scrub-value="marginBottom" type="number" min="-999" max="999" value="${Math.round(curMB)}">
           </div>
-          <span class="waypoint-design-icon-label" title="Left">L</span>
+          <span class="waypoint-design-icon-label waypoint-scrubbable-label" data-scrub-target="marginLeft" data-scrub-min="-999" title="Drag to change left margin">L</span>
           <div class="waypoint-stepper waypoint-stepper-sm">
-            <input class="waypoint-stepper-input" data-prop="marginLeft" type="number" min="-999" max="999" value="${Math.round(curML)}">
+            <input class="waypoint-stepper-input" data-prop="marginLeft" data-scrub-value="marginLeft" type="number" min="-999" max="999" value="${Math.round(curML)}">
           </div>
         </div>
         <button class="waypoint-split-btn waypoint-mar-split-btn active" type="button" title="Merge margin">${ICONS.merge}</button>
@@ -1997,12 +2016,20 @@ var WaypointAnnotationPopover = (() => {
       if (padVInput) {
         padVInput.value = origPT === origPB ? `${Math.round(origPT)}` : `${Math.round(origPT)}, ${Math.round(origPB)}`;
         padHInput.value = origPL === origPR ? `${Math.round(origPL)}` : `${Math.round(origPL)}, ${Math.round(origPR)}`;
+        setInputVal(popover, 'paddingTop', Math.round(origPT));
+        setInputVal(popover, 'paddingRight', Math.round(origPR));
+        setInputVal(popover, 'paddingBottom', Math.round(origPB));
+        setInputVal(popover, 'paddingLeft', Math.round(origPL));
         targetElement.style.paddingTop = ''; targetElement.style.paddingRight = '';
         targetElement.style.paddingBottom = ''; targetElement.style.paddingLeft = '';
       }
       if (marVInput) {
         marVInput.value = origMT === origMB ? `${Math.round(origMT)}` : `${Math.round(origMT)}, ${Math.round(origMB)}`;
         marHInput.value = origML === origMR ? `${Math.round(origML)}` : `${Math.round(origML)}, ${Math.round(origMR)}`;
+        setInputVal(popover, 'marginTop', Math.round(origMT));
+        setInputVal(popover, 'marginRight', Math.round(origMR));
+        setInputVal(popover, 'marginBottom', Math.round(origMB));
+        setInputVal(popover, 'marginLeft', Math.round(origML));
         targetElement.style.marginTop = ''; targetElement.style.marginRight = '';
         targetElement.style.marginBottom = ''; targetElement.style.marginLeft = '';
       }
@@ -2057,7 +2084,8 @@ var WaypointAnnotationPopover = (() => {
 
   function wireScrubbableSizingLabels(popover) {
     popover.querySelectorAll('.waypoint-scrubbable-label').forEach(label => {
-      const input = popover.querySelector(`.waypoint-sizing-input[data-sizing="${label.dataset.scrubTarget}"]`);
+      const input = popover.querySelector(`[data-scrub-value="${label.dataset.scrubTarget}"]`)
+        || popover.querySelector(`.waypoint-sizing-input[data-sizing="${label.dataset.scrubTarget}"]`);
       if (!input) return;
       label.addEventListener('pointerdown', event => {
         event.preventDefault();
@@ -2065,13 +2093,16 @@ var WaypointAnnotationPopover = (() => {
         const parsed = parseFloat(input.value);
         const startValue = Number.isFinite(parsed) ? parsed : 0;
         const unit = input.value.trim().match(/[a-z%]+$/i)?.[0] || 'px';
+        const minimum = Number.isFinite(Number(label.dataset.scrubMin)) ? Number(label.dataset.scrubMin) : 0;
+        const keepsUnit = input.classList.contains('waypoint-sizing-input');
         label.setPointerCapture(event.pointerId);
         label.classList.add('scrubbing');
 
         const move = moveEvent => {
           const multiplier = moveEvent.shiftKey ? 10 : 1;
           const next = Math.round((startValue + (moveEvent.clientX - startX) * multiplier) * 100) / 100;
-          input.value = `${Math.max(0, next)}${unit}`;
+          const value = Math.max(minimum, next);
+          input.value = keepsUnit ? `${value}${unit}` : `${value}`;
           input.dispatchEvent(new Event('input', { bubbles: true }));
         };
         const finish = () => {
