@@ -213,7 +213,7 @@ var WaypointAnnotationPopover = (() => {
       const category = EDIT_PROPERTY_CATEGORIES[property];
       savedCategories.add(availableCategories.has(category) ? category : 'raw-css');
     }
-    if (annotation?.css?.trim()) savedCategories.add('raw-css');
+    if (typeof annotation?.css === 'string' && annotation.css.trim()) savedCategories.add('raw-css');
     return savedCategories;
   }
 

@@ -388,6 +388,18 @@ test('reopened Annotations mark Element edit categories that contain saved chang
     element: target,
   });
   assert.equal(context.document.querySelectorAll('.waypoint-tab[data-saved-changes="true"]').length, 0);
+
+  await assert.doesNotReject(handlers.get('annotation:edit')({
+    annotation: {
+      id: 'waypoint_1750000000002_ghi789rst',
+      status: 'pending',
+      comment: 'Legacy malformed CSS',
+      pending_changes: {},
+      css: { unexpected: true },
+    },
+    element: target,
+  }));
+  assert.equal(context.document.querySelector('[data-tab="raw-css"]').dataset.savedChanges, undefined);
 });
 
 test('sizing and spacing labels scrub adjacent numeric values through the public input event seam', async () => {
