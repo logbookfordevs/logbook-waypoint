@@ -32,9 +32,13 @@ var WaypointActionController = (() => {
 
   async function handleCommand(command, tab, isSupportedUrl) {
     const action = COMMAND_ACTIONS[command];
-    if (!action || !tab?.id || !await isSupportedUrl(tab.url)) return false;
+    if (!action) return false;
     try {
-      await chrome.tabs.sendMessage(tab.id, { action });
+      const resolvedTab = tab?.id
+        ? tab
+        : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+      if (!resolvedTab?.id || !await isSupportedUrl(resolvedTab.url)) return false;
+      await chrome.tabs.sendMessage(resolvedTab.id, { action });
       return true;
     } catch {
       return false;

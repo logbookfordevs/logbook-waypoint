@@ -104,3 +104,29 @@ test('extension commands route supported tabs through the content-script command
   await controller.handleCommand('toggle-toolbar-collapse', { id: 13, url: 'https://example.com' }, async () => false);
   assert.equal(messages.length, before);
 });
+
+test('extension commands resolve Dia active tab when the command event omits it', async () => {
+  const messages = [];
+  const chrome = {
+    tabs: {
+      async query(query) {
+        assert.equal(query.active, true);
+        assert.equal(query.currentWindow, true);
+        return [{ id: 27, url: 'http://localhost:3000/review' }];
+      },
+      async sendMessage(tabId, message) { messages.push({ tabId, message }); },
+    },
+  };
+  const controller = await loadController(chrome);
+
+  const handled = await controller.handleCommand(
+    'toggle-toolbar-settings',
+    undefined,
+    async url => url === 'http://localhost:3000/review',
+  );
+
+  assert.equal(handled, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(messages)), [
+    { tabId: 27, message: { action: 'toggleToolbarSettings' } },
+  ]);
+});
