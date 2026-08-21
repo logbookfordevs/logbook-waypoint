@@ -989,7 +989,7 @@ class AnnotationsPopup {
   async updateBadgeColorSettingControl() {
     try {
       const result = await chrome.storage.local.get(['waypointBadgeColor']);
-      const color = result.waypointBadgeColor || '#4b5563';
+      const color = result.waypointBadgeColor || '#173f5f';
       const input = document.querySelector(`input[name="badge-color"][value="${color}"]`);
       if (input) input.checked = true;
     } catch (error) {

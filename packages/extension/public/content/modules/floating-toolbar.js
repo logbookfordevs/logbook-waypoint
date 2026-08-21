@@ -15,9 +15,9 @@ var WaypointToolbar = (() => {
   let clearOnCopy = false;
   let screenshotEnabled = true;
   let showDesignActions = true;
-  let badgeColor = '#4b5563';
+  let badgeColor = '#173f5f';
 
-  const BADGE_COLORS = ['#4b5563', '#d97757', '#3b82f6', '#22c55e', '#a855f7'];
+  const BADGE_COLORS = ['#102c2c', '#b8573c', '#3f8580', '#bd9348', '#173f5f'];
 
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const defaultShortcutHint = isMac ? '\u2318\u21E7,' : 'Ctrl+Shift+,';
@@ -62,6 +62,7 @@ var WaypointToolbar = (() => {
 
   const THEME_ICONS = { light: ICONS.sun, dark: ICONS.moon, system: ICONS.system };
   const THEME_CYCLE = ['light', 'dark', 'system'];
+  const THEME_LABELS = { light: 'Day Chart', dark: 'Night Watch', system: 'System' };
 
   async function init() {
     const root = WaypointShadowHost.getRoot();
@@ -237,7 +238,7 @@ var WaypointToolbar = (() => {
           <span class="waypoint-settings-version">v${escapeHTML(version)}</span>
         </div>
         <div class="waypoint-settings-header-right">
-          <button class="waypoint-theme-btn" title="${capitalize(currentTheme)} theme">
+          <button class="waypoint-theme-btn" title="${THEME_LABELS[currentTheme]} appearance">
             ${themeIcon}
           </button>
         </div>
@@ -344,7 +345,7 @@ var WaypointToolbar = (() => {
       // Update icon
       const btn = settingsDropdown.querySelector('.waypoint-theme-btn');
       btn.innerHTML = THEME_ICONS[next];
-      btn.title = `${capitalize(next)} theme`;
+      btn.title = `${THEME_LABELS[next]} appearance`;
     });
 
     // Clear on copy toggle

@@ -4,38 +4,40 @@ class ThemeManager {
   constructor() {
     this.themes = {
       light: {
-        surface: '#f8f9fc',
-        'surface-1': '#fcfcfd',
-        'text-primary': '#0c111b',
-        'text-secondary': '#697586',
-        outline: '#00000014',
-        'outline-highlight': '#00000028',
-        accent: '#d97757',
-        'on-accent': '#ffffff',
-        'surface-hover': '#0d0f1c14',
-        'secondary-button-bg': '#0000000d',
-        'textarea-bg': '#0000000d',
-        warning: '#f79009',
-        'on-warning': '#ffffff',
-        'warning-container': '#f7900919',
-        'on-warning-container': '#93370c'
+        surface: '#e9e1d3',
+        'surface-1': '#f3ede3',
+        'text-primary': '#211d19',
+        'text-secondary': '#6f6258',
+        outline: '#bbaa99',
+        'outline-highlight': '#6f6258',
+        accent: '#102c2c',
+        'on-accent': '#f4efde',
+        highlight: '#3f8580',
+        'surface-hover': '#102c2c12',
+        'secondary-button-bg': '#102c2c0d',
+        'textarea-bg': '#102c2c0d',
+        warning: '#b8573c',
+        'on-warning': '#f4efde',
+        'warning-container': '#b8573c18',
+        'on-warning-container': '#211d19'
       },
       dark: {
-        surface: '#0C0E12',
-        'surface-1': '#191D24',
-        'text-primary': '#fcfcfd',
-        'text-secondary': '#9AA4B2',
-        outline: '#ffffff0d',
-        'outline-highlight': '#ffffff26',
-        accent: '#d97757',
-        'on-accent': '#ffffff',
-        'surface-hover': '#fcfcfd14',
-        'secondary-button-bg': '#ffffff0d',
-        'textarea-bg': '#ffffff0d',
-        warning: '#f79009',
-        'on-warning': '#ffffff',
-        'warning-container': '#f7900914',
-        'on-warning-container': '#f79009'
+        surface: '#152827',
+        'surface-1': '#24312e',
+        'text-primary': '#f2eadc',
+        'text-secondary': '#baa894',
+        outline: '#665548',
+        'outline-highlight': '#baa894',
+        accent: '#0a2325',
+        'on-accent': '#f4efde',
+        highlight: '#69aaa4',
+        'surface-hover': '#f4efde12',
+        'secondary-button-bg': '#f4efde0d',
+        'textarea-bg': '#f4efde0d',
+        warning: '#d56a4d',
+        'on-warning': '#071b1d',
+        'warning-container': '#d56a4d1f',
+        'on-warning-container': '#f2eadc'
       }
     };
     
@@ -88,6 +90,8 @@ class ThemeManager {
     
     // Set data attribute for theme-specific styles
     document.body.setAttribute('data-theme', effectiveTheme);
+    document.documentElement.setAttribute('data-lfd-recipe', 'driftwood');
+    document.documentElement.setAttribute('data-lfd-theme', effectiveTheme === 'dark' ? 'night' : 'day');
   }
 
   setupMediaQueryListener() {

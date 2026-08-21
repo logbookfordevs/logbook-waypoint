@@ -8,10 +8,10 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       width: 320px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Public Sans', system-ui, sans-serif;
       font-size: 13px;
-      color: #17231f;
-      background: #f7f0df;
+      color: #211d19;
+      background: #e9e1d3;
       padding: 20px;
     }
     .header {
@@ -22,19 +22,19 @@
     }
     .header img { width: 32px; height: 32px; border-radius: 9px; }
     .header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
-    .eyebrow { color: #a34b2a; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    .eyebrow { color: #211d19; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
     .message {
-      background: #fef3c7;
-      border: 1px solid #f59e0b;
+      background: #f3ede3;
+      border: 1px solid #b8573c;
       border-radius: 8px;
       padding: 12px;
       margin-bottom: 14px;
       line-height: 1.5;
     }
-    .message strong { color: #92400e; }
+    .message strong { color: #211d19; }
     .site-url {
       font-size: 12px;
-      color: #6b7280;
+      color: #6f6258;
       margin-bottom: 12px;
       word-break: break-all;
     }
@@ -44,48 +44,50 @@
       padding: 10px 16px;
       border: none;
       border-radius: 8px;
-      background: #bd4d29;
-      color: #fff;
+      background: #102c2c;
+      color: #f4efde;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 10px;
     }
-    .action-btn:hover { background: #963c22; }
-    .action-btn:disabled { background: #d1d5db; cursor: default; }
+    .action-btn:hover { background: #173f5f; }
+    .action-btn:focus-visible { outline: 3px solid #3f8580; outline-offset: 2px; }
+    .action-btn:disabled { background: #bbaa99; color: #6f6258; cursor: default; }
     .action-btn.secondary {
       background: transparent;
-      color: #6b7280;
+      color: #6f6258;
       font-weight: 500;
     }
-    .action-btn.secondary:hover { background: #f3f4f6; color: #374151; }
+    .action-btn.secondary:hover { background: #102c2c12; color: #211d19; }
     .success {
-      background: #d1fae5;
-      border: 1px solid #10b981;
+      background: #f3ede3;
+      border: 1px solid #3f8580;
       border-radius: 8px;
       padding: 12px;
       margin-bottom: 14px;
       line-height: 1.5;
-      color: #065f46;
+      color: #211d19;
     }
     .separator {
-      border-top: 1px solid #e5e7eb;
+      border-top: 1px solid #bbaa99;
       margin: 12px 0;
     }
     .supported {
-      color: #6b7280;
+      color: #6f6258;
       font-size: 12px;
       line-height: 1.6;
     }
-    .supported strong { color: #374151; font-weight: 500; }
+    .supported strong { color: #211d19; font-weight: 500; }
     code {
-      background: #f3f4f6;
+      background: #102c2c;
+      color: #f4efde;
       padding: 1px 5px;
       border-radius: 3px;
       font-size: 11px;
     }
     .hidden { display: none !important; }
-    .route-line { height: 1px; margin: 0 0 16px; background: repeating-linear-gradient(90deg, #c99d55 0 5px, transparent 5px 10px); }
+    .route-line { height: 1px; margin: 0 0 16px; background: repeating-linear-gradient(90deg, #bd9348 0 5px, transparent 5px 10px); }
   </style>
 </head>
 <body>

@@ -374,9 +374,9 @@ var WaypointAPI = (() => {
   async function getBadgeColor() {
     try {
       const r = await chrome.storage.local.get(['waypointBadgeColor']);
-      return r.waypointBadgeColor || '#4b5563';
+      return r.waypointBadgeColor || '#173f5f';
     } catch {
-      return '#4b5563';
+      return '#173f5f';
     }
   }
 

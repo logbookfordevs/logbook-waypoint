@@ -23,7 +23,7 @@
   --spacing-lg: 16px;
   --spacing-xl: 20px;
   --spacing-2xl: 24px;
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family: 'Public Sans', 'Inter', system-ui, sans-serif;
 }
 
 * {
@@ -117,6 +117,16 @@ body {
   color: var(--theme-text-primary);
 }
 
+.icon-btn:focus-visible,
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--theme-highlight);
+  outline-offset: 2px;
+}
+
 /* Main Content */
 .main {
   flex: 1;
@@ -199,7 +209,7 @@ body {
 }
 
 .status-pending .status-dot {
-  background: var(--theme-accent);
+  background: var(--theme-highlight);
 }
 
 .status-claimed .status-dot {
@@ -631,7 +641,7 @@ iconify-icon {
 }
 
 input:checked + .toggle-slider {
-  background-color: var(--theme-accent);
+  background-color: var(--theme-highlight);
 }
 
 input:checked + .toggle-slider:before {
@@ -731,8 +741,11 @@ input:checked + .toggle-slider:before {
 }
 
 .highlight-link {
-  color: var(--theme-accent);
-  text-decoration: none;
+  color: var(--theme-text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--theme-highlight);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
   font-weight: 500;
 }
 
@@ -1310,9 +1323,9 @@ input:checked + .toggle-slider:before {
 }
 
 .tab-btn.active {
-  background: var(--theme-accent);
-  color: var(--theme-on-accent);
-  border-color: var(--theme-accent);
+  background: var(--theme-highlight);
+  color: #071b1d;
+  border-color: var(--theme-highlight);
 }
 
 .tab-content {
@@ -1394,11 +1407,11 @@ input:checked + .toggle-slider:before {
   outline-offset: 3px;
 }
 
-.badge-color-slate { background: #4b5563; }
-.badge-color-coral { background: #d97757; }
-.badge-color-blue { background: #3b82f6; }
-.badge-color-green { background: #22c55e; }
-.badge-color-purple { background: #a855f7; }
+.badge-color-ocean { background: #102c2c; }
+.badge-color-rust { background: #b8573c; }
+.badge-color-verdigris { background: #3f8580; }
+.badge-color-brass { background: #bd9348; }
+.badge-color-harbor { background: #173f5f; }
 
 .sr-only {
   position: absolute;
