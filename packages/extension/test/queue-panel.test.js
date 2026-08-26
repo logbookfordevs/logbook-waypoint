@@ -9,7 +9,7 @@ const requireFromWxt = createRequire(wxtPackage);
 const { parseHTML } = requireFromWxt('linkedom');
 
 const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel.js', import.meta.url);
-const toolbarUrl = new URL('../.output/chrome-mv3/content/modules/floating-toolbar.js', import.meta.url);
+const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
 
 function createHarness(annotations, { projectAnnotations } = {}) {
@@ -76,6 +76,7 @@ function createHarness(annotations, { projectAnnotations } = {}) {
     getCustomShortcut: async () => null,
     checkServerStatus: async () => ({ connected: true }),
     getToolbarPosition: async () => null,
+    getSkipDeleteConfirm: async () => true,
     loadAnnotations: async () => annotations,
     loadProjectAnnotations: async () => projectAnnotations || [
       ...annotations,
@@ -95,9 +96,19 @@ function createHarness(annotations, { projectAnnotations } = {}) {
       deleted.push(id);
       return true;
     },
+    deleteAnnotationsByUrl: async () => true,
   };
 
-  return { clipboardWrites, context, deleted, discarded, downloadBlobs, downloads, emitted, root };
+  return {
+    clipboardWrites,
+    context,
+    deleted,
+    discarded,
+    downloadBlobs,
+    downloads,
+    emitted,
+    root,
+  };
 }
 
 async function openQueue(annotations, options) {
@@ -161,6 +172,24 @@ test('Queue remains available on an empty current route so other-route work stay
 
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /No active annotations on this route/);
   assert.match(root.querySelector('.waypoint-queue-header').textContent, /1 other route/);
+});
+
+test('deleting all annotations closes an open Queue immediately', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000000_deleteall',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: 'Remove this annotation',
+    selector: '#target',
+  };
+  const { context, root } = await openQueue([annotation]);
+
+  assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
+  const deleteAllButton = root.querySelector('.waypoint-tb-delete');
+  deleteAllButton.removeAttribute('disabled');
+  deleteAllButton.dispatchEvent(new context.window.Event('click'));
+
+  assert.equal(root.querySelector('.waypoint-queue-panel'), null);
 });
 
 test('Queue separates actionable Annotations from retained History', async () => {
@@ -449,6 +478,21 @@ test('Queue supports keyboard dismissal with Escape', async () => {
   const { root } = await openQueue([annotation]);
   const panel = root.querySelector('.waypoint-queue-panel');
   panel.onkeydown({ key: 'Escape' });
+
+  assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+});
+
+test('Queue closes when the user clicks outside it', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: 'Dismissible request',
+    selector: '#target',
+  };
+  const { context, root } = await openQueue([annotation]);
+
+  context.document.body.dispatchEvent(new context.window.Event('click', { bubbles: true }));
 
   assert.equal(root.querySelector('.waypoint-queue-panel'), null);
 });

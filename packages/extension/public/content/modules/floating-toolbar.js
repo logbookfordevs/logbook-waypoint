@@ -189,6 +189,7 @@ var WaypointToolbar = (() => {
 
     // Delete all
     toolbarEl.querySelector('.waypoint-tb-delete').addEventListener('click', async () => {
+      WaypointQueuePanel.close();
       const root = WaypointShadowHost.getRoot();
       if (!root) return;
 

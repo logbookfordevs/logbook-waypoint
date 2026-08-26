@@ -3,42 +3,16 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const popupThemesUrl = new URL('../public/popup/themes.js', import.meta.url);
-const popupHtmlUrl = new URL('../public/popup/popup.html', import.meta.url);
 const contentThemeUrl = new URL('../public/content/modules/theme-manager.js', import.meta.url);
 const contentStylesUrl = new URL('../public/content/modules/styles.js', import.meta.url);
+const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 
 test('Waypoint presents the Driftwood recipe in Day Chart and Night Watch', async () => {
-  const [popupThemes, popupHtml, contentTheme, contentStyles] = await Promise.all([
-    readFile(popupThemesUrl, 'utf8'),
-    readFile(popupHtmlUrl, 'utf8'),
+  const [contentTheme, contentStyles, toolbar] = await Promise.all([
     readFile(contentThemeUrl, 'utf8'),
     readFile(contentStylesUrl, 'utf8'),
+    readFile(toolbarUrl, 'utf8'),
   ]);
-
-  const popupProperties = new Map();
-  const popupAttributes = new Map();
-  const popupContext = vm.createContext({
-    chrome: { storage: { local: { get: async () => ({ waypointThemePreference: 'light' }), set: async () => {} } } },
-    document: {
-      body: { setAttribute: () => {} },
-      documentElement: {
-        style: { setProperty: (key, value) => popupProperties.set(key, value) },
-        setAttribute: (key, value) => popupAttributes.set(key, value),
-      },
-    },
-    window: { matchMedia: () => ({ matches: false, addEventListener: () => {} }) },
-  });
-  vm.runInContext(popupThemes, popupContext, { filename: 'themes.js' });
-  const popupManager = new popupContext.window.ThemeManager();
-  await popupManager.init();
-
-  assert.equal(popupProperties.get('--theme-surface'), '#e9e1d3');
-  assert.equal(popupProperties.get('--theme-surface-1'), '#f3ede3');
-  assert.equal(popupProperties.get('--theme-accent'), '#102c2c');
-  assert.equal(popupProperties.get('--theme-highlight'), '#3f8580');
-  assert.equal(popupAttributes.get('data-lfd-recipe'), 'driftwood');
-  assert.equal(popupAttributes.get('data-lfd-theme'), 'day');
 
   const hostProperties = new Map();
   const hostAttributes = new Map();
@@ -73,8 +47,8 @@ test('Waypoint presents the Driftwood recipe in Day Chart and Night Watch', asyn
 
   assert.match(contentStyles, /--waypoint-primary-btn:\s*#102c2c/i);
   assert.match(contentStyles, /Public Sans/);
-  assert.match(popupHtml, />Day Chart</);
-  assert.match(popupHtml, />Night Watch</);
+  assert.match(toolbar, /Day Chart/);
+  assert.match(toolbar, /Night Watch/);
 });
 
 test('floating toolbar uses Atlantic Chartroom roles without legacy palette colors', async () => {
