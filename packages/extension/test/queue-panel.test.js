@@ -244,6 +244,25 @@ test('Queue summarizes captured Target context and pending Variant Intent', asyn
   assert.doesNotMatch(queueText, /opaque-generated-selector|checkout-action/);
 });
 
+test('Queue gives commentless text edits a meaningful title', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000002_commentless',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: '',
+    selector: '#target',
+    element_context: { tag: 'button', text: 'Old' },
+    pending_changes: {
+      copyChange: { original: 'Old', value: 'New' },
+    },
+  };
+  const { root } = await openQueue([annotation]);
+
+  const title = root.querySelector('.waypoint-queue-comment');
+  assert.equal(title.textContent, 'Text content edit');
+  assert.doesNotMatch(root.querySelector('.waypoint-queue-list').textContent, /undefined|untitled/i);
+});
+
 test('Queue keeps permanent deletion secondary and requires an explicit confirmation', async () => {
   const annotation = {
     id: 'waypoint_1750000000000_abc123xyz',
