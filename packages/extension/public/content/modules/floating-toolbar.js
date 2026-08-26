@@ -177,6 +177,11 @@ var WaypointToolbar = (() => {
         copy: copyAnnotations,
         delete: deleteAnnotation,
         discard: discardAnnotations,
+        export: (annotations, { format }) => doExport(annotations, {
+          scope: 'selection',
+          status: 'all',
+          format,
+        }),
         navigate: annotation => { window.location.href = annotation.url; },
         open: openAnnotation,
       });
@@ -991,7 +996,7 @@ var WaypointToolbar = (() => {
     backdrop.innerHTML = `
       <div class="waypoint-confirm">
         <div class="waypoint-confirm-title">Export annotations</div>
-        <div class="waypoint-confirm-msg">Choose the scope, status, and share format.</div>
+        <div class="waypoint-confirm-msg">Choose the scope, status, and file format.</div>
         <label class="waypoint-export-field">Scope
           <select class="waypoint-export-scope">
             <option value="page">This page only</option>
@@ -1010,7 +1015,6 @@ var WaypointToolbar = (() => {
         <div class="waypoint-confirm-actions waypoint-export-actions">
           <button class="waypoint-btn waypoint-btn-secondary waypoint-export-json" type="button">Download JSON</button>
           <button class="waypoint-btn waypoint-btn-primary waypoint-export-markdown" type="button">Download Markdown</button>
-          <button class="waypoint-btn waypoint-btn-secondary waypoint-export-share" type="button">Share Markdown</button>
         </div>
         <div class="waypoint-confirm-actions" style="margin-top:8px;justify-content:flex-start;">
           <button class="waypoint-btn waypoint-btn-secondary waypoint-export-cancel">Cancel</button>
@@ -1022,7 +1026,7 @@ var WaypointToolbar = (() => {
     backdrop.querySelector('.waypoint-export-cancel').addEventListener('click', () => backdrop.remove());
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
 
-    const runExport = async (format, share) => {
+    const runExport = async format => {
       const scope = backdrop.querySelector('.waypoint-export-scope').value;
       const status = backdrop.querySelector('.waypoint-export-status').value;
       const annotations = scope === 'page'
@@ -1034,16 +1038,15 @@ var WaypointToolbar = (() => {
         showInfoModal('Nothing to export', `No ${status === 'all' ? '' : `${status} `}annotations in this scope.`);
         return;
       }
-      await doExport(filtered, { scope, status, format, share });
+      await doExport(filtered, { scope, status, format });
       backdrop.remove();
     };
 
-    backdrop.querySelector('.waypoint-export-json').addEventListener('click', () => runExport('json', false));
-    backdrop.querySelector('.waypoint-export-markdown').addEventListener('click', () => runExport('markdown', false));
-    backdrop.querySelector('.waypoint-export-share').addEventListener('click', () => runExport('markdown', true));
+    backdrop.querySelector('.waypoint-export-json').addEventListener('click', () => runExport('json'));
+    backdrop.querySelector('.waypoint-export-markdown').addEventListener('click', () => runExport('markdown'));
   }
 
-  async function doExport(annotations, { scope, status, format, share }) {
+  async function doExport(annotations, { scope, status, format }) {
     const loc = window.location;
     const exportData = WaypointExportCodec.createExportEnvelope(annotations, { scope, status, source: loc });
 
@@ -1055,20 +1058,6 @@ var WaypointToolbar = (() => {
       : JSON.stringify(exportData, null, 2);
     const type = isMarkdown ? 'text/markdown' : 'application/json';
     const filename = `logbook-waypoint-${hostStr}-${dateStr}.${isMarkdown ? 'md' : 'json'}`;
-    const file = new File([content], filename, { type });
-
-    if (share && typeof navigator.share === 'function') {
-      const shareData = { title: 'Logbook Waypoint annotations', text: 'Annotations exported from Logbook Waypoint.' };
-      if (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ ...shareData, files: [file] });
-          return;
-        } catch (error) {
-          if (error?.name === 'AbortError') return;
-        }
-      }
-    }
-
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
 

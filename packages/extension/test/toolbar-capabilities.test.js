@@ -10,13 +10,14 @@ const popupUrl = new URL('../public/popup/popup.js', import.meta.url);
 const popupHtmlUrl = new URL('../public/popup/popup.html', import.meta.url);
 const stylesUrl = new URL('../public/content/modules/styles.js', import.meta.url);
 
-test('toolbar exports status-filtered Markdown and can invoke native sharing', async () => {
+test('toolbar exports status-filtered Markdown without a native sharing branch', async () => {
   const toolbar = await readFile(toolbarUrl, 'utf8');
 
   assert.match(toolbar, /waypoint-export-status/);
   assert.match(toolbar, /WaypointExportCodec\.filterAnnotationsByStatus/);
   assert.match(toolbar, /WaypointExportCodec\.formatAnnotationsAsMarkdown/);
-  assert.match(toolbar, /navigator\.share\(/);
+  assert.doesNotMatch(toolbar, /navigator\.share\(/);
+  assert.doesNotMatch(toolbar, /Share Markdown/);
   assert.match(toolbar, /text\/markdown/);
 });
 

@@ -206,6 +206,16 @@ var WaypointQueuePanel = (() => {
           <button class="waypoint-queue-select-all" type="button">Select all</button>
           <button class="waypoint-queue-discard-selected" type="button" disabled>Discard</button>
           <button class="waypoint-queue-copy-selected" type="button" disabled>Copy</button>
+          <div class="waypoint-queue-export">
+            <button class="waypoint-queue-export-selected" type="button" aria-label="Export selected annotations" aria-haspopup="menu" aria-expanded="false" disabled>
+              <span>Export</span>
+              <svg class="waypoint-queue-export-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="waypoint-queue-export-menu" role="menu" hidden>
+              <button class="waypoint-queue-export-json" type="button" role="menuitem">Download JSON</button>
+              <button class="waypoint-queue-export-markdown" type="button" role="menuitem">Download Markdown</button>
+            </div>
+          </div>
         </footer>
       ` : view === 'history' && visibleAnnotations.length ? `
         <footer class="waypoint-queue-actions waypoint-queue-history-actions">
@@ -384,6 +394,8 @@ var WaypointQueuePanel = (() => {
     const selectAll = panel.querySelector('.waypoint-queue-select-all');
     const discard = panel.querySelector('.waypoint-queue-discard-selected');
     const copy = panel.querySelector('.waypoint-queue-copy-selected');
+    const exportButton = panel.querySelector('.waypoint-queue-export-selected');
+    const exportMenu = panel.querySelector('.waypoint-queue-export-menu');
     const copyFeedback = panel.querySelector('.waypoint-queue-copy-feedback');
 
     const selectedAnnotations = () => {
@@ -394,9 +406,14 @@ var WaypointQueuePanel = (() => {
       const count = selectedAnnotations().length;
       discard.disabled = count === 0;
       copy.disabled = count === 0;
+      exportButton.disabled = count === 0;
       discard.textContent = count ? `Discard ${count}` : 'Discard';
       copy.textContent = count ? `Copy ${count}` : 'Copy';
       selectAll.textContent = count === annotations.length ? 'Clear selection' : 'Select all';
+    };
+    const setExportMenuOpen = open => {
+      exportMenu.hidden = !open;
+      exportButton.setAttribute('aria-expanded', String(open));
     };
 
     inputs.forEach(input => input.addEventListener('click', updateActions));
@@ -417,6 +434,27 @@ var WaypointQueuePanel = (() => {
         updateActions();
       }, 1400);
     });
+    exportButton.addEventListener('click', () => {
+      if (!selectedAnnotations().length) return;
+      setExportMenuOpen(exportButton.getAttribute('aria-expanded') !== 'true');
+      if (!exportMenu.hidden) exportMenu.querySelector('[role="menuitem"]')?.focus();
+    });
+    exportMenu.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setExportMenuOpen(false);
+      exportButton.focus();
+    });
+    const runExport = async format => {
+      const selected = selectedAnnotations();
+      if (!selected.length) return;
+      await actions.export?.(selected, { format });
+      setExportMenuOpen(false);
+      copyFeedback.textContent = `${format === 'json' ? 'JSON' : 'Markdown'} export downloaded`;
+      exportButton.focus();
+    };
+    exportMenu.querySelector('.waypoint-queue-export-json').addEventListener('click', () => runExport('json'));
+    exportMenu.querySelector('.waypoint-queue-export-markdown').addEventListener('click', () => runExport('markdown'));
     discard.addEventListener('click', () => {
       const selected = selectedAnnotations();
       if (!selected.length) return;
