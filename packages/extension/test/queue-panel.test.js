@@ -21,14 +21,26 @@ function createHarness(annotations, { projectAnnotations } = {}) {
   const emitted = [];
   const root = window.document.querySelector('#root');
   const clipboardWrites = [];
+  const downloads = [];
+  const downloadBlobs = [];
   const discarded = [];
   const deleted = [];
+  class HarnessURL extends URL {}
+  HarnessURL.createObjectURL = blob => {
+    downloadBlobs.push(blob);
+    return 'blob:waypoint-export';
+  };
+  HarnessURL.revokeObjectURL = () => {};
+  window.HTMLAnchorElement.prototype.click = function click() {
+    downloads.push({ filename: this.download, href: this.href });
+  };
   const context = vm.createContext({
     window,
     document: window.document,
     navigator: { platform: 'MacIntel', clipboard: { writeText: async value => clipboardWrites.push(value) } },
     chrome: { runtime: { getURL: path => path, getManifest: () => ({ version: '1.0.0' }) } },
-    URL,
+    Blob,
+    URL: HarnessURL,
     setInterval: () => 1,
     clearInterval: () => {},
     setTimeout,
@@ -40,6 +52,12 @@ function createHarness(annotations, { projectAnnotations } = {}) {
   context.WaypointShadowHost = { getRoot: () => root };
   context.WaypointThemeManager = { getPreference: () => 'system' };
   context.WaypointExportCodec = {
+    createExportEnvelope: (selectedAnnotations, options) => ({
+      waypoint_annotations_export: true,
+      annotations: selectedAnnotations,
+      ...options,
+    }),
+    formatAnnotationsAsMarkdown: selectedAnnotations => selectedAnnotations.map(annotation => annotation.comment).join('\n'),
     getAnnotationRoute: annotation => new URL(annotation.url).pathname,
   };
   context.WaypointElementContext = {
@@ -79,7 +97,7 @@ function createHarness(annotations, { projectAnnotations } = {}) {
     },
   };
 
-  return { clipboardWrites, context, deleted, discarded, emitted, root };
+  return { clipboardWrites, context, deleted, discarded, downloadBlobs, downloads, emitted, root };
 }
 
 async function openQueue(annotations, options) {
@@ -121,6 +139,8 @@ test('toolbar Queue button opens an anchored panel with current-route Annotation
   assert.match(panel.textContent, /Make the invitation action easier to scan/);
   assert.match(panel.textContent, /Pending/);
   const legend = panel.querySelector('.waypoint-queue-signal-key');
+  const panelSections = [...panel.children];
+  assert.ok(panelSections.indexOf(legend) < panelSections.indexOf(panel.querySelector('.waypoint-queue-views')));
   assert.match(legend.textContent, /Indicators/);
   assert.match(legend.textContent, /File/);
   assert.equal(legend.querySelector('[data-signal="design-action-key"]').getAttribute('aria-label'), 'Design action');
@@ -365,6 +385,40 @@ test('Queue selection copies only the selected Annotations', async () => {
   assert.equal(feedback.getAttribute('role'), 'status');
   assert.match(feedback.textContent, /Copied/);
   assert.match(root.querySelector('.waypoint-queue-copy-selected').textContent, /Copied/);
+});
+
+test('Queue exports only the selected Annotations from a quick menu beside Copy', async () => {
+  const annotations = [
+    { id: 'waypoint_1750000000000_abc123xyz', url: 'http://localhost:3000/settings/members', status: 'pending', comment: 'First request', selector: '#first' },
+    { id: 'waypoint_1750000000001_abc123xyz', url: 'http://localhost:3000/settings/members', status: 'pending', comment: 'Second request', selector: '#second' },
+  ];
+  const { context, downloadBlobs, downloads, root } = await openQueue(annotations);
+  const copy = root.querySelector('.waypoint-queue-copy-selected');
+  const exportButton = root.querySelector('.waypoint-queue-export-selected');
+  assert.equal(copy.nextElementSibling.classList.contains('waypoint-queue-export'), true);
+  assert.equal(exportButton.textContent.trim(), 'Export');
+  assert.equal(exportButton.disabled, true);
+
+  const selected = root.querySelector(`[value="${annotations[1].id}"]`);
+  selected.checked = true;
+  selected.dispatchEvent(new context.window.Event('click'));
+  assert.equal(exportButton.disabled, false);
+
+  exportButton.click();
+  const exportMenu = root.querySelector('.waypoint-queue-export-menu');
+  assert.equal(exportMenu.hidden, false);
+  assert.equal(exportMenu.querySelectorAll('[role="menuitem"]').length, 2);
+  assert.doesNotMatch(exportMenu.textContent, /Share/);
+  root.querySelector('.waypoint-queue-export-json').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(downloads.length, 1);
+  assert.match(downloads[0].filename, /\.json$/);
+  assert.equal(downloads[0].href, 'blob:waypoint-export');
+  const exportedContent = await downloadBlobs[0].text();
+  assert.doesNotMatch(exportedContent, /First request/);
+  assert.match(exportedContent, /Second request/);
+  assert.equal(exportMenu.hidden, true);
 });
 
 test('Queue Open resolves the Target and reopens the existing Annotation editor', async () => {

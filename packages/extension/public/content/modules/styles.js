@@ -29,6 +29,8 @@ var WAYPOINT_STYLES = `
   --waypoint-danger: #a63d32;
   --waypoint-danger-hover: #a63d3214;
   --waypoint-highlight: #3f8580;
+  --waypoint-selection: #102c2c;
+  --waypoint-on-selection: #f4efde;
   --waypoint-badge-bg: #173f5f;
   --waypoint-tooltip-bg: #102c2c;
   --waypoint-primary-btn: #102c2c;
@@ -1015,8 +1017,8 @@ var WAYPOINT_STYLES = `
 }
 
 .waypoint-toolbar-btn.active {
-  background: var(--waypoint-highlight);
-  color: #071b1d;
+  background: var(--waypoint-selection);
+  color: var(--waypoint-on-selection);
 }
 
 .waypoint-toolbar-btn.active:hover {
@@ -1410,7 +1412,13 @@ var WAYPOINT_STYLES = `
 .waypoint-queue-actions button:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
 .waypoint-queue-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
 .waypoint-queue-discard-selected { color: var(--waypoint-danger) !important; }
-.waypoint-queue-copy-selected { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
+.waypoint-queue-copy-selected { min-width: 72px; margin-left: auto; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
+.waypoint-queue-export { position: relative; display: flex; }
+.waypoint-queue-export-selected { min-width: 72px; padding: 0 10px !important; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
+.waypoint-queue-export-chevron { opacity: 0.72; }
+.waypoint-queue-export-menu { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 2; width: 174px; padding: 4px; border: 1px solid var(--waypoint-outline); border-radius: 10px; background: var(--waypoint-surface-1); box-shadow: 0 12px 28px rgba(35, 46, 40, 0.18), 0 2px 6px rgba(35, 46, 40, 0.1); }
+.waypoint-queue-export-menu[hidden] { display: none; }
+.waypoint-queue-export-menu button { width: 100%; min-height: 32px; padding: 0 9px; justify-content: flex-start; text-align: left; white-space: nowrap; }
 .waypoint-queue-history-actions { justify-content: space-between; color: var(--waypoint-text-secondary); font-size: 11px; }
 .waypoint-queue-clear-history { color: var(--waypoint-danger) !important; }
 .waypoint-queue-cleanup { display: grid; gap: 12px; padding: 12px 16px 14px; }
