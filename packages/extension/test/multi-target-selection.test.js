@@ -56,6 +56,7 @@ test('Shift starts persistent ordered Target selection and ordinary clicks toggl
   await handlers.get('inspection:elementClicked')({ element: second, clientX: 60, clientY: 30, shiftKey: false });
 
   assert.equal(context.WaypointMultiTargetSelection.isActive(), true);
+  assert.equal(window.document.querySelector('.waypoint-target-selection-tray').style.pointerEvents, 'auto');
   assert.equal(window.document.querySelector('.waypoint-target-selection-count').textContent, '2 Targets');
   assert.deepEqual(
     [...window.document.querySelectorAll('.waypoint-target-selection-pin')].map(pin => pin.textContent),

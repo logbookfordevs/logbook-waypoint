@@ -48,6 +48,7 @@ var WaypointMultiTargetSelection = (() => {
     if (!root) return null;
     tray = document.createElement('section');
     tray.className = 'waypoint-target-selection-tray';
+    tray.style.pointerEvents = 'auto';
     tray.setAttribute('role', 'region');
     tray.setAttribute('aria-label', 'Multi-Target selection');
     root.appendChild(tray);
