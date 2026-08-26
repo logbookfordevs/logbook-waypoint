@@ -481,3 +481,18 @@ test('Queue supports keyboard dismissal with Escape', async () => {
 
   assert.equal(root.querySelector('.waypoint-queue-panel'), null);
 });
+
+test('Queue closes when the user clicks outside it', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: 'Dismissible request',
+    selector: '#target',
+  };
+  const { context, root } = await openQueue([annotation]);
+
+  context.document.body.dispatchEvent(new context.window.Event('click', { bubbles: true }));
+
+  assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+});

@@ -140,10 +140,19 @@ var WaypointQueuePanel = (() => {
   }
 
   function close(restoreFocus = true) {
+    document.removeEventListener('click', onOutsideClick);
     panel?.remove();
     panel = null;
     if (restoreFocus) opener?.focus?.();
     opener = null;
+  }
+
+  function onOutsideClick(event) {
+    if (!panel) return;
+    const path = event.composedPath?.() || [];
+    const clickedPanel = path.includes(panel) || panel.contains(event.target);
+    const clickedOpener = path.includes(opener) || opener?.contains?.(event.target);
+    if (!clickedPanel && !clickedOpener) close(false);
   }
 
   function syncStatusMessage(status) {
@@ -198,6 +207,7 @@ var WaypointQueuePanel = (() => {
       if (event.key === 'Escape') close();
     };
     root.appendChild(panel);
+    document.addEventListener('click', onOutsideClick);
     renderRouteView(queue, currentRoute);
     position(anchor);
     panel.querySelector('.waypoint-queue-close')?.focus();
