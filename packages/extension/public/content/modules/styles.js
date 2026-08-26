@@ -1787,8 +1787,7 @@ var WAYPOINT_STYLES = `
   white-space: nowrap;
 }
 
-.waypoint-target-selection-tray button,
-.waypoint-target-navigator button {
+.waypoint-target-selection-tray button {
   min-height: 32px;
   border: 0;
   border-radius: var(--waypoint-radius-sm);
@@ -1813,8 +1812,7 @@ var WAYPOINT_STYLES = `
   opacity: 0.42;
 }
 
-.waypoint-target-selection-tray button:focus-visible,
-.waypoint-target-navigator button:focus-visible {
+.waypoint-target-selection-tray button:focus-visible {
   outline: 2px solid var(--waypoint-highlight);
   outline-offset: 2px;
 }
@@ -1840,61 +1838,6 @@ var WAYPOINT_STYLES = `
 .waypoint-popover-multi-target .waypoint-element-edits,
 .waypoint-popover-multi-target .waypoint-design-reset {
   display: none;
-}
-
-.waypoint-target-navigator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px 10px;
-  color: var(--waypoint-text-secondary);
-}
-
-.waypoint-target-navigator button {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  color: var(--waypoint-text-primary);
-  background: var(--waypoint-secondary-btn-bg);
-}
-
-.waypoint-target-previous svg { transform: rotate(180deg); }
-
-.waypoint-target-steps {
-  display: flex;
-  gap: 4px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.waypoint-target-step {
-  display: grid;
-  flex: 0 0 22px;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  color: var(--waypoint-text-secondary);
-  background: var(--waypoint-secondary-btn-bg);
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.waypoint-target-step.active {
-  color: var(--waypoint-on-accent);
-  background: var(--waypoint-accent);
-}
-
-.waypoint-target-step.unavailable {
-  text-decoration: line-through;
-  opacity: 0.45;
-}
-
-.waypoint-target-position {
-  margin-inline-start: auto;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .waypoint-target-highlight {

@@ -313,7 +313,6 @@ var WaypointAnnotationPopover = (() => {
     const targetElements = selections.length
       ? selections.map(selection => selection.element)
       : options.targetElements || [targetElement];
-    let focusedTargetIndex = options.targetIndex || 0;
     const lifecycleLocked = isEdit && existingAnnotation.status !== 'pending';
     const presentationLocked = lifecycleLocked || WaypointVariantPicker.locksPresentation(existingAnnotation);
     const isHistorical = ['resolved', 'discarded'].includes(existingAnnotation?.status);
@@ -323,7 +322,7 @@ var WaypointAnnotationPopover = (() => {
     const showDesignActions = !!existingAnnotation?.design_intent || await WaypointAPI.getShowDesignActions();
 
     // Target highlight
-    positionTargetHighlights(targetElements, focusedTargetIndex);
+    positionTargetHighlights(targetElements, isMultiTarget ? -1 : options.targetIndex || 0);
 
     // Anchor wrapper (full viewport, catches outside clicks)
     const anchor = document.createElement('div');
@@ -431,17 +430,6 @@ var WaypointAnnotationPopover = (() => {
       ? `${context.tag}.${context.classes[0]}`
       : context.tag;
     const resolutionRecord = existingAnnotation?.resolution_record;
-    const targetCount = existingTargets.length || selections.length;
-    const targetNavigatorHTML = isMultiTarget ? `
-      <nav class="waypoint-target-navigator" aria-label="Annotation Targets">
-        <button class="waypoint-target-previous" type="button" aria-label="Previous available Target">${ICONS.chevron}</button>
-        <span class="waypoint-target-steps">
-          ${Array.from({ length: targetCount }, (_, index) => `<span class="waypoint-target-step${index === focusedTargetIndex ? ' active' : ''}${targetElements[index]?.isConnected ? '' : ' unavailable'}" title="Target ${String.fromCharCode(97 + index)}${targetElements[index]?.isConnected ? '' : ' unavailable'}">${String.fromCharCode(97 + index)}</span>`).join('')}
-        </span>
-        <span class="waypoint-target-position" aria-live="polite">${String.fromCharCode(97 + focusedTargetIndex)} of ${targetCount}</span>
-        <button class="waypoint-target-next" type="button" aria-label="Next available Target">${ICONS.chevron}</button>
-      </nav>
-    ` : '';
     const resolutionHTML = resolutionRecord ? `
       <section class="waypoint-resolution-record" aria-label="Resolution history">
         <div class="waypoint-resolution-label">Resolution</div>
@@ -459,7 +447,6 @@ var WaypointAnnotationPopover = (() => {
         <span>${isHistorical ? `Viewing ${historicalStatus} annotation` : 'Editing'} <code>${escapeHTML(selectorLabel)}</code></span>
         <button class="waypoint-design-reset" type="button" title="${presentationLocked ? 'Finalized Variant presentation' : 'Reset all'}" ${presentationLocked ? 'disabled' : ''}>${ICONS.reset}</button>
       </div>
-      ${targetNavigatorHTML}
       ${warningHTML}
       ${workNoticeHTML}
       ${readOnlyNoticeHTML}
@@ -568,7 +555,6 @@ var WaypointAnnotationPopover = (() => {
     const variantIntentInput = popover.querySelector('.waypoint-variant-intent');
     const designIntentInput = popover.querySelector('.waypoint-design-intent');
     const workNoticeDismiss = popover.querySelector('.waypoint-work-notice-dismiss');
-    const targetPosition = popover.querySelector('.waypoint-target-position');
     let attachments = Array.isArray(existingAnnotation?.attachments)
       ? existingAnnotation.attachments.filter(isImageAttachmentMetadata)
       : Array.isArray(options.draft?.attachments) ? options.draft.attachments.filter(isImageAttachmentMetadata) : [];
@@ -579,29 +565,6 @@ var WaypointAnnotationPopover = (() => {
     activeOriginalCssText = targetElement.style.cssText;
     activeExistingAnnotation = existingAnnotation;
     activeElType = elType;
-
-    function focusTarget(direction) {
-      if (!isMultiTarget || targetElements.length < 2) return;
-      let candidate = focusedTargetIndex;
-      for (let attempts = 0; attempts < targetElements.length; attempts++) {
-        candidate = (candidate + direction + targetElements.length) % targetElements.length;
-        if (targetElements[candidate]?.isConnected) break;
-      }
-      if (!targetElements[candidate]?.isConnected) return;
-      focusedTargetIndex = candidate;
-      currentTargetHighlights.forEach((entry, index) => {
-        entry.highlight.classList.toggle('waypoint-target-highlight-focused', index === focusedTargetIndex);
-      });
-      targetPosition.textContent = `${String.fromCharCode(97 + focusedTargetIndex)} of ${targetCount}`;
-      popover.querySelectorAll('.waypoint-target-step').forEach((step, index) => {
-        step.classList.toggle('active', index === focusedTargetIndex);
-      });
-      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      targetElements[focusedTargetIndex].scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
-      positionPopover(anchor, targetElements[focusedTargetIndex]);
-    }
-    popover.querySelector('.waypoint-target-previous')?.addEventListener('click', () => focusTarget(-1));
-    popover.querySelector('.waypoint-target-next')?.addEventListener('click', () => focusTarget(1));
 
     if (lifecycleLocked) {
       if (!isHistorical) textarea.disabled = true;

@@ -838,6 +838,8 @@ test('shared composer saves one feedback-only Annotation with ordered Targets', 
   const popover = context.document.querySelector('.waypoint-popover');
   assert.ok(popover.classList.contains('waypoint-popover-multi-target'));
   assert.equal(popover.querySelector('.waypoint-element-edits') !== null, true);
+  assert.equal(popover.querySelectorAll('.waypoint-textarea').length, 1);
+  assert.equal(popover.querySelector('.waypoint-target-navigator'), null);
   popover.querySelector('.waypoint-textarea').value = 'Align both actions';
   popover.querySelector('.waypoint-textarea').dispatchEvent(new context.window.Event('input'));
   popover.querySelector('.waypoint-save-btn').click();
