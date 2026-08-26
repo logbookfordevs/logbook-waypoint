@@ -177,7 +177,7 @@ var WaypointQueuePanel = (() => {
     return `
       <div class="waypoint-queue-sync-status" role="status" aria-live="polite">
         <span>${escapeHTML(syncStatusMessage(status))}</span>
-        <button class="waypoint-queue-sync-now" type="button"${status?.connected ? '' : ' disabled'}>Sync now</button>
+        <button class="waypoint-queue-sync-now" type="button">Sync now</button>
       </div>
     `;
   }
@@ -282,7 +282,7 @@ var WaypointQueuePanel = (() => {
       } catch (error) {
         status.querySelector('span').textContent = error?.message || 'Sync failed. Try again.';
       } finally {
-        button.disabled = !queue.syncStatus?.connected;
+        button.disabled = false;
         button.textContent = 'Sync now';
       }
     });

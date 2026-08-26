@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 const backgroundUrl = new URL('../public/background/background.js', import.meta.url);
 const queueSyncUrl = new URL('../public/background/queue-sync.js', import.meta.url);
+const siteAccessUrl = new URL('../public/background/site-access.js', import.meta.url);
 const apiBridgeUrl = new URL('../public/content/modules/api-bridge.js', import.meta.url);
 const queuePanelUrl = new URL('../public/content/modules/queue-panel.js', import.meta.url);
 
@@ -38,6 +39,63 @@ test('manual sync detects markerless local-only annotations for the current orig
     Array.from(context.WaypointQueueSync.pendingIdsForOrigin(local, [], 'http://localhost:3000')),
     ['waypoint_1750000000000_offline'],
   );
+});
+
+test('offline sync status counts only locally proven unsynced annotations', async () => {
+  const context = vm.createContext({
+    URL,
+    WaypointAnnotationCollection: {
+      canonicalize: annotations => annotations || [],
+    },
+  });
+  vm.runInContext(await readFile(queueSyncUrl, 'utf8'), context);
+
+  const local = [{
+    id: 'waypoint_1750000000000_synced',
+    status: 'pending',
+    url: 'http://localhost:3000/',
+    _synced: true,
+  }, {
+    id: 'waypoint_1750000000001_unsynced',
+    status: 'pending',
+    url: 'http://localhost:3000/',
+    _synced: false,
+  }, {
+    id: 'waypoint_1750000000002_other',
+    status: 'pending',
+    url: 'http://localhost:4000/',
+    _synced: false,
+  }];
+
+  assert.deepEqual(
+    Array.from(context.WaypointQueueSync.statusPendingIdsForOrigin(
+      local,
+      [],
+      'http://localhost:3000',
+      false,
+    )),
+    ['waypoint_1750000000001_unsynced'],
+  );
+});
+
+test('site access policy executes every sender URL and permission branch', async () => {
+  const context = vm.createContext({ URL });
+  vm.runInContext(await readFile(siteAccessUrl, 'utf8'), context);
+  const checkedOrigins = [];
+  const options = {
+    isLocalhostUrl: url => url.startsWith('http://localhost:'),
+    containsPermission: async originPattern => {
+      checkedOrigins.push(originPattern);
+      return originPattern === 'https://enabled.example/*';
+    },
+  };
+
+  assert.equal(await context.WaypointSiteAccess.hasCurrentSiteAccess(undefined, options), false);
+  assert.equal(await context.WaypointSiteAccess.hasCurrentSiteAccess('http://localhost:3000/page', options), true);
+  assert.equal(await context.WaypointSiteAccess.hasCurrentSiteAccess('chrome://extensions', options), false);
+  assert.equal(await context.WaypointSiteAccess.hasCurrentSiteAccess('https://enabled.example/page', options), true);
+  assert.equal(await context.WaypointSiteAccess.hasCurrentSiteAccess('https://disabled.example/page', options), false);
+  assert.deepEqual(checkedOrigins, ['https://enabled.example/*', 'https://disabled.example/*']);
 });
 
 test('extension exposes manual recovery through its background boundary', async () => {

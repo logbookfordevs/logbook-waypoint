@@ -58,6 +58,23 @@ var WaypointQueueSync = (() => {
     return pendingIds(local, server, ...scopedRemovals);
   }
 
+  function localPendingIdsForOrigin(localAnnotations, origin) {
+    return new Set(
+      WaypointAnnotationCollection.canonicalize(localAnnotations)
+        .filter(annotation => (
+          annotationOrigin(annotation) === origin
+          && annotation.status === 'pending'
+          && annotation._synced === false
+        ))
+        .map(annotation => annotation.id),
+    );
+  }
+
+  function statusPendingIdsForOrigin(localAnnotations, serverAnnotations, origin, connected, ...removalLists) {
+    if (!connected) return localPendingIdsForOrigin(localAnnotations, origin);
+    return pendingIdsForOrigin(localAnnotations, serverAnnotations, origin, ...removalLists);
+  }
+
   function applyLifecycleFields(candidate, source) {
     const merged = { ...candidate, status: source.status };
     if (Object.hasOwn(source, 'claim')) merged.claim = source.claim;
@@ -212,5 +229,11 @@ var WaypointQueueSync = (() => {
     return { annotations, changed, flagsChanged };
   }
 
-  return { applyServerLifecycle, merge, pendingIds, pendingIdsForOrigin };
+  return {
+    applyServerLifecycle,
+    merge,
+    pendingIds,
+    pendingIdsForOrigin,
+    statusPendingIdsForOrigin,
+  };
 })();

@@ -12,7 +12,12 @@ const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel
 const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
 
-function createHarness(annotations, { projectAnnotations, siteAccess = true } = {}) {
+function createHarness(annotations, {
+  projectAnnotations,
+  siteAccess = true,
+  syncStatus = { connected: true, pending_count: 0 },
+  syncNow = async () => ({ connected: true, pending_count: 0 }),
+} = {}) {
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
   window.innerHeight = 900;
   window.innerWidth = 1200;
@@ -79,6 +84,8 @@ function createHarness(annotations, { projectAnnotations, siteAccess = true } = 
     getSkipDeleteConfirm: async () => true,
     hasCurrentSiteAccess: async () => siteAccess,
     requestOptionalSitePermission: async () => true,
+    getSyncStatus: async () => syncStatus,
+    syncNow,
     loadAnnotations: async () => annotations,
     loadProjectAnnotations: async () => projectAnnotations || [
       ...annotations,
@@ -174,6 +181,26 @@ test('Queue remains available on an empty current route so other-route work stay
 
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /No active annotations on this route/);
   assert.match(root.querySelector('.waypoint-queue-header').textContent, /1 other route/);
+});
+
+test('Queue keeps manual synchronization retryable while the server is unavailable', async () => {
+  let attempts = 0;
+  const { root } = await openQueue([], {
+    syncStatus: { connected: false, pending_count: 1 },
+    syncNow: async () => {
+      attempts += 1;
+      return { connected: true, pending_count: 0 };
+    },
+  });
+  const button = root.querySelector('.waypoint-queue-sync-now');
+
+  assert.equal(button.disabled, false);
+  button.click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(attempts, 1);
+  assert.equal(button.disabled, false);
+  assert.match(root.querySelector('.waypoint-queue-sync-status').textContent, /Up to date/);
 });
 
 test('settings show existing site access without an Enable action', async () => {
