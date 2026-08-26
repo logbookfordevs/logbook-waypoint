@@ -870,12 +870,14 @@ var WaypointToolbar = (() => {
   }
 
   function openAnnotation(annotation) {
-    const element = WaypointElementContext.findElementBySelector(annotation);
+    const targetElements = WaypointAnnotationTargets.get(annotation)
+      .map(target => WaypointElementContext.findElementBySelector(target));
+    const element = targetElements[0];
     if (!element) {
       WaypointBadgeManager.highlightElement(annotation);
       return;
     }
-    WaypointEvents.emit('annotation:edit', { annotation, element });
+    WaypointEvents.emit('annotation:edit', { annotation, element, targetElements, targetIndex: 0 });
   }
 
   // --- Drag ---
@@ -1297,7 +1299,7 @@ var WaypointToolbar = (() => {
   function formatAnnotationsForRoute(annotations, route) {
     const loc = window.location;
     const host = loc.host;
-    const vp = annotations[0]?.viewport;
+    const vp = annotations[0] ? WaypointAnnotationTargets.get(annotations[0])[0]?.viewport : null;
     const vpStr = vp ? `${vp.width}\u00D7${vp.height}` : '';
     const count = annotations.length;
 
@@ -1307,33 +1309,29 @@ var WaypointToolbar = (() => {
     header += ` \u00B7 ${count} annotation${count !== 1 ? 's' : ''}`;
 
     const blocks = annotations.map((a, i) => {
-      const ec = a.element_context || {};
-      const tag = ec.tag ? `<${ec.tag}>` : '';
-      const text = ec.text ? truncate(ec.text, 40) : '';
-      const identity = [tag, text ? `"${text}"` : ''].filter(Boolean).join(' ');
-
+      const targets = WaypointAnnotationTargets.get(a);
       const lines = [];
-      lines.push(`${i + 1}. ${identity}`);
+      lines.push(`${i + 1}. ${targets.length > 1 ? `${targets.length} Targets` : 'Target'}`);
       lines.push(`   Comment: ${a.comment || ''}`);
-      lines.push(`   Selector: ${a.selector}`);
-
-      // Styles — only non-trivial
-      const styleStr = formatStyles(ec.styles);
-      if (styleStr) lines.push(`   Styles: ${styleStr}`);
-
-      // Size from position
-      const pos = ec.position;
-      if (pos && pos.width && pos.height) {
-        lines.push(`   Size: ${Math.round(pos.width)}\u00D7${Math.round(pos.height)}`);
-      }
-
-      const parent = a.parent_chain?.[0];
-      if (parent) {
-        const parentIdentity = parent.id
-          ? `#${parent.id}`
-          : [parent.tag, ...(parent.classes || []).slice(0, 2).map(cls => `.${cls}`)].join('');
-        if (parentIdentity) lines.push(`   Context: inside ${parentIdentity}`);
-      }
+      targets.forEach((target, targetIndex) => {
+        const ec = target.element_context || {};
+        const tag = ec.tag ? `<${ec.tag}>` : '';
+        const text = ec.text ? truncate(ec.text, 40) : '';
+        const identity = [tag, text ? `"${text}"` : ''].filter(Boolean).join(' ');
+        lines.push(`   Target ${String.fromCharCode(97 + targetIndex)}: ${identity || target.selector}`);
+        lines.push(`      Selector: ${target.selector}`);
+        const styleStr = formatStyles(ec.styles);
+        if (styleStr) lines.push(`      Styles: ${styleStr}`);
+        const pos = ec.position;
+        if (pos?.width && pos?.height) lines.push(`      Size: ${Math.round(pos.width)}\u00D7${Math.round(pos.height)}`);
+        const parent = target.parent_chain?.[0];
+        if (parent) {
+          const parentIdentity = parent.id
+            ? `#${parent.id}`
+            : [parent.tag, ...(parent.classes || []).slice(0, 2).map(cls => `.${cls}`)].join('');
+          if (parentIdentity) lines.push(`      Context: inside ${parentIdentity}`);
+        }
+      });
 
       // Design changes
       const pc = a.pending_changes;

@@ -24,10 +24,10 @@ test('agent Queue context keeps portable Target data and omits Source Identity f
   const [annotation] = result.annotations;
 
   assert.equal(annotation.url_path, '/page?mode=review#target');
-  assert.deepEqual(annotation.element_context, { tag: 'button', text: 'Save' });
-  assert.deepEqual(annotation.parent_chain, [{ tag: 'main' }]);
-  assert.equal('source_file_path' in annotation, false);
-  assert.equal('source_line_range' in annotation, false);
-  assert.equal('source_map_available' in annotation, false);
-  assert.equal('context_hints' in annotation, false);
+  assert.deepEqual(annotation.targets[0].element_context, { tag: 'button', text: 'Save' });
+  assert.deepEqual(annotation.targets[0].parent_chain, [{ tag: 'main' }]);
+  assert.equal('source_file_path' in annotation.targets[0], false);
+  assert.equal('source_line_range' in annotation.targets[0], false);
+  assert.equal('source_map_available' in annotation.targets[0], false);
+  assert.equal('context_hints' in annotation.targets[0], false);
 });

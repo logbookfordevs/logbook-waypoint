@@ -9,6 +9,9 @@ const requireFromWxt = createRequire(wxtPackage);
 const { parseHTML } = requireFromWxt('linkedom');
 
 async function loadScript(context, relativePath) {
+  if (['annotation-collection.js', 'annotation-validation.js', 'content/modules/api-bridge.js', 'content/modules/badge-manager.js', 'background/queue-sync.js'].includes(relativePath) && !context.WaypointAnnotationTargets) {
+    await loadScript(context, 'annotation-targets.js');
+  }
   if ((relativePath === 'content/modules/api-bridge.js' || relativePath === 'background/queue-sync.js') && !context.WaypointAnnotationStatus) {
     await loadScript(context, 'annotation-status.js');
     await loadScript(context, 'annotation-collection.js');
@@ -476,7 +479,7 @@ test('Queue sync retains migrated terminal history missing from the server', asy
   };
 
   const result = context.WaypointQueueSync.merge([migrated], [], []);
-  assert.deepEqual(JSON.parse(JSON.stringify(result.annotations)), [migrated]);
+  assert.deepEqual(JSON.parse(JSON.stringify(result.annotations)), [{ ...migrated, targets: [{}] }]);
 
   const background = await readFile(new URL('../public/background/background.js', import.meta.url), 'utf8');
   assert.match(background, /serverIds\.has\(annotation\.id\) \|\| annotation\.status === 'pending'/);
@@ -701,6 +704,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   const overlay = context.document.querySelector('#overlay');
   const annotation = {
     id: 'waypoint_1750000000001_abcdefghi',
+    selector: '#target',
     comment: 'Change it',
     status: 'pending',
     created_at: '2026-01-01T00:00:00.000Z',
@@ -712,7 +716,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   };
   context.WaypointShadowHost = { getRoot: () => overlay };
   let resolvedTarget = target;
-  context.WaypointElementContext = { findElementBySelector: candidate => candidate.id === annotation.id ? resolvedTarget : null };
+  context.WaypointElementContext = { findElementBySelector: candidate => candidate.selector === '#target' ? resolvedTarget : null };
   await loadScript(context, 'annotation-status.js');
   await loadScript(context, 'content/modules/event-bus.js');
   await loadScript(context, 'content/modules/badge-manager.js');

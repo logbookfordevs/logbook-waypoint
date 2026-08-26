@@ -11,6 +11,7 @@ const { parseHTML } = requireFromWxt('linkedom');
 const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel.js', import.meta.url);
 const toolbarUrl = new URL('../.output/chrome-mv3/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
+const targetsUrl = new URL('../.output/chrome-mv3/annotation-targets.js', import.meta.url);
 
 function createHarness(annotations, { projectAnnotations } = {}) {
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
@@ -102,12 +103,14 @@ function createHarness(annotations, { projectAnnotations } = {}) {
 
 async function openQueue(annotations, options) {
   const harness = createHarness(annotations, options);
-  const [statusSource, queuePanelSource, toolbarSource] = await Promise.all([
+  const [statusSource, targetsSource, queuePanelSource, toolbarSource] = await Promise.all([
     readFile(statusUrl, 'utf8'),
+    readFile(targetsUrl, 'utf8'),
     readFile(queuePanelUrl, 'utf8'),
     readFile(toolbarUrl, 'utf8'),
   ]);
   vm.runInContext(statusSource, harness.context, { filename: 'annotation-status.js' });
+  vm.runInContext(targetsSource, harness.context, { filename: 'annotation-targets.js' });
   vm.runInContext(queuePanelSource, harness.context, { filename: 'queue-panel.js' });
   vm.runInContext(toolbarSource, harness.context, { filename: 'floating-toolbar.js' });
   await harness.context.WaypointToolbar.init();

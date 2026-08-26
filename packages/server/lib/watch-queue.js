@@ -8,6 +8,7 @@ import { assertAnnotationLifecycleState } from './annotation-lifecycle.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
 import { assertResolutionRecordSummary } from './resolution-record.js';
 import { assertAnnotationVariantIntent } from './variant-intent.js';
+import { normalizeAnnotationTargets } from './annotation-targets.js';
 
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
@@ -22,6 +23,7 @@ function comparableAnnotation(annotation) {
 }
 
 function portableAnnotation(annotation, hasScreenshot) {
+  annotation = normalizeAnnotationTargets(annotation);
   const {
     screenshot,
     has_screenshot,
@@ -39,6 +41,23 @@ function portableAnnotation(annotation, hasScreenshot) {
     resolution_record,
     ...portableFields
   } = annotation;
+  const targets = annotation.targets.map((target) => {
+    const {
+      screenshot: targetScreenshot,
+      source_file_path: targetSourceFilePath,
+      source_line_range: targetSourceLineRange,
+      source_map_available: targetSourceMapAvailable,
+      context_hints: targetContextHints,
+      component_name: targetComponentName,
+      source_identity: targetSourceIdentity,
+      source_mapping: targetSourceMapping,
+      ...portableTarget
+    } = target;
+    return {
+      ...portableTarget,
+      has_screenshot: Boolean(target.has_screenshot || targetScreenshot?.data_url || targetScreenshot?.attachment_id),
+    };
+  });
   const portableVariantRequest = variant_request && {
     status: variant_request.status,
     active_variant_key: variant_request.active_variant_key,
@@ -46,6 +65,7 @@ function portableAnnotation(annotation, hasScreenshot) {
   };
   return {
     ...portableFields,
+    targets,
     ...(!variant_request && pending_changes !== undefined ? { pending_changes } : {}),
     ...(!variant_request && css !== undefined ? { css } : {}),
     ...(portableVariantRequest ? { variant_request: portableVariantRequest } : {}),
@@ -55,10 +75,12 @@ function portableAnnotation(annotation, hasScreenshot) {
 }
 
 export function toWatchAnnotation(annotation) {
+  const targets = normalizeAnnotationTargets(annotation).targets;
   return portableAnnotation(annotation, Boolean(
     annotation.has_screenshot
     || annotation.screenshot?.data_url
-    || annotation.screenshot?.attachment_id,
+    || annotation.screenshot?.attachment_id
+    || targets.some(target => target.has_screenshot || target.screenshot?.data_url || target.screenshot?.attachment_id),
   ));
 }
 
@@ -77,10 +99,12 @@ export function toReadAnnotation(annotation) {
 }
 
 function normalizeJournalAnnotation(annotation) {
+  const targets = normalizeAnnotationTargets(annotation).targets;
   return portableAnnotation(annotation, Boolean(
     annotation.has_screenshot
     || annotation.screenshot?.data_url
-    || annotation.screenshot?.attachment_id,
+    || annotation.screenshot?.attachment_id
+    || targets.some(target => target.has_screenshot || target.screenshot?.data_url || target.screenshot?.attachment_id),
   ));
 }
 

@@ -43,6 +43,7 @@ console.log('[Waypoint] content.js loaded');
     annotations = await WaypointAPI.loadAnnotations();
 
     // 4. Initialize modules
+    WaypointMultiTargetSelection.init();
     WaypointBadgeManager.init();
     WaypointInspectionMode.init();
     WaypointAnnotationPopover.init();
@@ -213,6 +214,8 @@ console.log('[Waypoint] content.js loaded');
 
       // ESC — stop annotation mode
       if (e.key === 'Escape' && WaypointInspectionMode.isActive()) {
+        if (WaypointMultiTargetSelection.isComposing()) return;
+        if (WaypointMultiTargetSelection.handleEscape()) return;
         WaypointEvents.emit('inspection:stop');
         return;
       }

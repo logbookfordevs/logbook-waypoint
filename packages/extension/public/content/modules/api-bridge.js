@@ -118,7 +118,7 @@ var WaypointAPI = (() => {
   }
 
   async function saveAnnotation(annotation) {
-    annotation = WaypointAnnotationStatus.normalize(annotation);
+    annotation = WaypointAnnotationTargets.normalize(WaypointAnnotationStatus.normalize(annotation));
     WaypointDesignIntent.assertAnnotation(annotation);
     validateAnnotationAttachments(annotation);
     try {

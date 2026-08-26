@@ -6,6 +6,7 @@ import vm from 'node:vm';
 const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const codecUrl = new URL('../public/export-codec.js', import.meta.url);
 const statusUrl = new URL('../public/annotation-status.js', import.meta.url);
+const targetsUrl = new URL('../public/annotation-targets.js', import.meta.url);
 const popupUrl = new URL('../public/popup/popup.js', import.meta.url);
 const popupHtmlUrl = new URL('../public/popup/popup.html', import.meta.url);
 const stylesUrl = new URL('../public/content/modules/styles.js', import.meta.url);
@@ -22,9 +23,10 @@ test('toolbar exports status-filtered Markdown without a native sharing branch',
 });
 
 test('toolbar uses the portable Waypoint envelope for export and accepts server route groups for import', async () => {
-  const [codec, status, toolbar] = await Promise.all([
+  const [codec, status, targets, toolbar] = await Promise.all([
     readFile(codecUrl, 'utf8'),
     readFile(statusUrl, 'utf8'),
+    readFile(targetsUrl, 'utf8'),
     readFile(toolbarUrl, 'utf8'),
   ]);
   const context = vm.createContext({
@@ -34,6 +36,7 @@ test('toolbar uses the portable Waypoint envelope for export and accepts server 
   });
   context.globalThis = context;
   vm.runInContext(status, context, { filename: 'annotation-status.js' });
+  vm.runInContext(targets, context, { filename: 'annotation-targets.js' });
   vm.runInContext(codec, context, { filename: 'export-codec.js' });
   vm.runInContext(toolbar, context, { filename: 'floating-toolbar.js' });
 
