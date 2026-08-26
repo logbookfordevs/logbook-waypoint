@@ -228,6 +228,12 @@ class WaypointAnnotationsBackground {
             .catch(error => sendResponse({ success: false, granted: false, error: error.message }));
           break;
 
+        case 'getCurrentSiteAccess':
+          this.hasCurrentSiteAccess(sender?.tab?.url)
+            .then(granted => sendResponse({ success: true, granted }))
+            .catch(error => sendResponse({ success: false, granted: false, error: error.message }));
+          break;
+
         case 'importAnnotations':
           this.importAnnotations(request.annotations)
             .then(result => sendResponse({ success: true, ...result }))
@@ -1264,6 +1270,14 @@ class WaypointAnnotationsBackground {
     }
     await this.enableSite(originPattern, null);
     return true;
+  }
+
+  async hasCurrentSiteAccess(senderUrl) {
+    if (!senderUrl) return false;
+    if (this.isLocalhostUrl(senderUrl)) return true;
+    const url = new URL(senderUrl);
+    if (!['http:', 'https:'].includes(url.protocol)) return false;
+    return chrome.permissions.contains({ origins: [`${url.origin}/*`] });
   }
 
   async isSupportedUrl(url) {

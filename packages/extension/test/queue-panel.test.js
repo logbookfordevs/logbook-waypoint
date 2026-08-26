@@ -12,7 +12,7 @@ const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel
 const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
 
-function createHarness(annotations, { projectAnnotations } = {}) {
+function createHarness(annotations, { projectAnnotations, siteAccess = true } = {}) {
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
   window.innerHeight = 900;
   window.innerWidth = 1200;
@@ -77,6 +77,8 @@ function createHarness(annotations, { projectAnnotations } = {}) {
     checkServerStatus: async () => ({ connected: true }),
     getToolbarPosition: async () => null,
     getSkipDeleteConfirm: async () => true,
+    hasCurrentSiteAccess: async () => siteAccess,
+    requestOptionalSitePermission: async () => true,
     loadAnnotations: async () => annotations,
     loadProjectAnnotations: async () => projectAnnotations || [
       ...annotations,
@@ -172,6 +174,30 @@ test('Queue remains available on an empty current route so other-route work stay
 
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /No active annotations on this route/);
   assert.match(root.querySelector('.waypoint-queue-header').textContent, /1 other route/);
+});
+
+test('settings show existing site access without an Enable action', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const button = root.querySelector('.waypoint-site-permission-btn');
+  assert.equal(button.textContent, 'Enabled');
+  assert.equal(button.disabled, true);
+  assert.match(root.querySelector('.waypoint-setting-description').textContent, /already enabled/i);
+});
+
+test('settings retain Enable when the current site lacks persistent access', async () => {
+  const { root } = await openQueue([], { siteAccess: false });
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const button = root.querySelector('.waypoint-site-permission-btn');
+  assert.equal(button.textContent, 'Enable');
+  assert.equal(button.disabled, false);
+  assert.match(root.querySelector('.waypoint-setting-description').textContent, /enable annotation access/i);
 });
 
 test('clicking delete all closes an open Queue through outside-click handling', async () => {

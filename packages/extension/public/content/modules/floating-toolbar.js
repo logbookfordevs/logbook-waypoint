@@ -270,10 +270,10 @@ var WaypointToolbar = (() => {
             ${ICONS.globe}
             <div>
               <span>Site access</span>
-              <div class="waypoint-setting-description">Enable annotation access for this site</div>
+              <div class="waypoint-setting-description">Checking site access…</div>
             </div>
           </div>
-          <button class="waypoint-btn waypoint-btn-secondary waypoint-site-permission-btn" type="button">Enable</button>
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-site-permission-btn" type="button" disabled>Checking…</button>
         </div>
         <p class="waypoint-site-permission-status" aria-live="polite"></p>
         <div class="waypoint-settings-separator"></div>
@@ -376,6 +376,15 @@ var WaypointToolbar = (() => {
 
     const permissionButton = settingsDropdown.querySelector('.waypoint-site-permission-btn');
     const permissionStatus = settingsDropdown.querySelector('.waypoint-site-permission-status');
+    const permissionDescription = settingsDropdown.querySelector('.waypoint-site-permission .waypoint-setting-description');
+    WaypointAPI.hasCurrentSiteAccess().then(granted => {
+      if (!permissionButton.isConnected) return;
+      permissionButton.textContent = granted ? 'Enabled' : 'Enable';
+      permissionButton.disabled = granted;
+      permissionDescription.textContent = granted
+        ? 'Annotation access is already enabled for this site'
+        : 'Enable annotation access for this site';
+    });
     permissionButton.addEventListener('click', async () => {
       permissionButton.disabled = true;
       permissionStatus.textContent = 'Requesting site access…';
@@ -383,6 +392,7 @@ var WaypointToolbar = (() => {
         const granted = await WaypointAPI.requestOptionalSitePermission();
         if (granted) {
           permissionButton.textContent = 'Enabled';
+          permissionDescription.textContent = 'Annotation access is already enabled for this site';
           permissionStatus.textContent = 'Site access enabled. Refresh this page to start annotating.';
         } else {
           permissionButton.disabled = false;
