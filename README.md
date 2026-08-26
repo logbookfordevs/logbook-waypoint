@@ -23,12 +23,14 @@ The initial MIT foundation already provides:
 - Local browser and server persistence
 - Optional screenshots and element context
 - An MCP server over HTTP and SSE
-- Tools for watching, claiming, releasing, resolving, discarding, deleting, grouping, and inspecting annotations
+- Tools for surveying, inspecting, watching, claiming, releasing, resolving, discarding, deleting, and grouping annotations
 - A Chrome-compatible unpacked extension
 
 Waypoint now adds a Logbook-native experience, a clearer work queue, Watch, Variants, Source Identity, and coding-agent setup on top of that foundation.
 
 Annotations move from Pending to Claimed before agent work. Release or inactivity expiry returns them to Pending; resolve and discard retain terminal history. Permanent deletion remains a separate explicit operation.
+
+The Queue shows whether local changes are up to date, waiting to sync, or blocked because the server is unavailable. **Sync now** retries the current project's pending work. Saves, deletions, and Design or Variant Intent removals remain recoverable locally until synchronization succeeds.
 
 ## Architecture
 
@@ -103,6 +105,8 @@ For JSON-based MCP clients:
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
+For annotation context, agents first survey a project with compact `read_annotations` summaries and inspect selected IDs only when complete diagnostic context is useful. Unfiltered reads discover projects before returning cross-project annotation bodies. See the [Annotation Context contract](docs/contracts/annotation-context.md) for the compact boundary, multi-Target compatibility, batch inspection, screenshots, and trust model.
+
 ### Design Actions setup
 
 Design Actions let you pair the normal Annotation comment with one Impeccable design discipline—such as Polish, Layout, Typeset, or Animate—or leave the action in Freeform. Turn on **Design Actions** in the Annotation editor, choose an action if one fits, and save the request to the normal Waypoint Queue.
@@ -119,7 +123,7 @@ The `Show Design Actions` preference only controls authoring UI for new Annotati
 
 Waypoint owns the Design Actions workflow and Annotation lifecycle; Impeccable supplies the external design discipline, not a second work-state system. An authored Design Intent may include separate Variant Intent. After an agent generates candidates and submits the complete set, Waypoint stores and governs the Variant Set, its Active Variant, and Finalization cleanup.
 
-If the requested workflow is unavailable or execution fails recoverably, the agent releases the Annotation to Pending with a safe Work Notice. Successful Design Actions retain a provider-neutral Resolution Record with a short outcome and verification evidence. Read exposes the complete record, while Watch keeps delivery concise.
+If the requested workflow is unavailable or execution fails recoverably, the agent releases the Annotation to Pending with a safe Work Notice. Successful Design Actions retain a provider-neutral Resolution Record with a short outcome and verification evidence. Survey keeps Queue context compact, Inspect exposes the complete record for selected Annotations, and Watch keeps delivery concise.
 
 ## Security boundary
 
