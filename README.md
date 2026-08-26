@@ -40,15 +40,17 @@ The Queue shows whether local changes are up to date, waiting to sync, or blocke
 Logbook Waypoint currently has two parts:
 
 1. **Browser extension** (`packages/extension/`) — captures and manages visual annotations and builds with WXT.
-2. **Local MCP server** (`packages/server/`) — persists annotations and exposes them to coding agents on `127.0.0.1:3846`.
+2. **Local MCP server** ([package guide](packages/server/README.md)) — persists annotations and exposes them to coding agents on `127.0.0.1:3846`.
 
 The extension, server, package, CLI, MCP configuration, storage keys, and Annotation IDs use the canonical identifiers defined in [the product identifier contract](docs/contracts/product-identifiers.md). Waypoint starts with its own empty storage and does not import settings or Annotations from predecessor products.
 
-## Design foundations
+## Documentation
 
+- [Documentation map](docs/README.md) — guides, contracts, specifications, architectural decisions, package docs, and release notes
 - [Domain language](CONTEXT.md)
 - [Architectural decisions](docs/adr/)
 - [Behavioral contracts](docs/contracts/)
+- Release notes: [product](CHANGELOG.md) · [server](packages/server/CHANGELOG.md)
 
 ## Development setup
 
