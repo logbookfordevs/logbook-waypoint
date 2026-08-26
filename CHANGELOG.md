@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Made Queue follow-ups survive server outages by retaining unsynced saves, deletions, and Design or Variant Intent removals until synchronization recovers
 - Replaced remote update promotion with local extension/server compatibility guidance
 - Added HTTP and JSON MCP connection guidance for coding agents
+- Replaced the inherited contribution template with Waypoint-specific setup, validation, contract, pull request, and release guidance
 
 ### Fixed
 - Prevented deleted annotations from returning during synchronization
@@ -37,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kept unresolved Variant Sets protected from ordinary mutation or deletion
 - Restored target selection and badge placement across shadow DOM, repeated elements, and rerendered pages
 - Made hiding Design Actions affect authoring UI without invalidating existing requests
+- Kept manual Queue synchronization retryable while the server is unavailable and limited offline counts to locally proven unsynced changes
+- Made commentless text edits retain their pin, use a meaningful Queue label, and restore their original text when deleted
+- Made Site access settings show whether the current page is already enabled instead of always offering an unnecessary permission action
 
 ### Removed
 - Public page-world annotation automation and mutation APIs

@@ -179,7 +179,8 @@ test('background validates attachment payloads before forwarding an annotation t
   assert.match(source, /requestOptionalSitePermission\(originPattern/);
   assert.match(source, /case 'getCurrentSiteAccess'/);
   assert.match(source, /hasCurrentSiteAccess\(senderUrl\)/);
-  assert.match(source, /chrome\.permissions\.contains\(\{ origins: \[`\$\{url\.origin\}\/\*`\] \}\)/);
+  assert.match(source, /WaypointSiteAccess\.hasCurrentSiteAccess/);
+  assert.match(source, /chrome\.permissions\.contains\(\{ origins: \[originPattern\] \}\)/);
   assert.match(source, /chrome\.permissions\.request\(\{ origins: \[originPattern\] \}\)/);
   assert.match(source, /validateAnnotationAttachments\(annotation\)/);
   assert.match(source, /apiServerUrl}\/api\/annotations/);

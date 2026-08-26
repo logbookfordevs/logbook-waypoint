@@ -166,3 +166,40 @@ test('compact surveys omit known framework component noise deterministically', a
   assert.equal('source_identity' in result.annotations[0].targets[0], false);
   assert.doesNotMatch(JSON.stringify(result.annotations[0]), /LayoutRouterContext/);
 });
+
+test('compact surveys preserve stored multi-Target annotations in canonical order', async () => {
+  const server = new LocalAnnotationsServer();
+  server.loadAnnotations = async () => [{
+    id: 'waypoint_1750000000000_multitarget',
+    url: 'http://localhost:3000/workflow',
+    comment: 'Align these related Targets',
+    status: 'pending',
+    targets: [{
+      selector: '#workflow-title',
+      element_context: { tag: 'h2', text: 'Workflow' },
+      component_name: 'WorkflowTitle',
+    }, {
+      selector: '.browser-surface',
+      element_context: { tag: 'div', text: 'localhost:3000/dashboard' },
+      component_name: 'BrowserSurface',
+    }],
+  }];
+
+  const result = await server.readAnnotations({ url: 'http://localhost:3000/*' });
+  const [annotation] = result.annotations;
+
+  assert.equal(annotation.target_count, 2);
+  assert.deepEqual(annotation.targets.map(target => ({
+    index: target.index,
+    selector: target.selector,
+    component_name: target.source_identity.component_name,
+  })), [{
+    index: 0,
+    selector: '#workflow-title',
+    component_name: 'WorkflowTitle',
+  }, {
+    index: 1,
+    selector: '.browser-surface',
+    component_name: 'BrowserSurface',
+  }]);
+});

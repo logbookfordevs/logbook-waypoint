@@ -8,6 +8,7 @@ importScripts('../variant-intent.js');
 importScripts('../annotation-validation.js');
 importScripts('../export-codec.js');
 importScripts('queue-sync.js');
+importScripts('site-access.js');
 importScripts('source-identity-probe.js');
 importScripts('action-controller.js');
 importScripts('variant-errors.js');
@@ -948,10 +949,11 @@ class WaypointAnnotationsBackground {
       error = statusError.message;
     }
 
-    const pendingIds = WaypointQueueSync.pendingIdsForOrigin(
+    const pendingIds = WaypointQueueSync.statusPendingIdsForOrigin(
       annotations,
       serverAnnotations,
       origin,
+      connected,
       result.waypointDeletedAnnotationIds,
       result.waypointDesignIntentRemovalIds,
       result.waypointVariantIntentRemovalIds,
@@ -1273,11 +1275,10 @@ class WaypointAnnotationsBackground {
   }
 
   async hasCurrentSiteAccess(senderUrl) {
-    if (!senderUrl) return false;
-    if (this.isLocalhostUrl(senderUrl)) return true;
-    const url = new URL(senderUrl);
-    if (!['http:', 'https:'].includes(url.protocol)) return false;
-    return chrome.permissions.contains({ origins: [`${url.origin}/*`] });
+    return WaypointSiteAccess.hasCurrentSiteAccess(senderUrl, {
+      isLocalhostUrl: url => this.isLocalhostUrl(url),
+      containsPermission: originPattern => chrome.permissions.contains({ origins: [originPattern] }),
+    });
   }
 
   async isSupportedUrl(url) {
