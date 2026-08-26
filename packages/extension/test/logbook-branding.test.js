@@ -66,6 +66,8 @@ test('Waypoint presents the Driftwood recipe in Day Chart and Night Watch', asyn
   assert.equal(hostProperties.get('--waypoint-surface'), '#152827');
   assert.equal(hostProperties.get('--waypoint-surface-1'), '#24312e');
   assert.equal(hostProperties.get('--waypoint-highlight'), '#69aaa4');
+  assert.equal(hostProperties.get('--waypoint-selection'), '#69aaa4');
+  assert.equal(hostProperties.get('--waypoint-on-selection'), '#071b1d');
   assert.equal(hostAttributes.get('data-lfd-recipe'), 'driftwood');
   assert.equal(hostAttributes.get('data-lfd-theme'), 'night');
 
@@ -84,7 +86,8 @@ test('floating toolbar uses Atlantic Chartroom roles without legacy palette colo
 
   assert.match(toolbarStyles, /background:\s*var\(--waypoint-surface-1\)/);
   assert.match(toolbarStyles, /border:\s*1px solid var\(--waypoint-outline\)/);
-  assert.match(toolbarStyles, /background:\s*var\(--waypoint-highlight\)/);
+  assert.match(toolbarStyles, /background:\s*var\(--waypoint-selection\)/);
+  assert.match(toolbarStyles, /color:\s*var\(--waypoint-on-selection\)/);
   assert.match(toolbarStyles, /background:\s*var\(--waypoint-warning\)/);
   assert.match(toolbarStyles, /background:\s*#bd9348/i);
   assert.match(toolbarStyles, /:host\(\[data-lfd-theme="night"\]\) \.waypoint-tb-settings/);

@@ -29,6 +29,8 @@ var WAYPOINT_STYLES = `
   --waypoint-danger: #a63d32;
   --waypoint-danger-hover: #a63d3214;
   --waypoint-highlight: #3f8580;
+  --waypoint-selection: #102c2c;
+  --waypoint-on-selection: #f4efde;
   --waypoint-badge-bg: #173f5f;
   --waypoint-tooltip-bg: #102c2c;
   --waypoint-primary-btn: #102c2c;
@@ -1015,8 +1017,8 @@ var WAYPOINT_STYLES = `
 }
 
 .waypoint-toolbar-btn.active {
-  background: var(--waypoint-highlight);
-  color: #071b1d;
+  background: var(--waypoint-selection);
+  color: var(--waypoint-on-selection);
 }
 
 .waypoint-toolbar-btn.active:hover {

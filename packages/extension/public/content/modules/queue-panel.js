@@ -192,11 +192,11 @@ var WaypointQueuePanel = (() => {
           <button class="waypoint-queue-close" type="button" aria-label="Close Queue">×</button>
         </div>
       </header>
+      ${visibleAnnotations.length ? renderSignalKey() : ''}
       <nav class="waypoint-queue-views" aria-label="Queue views">
         <button class="waypoint-queue-active-view" type="button" aria-pressed="${view === 'active'}">Active <span>${activeAnnotations.length}</span></button>
         <button class="waypoint-queue-history-view" type="button" aria-pressed="${view === 'history'}">History <span>${historyAnnotations.length}</span></button>
       </nav>
-      ${visibleAnnotations.length ? renderSignalKey() : ''}
       <div class="waypoint-queue-list">
         ${visibleAnnotations.length ? visibleAnnotations.map(annotation => renderAnnotation(annotation, view === 'active', isCurrent)).join('') : `<p class="waypoint-queue-empty">No ${view === 'history' ? 'history' : 'active annotations'} on this route.</p>`}
       </div>
