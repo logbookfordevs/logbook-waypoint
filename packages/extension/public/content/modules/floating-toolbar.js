@@ -583,12 +583,12 @@ var WaypointToolbar = (() => {
         <div class="waypoint-guide-section">
           <div class="waypoint-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--waypoint-text-secondary);">(optional)</span></div>
           <p class="waypoint-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
-          <div class="waypoint-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
-            <code>pnpm add --global @logbookfordevs/waypoint</code>
+          <div class="waypoint-guide-cmd" data-cmd="pnpm install">
+            <code>pnpm install</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <div class="waypoint-guide-cmd" data-cmd="waypoint start">
-            <code>waypoint start</code>
+          <div class="waypoint-guide-cmd" data-cmd="node packages/server/bin/cli.js start">
+            <code>node packages/server/bin/cli.js start</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
           <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent:</p>
@@ -706,12 +706,12 @@ var WaypointToolbar = (() => {
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Setup</div>
-            <div class="waypoint-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
-              <code>pnpm add --global @logbookfordevs/waypoint</code>
+            <div class="waypoint-guide-cmd" data-cmd="pnpm install">
+              <code>pnpm install</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <div class="waypoint-guide-cmd" data-cmd="waypoint start">
-              <code>waypoint start</code>
+            <div class="waypoint-guide-cmd" data-cmd="node packages/server/bin/cli.js start">
+              <code>node packages/server/bin/cli.js start</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
             <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent (e.g. Claude Code):</p>

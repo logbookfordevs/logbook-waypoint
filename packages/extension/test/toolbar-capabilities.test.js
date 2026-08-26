@@ -96,6 +96,14 @@ test('toolbar requests optional site access through the background message seam'
   assert.match(toolbar, /waypoint-site-permission/);
 });
 
+test('toolbar onboarding uses repository setup while the package is unpublished', async () => {
+  const toolbar = await readFile(toolbarUrl, 'utf8');
+
+  assert.match(toolbar, /node packages\/server\/bin\/cli\.js start/);
+  assert.doesNotMatch(toolbar, /pnpm add --global @logbookfordevs\/waypoint/);
+  assert.doesNotMatch(toolbar, /data-cmd="waypoint start"/);
+});
+
 test('toolbar exposes synchronized theme, pin color, and clear-on-copy settings', async () => {
   const toolbar = await readFile(toolbarUrl, 'utf8');
 

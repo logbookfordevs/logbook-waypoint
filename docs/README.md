@@ -8,7 +8,9 @@ Choose the shortest route for what you need to understand or change.
 
 ## Use and develop Waypoint
 
+- [User guide](USER_GUIDE.md) — annotate a page, manage the Queue, copy or export work, connect MCP, and configure everyday behavior.
 - [Use Design Actions](DESIGN_ACTIONS.md) — author guided or Freeform design work, request Variants, and understand Queue outcomes.
+- [Use Waypoint through MCP](MCP_GUIDE.md) — follow the normal agent workflow, understand compact Survey and diagnostic Inspect, and reference all 19 tools.
 - [Development guide](DEVELOPMENT.md) — work on the extension and local server.
 - [Update system](UPDATE_SYSTEM.md) — understand the retained local update behavior and maintenance boundary.
 - [Server package guide](../packages/server/README.md) — install, run, connect, and use the local MCP server.

@@ -16,7 +16,7 @@ Reading and inspection are passive. They do not create or refresh a Claim, chang
 
 An unfiltered `read_annotations` call discovers the available projects. When more than one project has matching Annotations, it returns project summaries and recommended URL filters without returning Annotation bodies. The caller selects one project and repeats the survey with its URL filter.
 
-A scoped survey returns compact summaries suitable for understanding, prioritizing, grouping, and selecting work. Each summary may include:
+A scoped survey returns compact summaries suitable for understanding, prioritizing, grouping, selecting, and usually implementing work. Compact describes response size, not an incomplete work brief: Survey is the default implementation context, while Inspect is an optional diagnostic path for remaining ambiguity. Each summary may include:
 
 - Annotation ID, route, lifecycle state, comment, and timestamps.
 - Target count and a normalized `targets` array.
@@ -33,7 +33,7 @@ Pagination applies after project and status filtering. A URL filter may identify
 
 Diagnostic context may include full computed styles, viewport and exact element bounds, complete parent chains, badge offsets, Source Identity and context hints, pending presentation, and Target relationships. Inspection retains framework component names because they may help diagnose capture or source-resolution ambiguity.
 
-Inspection does not require a prior Survey when the caller already has the intended IDs. It is an on-demand diagnostic path, not a mandatory step after every compact summary.
+Inspection does not require a prior Survey when the caller already has the intended IDs. Like opening browser DevTools after the visible evidence stops being sufficient, it is an on-demand diagnostic path—not a mandatory step after every compact summary.
 
 ## Target compatibility
 

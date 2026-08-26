@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional JSON import/export, project context, bulk cleanup, keyboard inspection, and annotation appearance settings
 - Batched MCP inspection for selected Annotations and complete diagnostic Target context
 - Queue sync status with manual retry for local changes awaiting the server
+- Workflow-first MCP documentation with concrete calls, compact Survey guidance, diagnostic Inspect guidance, and a complete 19-tool reference
+- A basic-to-advanced user guide for annotation, Queue, copy/export, MCP, Design Actions, settings, and local-data behavior
 
 ### Changed
 - Rebuilt the product from the final MIT-licensed foundation under the Logbook Waypoint identity

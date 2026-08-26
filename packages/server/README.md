@@ -4,16 +4,20 @@ Global MCP server for Logbook Waypoint browser extension.
 
 ## Installation
 
+The package is not published yet. Use it from this repository during early development:
+
 ```bash
-pnpm add --global @logbookfordevs/waypoint
+pnpm install
 ```
+
+Until the package is published, run its CLI from the repository root with `node packages/server/bin/cli.js`.
 
 ## Usage
 
 ### Start the server
 
 ```bash
-waypoint start
+node packages/server/bin/cli.js start
 ```
 
 The server will run in the background on port 3846.
@@ -21,27 +25,27 @@ The server will run in the background on port 3846.
 ### Stop the server
 
 ```bash
-waypoint stop
+node packages/server/bin/cli.js stop
 ```
 
 ### Check server status
 
 ```bash
-waypoint status
+node packages/server/bin/cli.js status
 ```
 
 ### Restart the server
 
 ```bash
-waypoint restart
+node packages/server/bin/cli.js restart
 ```
 
 ### View logs
 
 ```bash
-waypoint logs
+node packages/server/bin/cli.js logs
 # or follow logs
-waypoint logs -f
+node packages/server/bin/cli.js logs -f
 ```
 
 ## AI Coding Agent Integration
@@ -100,13 +104,13 @@ claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse
 2. Go to Code → Settings → Settings or use the shortcut ⌘,
 3. In the search bar, type "MCP"
 4. Look for MCP server configurations in your AI extension settings
-5. Add the following SSE configuration:
+5. Add the following HTTP configuration:
 
 ```json
 {
   "mcpServers": {
     "logbook-waypoint": {
-      "type": "sse",
+      "type": "http",
       "url": "http://127.0.0.1:3846/mcp"
     }
   }
@@ -117,7 +121,7 @@ claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse
 
 ### Other Editors
 
-Other code editors and tools that support SSE (Server-Sent Events) can also connect to the Logbook Waypoint MCP server. If you're using a different editor or tool, check its documentation to confirm it supports SSE-based communication. If it does, you can manually add the server using this configuration:
+Other editors and tools can connect when they support MCP over streamable HTTP or legacy SSE. Check the client's documentation for its exact configuration shape. Prefer the HTTP endpoint when both transports are available:
 
 ```json
 {
@@ -134,6 +138,7 @@ Other code editors and tools that support SSE (Server-Sent Events) can also conn
 ## Architecture
 
 The server provides:
+- **MCP HTTP Endpoint** (`/mcp`): Recommended streamable HTTP connection for coding agents
 - **SSE Endpoint** (`/sse`): For AI coding agent MCP connections
 - **HTTP API** (`/api/annotations`): For Chrome extension communication
 - **Health Check** (`/health`): For status monitoring
@@ -142,11 +147,13 @@ The HTTP API and MCP tools share one Annotation lifecycle: Pending Annotations m
 
 ### Annotation context workflow
 
-Use `read_annotations` to survey the Queue. If an unfiltered call discovers multiple projects, select one of its recommended URL filters and repeat the read; annotation bodies remain withheld until the project scope is explicit. Scoped reads return compact summaries normalized across legacy single-Target and multi-Target records.
+Use `read_annotations` to survey the Queue. If an unfiltered call discovers multiple projects, select one of its recommended URL filters and repeat the read; annotation bodies remain withheld until the project scope is explicit. Scoped reads return compact summaries normalized across legacy single-Target and multi-Target records. Compact describes response size, not an incomplete brief: Survey should usually provide enough context to implement the request.
 
 Use `inspect_annotations` with one or more Annotation IDs when selected work needs complete diagnostic context such as computed styles, exact placement, full ancestry, Source Identity hints, or Target relationships. Batch IDs for Annotations being understood or implemented together. Inspection is optional when the compact summary already makes the work clear.
 
 Survey and Inspect report screenshot and attachment availability without embedding media bytes. Retrieve a screenshot or attachment separately when its evidence is needed. The canonical [Annotation Context contract](../../docs/contracts/annotation-context.md) defines the projection, batching, compatibility, and trust boundaries.
+
+See [Use Waypoint through MCP](../../docs/MCP_GUIDE.md) for the normal workflow, concrete calls, response boundary, and complete 19-tool reference.
 
 ### Design Actions workflow
 

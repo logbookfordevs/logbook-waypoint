@@ -47,6 +47,8 @@ The extension, server, package, CLI, MCP configuration, storage keys, and Annota
 ## Documentation
 
 - [Documentation map](docs/README.md) — guides, contracts, specifications, architectural decisions, package docs, and release notes
+- [User guide](docs/USER_GUIDE.md) — first Annotation, Queue management, copy/export, MCP setup, Design Actions, and settings
+- [MCP guide](docs/MCP_GUIDE.md) — normal agent workflow, compact Survey, diagnostic Inspect, examples, and all 19 tools
 - [Domain language](CONTEXT.md)
 - [Architectural decisions](docs/adr/)
 - [Behavioral contracts](docs/contracts/)
@@ -110,7 +112,7 @@ For JSON-based MCP clients:
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
-For annotation context, agents first survey a project with compact `read_annotations` summaries and inspect selected IDs only when complete diagnostic context is useful. Unfiltered reads discover projects before returning cross-project annotation bodies. See the [Annotation Context contract](docs/contracts/annotation-context.md) for the compact boundary, multi-Target compatibility, batch inspection, screenshots, and trust model.
+For annotation context, agents first survey a project with compact `read_annotations` summaries and inspect selected IDs only when complete diagnostic context is useful. Compact summaries are intended to be sufficient for normal implementation; “compact” describes the response size, not a partial brief. Unfiltered reads discover projects before returning cross-project annotation bodies. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
 
 ### Design Actions setup
 

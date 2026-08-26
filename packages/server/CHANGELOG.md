@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Made Watch recovery durable across server restarts and annotation recreation
 - Made `read_annotations` return compact project-scoped summaries, with project discovery before cross-project annotation bodies and one normalized Target shape
 - Replaced remote update checks with local extension compatibility guidance
+- Clarified repository-based setup before publication, corrected streamable HTTP client guidance, and linked the complete MCP workflow and tool reference
 
 ### Fixed
 - Preserved lifecycle, Variant, screenshot, attachment, and Design Action state during full synchronization
