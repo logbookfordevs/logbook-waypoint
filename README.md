@@ -144,7 +144,7 @@ Logbook Waypoint is an independent project and is not affiliated with or endorse
 
 ## Contributing
 
-The project is intentionally early. Before proposing a large change, open an issue describing the problem, rationale, and smallest useful solution. See [CONTRIBUTING.md](CONTRIBUTING.md) for the inherited development notes that are being revised alongside the codebase.
+The project is intentionally early. Before proposing a large change, open an issue describing the problem, rationale, and smallest useful solution. See [CONTRIBUTING.md](CONTRIBUTING.md) for the Waypoint-specific setup, change expectations, validation, and pull request guidance.
 
 ## Support the voyage
 
