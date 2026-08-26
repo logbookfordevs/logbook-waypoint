@@ -53,7 +53,8 @@ Unsure where to begin contributing? You can start by looking through these issue
 logbook-waypoint/
 ├── packages/
 │   ├── extension/      # WXT browser extension
-│   └── server/         # @logbookfordevs/waypoint
+│   ├── server/         # @logbookfordevs/waypoint
+│   └── website/        # Next.js marketing and documentation site
 ├── docs/              # Documentation
 ├── pnpm-workspace.yaml # Workspace definition
 └── README.md          # Main documentation
@@ -76,6 +77,13 @@ logbook-waypoint/
 1. Install dependencies from the repository root with `pnpm install`.
 2. Run `pnpm --filter @logbookfordevs/waypoint start`.
 3. Test your changes.
+
+### Website Development
+
+1. Install dependencies from the repository root with `pnpm install`.
+2. Run the website package through your preferred Next.js development workflow.
+3. Run `pnpm --filter @logbookfordevs/waypoint-website test` for rendered-DOM behavior.
+4. Run `pnpm --filter @logbookfordevs/waypoint-website check` and `pnpm --filter @logbookfordevs/waypoint-website build` before handoff.
 
 ### Code Style
 

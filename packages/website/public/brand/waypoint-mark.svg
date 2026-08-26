@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Logbook Waypoint mark">
+  <rect width="512" height="512" rx="112" fill="#102c2c"/>
+  <path d="M96 388c48-18 78-17 112 6 32 22 67 23 104 3 34-19 66-20 104-4" fill="none" stroke="#bd9348" stroke-width="24" stroke-linecap="round" stroke-dasharray="2 46"/>
+  <path d="M256 74c-83 0-150 66-150 148 0 104 122 201 138 213a20 20 0 0 0 24 0c16-12 138-109 138-213 0-82-67-148-150-148Z" fill="#f4efde"/>
+  <path d="M256 112c-62 0-112 49-112 110 0 67 70 139 112 176 42-37 112-109 112-176 0-61-50-110-112-110Z" fill="#f3ede3"/>
+  <circle cx="256" cy="222" r="58" fill="#b8573c"/>
+  <circle cx="256" cy="222" r="22" fill="#102c2c"/>
+</svg>

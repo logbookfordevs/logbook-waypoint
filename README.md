@@ -32,10 +32,11 @@ Annotations move from Pending to Claimed before agent work. Release or inactivit
 
 ## Architecture
 
-Logbook Waypoint currently has two parts:
+Logbook Waypoint currently has three parts:
 
 1. **Browser extension** (`packages/extension/`) — captures and manages visual annotations and builds with WXT.
 2. **Local MCP server** (`packages/server/`) — persists annotations and exposes them to coding agents on `127.0.0.1:3846`.
+3. **Marketing and documentation website** (`packages/website/`) — explains the workflow and hosts the development-stage product guides.
 
 The extension, server, package, CLI, MCP configuration, storage keys, and Annotation IDs use the canonical identifiers defined in [the product identifier contract](docs/contracts/product-identifiers.md). Waypoint starts with its own empty storage and does not import settings or Annotations from predecessor products.
 
@@ -53,12 +54,22 @@ Install the pnpm workspace once from the repository root:
 pnpm install
 ```
 
-Build and verify both packages:
+Build and verify the workspace packages:
 
 ```bash
 pnpm check
 pnpm test
 pnpm build
+```
+
+### Marketing and documentation website
+
+The website is part of the pnpm workspace and remains unpublished while Waypoint is in development. Its package-level checks are:
+
+```bash
+pnpm --filter @logbookfordevs/waypoint-website test
+pnpm --filter @logbookfordevs/waypoint-website check
+pnpm --filter @logbookfordevs/waypoint-website build
 ```
 
 ### Local server
