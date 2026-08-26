@@ -6,6 +6,7 @@ var WaypointMultiTargetSelection = (() => {
   let tray = null;
   let draft = null;
   let rafId = null;
+  let selectionURL = null;
 
   function init() {
     WaypointEvents.on('inspection:elementClicked', onElementClicked);
@@ -20,7 +21,13 @@ var WaypointMultiTargetSelection = (() => {
 
   async function onElementClicked({ element, clientX, clientY, shiftKey = false }) {
     if (!shouldHandle(shiftKey) || composing) return false;
+    const currentURL = window.location.href;
+    if (selectionURL && selectionURL !== currentURL) {
+      render('Targets must come from the same page URL.');
+      return true;
+    }
     active = true;
+    selectionURL ||= currentURL;
     const context = await WaypointElementContext.generate(element);
     const existingIndex = selections.findIndex(selection => selection.context.selector === context.selector);
     if (existingIndex >= 0) {
@@ -131,6 +138,12 @@ var WaypointMultiTargetSelection = (() => {
     reset();
   }
 
+  function handleRouteChange(nextURL) {
+    if (!active || !selectionURL || selectionURL === nextURL) return;
+    if (hasDraftContent() && !window.confirm('Discard this shared Annotation draft?')) return;
+    reset();
+  }
+
   function cancel() {
     if (hasDraftContent() && !window.confirm('Discard this shared Annotation draft?')) return;
     reset();
@@ -151,6 +164,7 @@ var WaypointMultiTargetSelection = (() => {
     draft = null;
     active = false;
     composing = false;
+    selectionURL = null;
     stopPositioning();
   }
 
@@ -160,6 +174,7 @@ var WaypointMultiTargetSelection = (() => {
 
   return {
     getSelections,
+    handleRouteChange,
     handleEscape,
     init,
     isActive: () => active,

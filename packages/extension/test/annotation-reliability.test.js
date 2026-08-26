@@ -744,3 +744,29 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   assert.equal(replacement.textContent, 'Old');
   assert.equal(context.document.querySelector('[data-waypoint-style]'), null);
 });
+
+test('deleting an earlier Annotation preserves shared Target badge ordinals', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="single"></button><button id="first"></button><button id="second"></button></body></html>');
+  const overlay = context.document.querySelector('#overlay');
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  context.WaypointElementContext = {
+    findElementBySelector: candidate => context.document.querySelector(candidate.selector),
+  };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  const single = {
+    id: 'waypoint_1750000000000_abcdefghi', status: 'pending', comment: 'Single', created_at: '2026-01-01T00:00:00.000Z', targets: [{ selector: '#single' }],
+  };
+  const shared = {
+    id: 'waypoint_1750000000001_abcdefghi', status: 'pending', comment: 'Shared', created_at: '2026-01-01T00:00:01.000Z', targets: [{ selector: '#first' }, { selector: '#second' }],
+  };
+  context.WaypointBadgeManager.init();
+  context.WaypointBadgeManager.render([single, shared]);
+  context.WaypointEvents.emit('annotation:deleted', { id: single.id, annotation: single });
+
+  assert.deepEqual(
+    [...overlay.querySelectorAll('.waypoint-badge')].map(badge => badge.childNodes[0].textContent),
+    ['1a', '1b'],
+  );
+});

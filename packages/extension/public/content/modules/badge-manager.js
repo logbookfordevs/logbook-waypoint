@@ -343,9 +343,9 @@ var WaypointBadgeManager = (() => {
     const deletedEntries = badges.filter(b => b.annotation.id === id);
     if (deletedEntries.length) {
       for (const entry of deletedEntries) {
-      const pc = entry.annotation.pending_changes;
-      restorePendingChanges(entry.targetElement, pc);
-      entry.el.remove();
+        const pc = entry.annotation.pending_changes;
+        restorePendingChanges(entry.targetElement, pc);
+        entry.el.remove();
       }
       badges = badges.filter(entry => entry.annotation.id !== id);
     } else if (annotation?.pending_changes) {
@@ -358,10 +358,17 @@ var WaypointBadgeManager = (() => {
     }
     if (!badges.length) stopRAF();
 
-    // Re-number remaining badges
-    badges.forEach((entry, i) => {
-      entry.el.childNodes[0].textContent = (i + 1).toString();
-    });
+    const annotationNumbers = new Map();
+    for (const entry of badges) {
+      if (!annotationNumbers.has(entry.annotation.id)) {
+        annotationNumbers.set(entry.annotation.id, annotationNumbers.size + 1);
+      }
+      const number = annotationNumbers.get(entry.annotation.id);
+      const targetCount = WaypointAnnotationTargets.get(entry.annotation).length;
+      entry.el.childNodes[0].textContent = targetCount > 1
+        ? `${number}${String.fromCharCode(97 + entry.targetIndex)}`
+        : number.toString();
+    }
   }
 
   function onUpdated({ id, comment, pending_changes, css, design_intent, variant_intent }) {

@@ -872,12 +872,13 @@ var WaypointToolbar = (() => {
   function openAnnotation(annotation) {
     const targetElements = WaypointAnnotationTargets.get(annotation)
       .map(target => WaypointElementContext.findElementBySelector(target));
-    const element = targetElements[0];
+    const targetIndex = targetElements.findIndex(Boolean);
+    const element = targetElements[targetIndex];
     if (!element) {
       WaypointBadgeManager.highlightElement(annotation);
       return;
     }
-    WaypointEvents.emit('annotation:edit', { annotation, element, targetElements, targetIndex: 0 });
+    WaypointEvents.emit('annotation:edit', { annotation, element, targetElements, targetIndex });
   }
 
   // --- Drag ---

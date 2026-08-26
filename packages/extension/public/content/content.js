@@ -146,6 +146,7 @@ console.log('[Waypoint] content.js loaded');
     function onRouteChange() {
       const newURL = window.location.href;
       if (newURL === currentURL) return;
+      WaypointMultiTargetSelection.handleRouteChange(newURL);
       currentURL = newURL;
       console.log('[Waypoint] SPA route change detected:', newURL);
       reloadAnnotationsForCurrentRoute();

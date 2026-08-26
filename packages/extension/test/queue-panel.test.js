@@ -62,7 +62,7 @@ function createHarness(annotations, { projectAnnotations } = {}) {
     getAnnotationRoute: annotation => new URL(annotation.url).pathname,
   };
   context.WaypointElementContext = {
-    findElementBySelector: () => context.document.querySelector('#target'),
+    findElementBySelector: candidate => context.document.querySelector(candidate.selector || candidate),
   };
   context.WaypointEvents = {
     on: (name, listener) => listeners.set(name, listener),
@@ -439,6 +439,22 @@ test('Queue Open resolves the Target and reopens the existing Annotation editor'
   assert.equal(editEvent.payload.annotation.id, annotation.id);
   assert.equal(editEvent.payload.element.id, 'target');
   assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+});
+
+test('Queue Open starts at the first available Target when an earlier Target is unavailable', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: 'Reopen the available Target',
+    targets: [{ selector: '#missing' }, { selector: '#target' }],
+  };
+  const { emitted, root } = await openQueue([annotation]);
+  root.querySelector('.waypoint-queue-open').click();
+
+  const editEvent = emitted.find(event => event.name === 'annotation:edit');
+  assert.equal(editEvent.payload.element.id, 'target');
+  assert.equal(editEvent.payload.targetIndex, 1);
 });
 
 test('Queue supports keyboard dismissal with Escape', async () => {

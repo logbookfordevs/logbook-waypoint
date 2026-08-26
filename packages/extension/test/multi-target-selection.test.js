@@ -115,3 +115,19 @@ test('closing inspection confirms before discarding a preserved composer draft',
   handlers.get('inspection:stopped')();
   assert.equal(context.WaypointMultiTargetSelection.isActive(), false);
 });
+
+test('a route change cannot add a Target from a different page URL', async () => {
+  const { context, handlers, window } = await setup();
+  const first = window.document.createElement('button');
+  first.id = 'first';
+  const second = window.document.createElement('button');
+  second.id = 'second';
+  window.document.querySelector('main').append(first, second);
+
+  await handlers.get('inspection:elementClicked')({ element: first, shiftKey: true });
+  context.WaypointMultiTargetSelection.handleRouteChange('http://localhost:3000/other');
+  await handlers.get('inspection:elementClicked')({ element: second });
+
+  assert.equal(context.WaypointMultiTargetSelection.getSelections().length, 0);
+  assert.equal(context.WaypointMultiTargetSelection.isActive(), false);
+});
