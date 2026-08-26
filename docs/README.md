@@ -4,7 +4,7 @@ Choose the shortest route for what you need to understand or change.
 
 ## Start visually
 
-- [Waypoint Signal Chart](https://tot.page/VLsg5EWMyGnN2v7OuxzOuA/index.html@3f848827c80fdc1d2467cc2b829275d4a86087d9) — trace the extension, Queue, MCP server, coding-agent journeys, lifecycle, and complete MCP tool surface interactively.
+- [Waypoint Signal Chart](https://tot.page/I3pC-z9cCejNITMc7Mk96Q/index.html@b5f1d9e0955ce3411ccf9709e3d05bd89415a8bd) — trace the extension, Queue, MCP server, coding-agent journeys, lifecycle, and complete MCP tool surface interactively.
 
 ## Use and develop Waypoint
 

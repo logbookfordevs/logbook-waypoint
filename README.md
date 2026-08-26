@@ -15,7 +15,7 @@ Logbook Waypoint is a local-first visual feedback tool for developers and coding
 > Logbook Waypoint is at the beginning of its independent development. The npm package and browser extension are not published yet. Use the development setup below.
 
 > [!TIP]
-> **Prefer a visual tour?** Open the interactive [Waypoint Signal Chart](https://tot.page/VLsg5EWMyGnN2v7OuxzOuA/index.html@3f848827c80fdc1d2467cc2b829275d4a86087d9) to trace the extension → Queue → MCP → agent workflow, explore every journey, and inspect all 19 MCP tools.
+> **Prefer a visual tour?** Open the interactive [Waypoint Signal Chart](https://tot.page/I3pC-z9cCejNITMc7Mk96Q/index.html@b5f1d9e0955ce3411ccf9709e3d05bd89415a8bd) to trace the extension → Queue → MCP → agent workflow, explore every journey, and inspect all 19 MCP tools.
 
 ## Current foundation
 
