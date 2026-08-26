@@ -41,6 +41,7 @@ import {
 } from './annotation-lifecycle.js';
 import { ALLOWED_IMAGE_MIME_TYPES, AttachmentStore } from './attachment-store.js';
 import { encodeAnnotationsExport } from './export-codec.js';
+import { inspectAnnotation, summarizeAnnotation } from './annotation-summary.js';
 import { createProjectScope, matchesProjectScope } from './project-scope.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
 import { PersistentWatchQueue, toReadAnnotation, toWatchAnnotation } from './watch-queue.js';
@@ -662,7 +663,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'read_annotations',
-            description: 'Retrieves user-created visual annotations with pagination support. Returns annotation data with has_screenshot flag instead of full screenshot data for token efficiency. Use url parameter to filter by project. MULTI-PROJECT SAFETY: This tool detects when annotations exist across multiple localhost projects and provides warnings with specific URL filtering guidance. CRITICAL WORKFLOW: (1) First call WITHOUT url parameter to see all projects, (2) Use get_project_context tool to determine current project, (3) Call again WITH url parameter (e.g., "http://localhost:3000/*") to filter for current project only. This prevents cross-project contamination where you might implement changes in wrong codebase. DESIGN CHANGES: Annotations may include pending_changes with original→new values for CSS properties. When implementing these changes, map values to the project design system (Tailwind classes, CSS variables, or design tokens) rather than using raw values. Use limit and offset parameters for pagination when handling large annotation sets. Use this tool when users mention: annotations, comments, feedback, suggestions, notes, marked changes, or visual issues they\'ve identified.',
+            description: 'Survey the annotation Queue. Returns compact, actionable summaries for understanding, prioritizing, grouping, and selecting work. When multiple projects exist, an unfiltered call returns project discovery metadata before annotation summaries. Filter by url to survey one project. Authored pending_changes and css remain explicit original-to-value instructions that should be mapped to the project design system.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -692,6 +693,27 @@ export class LocalAnnotationsServer {
               },
               additionalProperties: false
             }
+          },
+          {
+            name: 'inspect_annotations',
+            description: 'Diagnose one or more selected annotations using their complete captured context. Use multiple IDs for annotations being understood or implemented together. Useful when compact context leaves layout, cascade, placement, source identity, or target relationships ambiguous.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                ids: {
+                  type: 'array',
+                  minItems: 1,
+                  uniqueItems: true,
+                  items: {
+                    type: 'string',
+                    description: 'Canonical Annotation ID',
+                  },
+                  description: 'Selected Annotation IDs to inspect together',
+                },
+              },
+              required: ['ids'],
+              additionalProperties: false,
+            },
           },
           {
             name: 'claim_annotation',
@@ -913,6 +935,20 @@ export class LocalAnnotationsServer {
                   }), null, 2)
                 }
               ]
+            };
+          }
+
+          case 'inspect_annotations': {
+            const result = await this.inspectAnnotations(args || {});
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify(createToolPayload('inspect_annotations', {
+                  annotations: result.annotations,
+                  count: result.annotations.length,
+                  missing_ids: result.missingIds,
+                }), null, 2),
+              }],
             };
           }
 
@@ -1487,7 +1523,10 @@ export class LocalAnnotationsServer {
 
     // Apply pagination with offset
     const total = filtered.length;
-    const paginatedResults = filtered.slice(offset, offset + limit);
+    const requiresProjectFilter = projectCount > 1 && !url;
+    const paginatedResults = requiresProjectFilter
+      ? []
+      : filtered.slice(offset, offset + limit);
 
     // Calculate pagination metadata
     const pagination = {
@@ -1497,14 +1536,30 @@ export class LocalAnnotationsServer {
       has_more: (offset + limit) < total
     };
 
-    // Transform annotations to strip screenshot data and add has_screenshot flag
-    const annotationsWithScreenshotFlag = paginatedResults.map(annotation => toReadAnnotation(annotation));
+    const annotationSummaries = paginatedResults.map(annotation => summarizeAnnotation(annotation));
 
     return {
-      annotations: annotationsWithScreenshotFlag,
+      annotations: annotationSummaries,
       pagination: pagination,
       projectInfo: projectInfo,
       multiProjectWarning: multiProjectWarning
+    };
+  }
+
+  async inspectAnnotations(args) {
+    const ids = args?.ids;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new TypeError('inspect_annotations requires at least one Annotation ID');
+    }
+    if (ids.some(id => !isValidAnnotationId(id))) {
+      throw new TypeError('Invalid annotation ID');
+    }
+
+    const annotations = await this.loadCurrentAnnotations();
+    const byId = new Map(annotations.map(annotation => [annotation.id, annotation]));
+    return {
+      annotations: ids.flatMap(id => byId.has(id) ? [inspectAnnotation(byId.get(id))] : []),
+      missingIds: ids.filter(id => !byId.has(id)),
     };
   }
 
