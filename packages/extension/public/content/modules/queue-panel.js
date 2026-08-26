@@ -34,6 +34,13 @@ var WaypointQueuePanel = (() => {
     return captured || annotation.selector || annotation.element || 'Target';
   }
 
+  function annotationTitle(annotation) {
+    const comment = typeof annotation.comment === 'string' ? annotation.comment.trim() : '';
+    if (comment) return comment;
+    if (annotation.pending_changes?.copyChange) return 'Text content edit';
+    return 'Untitled annotation';
+  }
+
   function signalIcon(type, label, path) {
     return `<span class="waypoint-queue-signal" data-signal="${type}" role="img" aria-label="${escapeHTML(label)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg></span>`;
   }
@@ -102,9 +109,9 @@ var WaypointQueuePanel = (() => {
     const details = [statusLabel(annotation.status), formatTargetSummary(annotation), ...variantLabels(annotation)];
     return `
       <div class="waypoint-queue-row${selectable ? '' : ' waypoint-queue-row-history'}" data-annotation-id="${escapeHTML(annotation.id)}">
-        ${selectable ? `<input class="waypoint-queue-select" type="checkbox" value="${escapeHTML(annotation.id)}" aria-label="Select annotation: ${escapeHTML(annotation.comment || 'Untitled annotation')}">` : ''}
+        ${selectable ? `<input class="waypoint-queue-select" type="checkbox" value="${escapeHTML(annotation.id)}" aria-label="Select annotation: ${escapeHTML(annotationTitle(annotation))}">` : ''}
         <span class="waypoint-queue-copy">
-          <span class="waypoint-queue-comment">${escapeHTML(annotation.comment || 'Untitled annotation')}</span>
+          <span class="waypoint-queue-comment">${escapeHTML(annotationTitle(annotation))}</span>
           <span class="waypoint-queue-meta">${details.map(escapeHTML).join(' · ')}</span>
           ${renderSignals(annotation)}
         </span>

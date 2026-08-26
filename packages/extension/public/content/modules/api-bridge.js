@@ -60,6 +60,15 @@ var WaypointAPI = (() => {
     }
   }
 
+  async function hasCurrentSiteAccess() {
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'getCurrentSiteAccess' });
+      return response?.success === true && response.granted === true;
+    } catch {
+      return false;
+    }
+  }
+
   // --- Server status ---
 
   async function checkServerStatus() {
@@ -480,6 +489,7 @@ var WaypointAPI = (() => {
     syncNow,
     isFileProtocol,
     requestOptionalSitePermission,
+    hasCurrentSiteAccess,
     loadAnnotations,
     loadProjectAnnotations,
     saveAnnotation,

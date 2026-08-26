@@ -725,3 +725,39 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   assert.equal(replacement.textContent, 'Old');
   assert.equal(context.document.querySelector('[data-waypoint-style]'), null);
 });
+
+test('commentless text edits render a labeled pin and deleting all restores the original text', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="target">Old</button></body></html>');
+  const target = context.document.querySelector('#target');
+  const overlay = context.document.querySelector('#overlay');
+  const annotation = {
+    id: 'waypoint_1750000000002_commentless',
+    status: 'pending',
+    created_at: '2026-01-01T00:00:00.000Z',
+    selector: '#target',
+    element_context: { tag: 'button', text: 'Old' },
+    pending_changes: {
+      copyChange: { original: 'Old', value: 'New' },
+    },
+  };
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  context.WaypointElementContext = { findElementBySelector: () => null };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  context.WaypointBadgeManager.init();
+
+  target.textContent = 'New';
+  context.WaypointEvents.emit('annotation:saved', { annotation, element: target });
+  context.WaypointEvents.emit('annotations:render', [annotation]);
+
+  const badge = overlay.querySelector('.waypoint-badge');
+  assert.notEqual(badge, null);
+  assert.equal(badge.querySelector('.waypoint-badge-tooltip').textContent, 'Text content edit');
+  assert.equal(target.textContent, 'New');
+
+  context.WaypointBadgeManager.clearAll([annotation]);
+
+  assert.equal(target.textContent, 'Old');
+  assert.equal(overlay.querySelector('.waypoint-badge'), null);
+});

@@ -12,7 +12,7 @@ const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel
 const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
 
-function createHarness(annotations, { projectAnnotations } = {}) {
+function createHarness(annotations, { projectAnnotations, siteAccess = true } = {}) {
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
   window.innerHeight = 900;
   window.innerWidth = 1200;
@@ -77,6 +77,8 @@ function createHarness(annotations, { projectAnnotations } = {}) {
     checkServerStatus: async () => ({ connected: true }),
     getToolbarPosition: async () => null,
     getSkipDeleteConfirm: async () => true,
+    hasCurrentSiteAccess: async () => siteAccess,
+    requestOptionalSitePermission: async () => true,
     loadAnnotations: async () => annotations,
     loadProjectAnnotations: async () => projectAnnotations || [
       ...annotations,
@@ -174,7 +176,31 @@ test('Queue remains available on an empty current route so other-route work stay
   assert.match(root.querySelector('.waypoint-queue-header').textContent, /1 other route/);
 });
 
-test('deleting all annotations closes an open Queue immediately', async () => {
+test('settings show existing site access without an Enable action', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const button = root.querySelector('.waypoint-site-permission-btn');
+  assert.equal(button.textContent, 'Enabled');
+  assert.equal(button.disabled, true);
+  assert.match(root.querySelector('.waypoint-setting-description').textContent, /already enabled/i);
+});
+
+test('settings retain Enable when the current site lacks persistent access', async () => {
+  const { root } = await openQueue([], { siteAccess: false });
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const button = root.querySelector('.waypoint-site-permission-btn');
+  assert.equal(button.textContent, 'Enable');
+  assert.equal(button.disabled, false);
+  assert.match(root.querySelector('.waypoint-setting-description').textContent, /enable annotation access/i);
+});
+
+test('clicking delete all closes an open Queue through outside-click handling', async () => {
   const annotation = {
     id: 'waypoint_1750000000000_deleteall',
     url: 'http://localhost:3000/settings/members',
@@ -187,7 +213,7 @@ test('deleting all annotations closes an open Queue immediately', async () => {
   assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
   const deleteAllButton = root.querySelector('.waypoint-tb-delete');
   deleteAllButton.removeAttribute('disabled');
-  deleteAllButton.dispatchEvent(new context.window.Event('click'));
+  deleteAllButton.dispatchEvent(new context.window.Event('click', { bubbles: true, composed: true }));
 
   assert.equal(root.querySelector('.waypoint-queue-panel'), null);
 });
@@ -242,6 +268,25 @@ test('Queue summarizes captured Target context and pending Variant Intent', asyn
   assert.match(queueText, /Variants requested/);
   assert.match(queueText, /CheckoutButton/);
   assert.doesNotMatch(queueText, /opaque-generated-selector|checkout-action/);
+});
+
+test('Queue gives commentless text edits a meaningful title', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000002_commentless',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: '',
+    selector: '#target',
+    element_context: { tag: 'button', text: 'Old' },
+    pending_changes: {
+      copyChange: { original: 'Old', value: 'New' },
+    },
+  };
+  const { root } = await openQueue([annotation]);
+
+  const title = root.querySelector('.waypoint-queue-comment');
+  assert.equal(title.textContent, 'Text content edit');
+  assert.doesNotMatch(root.querySelector('.waypoint-queue-list').textContent, /undefined|untitled/i);
 });
 
 test('Queue keeps permanent deletion secondary and requires an explicit confirmation', async () => {
