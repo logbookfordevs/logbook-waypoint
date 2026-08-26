@@ -146,11 +146,39 @@ var WaypointQueuePanel = (() => {
     opener = null;
   }
 
+  function syncStatusMessage(status) {
+    const count = status?.pending_count || 0;
+    if (!status?.connected) {
+      return count > 0
+        ? `${count} local ${count === 1 ? 'change' : 'changes'}; server unavailable`
+        : 'Server unavailable';
+    }
+    if (count > 0) return `${count} ${count === 1 ? 'change' : 'changes'} not synced`;
+    return 'Up to date';
+  }
+
+  function renderSyncStatus(status) {
+    return `
+      <div class="waypoint-queue-sync-status" role="status" aria-live="polite">
+        <span>${escapeHTML(syncStatusMessage(status))}</span>
+        <button class="waypoint-queue-sync-now" type="button"${status?.connected ? '' : ' disabled'}>Sync now</button>
+      </div>
+    `;
+  }
+
+  function loadSyncStatus() {
+    if (typeof WaypointAPI.getSyncStatus !== 'function') {
+      return Promise.resolve({ connected: false });
+    }
+    return WaypointAPI.getSyncStatus().catch(error => ({ connected: false, error: error.message }));
+  }
+
   async function open(anchor, actions = {}) {
     close();
-    const [annotations, projectAnnotations] = await Promise.all([
+    const [annotations, projectAnnotations, syncStatus] = await Promise.all([
       WaypointAPI.loadAnnotations(),
       WaypointAPI.loadProjectAnnotations(),
+      loadSyncStatus(),
     ]);
     const root = WaypointShadowHost.getRoot();
     if (!root) return;
@@ -159,7 +187,7 @@ var WaypointQueuePanel = (() => {
       route: window.location.pathname + window.location.search + window.location.hash,
       isCurrent: true,
     };
-    const queue = { actions, currentRoute, otherRoutes: groupOtherRoutes(projectAnnotations) };
+    const queue = { actions, currentRoute, otherRoutes: groupOtherRoutes(projectAnnotations), syncStatus };
     opener = anchor.querySelector?.('.waypoint-tb-queue') || anchor;
 
     panel = document.createElement('section');
@@ -192,6 +220,7 @@ var WaypointQueuePanel = (() => {
           <button class="waypoint-queue-close" type="button" aria-label="Close Queue">×</button>
         </div>
       </header>
+      ${renderSyncStatus(queue.syncStatus)}
       ${visibleAnnotations.length ? renderSignalKey() : ''}
       <nav class="waypoint-queue-views" aria-label="Queue views">
         <button class="waypoint-queue-active-view" type="button" aria-pressed="${view === 'active'}">Active <span>${activeAnnotations.length}</span></button>
@@ -225,6 +254,21 @@ var WaypointQueuePanel = (() => {
       ` : ''}
     `;
     panel.querySelector('.waypoint-queue-close').addEventListener('click', close);
+    panel.querySelector('.waypoint-queue-sync-now').addEventListener('click', async event => {
+      const button = event.currentTarget;
+      const status = button.closest('.waypoint-queue-sync-status');
+      button.disabled = true;
+      button.textContent = 'Syncing…';
+      try {
+        queue.syncStatus = await WaypointAPI.syncNow();
+        status.querySelector('span').textContent = syncStatusMessage(queue.syncStatus);
+      } catch (error) {
+        status.querySelector('span').textContent = error?.message || 'Sync failed. Try again.';
+      } finally {
+        button.disabled = !queue.syncStatus?.connected;
+        button.textContent = 'Sync now';
+      }
+    });
     panel.querySelector('.waypoint-queue-other-routes')?.addEventListener('click', () => renderRouteList(queue));
     panel.querySelector('.waypoint-queue-active-view').addEventListener('click', () => renderRouteView(queue, routeState, 'active'));
     panel.querySelector('.waypoint-queue-history-view').addEventListener('click', () => renderRouteView(queue, routeState, 'history'));

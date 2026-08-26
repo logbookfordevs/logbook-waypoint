@@ -1,0 +1,75 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+import vm from 'node:vm';
+
+const backgroundUrl = new URL('../public/background/background.js', import.meta.url);
+const queueSyncUrl = new URL('../public/background/queue-sync.js', import.meta.url);
+const apiBridgeUrl = new URL('../public/content/modules/api-bridge.js', import.meta.url);
+const queuePanelUrl = new URL('../public/content/modules/queue-panel.js', import.meta.url);
+
+test('manual sync detects markerless local-only annotations for the current origin only', async () => {
+  const context = vm.createContext({
+    URL,
+    WaypointAnnotationCollection: {
+      canonicalize: annotations => annotations || [],
+    },
+    WaypointAnnotationId: {
+      isValid: id => id.startsWith('waypoint_'),
+    },
+    WaypointDesignIntent: { preserve: (_source, target) => target },
+    WaypointVariantIntent: { preserve: (_source, target) => target },
+  });
+  vm.runInContext(await readFile(queueSyncUrl, 'utf8'), context);
+
+  const local = [{
+    id: 'waypoint_1750000000000_offline',
+    status: 'pending',
+    comment: 'Created while offline',
+    url: 'http://localhost:3000/',
+  }, {
+    id: 'waypoint_1750000000001_other',
+    status: 'pending',
+    comment: 'Another project',
+    url: 'http://localhost:4000/',
+  }];
+
+  assert.deepEqual(
+    Array.from(context.WaypointQueueSync.pendingIdsForOrigin(local, [], 'http://localhost:3000')),
+    ['waypoint_1750000000000_offline'],
+  );
+});
+
+test('extension exposes manual recovery through its background boundary', async () => {
+  const [background, manifestSource] = await Promise.all([
+    readFile(backgroundUrl, 'utf8'),
+    readFile(new URL('../.output/chrome-mv3/manifest.json', import.meta.url), 'utf8'),
+  ]);
+  const manifest = JSON.parse(manifestSource);
+
+  assert.ok(!manifest.permissions.includes('alarms'));
+  assert.doesNotMatch(background, /chrome\.alarms/);
+  assert.match(background, /case 'getSyncStatus'/);
+  assert.match(background, /case 'syncNow'/);
+  assert.match(background, /this\._syncCyclePromise/);
+  const manualSync = background.slice(background.indexOf('syncNow(origin)'), background.indexOf('async smartSyncAnnotations()'));
+  assert.match(manualSync, /saveAnnotationToAPI/);
+  assert.doesNotMatch(manualSync, /syncAnnotationsToAPI/);
+  assert.match(background, /tombstonesChanged/);
+  assert.doesNotMatch(background, /setInterval\(/);
+});
+
+test('Queue makes pending synchronization visible and manually retryable', async () => {
+  const [apiBridge, queuePanel] = await Promise.all([
+    readFile(apiBridgeUrl, 'utf8'),
+    readFile(queuePanelUrl, 'utf8'),
+  ]);
+
+  assert.match(apiBridge, /action: 'getSyncStatus'/);
+  assert.match(apiBridge, /action: 'syncNow'/);
+  assert.match(apiBridge, /origin: window\.location\.origin/);
+  assert.match(queuePanel, /waypoint-queue-sync-status/);
+  assert.match(queuePanel, /waypoint-queue-sync-now/);
+  assert.match(queuePanel, /'change' : 'changes'/);
+  assert.match(queuePanel, /not synced/);
+});

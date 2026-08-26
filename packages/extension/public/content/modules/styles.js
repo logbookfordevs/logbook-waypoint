@@ -1240,6 +1240,37 @@ var WAYPOINT_STYLES = `
   font: 11px/1.4 var(--waypoint-font-mono);
 }
 
+.waypoint-queue-sync-status {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px 6px 16px;
+  border-bottom: 1px solid var(--waypoint-outline);
+  background: var(--waypoint-surface-2);
+  color: var(--waypoint-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.waypoint-queue-sync-now {
+  min-height: 30px;
+  flex: 0 0 auto;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--waypoint-accent);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.waypoint-queue-sync-now:hover:not(:disabled) { background: var(--waypoint-surface-3); }
+.waypoint-queue-sync-now:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
+.waypoint-queue-sync-now:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .waypoint-queue-views {
   display: grid;
   grid-template-columns: 1fr 1fr;

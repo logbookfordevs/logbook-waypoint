@@ -189,6 +189,31 @@ test('direct storage fallback rejects lifecycle state injection', async () => {
   assert.deepEqual(writes, []);
 });
 
+test('direct storage save fallback keeps new work pending for durable recovery', async () => {
+  const context = createBrowserContext();
+  const writes = [];
+  const id = 'waypoint_1750000000000_abc123xyz';
+  context.chrome = {
+    runtime: { sendMessage: async () => { throw new Error('background unavailable'); } },
+    storage: { local: {
+      get: async () => ({ waypointAnnotations: [] }),
+      set: async value => { writes.push(value); },
+    } },
+  };
+  context.WaypointVariantPolicy = { assertSaveAllowed: () => {} };
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  await context.WaypointAPI.saveAnnotation({
+    id,
+    url: 'http://localhost:3000/',
+    status: 'pending',
+    comment: 'Retry me',
+  });
+
+  assert.equal(writes[0].waypointAnnotations[0]._synced, false);
+});
+
 test('direct storage fallback keeps Annotation identity immutable', async () => {
   const context = createBrowserContext();
   const writes = [];
@@ -250,6 +275,7 @@ test('direct storage fallback records explicit Design Intent removal', async () 
   await context.WaypointAPI.updateAnnotation(id, { design_intent: null });
 
   assert.equal('design_intent' in writes[0].waypointAnnotations[0], false);
+  assert.equal(writes[0].waypointAnnotations[0]._synced, false);
   assert.deepEqual(Array.from(writes[0].waypointDesignIntentRemovalIds), [id]);
 });
 
@@ -310,6 +336,29 @@ test('direct storage delete fallback rejects non-Waypoint Annotation IDs', async
     /Invalid Waypoint annotation ID/,
   );
   assert.deepEqual(writes, []);
+});
+
+test('direct storage delete fallback retains a tombstone for durable recovery', async () => {
+  const context = createBrowserContext();
+  const writes = [];
+  const id = 'waypoint_1750000000000_abc123xyz';
+  context.chrome = {
+    runtime: { sendMessage: async () => { throw new Error('background unavailable'); } },
+    storage: { local: {
+      get: async () => ({
+        waypointAnnotations: [{ id, url: 'http://localhost:3000/', status: 'pending', comment: 'Delete me' }],
+        waypointDeletedAnnotationIds: [],
+      }),
+      set: async value => { writes.push(value); },
+    } },
+  };
+  context.WaypointVariantPolicy = { assertDeleteAllowed: () => {} };
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  await context.WaypointAPI.deleteAnnotation(id);
+
+  assert.deepEqual(Array.from(writes[0].waypointDeletedAnnotationIds), [id]);
 });
 
 test('storage reads ignore predecessor Annotation IDs', async () => {
