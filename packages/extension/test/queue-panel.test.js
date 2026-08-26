@@ -174,7 +174,7 @@ test('Queue remains available on an empty current route so other-route work stay
   assert.match(root.querySelector('.waypoint-queue-header').textContent, /1 other route/);
 });
 
-test('deleting all annotations closes an open Queue immediately', async () => {
+test('clicking delete all closes an open Queue through outside-click handling', async () => {
   const annotation = {
     id: 'waypoint_1750000000000_deleteall',
     url: 'http://localhost:3000/settings/members',
@@ -187,7 +187,7 @@ test('deleting all annotations closes an open Queue immediately', async () => {
   assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
   const deleteAllButton = root.querySelector('.waypoint-tb-delete');
   deleteAllButton.removeAttribute('disabled');
-  deleteAllButton.dispatchEvent(new context.window.Event('click'));
+  deleteAllButton.dispatchEvent(new context.window.Event('click', { bubbles: true, composed: true }));
 
   assert.equal(root.querySelector('.waypoint-queue-panel'), null);
 });
