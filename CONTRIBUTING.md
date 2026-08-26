@@ -1,109 +1,96 @@
 # Contributing to Logbook Waypoint
 
-First off, thank you for considering contributing to Logbook Waypoint! It's people like you that make Logbook Waypoint such a great tool.
+Thanks for helping chart Waypoint's direction. The project is early, local-first, and intentionally careful about the boundary between browser-captured context and coding agents.
 
-## Code of Conduct
+## Before you start
 
-This project and everyone participating in it is governed by the [Logbook Waypoint Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+For a bug fix, open or reference an issue that explains the observed and expected behavior. For a larger feature, describe the user problem, the smallest useful outcome, and any contract or security boundary it affects before investing in an implementation.
 
-## How Can I Contribute?
+Keep changes focused. A pull request should solve one coherent problem and avoid unrelated cleanup.
 
-### Reporting Bugs
+## Repository map
 
-Before creating bug reports, please check existing issues as you might find out that you don't need to create one. When you are creating a bug report, please include as many details as possible:
+- `packages/extension/` contains the WXT browser extension and its tests.
+- `packages/server/` contains the local MCP server, HTTP API, persistence, and tests.
+- `docs/contracts/` records behavior that extension and server consumers may rely on.
+- `docs/adr/` records architectural decisions and their trade-offs.
+- `docs/specs/` contains accepted product specifications.
+- `CHANGELOG.md` and `packages/server/CHANGELOG.md` contain product-facing release notes.
 
-* Use a clear and descriptive title
-* Describe the exact steps which reproduce the problem
-* Provide specific examples to demonstrate the steps
-* Describe the behavior you observed after following the steps
-* Explain which behavior you expected to see instead and why
-* Include screenshots if possible
-* Include your environment details (OS, browser version, etc.)
+Start with the [documentation map](docs/README.md) when a change touches an unfamiliar workflow.
 
-### Suggesting Enhancements
+## Local setup
 
-Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion, please include:
+Waypoint uses pnpm and Node.js 22 or newer.
 
-* Use a clear and descriptive title
-* Provide a step-by-step description of the suggested enhancement
-* Provide specific examples to demonstrate the steps
-* Describe the current behavior and explain which behavior you expected to see instead
-* Explain why this enhancement would be useful
-
-### Your First Code Contribution
-
-Unsure where to begin contributing? You can start by looking through these issues:
-
-* Issues labeled `good first issue` - issues which should only require a few lines of code
-* Issues labeled `help wanted` - issues which should be a bit more involved than beginner issues
-
-### Pull Requests
-
-1. Fork the repo and create your branch from `main`
-2. If you've added code that should be tested, add tests
-3. Ensure the test suite passes
-4. Make sure your code follows the existing code style
-5. Issue that pull request!
-
-## Development Process
-
-### Project Structure
-
-```
-logbook-waypoint/
-├── packages/
-│   ├── extension/      # WXT browser extension
-│   └── server/         # @logbookfordevs/waypoint
-├── docs/              # Documentation
-├── pnpm-workspace.yaml # Workspace definition
-└── README.md          # Main documentation
+```bash
+pnpm install
+pnpm check
+pnpm test
+pnpm build
 ```
 
-### Extension Development
+The server test suite opens loopback ports. If your environment restricts local binding, rerun those tests in an environment that permits `127.0.0.1` listeners before treating an `EPERM` failure as a product regression.
 
-1. Run `pnpm install` and `pnpm build`.
-2. Load the extension in Chrome:
-   - Open `chrome://extensions/`
-   - Enable Developer mode
-   - Click "Load unpacked"
-   - Select `packages/extension/.output/chrome-mv3/`
+### Run the local server
 
-3. Make your changes.
-4. Run `pnpm check && pnpm test && pnpm build` before the manual reload.
+```bash
+pnpm --filter @logbookfordevs/waypoint start
+```
 
-### Server Development
+The MCP endpoint is `http://127.0.0.1:3846/mcp`.
 
-1. Install dependencies from the repository root with `pnpm install`.
-2. Run `pnpm --filter @logbookfordevs/waypoint start`.
-3. Test your changes.
+### Load the extension
 
-### Code Style
+1. Run `pnpm build`.
+2. Open `chrome://extensions` in a Chromium browser.
+3. Enable **Developer mode**.
+4. Choose **Load unpacked**.
+5. Select `packages/extension/.output/chrome-mv3/`.
 
-* Use 2 spaces for indentation
-* Use meaningful variable names
-* Comment your code where necessary
-* Follow the existing code style
+Build output under `.output/` is generated and should not be committed.
 
-### Commit Messages
+## Change expectations
 
-* Use the present tense ("Add feature" not "Added feature")
-* Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-* Limit the first line to 72 characters or less
-* Reference issues and pull requests liberally after the first line
+- Preserve the loopback-only server and untrusted-page-content boundaries documented in [SECURITY.md](SECURITY.md).
+- Keep Annotation lifecycle transitions inside the lifecycle interfaces; generic updates and synchronization must not bypass them.
+- Preserve canonical product, storage, package, MCP, and Annotation identifiers.
+- Keep compact MCP survey responses distinct from complete diagnostic inspection.
+- Treat single-Target and multi-Target records as supported input shapes unless a new contract explicitly replaces that compatibility.
+- Prefer clear names and small, explicit interfaces over comments that narrate implementation history.
+- Add regression tests for meaningful behavior changes and bug fixes.
+- Update the relevant contract, ADR, guide, or changelog when public behavior or an architectural decision changes.
 
-## Publishing
+The existing code style is the guide for JavaScript. Use two-space indentation and keep commit subjects imperative, focused, and at most 72 characters.
 
-### Extension Publishing
+## Validation
 
-The Chrome extension is published to the Chrome Web Store by maintainers only.
+Run the narrowest relevant test while developing, then complete the repository checks before opening a pull request:
 
-### Server Publishing
+```bash
+pnpm check
+pnpm test
+pnpm build
+```
 
-The server is published as an npm package from the separate repository:
-https://github.com/logbookfordevs/logbook-waypoint
+For extension UI changes, also reload the unpacked extension and exercise the affected path on a local page. Include the browser, route, and manual result in the pull request. Screenshots are useful for visible changes.
 
-## Questions?
+## Pull requests
 
-Feel free to open an issue with your question or reach out to the maintainers.
+A useful pull request includes:
 
-Thank you for contributing! 🎉
+- the user problem and resulting behavior;
+- the important implementation decisions;
+- automated and manual validation performed;
+- known limitations or intentionally deferred work;
+- documentation or contract changes, when applicable.
+
+Do not claim a test or manual check that was not actually run. Keep generated files, local annotation data, credentials, and unrelated formatting out of the diff.
+
+## Releases
+
+Publishing the npm package, Chrome extension, tags, or releases is a maintainer operation. A merged pull request is not evidence that a release has been published or deployed.
+
+## Conduct and security
+
+Participation is governed by the [Code of Conduct](CODE_OF_CONDUCT.md). Report vulnerabilities through the process in [SECURITY.md](SECURITY.md), not through a public issue.
