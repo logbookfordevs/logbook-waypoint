@@ -76,12 +76,19 @@ export const documentationPages: DocumentationPage[] = [
         code: 'pnpm --filter @logbookfordevs/waypoint start',
       },
       {
-        heading: 'Configure an MCP client',
+        heading: 'Connect Codex',
         paragraphs: [
-          'Point your agent to the local Waypoint server using that client’s MCP configuration. Keep the connection on loopback; LAN exposure is not part of the supported security boundary.',
-          'The exact configuration format belongs to the chosen agent. Waypoint’s tools and lifecycle remain provider-neutral.',
+          'Add the local streamable HTTP endpoint to Codex configuration. The server remains on IPv4 loopback and does not require a LAN binding.',
         ],
-        note: 'Codex, Pi, OpenCode, and other MCP-compatible agents may expose different configuration surfaces. Follow the client’s own documentation for registering a local MCP server.',
+        code: '[mcp_servers.logbook-waypoint]\nurl = "http://127.0.0.1:3846/mcp"',
+      },
+      {
+        heading: 'Connect another MCP client',
+        paragraphs: [
+          'JSON-based clients can register the same provider-neutral endpoint. Pi, OpenCode, and other MCP-compatible agents may present the setting in different places, but Waypoint’s tools and lifecycle do not change.',
+        ],
+        code: '{\n  "mcpServers": {\n    "logbook-waypoint": {\n      "url": "http://127.0.0.1:3846/mcp"\n    }\n  }\n}',
+        note: 'Use http://127.0.0.1:3846/mcp for streamable HTTP. The legacy SSE endpoint remains available at http://127.0.0.1:3846/sse.',
       },
     ],
   },

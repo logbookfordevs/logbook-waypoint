@@ -7,6 +7,8 @@ import { documentationPages } from '@/lib/docs-content';
 export const metadata: Metadata = {
   title: 'Documentation',
   description: 'The Logbook Waypoint field guide for local Annotation and agent workflows.',
+  alternates: { canonical: '/docs' },
+  openGraph: { url: '/docs' },
 };
 
 export default function DocumentationIndex() {

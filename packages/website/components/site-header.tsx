@@ -1,7 +1,11 @@
 'use client';
 
 import { GitFork, Menu, Moon, Sun, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+
+import { useThemeBoundary } from '@/components/theme-boundary';
+import { useMediaQuery } from '@/lib/use-media-query';
 
 const navigationItems = [
   { href: '/#workflow', label: 'Workflow' },
@@ -10,9 +14,13 @@ const navigationItems = [
 ];
 
 export function SiteHeader() {
+  const pathname = usePathname();
+  const { appearance, toggleAppearance } = useThemeBoundary();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
-  const [appearance, setAppearance] = useState<'day' | 'night'>('day');
+  const [currentHash, setCurrentHash] = useState('');
   const navigationTriggerRef = useRef<HTMLButtonElement>(null);
+  const isMobileNavigation = useMediaQuery('(max-width: 52rem)');
+  const isNavigationHidden = isMobileNavigation && !isNavigationOpen;
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -28,11 +36,20 @@ export function SiteHeader() {
     return () => document.removeEventListener('keydown', closeOnEscape);
   }, [isNavigationOpen]);
 
-  const toggleAppearance = () => {
-    const nextAppearance = appearance === 'day' ? 'night' : 'day';
-    setAppearance(nextAppearance);
-    document.documentElement.dataset.appearance = nextAppearance;
-  };
+  useEffect(() => {
+    const updateCurrentHash = () => setCurrentHash(window.location.hash);
+    updateCurrentHash();
+    window.addEventListener('hashchange', updateCurrentHash);
+    return () => window.removeEventListener('hashchange', updateCurrentHash);
+  }, []);
+
+  const navigationIcon = isNavigationOpen
+    ? <X aria-hidden="true" />
+    : <Menu aria-hidden="true" />;
+  const appearanceIcon = appearance === 'day'
+    ? <Moon aria-hidden="true" />
+    : <Sun aria-hidden="true" />;
+  const appearanceLabel = appearance === 'day' ? 'Switch to Night Watch' : 'Switch to Day Chart';
 
   return (
     <header className="site-header">
@@ -54,7 +71,7 @@ export function SiteHeader() {
           aria-controls="primary-navigation"
           onClick={() => setIsNavigationOpen((isOpen) => !isOpen)}
         >
-          {isNavigationOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+          {navigationIcon}
         </button>
 
         <nav
@@ -62,12 +79,27 @@ export function SiteHeader() {
           className="primary-navigation"
           aria-label="Primary navigation"
           data-open={isNavigationOpen}
+          aria-hidden={isNavigationHidden}
+          inert={isNavigationHidden}
         >
-          {navigationItems.map((item) => (
-            <a key={item.href} href={item.href} onClick={() => setIsNavigationOpen(false)}>
-              {item.label}
-            </a>
-          ))}
+          {navigationItems.map((item) => {
+            const isDocsItem = item.href === '/docs';
+            const itemHash = item.href.startsWith('/#') ? item.href.slice(1) : '';
+            const isCurrent = isDocsItem
+              ? pathname.startsWith('/docs')
+              : pathname === '/' && (currentHash === itemHash || (!currentHash && itemHash === '#workflow'));
+
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                aria-current={isCurrent ? 'page' : undefined}
+                onClick={() => setIsNavigationOpen(false)}
+              >
+                {item.label}
+              </a>
+            );
+          })}
           <a
             href="https://github.com/logbookfordevs/logbook-waypoint"
             target="_blank"
@@ -80,9 +112,9 @@ export function SiteHeader() {
             type="button"
             className="appearance-toggle"
             onClick={toggleAppearance}
-            aria-label={appearance === 'day' ? 'Switch to Night Watch' : 'Switch to Day Chart'}
+            aria-label={appearanceLabel}
           >
-            {appearance === 'day' ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
+            {appearanceIcon}
           </button>
           <a className="launch-action" href="/#launch">Coming soon</a>
         </nav>

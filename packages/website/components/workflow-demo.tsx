@@ -58,6 +58,57 @@ export function WorkflowDemo() {
   };
 
   const resolutionLabel = resolutionState === 'resolved' ? 'Resolved' : 'Claimed';
+  const isIdle = resolutionState === 'idle';
+  const isResolving = resolutionState === 'resolving';
+  const isResolved = resolutionState === 'resolved';
+  const resolutionStatusClassName = `status-mark status-mark--${isResolved ? 'resolved' : 'claimed'}`;
+  const resolutionActionLabels: Record<ResolutionState, string> = {
+    idle: 'Resolve Annotation',
+    resolving: 'Resolving…',
+    resolved: 'Resolution retained',
+  };
+  const resolutionActionAriaLabels: Record<ResolutionState, string> = {
+    idle: 'Resolve Annotation #1842',
+    resolving: 'Resolving Annotation #1842',
+    resolved: 'Annotation #1842 resolved',
+  };
+
+  let queueRecords: React.ReactNode;
+  if (records.length > 0) {
+    queueRecords = records.map((record) => {
+      const isResolvedRecord = isResolved && record.id === '#1842';
+      return (
+        <article key={record.id} className="queue-record">
+          <div>
+            <span className={`status-mark status-mark--${isResolvedRecord ? 'resolved' : record.status}`}>
+              {isResolvedRecord ? 'Resolved' : 'Pending'}
+            </span>
+            <span>{record.id}</span>
+          </div>
+          <h3>{record.title}</h3>
+          <p>{record.detail}</p>
+          <code>{record.target}</code>
+        </article>
+      );
+    });
+  } else {
+    queueRecords = (
+      <div className="queue-empty">
+        <Radio aria-hidden="true" />
+        <strong>No {lifecycleLabels[queueFilter]} Annotations yet.</strong>
+        <span>The Queue retains history when work reaches this state.</span>
+      </div>
+    );
+  }
+
+  let resolutionProgress: React.ReactNode;
+  if (isIdle) {
+    resolutionProgress = <p><span>›</span> Ready to apply the requested change.</p>;
+  } else if (isResolving) {
+    resolutionProgress = <p className="agent-progress"><LoaderCircle aria-hidden="true" /> Running checks…</p>;
+  } else {
+    resolutionProgress = <p className="agent-resolution"><Check aria-hidden="true" /> Resolution Record retained.</p>;
+  }
 
   return (
     <section id="workflow" className="workflow-field" aria-labelledby="workflow-title">
@@ -126,28 +177,7 @@ export function WorkflowDemo() {
             </select>
 
             <div className="queue-surface__records" aria-live="polite">
-              {records.length > 0 ? records.map((record) => {
-                const isResolvedRecord = resolutionState === 'resolved' && record.id === '#1842';
-                return (
-                  <article key={record.id} className="queue-record">
-                    <div>
-                      <span className={`status-mark status-mark--${isResolvedRecord ? 'resolved' : record.status}`}>
-                        {isResolvedRecord ? 'Resolved' : 'Pending'}
-                      </span>
-                      <span>{record.id}</span>
-                    </div>
-                    <h3>{record.title}</h3>
-                    <p>{record.detail}</p>
-                    <code>{record.target}</code>
-                  </article>
-                );
-              }) : (
-                <div className="queue-empty">
-                  <Radio aria-hidden="true" />
-                  <strong>No {lifecycleLabels[queueFilter]} Annotations yet.</strong>
-                  <span>The Queue retains history when work reaches this state.</span>
-                </div>
-              )}
+              {queueRecords}
             </div>
           </div>
         </li>
@@ -157,7 +187,7 @@ export function WorkflowDemo() {
           <div className="agent-surface">
             <div className="agent-surface__status">
               <span>Agent</span>
-              <strong className={`status-mark status-mark--${resolutionState === 'resolved' ? 'resolved' : 'claimed'}`}>
+              <strong className={resolutionStatusClassName}>
                 {resolutionLabel}
               </strong>
               <code>#1842</code>
@@ -166,13 +196,7 @@ export function WorkflowDemo() {
               <p><span>›</span> Reading Target context…</p>
               <p><span>›</span> Inspecting the empty state component…</p>
               <p><span>›</span> Preserving height and keyboard flow…</p>
-              {resolutionState === 'idle' && <p><span>›</span> Ready to apply the requested change.</p>}
-              {resolutionState === 'resolving' && (
-                <p className="agent-progress"><LoaderCircle aria-hidden="true" /> Running checks…</p>
-              )}
-              {resolutionState === 'resolved' && (
-                <p className="agent-resolution"><Check aria-hidden="true" /> Resolution Record retained.</p>
-              )}
+              {resolutionProgress}
             </div>
             <div className="agent-surface__diff" aria-label="Illustrative proposed change">
               <code>- padding-block: 32px;</code>
@@ -182,16 +206,10 @@ export function WorkflowDemo() {
               type="button"
               className="agent-surface__action"
               onClick={resolveAnnotation}
-              disabled={resolutionState !== 'idle'}
-              aria-label={resolutionState === 'resolving'
-                ? 'Resolving Annotation #1842'
-                : resolutionState === 'resolved'
-                  ? 'Annotation #1842 resolved'
-                  : 'Resolve Annotation #1842'}
+              disabled={!isIdle}
+              aria-label={resolutionActionAriaLabels[resolutionState]}
             >
-              {resolutionState === 'idle' && 'Resolve Annotation'}
-              {resolutionState === 'resolving' && 'Resolving…'}
-              {resolutionState === 'resolved' && 'Resolution retained'}
+              {resolutionActionLabels[resolutionState]}
             </button>
           </div>
         </li>

@@ -22,7 +22,13 @@ export async function generateMetadata({ params }: DocumentationRouteProps): Pro
     return {};
   }
 
-  return { title: page.title, description: page.summary };
+  const canonicalPath = `/docs/${page.slug}`;
+  return {
+    title: page.title,
+    description: page.summary,
+    alternates: { canonical: canonicalPath },
+    openGraph: { url: canonicalPath },
+  };
 }
 
 export default async function DocumentationRoute({ params }: DocumentationRouteProps) {
@@ -36,6 +42,9 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
   const currentIndex = documentationPages.findIndex((item) => item.slug === slug);
   const previousPage = documentationPages[currentIndex - 1];
   const nextPage = documentationPages[currentIndex + 1];
+  const previousPageLink = previousPage
+    ? <Link href={`/docs/${previousPage.slug}`}><ArrowLeft /> <span>Previous<strong>{previousPage.title}</strong></span></Link>
+    : <span />;
 
   return (
     <article className="docs-article">
@@ -64,9 +73,7 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
       ))}
 
       <nav className="article-pagination" aria-label="Adjacent documentation">
-        {previousPage ? (
-          <Link href={`/docs/${previousPage.slug}`}><ArrowLeft /> <span>Previous<strong>{previousPage.title}</strong></span></Link>
-        ) : <span />}
+        {previousPageLink}
         {nextPage && (
           <Link href={`/docs/${nextPage.slug}`}><span>Next<strong>{nextPage.title}</strong></span> <ArrowRight /></Link>
         )}

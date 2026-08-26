@@ -15,13 +15,15 @@ export function CodeBlock({ code }: CodeBlockProps) {
     setIsCopied(true);
     window.setTimeout(() => setIsCopied(false), 1600);
   };
+  const copyIcon = isCopied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />;
+  const copyLabel = isCopied ? 'Copied' : 'Copy';
 
   return (
     <div className="code-block">
       <pre><code>{code}</code></pre>
       <button type="button" onClick={copyCode} aria-label={isCopied ? 'Copied' : 'Copy code'}>
-        {isCopied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
-        {isCopied ? 'Copied' : 'Copy'}
+        {copyIcon}
+        {copyLabel}
       </button>
     </div>
   );

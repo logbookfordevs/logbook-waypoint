@@ -3,10 +3,15 @@ import type { Metadata } from 'next';
 
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
+import { ThemeBoundary } from '@/components/theme-boundary';
+import { siteUrl } from '@/lib/site-config';
 
-import './globals.css';
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+import '@/app/globals.css';
+import '@/app/styles/hero.css';
+import '@/app/styles/workflow.css';
+import '@/app/styles/marketing.css';
+import '@/app/styles/docs.css';
+import '@/app/styles/motion-and-responsive.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -26,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-recipe="ocean" data-appearance="day">
+    <html lang="en">
       <body>
         <template
           data-design-contract
@@ -36,15 +41,17 @@ THESIS: Feedback travels as one visible route from rendered Target to retained R
 OWN-WORLD: Atlantic Chartroom Ocean and Walnut; cool chart paper, Deep Ocean instruments, Verdigris bearings, Signal Rust annotations, and restrained brass coordinates.
 STORY: Understand the Annotation to Queue to agent mechanism, trust the local boundary, then enter honest early-stage documentation.
 FIRST VIEWPORT: Paper navigation and promise lead immediately into one dense horizontal operational field; the mechanism is larger than mascot or marketing copy.
-FORM: User-pinned Living Route from the verified prototype handoff, production-refined rather than copied; concept-roll seed not applicable because the approved direction predates the roll.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+FORM: The Living Route is refined from the verified structural reference rather than copied; the implementation preserves sequence while owning its proportions, material, and behavior.
+FINISH: Production work is complete only after independent visual review and design-system documentation.
 -->`,
           }}
         />
-        <a className="skip-link" href="#main-content">Skip to content</a>
-        <SiteHeader />
-        {children}
-        <SiteFooter />
+        <ThemeBoundary>
+          <a className="skip-link" href="#main-content">Skip to content</a>
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </ThemeBoundary>
       </body>
     </html>
   );
