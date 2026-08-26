@@ -19,26 +19,6 @@ test('generated toolbar guides every supported coding agent without OpenClaw', a
   assert.match(source, /WaypointAgentSetup/);
 });
 
-test('popup setup wizard guides every supported coding agent without OpenClaw', async () => {
-  const source = await readFile(
-    new URL('../.output/chrome-mv3/popup/popup.html', import.meta.url),
-    'utf8',
-  );
-
-  for (const agent of ['Claude Code', 'Cursor', 'Windsurf', 'Codex', 'Pi', 'OpenCode']) {
-    assert.match(source, new RegExp(`>${agent}<`));
-  }
-
-  assert.doesNotMatch(source, /OpenClaw/i);
-  assert.match(source, /agent-setup-config\.js/);
-
-  const popupScript = await readFile(
-    new URL('../.output/chrome-mv3/popup/popup.js', import.meta.url),
-    'utf8',
-  );
-  assert.match(popupScript, /setupAgentTabs\(\);[\s\S]{0,120}setupCommandCopying\(\)/);
-});
-
 test('generated setup data is the single Waypoint-native source for agent configurations', async () => {
   const source = await readFile(
     new URL('../.output/chrome-mv3/agent-setup-config.js', import.meta.url),

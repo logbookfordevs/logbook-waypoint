@@ -129,9 +129,4 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   assert.equal(emitted.at(-1).name, 'annotation:variant-updated');
   assert.equal('variant_request' in emitted.at(-1).payload.annotation, false);
   assert.equal(context.document.querySelector('.waypoint-variant-picker'), null);
-  const popupSource = await readFile(new URL('../.output/chrome-mv3/popup/popup.js', import.meta.url), 'utf8');
-  assert.match(popupSource, /sendMessage\(\{\s*action: 'updateAnnotation',[\s\S]*updates: \{ comment: newComment/);
-  assert.doesNotMatch(popupSource, /allAnnotations\[index\] = updatedAnnotation/);
-  assert.match(popupSource, /sendMessage\(\{ action: 'deleteAnnotation', id \}\)/);
-  assert.doesNotMatch(popupSource, /filteredAnnotations[\s\S]*storage\.local\.set\(\{ annotations: filteredAnnotations \}\)/);
 });

@@ -228,12 +228,6 @@ class WaypointAnnotationsBackground {
             .catch(error => sendResponse({ success: false, granted: false, error: error.message }));
           break;
 
-        case 'openPopupWithFocus':
-          this.openPopupWithFocus(request.annotationId)
-            .then(() => sendResponse({ success: true }))
-            .catch(error => sendResponse({ success: false, error: error.message }));
-          break;
-          
         case 'importAnnotations':
           this.importAnnotations(request.annotations)
             .then(result => sendResponse({ success: true, ...result }))
@@ -1344,20 +1338,6 @@ class WaypointAnnotationsBackground {
     // Reload the tab so scripts inject cleanly
     if (tabId) {
       await chrome.tabs.reload(tabId);
-    }
-  }
-
-  async openPopupWithFocus(annotationId) {
-    try {
-      // Since we can't programmatically open the popup in MV3,
-      // we'll just store the focused annotation ID for when the popup is opened
-      
-      // The focusedAnnotationId is already stored by the content script
-      // This method exists mainly for completeness and potential future use
-      return true;
-    } catch (error) {
-      console.error('Error handling popup focus request:', error);
-      throw error;
     }
   }
 
