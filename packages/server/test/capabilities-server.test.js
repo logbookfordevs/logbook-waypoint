@@ -207,6 +207,37 @@ test('server shares strict loopback project scope across read, context, deletion
   await assert.rejects(server.deleteProjectAnnotations({ url_pattern: 'https://example.com/*' }), /loopback/i);
 });
 
+test('unfiltered reads require project selection before returning multi-project annotation bodies', async () => {
+  const server = new LocalAnnotationsServer();
+  const annotations = [
+    { id, url: 'http://localhost:3000/', comment: 'Waypoint feedback', status: 'pending' },
+    {
+      id: 'waypoint_1750000000001_abcdefghi',
+      url: 'http://127.0.0.1:3001/firm',
+      comment: 'Firm feedback',
+      status: 'pending',
+    },
+  ];
+  server.loadAnnotations = async () => structuredClone(annotations);
+
+  const discovery = await server.readAnnotations({ status: 'pending' });
+
+  assert.deepEqual(discovery.annotations, []);
+  assert.deepEqual(
+    discovery.projectInfo.map(project => project.recommended_filter),
+    ['http://localhost:3000/*', 'http://127.0.0.1:3001/*'],
+  );
+  assert.match(discovery.multiProjectWarning.recommendation, /url.*filter/i);
+
+  const filtered = await server.readAnnotations({
+    status: 'pending',
+    url: 'http://localhost:3000/*',
+  });
+
+  assert.deepEqual(filtered.annotations.map(annotation => annotation.id), [id]);
+  assert.equal(filtered.multiProjectWarning, null);
+});
+
 test('server file-backs screenshots and extension attachments while explicit retrieval controls bytes', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-capabilities-'));
   const annotationsFile = path.join(directory, 'annotations.json');
