@@ -473,17 +473,17 @@ test('Variant Set cancellation publishes Pending state through Watch without can
   }
 });
 
-test('explicit reads retain selected Variant presentation while Watch stays portable', async () => {
+test('explicit inspection retains selected Variant presentation while Watch stays portable', async () => {
   const { server } = createServer();
   const requested = await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
   server.loadAnnotations = async () => [requested];
 
-  const read = await server.readAnnotations({ status: 'pending' });
+  const inspection = await server.inspectAnnotations({ ids: ['waypoint_1750000000000_abc123xyz'] });
   const watched = server.portableAnnotation(requested);
 
-  assert.deepEqual(read.annotations[0].variant_presentation, candidates[0].implementation);
-  assert.deepEqual(read.annotations[0].pending_changes, candidates[0].implementation.pending_changes);
+  assert.deepEqual(inspection.annotations[0].variant_presentation, candidates[0].implementation);
+  assert.deepEqual(inspection.annotations[0].pending_changes, candidates[0].implementation.pending_changes);
   assert.equal('variant_presentation' in watched, false);
   assert.equal('pending_changes' in watched, false);
-  assert.doesNotMatch(JSON.stringify(read.annotations[0]), /scaffold/);
+  assert.doesNotMatch(JSON.stringify(inspection.annotations[0]), /scaffold/);
 });
