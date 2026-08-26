@@ -839,7 +839,11 @@ test('shared composer saves one feedback-only Annotation with ordered Targets', 
   assert.ok(popover.classList.contains('waypoint-popover-multi-target'));
   assert.equal(popover.querySelector('.waypoint-element-edits') !== null, true);
   assert.equal(popover.querySelectorAll('.waypoint-textarea').length, 1);
-  assert.equal(popover.querySelector('.waypoint-target-navigator'), null);
+  assert.match(popover.querySelector('.waypoint-target-navigator').textContent, /Preview Targets/);
+  assert.match(popover.querySelector('.waypoint-shared-annotation-note').textContent, /One annotation applies to all 2 Targets/);
+  popover.querySelector('.waypoint-target-next').click();
+  assert.equal(popover.style.top, 'auto');
+  assert.equal(popover.style.bottom, '84px');
   popover.querySelector('.waypoint-textarea').value = 'Align both actions';
   popover.querySelector('.waypoint-textarea').dispatchEvent(new context.window.Event('input'));
   popover.querySelector('.waypoint-save-btn').click();

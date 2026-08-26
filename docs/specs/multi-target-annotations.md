@@ -39,7 +39,7 @@ If a saved Target cannot currently be resolved, it remains part of the Annotatio
 19. As an integration user, I can export, import, synchronize, read, and watch a Multi-Target Annotation without splitting it into separate records.
 20. As an annotator, I continue to create a normal single-Target Annotation with the existing non-Shift interaction.
 21. As an annotator, I can return from the composer to edit the Target selection without losing my draft.
-22. As a collaborator, I see one shared composer for the complete Target Set without per-Target message navigation.
+22. As a collaborator, I can preview each available Target while the interface makes clear that one shared message applies to the complete Target Set.
 
 ## Implementation Decisions
 
@@ -58,9 +58,9 @@ If a saved Target cannot currently be resolved, it remains part of the Annotatio
 - A Target that cannot be resolved is retained as unavailable. Resolution failure never mutates the persisted Target Set.
 - Saved Target Set membership is immutable in v1.
 - All pins share one Annotation number with Target ordinals, such as `12a` through `12c`; the next Annotation is `13`.
-- Opening from a clicked pin or Queue opens the same shared Annotation composer. All resolvable Targets are outlined with equal emphasis.
-- The composer does not expose previous/next navigation or per-Target message steps; one message always applies to the complete Target Set.
-- Unavailable Targets retain their ordinal in persisted data and do not block opening the shared Annotation through an available Target.
+- Opening from a clicked pin or Queue opens the same shared Annotation composer. All resolvable Targets are outlined, with stronger emphasis on the Target currently being previewed.
+- A compact navigator is explicitly labeled as Target preview and states that one Annotation applies to every Target; previous/next changes only the preview, never the shared message.
+- The composer stays content-sized and stable while previewing Targets. Unavailable Targets retain their ordinal in persisted data and do not block opening through an available Target.
 - Queue rows lead with the shared comment and a compact Target count.
 - Clipboard and Markdown export write shared feedback once, followed by ordered Target sections.
 - Import, sync, and agent read/watch surfaces treat the Target Set as part of one Annotation rather than duplicating it into several records.
@@ -82,7 +82,7 @@ The acceptance suite must cover:
 - Ordinals follow selection order, persist across round-trips, and consume one Annotation number.
 - **Edit selection** preserves the composer draft, and layered Escape confirms only when content would be discarded.
 - Opening from a pin and Queue chooses the correct contextual initial focus.
-- All resolvable Targets are highlighted equally while one shared composer remains visible.
+- Target preview changes focused highlighting without moving, stretching, or duplicating the shared composer.
 - Claim, lifecycle changes, Queue delivery, watch delivery, and resolution occur once per Annotation.
 - Queue summary and ordered Target-section export represent the shared Annotation once.
 - Export/import and synchronization round-trip the complete ordered Target Set.

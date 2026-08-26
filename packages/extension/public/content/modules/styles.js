@@ -906,6 +906,7 @@ var WAYPOINT_STYLES = `
   border: none;
   transition: background 0.15s ease, opacity 0.15s ease, color 0.15s ease;
   user-select: none;
+  white-space: nowrap;
 }
 
 .waypoint-btn svg {
@@ -1838,6 +1839,101 @@ var WAYPOINT_STYLES = `
 .waypoint-popover-multi-target .waypoint-element-edits,
 .waypoint-popover-multi-target .waypoint-design-reset {
   display: none;
+}
+
+.waypoint-popover-multi-target {
+  width: min(390px, calc(100vw - 24px));
+  overflow: hidden;
+}
+
+.waypoint-target-navigator {
+  display: grid;
+  gap: 8px;
+  padding: 8px 14px 10px;
+  border-block: 1px solid var(--waypoint-outline);
+  background: var(--waypoint-textarea-bg);
+}
+
+.waypoint-target-navigator-copy,
+.waypoint-target-navigator-controls {
+  display: flex;
+  align-items: center;
+}
+
+.waypoint-target-navigator-copy {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.waypoint-target-navigator-copy strong {
+  color: var(--waypoint-text-primary);
+  font-size: 11px;
+}
+
+.waypoint-shared-annotation-note {
+  color: var(--waypoint-text-secondary);
+  font-size: 10px;
+  text-align: end;
+}
+
+.waypoint-target-navigator-controls {
+  gap: 6px;
+}
+
+.waypoint-target-navigator button {
+  display: grid;
+  flex: 0 0 28px;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--waypoint-radius-sm);
+  color: var(--waypoint-text-primary);
+  background: var(--waypoint-secondary-btn-bg);
+  cursor: pointer;
+}
+
+.waypoint-target-navigator button:focus-visible {
+  outline: 2px solid var(--waypoint-highlight);
+  outline-offset: 2px;
+}
+
+.waypoint-target-previous svg { transform: rotate(180deg); }
+
+.waypoint-target-steps {
+  display: flex;
+  gap: 4px;
+}
+
+.waypoint-target-step {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--waypoint-text-secondary);
+  background: var(--waypoint-surface-1);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.waypoint-target-step.active {
+  color: var(--waypoint-on-accent);
+  background: var(--waypoint-accent);
+}
+
+.waypoint-target-step.unavailable {
+  text-decoration: line-through;
+  opacity: 0.45;
+}
+
+.waypoint-target-position {
+  margin-inline-start: auto;
+  color: var(--waypoint-text-secondary);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .waypoint-target-highlight {
