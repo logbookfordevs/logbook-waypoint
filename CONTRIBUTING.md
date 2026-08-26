@@ -63,6 +63,18 @@ Build output under `.output/` is generated and should not be committed.
 
 The existing code style is the guide for JavaScript. Use two-space indentation and keep commit subjects imperative, focused, and at most 72 characters.
 
+## Changelog
+
+Every user-visible capability, behavior change, bug fix, removal, installation change, or contributor/release workflow change needs a concise entry under `Next Release`:
+
+- Use the root [CHANGELOG.md](CHANGELOG.md) for extension UX, cross-product workflows, documentation semantics, and whole-project behavior.
+- Use [packages/server/CHANGELOG.md](packages/server/CHANGELOG.md) for package-specific MCP, HTTP API, persistence, CLI, or server behavior.
+- When one change materially affects both audiences, add a scoped entry to each changelog instead of copying the same sentence.
+
+Put each entry in exactly one category: `Added` for a new capability, `Changed` for altered behavior or guidance, `Fixed` for a user-visible defect, or `Removed` for an intentionally withdrawn surface. Describe the outcome for users or upgrade reviewers—not helper extraction, test plumbing, refactors, or other implementation receipts.
+
+Before submitting, check that the entry matches the current behavior, is not duplicated across categories, and was not added to an already released version.
+
 ## Validation
 
 Run the narrowest relevant test while developing, then complete the repository checks before opening a pull request:
