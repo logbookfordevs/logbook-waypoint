@@ -1466,7 +1466,7 @@ var WAYPOINT_STYLES = `
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 280px;
+  width: min(304px, calc(100vw - 24px));
   background: var(--waypoint-surface-1);
   border: 1px solid var(--waypoint-outline);
   border-radius: var(--waypoint-radius-md);
