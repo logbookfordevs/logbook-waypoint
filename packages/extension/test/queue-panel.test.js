@@ -253,9 +253,12 @@ test('documentation and workflow guides opt into the wider reading layout', asyn
   const dropdown = root.querySelector('.waypoint-settings-dropdown');
   assert.equal(dropdown.classList.contains('guidance-open'), true);
 
-  root.querySelector('[data-workflow="multi-page"]').click();
+  root.querySelector('[data-workflow="agent-mcp"]').click();
   assert.equal(dropdown.classList.contains('guidance-open'), true);
-  assert.match(dropdown.textContent, /Editing multiple pages/);
+  assert.match(dropdown.textContent, /Working with an agent through MCP/);
+  assert.match(dropdown.textContent, /Across multiple pages/);
+  assert.match(dropdown.textContent, /Read now/);
+  assert.match(dropdown.textContent, /Watch continuously/);
 });
 
 test('settings show cached maintenance guidance and load Data & Storage details only on demand', async () => {
