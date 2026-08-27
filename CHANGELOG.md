@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Waypoint-branded extension, local server, CLI, storage, annotation IDs, and MCP configuration
+- Dual CLI distribution through npm and checksummed GitHub release archives from one tagged release
 - Annotation lifecycle with pending, claimed, resolved, and discarded states
 - Durable Watch delivery for agents, including restart recovery and revision-safe cursors
 - Named annotation variants with active selection, cancellation, finalization, and scaffold cleanup
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional JSON import/export, project context, bulk cleanup, keyboard inspection, and annotation appearance settings
 
 ### Changed
+- Made `waypoint start` run in the background by default, with `--foreground` for terminal-attached sessions
 - Rebuilt the product from the final MIT-licensed foundation under the Logbook Waypoint identity
 - Reworked the extension around the Atlantic Chartroom Driftwood palette, with Day Chart and Night Watch appearances and product-role colors for actions, navigation, signals, and pins
 - Hardened the local server to loopback-only access with strict host, origin, request-size, and identifier validation

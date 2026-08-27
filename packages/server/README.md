@@ -4,9 +4,19 @@ Global MCP server for Logbook Waypoint browser extension.
 
 ## Installation
 
+Install the latest checksummed release directly:
+
 ```bash
-pnpm add --global @logbookfordevs/waypoint
+curl -fsSL https://raw.githubusercontent.com/logbookfordevs/logbook-waypoint/main/scripts/install.sh | bash
 ```
+
+Or install through npm:
+
+```bash
+npm install --global @logbookfordevs/waypoint
+```
+
+For a one-off run, use `npx @logbookfordevs/waypoint --help`.
 
 ## Usage
 
@@ -17,6 +27,12 @@ waypoint start
 ```
 
 The server will run in the background on port 3846.
+
+Keep it attached to the current terminal for a temporary session or debugging:
+
+```bash
+waypoint start --foreground
+```
 
 ### Stop the server
 
