@@ -121,6 +121,28 @@ var WaypointAPI = (() => {
     return response.status;
   }
 
+  async function getDataHealthSummary() {
+    const response = await chrome.runtime.sendMessage({ action: 'getDataHealthSummary' });
+    if (!response?.success || !response.summary) {
+      throw new Error(response?.error || 'Could not load Data & Storage summary');
+    }
+    return response.summary;
+  }
+
+  async function getDataManagerSnapshot() {
+    const response = await chrome.runtime.sendMessage({ action: 'getDataManagerSnapshot' });
+    if (!response?.success || !response.snapshot) {
+      throw new Error(response?.error || 'Could not load Data & Storage');
+    }
+    return response.snapshot;
+  }
+
+  async function deleteDataSelection(selection) {
+    const response = await chrome.runtime.sendMessage({ action: 'deleteDataSelection', selection });
+    if (!response?.success) throw new Error(response?.error || 'Could not delete annotations');
+    return response;
+  }
+
   // --- Annotations CRUD ---
 
   async function loadAnnotations() {
@@ -487,6 +509,9 @@ var WaypointAPI = (() => {
     clearStatusCache,
     getSyncStatus,
     syncNow,
+    getDataHealthSummary,
+    getDataManagerSnapshot,
+    deleteDataSelection,
     isFileProtocol,
     requestOptionalSitePermission,
     hasCurrentSiteAccess,

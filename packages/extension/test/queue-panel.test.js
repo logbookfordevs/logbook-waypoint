@@ -17,6 +17,8 @@ function createHarness(annotations, {
   siteAccess = true,
   syncStatus = { connected: true, pending_count: 0 },
   syncNow = async () => ({ connected: true, pending_count: 0 }),
+  dataHealthSummary = { project_count: 0, annotation_count: 0, old_pending_count: 0, cleanup_candidate_count: 0, review_count: 0 },
+  dataManagerSnapshot = { summary: dataHealthSummary, projects: [] },
 } = {}) {
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
   window.innerHeight = 900;
@@ -30,6 +32,7 @@ function createHarness(annotations, {
   const downloadBlobs = [];
   const discarded = [];
   const deleted = [];
+  const dataRequests = { summary: 0, snapshot: 0, deletions: [] };
   class HarnessURL extends URL {}
   HarnessURL.createObjectURL = blob => {
     downloadBlobs.push(blob);
@@ -86,6 +89,18 @@ function createHarness(annotations, {
     requestOptionalSitePermission: async () => true,
     getSyncStatus: async () => syncStatus,
     syncNow,
+    getDataHealthSummary: async () => {
+      dataRequests.summary += 1;
+      return dataHealthSummary;
+    },
+    getDataManagerSnapshot: async () => {
+      dataRequests.snapshot += 1;
+      return dataManagerSnapshot;
+    },
+    deleteDataSelection: async selection => {
+      dataRequests.deletions.push(selection);
+      return { deleted_count: selection.scope === 'all' ? dataManagerSnapshot.summary.annotation_count : 0 };
+    },
     loadAnnotations: async () => annotations,
     loadProjectAnnotations: async () => projectAnnotations || [
       ...annotations,
@@ -111,6 +126,7 @@ function createHarness(annotations, {
   return {
     clipboardWrites,
     context,
+    dataRequests,
     deleted,
     discarded,
     downloadBlobs,
@@ -225,6 +241,51 @@ test('settings retain Enable when the current site lacks persistent access', asy
   assert.equal(button.textContent, 'Enable');
   assert.equal(button.disabled, false);
   assert.match(root.querySelector('.waypoint-setting-description').textContent, /enable annotation access/i);
+});
+
+test('settings show cached maintenance guidance and load Data & Storage details only on demand', async () => {
+  const summary = {
+    project_count: 2,
+    annotation_count: 5,
+    old_pending_count: 1,
+    cleanup_candidate_count: 2,
+    review_count: 3,
+    stale_after_days: 30,
+  };
+  const snapshot = {
+    summary,
+    projects: [{
+      origin: 'http://localhost:3001',
+      annotation_count: 5,
+      route_count: 2,
+      status_counts: { pending: 2, claimed: 0, resolved: 2, discarded: 1 },
+      old_pending_count: 1,
+      cleanup_candidate_count: 2,
+      last_activity_at: '2026-08-20T00:00:00.000Z',
+      approximate_bytes: 2048,
+    }],
+  };
+  const { dataRequests, root } = await openQueue([], {
+    dataHealthSummary: summary,
+    dataManagerSnapshot: snapshot,
+  });
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(dataRequests.summary, 1);
+  assert.equal(dataRequests.snapshot, 0);
+  assert.match(root.querySelector('.waypoint-data-storage-btn').textContent, /3 to review/);
+
+  root.querySelector('.waypoint-data-storage-btn').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(dataRequests.snapshot, 1);
+  assert.match(root.querySelector('.waypoint-data-storage-view').textContent, /localhost:3001/);
+  assert.match(root.querySelector('.waypoint-data-storage-view').textContent, /5 annotations/);
+
+  root.querySelector('.waypoint-tb-settings').click();
+  assert.equal(root.querySelector('.waypoint-data-storage-view'), null);
 });
 
 test('clicking delete all closes an open Queue through outside-click handling', async () => {

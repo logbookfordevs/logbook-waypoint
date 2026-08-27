@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional JSON import/export, project context, bulk cleanup, keyboard inspection, and annotation appearance settings
 - Batched MCP inspection for selected Annotations and complete diagnostic Target context
 - Queue sync status with manual retry for local changes awaiting the server
+- A global Data & Storage manager with project summaries, maintenance guidance, and confirmed project-wide or all-data deletion
 - Workflow-first MCP documentation with concrete calls, compact Survey guidance, diagnostic Inspect guidance, and a complete 19-tool reference
 - A basic-to-advanced user guide for annotation, Queue, copy/export, MCP, Design Actions, settings, and local-data behavior
 
@@ -28,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hardened the local server to loopback-only access with strict host, origin, request-size, and identifier validation
 - Made annotation routes preserve full paths, queries, and hashes
 - Improved selector portability, target re-anchoring, keyboard navigation, design rollback, and queues larger than 50 annotations
-- Made MCP Queue reads compact and project-scoped while normalizing legacy and multi-Target records into one summary shape
+- Made unscoped MCP Queue reads discovery-only so agents must select a project before annotation bodies are returned
 - Made Queue follow-ups survive server outages by retaining unsynced saves, deletions, and Design or Variant Intent removals until synchronization recovers
 - Replaced remote update promotion with local extension/server compatibility guidance
 - Added HTTP and JSON MCP connection guidance for coding agents

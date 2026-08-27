@@ -14,7 +14,7 @@ Reading and inspection are passive. They do not create or refresh a Claim, chang
 
 ## Survey
 
-An unfiltered `read_annotations` call discovers the available projects. When more than one project has matching Annotations, it returns project summaries and recommended URL filters without returning Annotation bodies. The caller selects one project and repeats the survey with its URL filter.
+An unfiltered `read_annotations` call discovers the available projects and returns project summaries and recommended URL filters without returning Annotation bodies. This rule also applies when only one project has matching Annotations. The caller selects one project and repeats the survey with its URL filter.
 
 A scoped survey returns compact summaries suitable for understanding, prioritizing, grouping, selecting, and usually implementing work. Compact describes response size, not an incomplete work brief: Survey is the default implementation context, while Inspect is an optional diagnostic path for remaining ambiguity. Each summary may include:
 
@@ -49,4 +49,4 @@ Annotation comments, captured page content, selectors, Source Identity, and rela
 
 ## Test surface
 
-Tests cover multi-project discovery, URL-scoped compact summaries, legacy and multi-Target normalization, deterministic framework-noise filtering, batched inspection, missing IDs, complete diagnostic context, and exclusion of embedded media.
+Tests cover discovery-first unscoped reads, URL-scoped compact summaries, legacy and multi-Target normalization, deterministic framework-noise filtering, batched inspection, missing IDs, complete diagnostic context, and exclusion of embedded media.

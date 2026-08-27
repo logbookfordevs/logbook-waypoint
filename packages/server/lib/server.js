@@ -663,7 +663,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'read_annotations',
-            description: 'Survey the annotation Queue. Returns compact, actionable summaries for understanding, prioritizing, grouping, and selecting work. When multiple projects exist, an unfiltered call returns project discovery metadata before annotation summaries. Filter by url to survey one project. Authored pending_changes and css remain explicit original-to-value instructions that should be mapped to the project design system.',
+            description: 'Survey the annotation Queue. Unfiltered calls discover projects without returning annotation bodies; repeat with an explicit url filter to survey one project. Scoped calls return compact, actionable summaries for understanding, prioritizing, grouping, and selecting work. Authored pending_changes and css remain explicit original-to-value instructions that should be mapped to the project design system.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -920,7 +920,7 @@ export class LocalAnnotationsServer {
 
           case 'read_annotations': {
             const result = await this.readAnnotations(args || {});
-            const { annotations, projectInfo, multiProjectWarning } = result;
+            const { annotations, projectInfo, projectSelection, multiProjectWarning } = result;
 
             return {
               content: [
@@ -930,6 +930,7 @@ export class LocalAnnotationsServer {
                     annotations,
                     count: annotations.length,
                     projects: projectInfo,
+                    project_selection: projectSelection,
                     multi_project_warning: multiProjectWarning,
                     filter_applied: args?.url || 'none'
                   }), null, 2)
@@ -1496,6 +1497,13 @@ export class LocalAnnotationsServer {
 
     // Add project context to response
     const projectCount = Object.keys(groupedByProject).length;
+    const projectSelection = !url && projectCount > 0
+      ? {
+          required: true,
+          recommendation: 'Repeat read_annotations with one project URL filter to read annotation bodies.',
+          suggested_filters: Object.keys(groupedByProject).map(baseUrl => `${baseUrl}/*`),
+        }
+      : null;
     let multiProjectWarning = null;
 
     if (projectCount > 1 && !url) {
@@ -1523,7 +1531,7 @@ export class LocalAnnotationsServer {
 
     // Apply pagination with offset
     const total = filtered.length;
-    const requiresProjectFilter = projectCount > 1 && !url;
+    const requiresProjectFilter = projectCount > 0 && !url;
     const paginatedResults = requiresProjectFilter
       ? []
       : filtered.slice(offset, offset + limit);
@@ -1542,6 +1550,7 @@ export class LocalAnnotationsServer {
       annotations: annotationSummaries,
       pagination: pagination,
       projectInfo: projectInfo,
+      projectSelection: projectSelection,
       multiProjectWarning: multiProjectWarning
     };
   }
