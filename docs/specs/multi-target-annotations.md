@@ -1,6 +1,6 @@
 # Multi-Target Annotations
 
-Status: Approved design checkpoint.
+Status: Implemented.
 
 ## Problem Statement
 

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Element screenshots, image attachments, and refined floating-toolbar controls
 - Optional JSON import/export, project context, bulk cleanup, keyboard inspection, and annotation appearance settings
 - Batched MCP inspection for selected Annotations and complete diagnostic Target context
+- Multi-Target Annotations for one shared feedback request across two to eight ordered Targets on the same page
 - Queue sync status with manual retry for local changes awaiting the server
 - A global Data & Storage manager with project summaries, maintenance guidance, and confirmed project-wide or all-data deletion
 - Workflow-first MCP documentation with concrete calls, compact Survey guidance, diagnostic Inspect guidance, and a complete 19-tool reference
