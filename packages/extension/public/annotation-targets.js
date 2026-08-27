@@ -36,6 +36,9 @@ globalThis.WaypointAnnotationTargets = (() => {
       if (identities.has(identity)) throw new TypeError('Annotation Targets must be unique');
       identities.add(identity);
     }
+    if (annotation.targets.length > 1 && ('pending_changes' in annotation || 'css' in annotation)) {
+      throw new TypeError('Multi-Target Annotations cannot include Element edits');
+    }
     return annotation.targets;
   }
 

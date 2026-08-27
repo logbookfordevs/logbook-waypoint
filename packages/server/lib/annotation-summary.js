@@ -1,3 +1,5 @@
+import { annotationHasScreenshot } from './annotation-media.js';
+
 const CURATED_STYLE_KEYS = [
   'display',
   'position',
@@ -125,19 +127,6 @@ function compactVariantRequest(request) {
   ]);
 }
 
-function hasScreenshot(annotation, targets) {
-  return Boolean(
-    annotation.has_screenshot
-    || annotation.screenshot?.data_url
-    || annotation.screenshot?.attachment_id
-    || targets.some(target => (
-      target?.has_screenshot
-      || target?.screenshot?.data_url
-      || target?.screenshot?.attachment_id
-    )),
-  );
-}
-
 export function summarizeAnnotation(annotation) {
   const targets = annotationTargets(annotation);
   const hasVariantRequest = annotation.variant_request !== undefined;
@@ -157,7 +146,7 @@ export function summarizeAnnotation(annotation) {
     ['claim', clone(annotation.claim)],
     ['work_notice', clone(annotation.work_notice)],
     ['resolution_record', clone(annotation.resolution_record)],
-    ['has_screenshot', hasScreenshot(annotation, targets)],
+    ['has_screenshot', annotationHasScreenshot(annotation, targets)],
     ['has_attachments', Boolean(annotation.has_attachments || annotation.attachments?.length)],
     ['created_at', annotation.created_at],
     ['updated_at', annotation.updated_at],

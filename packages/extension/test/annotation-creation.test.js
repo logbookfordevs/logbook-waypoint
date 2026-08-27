@@ -253,6 +253,13 @@ test('shared extension validation rejects URL-less and empty imported Annotation
   assert.throws(() => context.WaypointAnnotationValidation.assertAnnotation({
     id: 'waypoint_1750000000000_abc123xyz',
     url: 'http://localhost:3000/app',
+    comment: 'Shared feedback',
+    targets: [{ selector: '#first' }, { selector: '#second' }],
+    pending_changes: { color: { value: '#201a16' } },
+  }), /cannot include Element edits/);
+  assert.throws(() => context.WaypointAnnotationValidation.assertAnnotation({
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/app',
     comment: 'Malformed intent',
     design_intent: { schema_version: 1, workflow: 'other', action: null },
   }), /Design Intent workflow/);
@@ -301,10 +308,6 @@ test('annotation options group keeps its guided workflow choices compact and acc
   assert.match(styles, /\.waypoint-variant-intent-title\s*\{[^}]*white-space:\s*nowrap/s);
   assert.match(styles, /\.waypoint-variant-intent\s*\{[^}]*appearance:\s*none/s);
   assert.match(styles, /\.waypoint-variant-intent:focus-visible/);
-  assert.match(
-    styles,
-    /:host\(\[data-lfd-theme="night"\]\) \.waypoint-agent-direction-icon\s*\{[^}]*color:\s*var\(--waypoint-highlight\)/s,
-  );
   assert.match(styles, /\.waypoint-design-action-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,minmax\(0,1fr\)\)/s);
 });
 

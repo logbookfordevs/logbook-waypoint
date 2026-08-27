@@ -19,6 +19,10 @@ function targetIdentity(target, index) {
   return `${target.selector || `page:${index}`}\u0000${JSON.stringify(target.source_identity ?? null)}`;
 }
 
+function targetIdentities(annotation) {
+  return normalizeAnnotationTargets(annotation).targets.map(targetIdentity);
+}
+
 export function assertAnnotationTargets(annotation) {
   if (!Array.isArray(annotation.targets) || annotation.targets.length < 1 || annotation.targets.length > 8) {
     throw new TypeError('Annotation must include between 1 and 8 Targets');
@@ -35,6 +39,9 @@ export function assertAnnotationTargets(annotation) {
     const identity = targetIdentity(target, index);
     if (identities.has(identity)) throw new TypeError('Annotation Targets must be unique');
     identities.add(identity);
+  }
+  if (annotation.targets.length > 1 && ('pending_changes' in annotation || 'css' in annotation)) {
+    throw new TypeError('Multi-Target Annotations cannot include Element edits');
   }
 
   return annotation.targets;
@@ -55,4 +62,8 @@ export function normalizeAnnotationTargets(annotation) {
   normalized.targets = [target];
   assertAnnotationTargets(normalized);
   return normalized;
+}
+
+export function hasSameAnnotationTargetSet(current, incoming) {
+  return JSON.stringify(targetIdentities(current)) === JSON.stringify(targetIdentities(incoming));
 }

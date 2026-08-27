@@ -1,4 +1,5 @@
 import { assertAnnotationLifecycleState, assertAnnotationStatusFilter } from './annotation-lifecycle.js';
+import { annotationHasScreenshot, targetHasScreenshot } from './annotation-media.js';
 import { normalizeAnnotationTargets } from './annotation-targets.js';
 
 const SENSITIVE_EXPORT_KEYS = new Set([
@@ -40,7 +41,7 @@ function exportedAnnotation(annotation) {
   const portable = portableValue(annotation);
   const targets = annotation.targets.map(target => ({
     ...portableValue(target),
-    has_screenshot: Boolean(target.screenshot?.data_url || target.screenshot?.attachment_id || target.has_screenshot),
+    has_screenshot: targetHasScreenshot(target),
   }));
   let urlPath = annotation.url_path;
   try {
@@ -55,7 +56,7 @@ function exportedAnnotation(annotation) {
     id: annotation.id,
     status: annotation.status,
     ...(urlPath ? { url_path: urlPath } : {}),
-    has_screenshot: targets.some(target => target.has_screenshot) || annotation.has_screenshot === true,
+    has_screenshot: annotationHasScreenshot(annotation, annotation.targets),
     has_attachments: Boolean(annotation.attachments?.length || annotation.has_attachments),
   };
 }

@@ -8,6 +8,7 @@ import { assertAnnotationLifecycleState } from './annotation-lifecycle.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
 import { assertResolutionRecordSummary } from './resolution-record.js';
 import { assertAnnotationVariantIntent } from './variant-intent.js';
+import { annotationHasScreenshot, targetHasScreenshot } from './annotation-media.js';
 import { normalizeAnnotationTargets } from './annotation-targets.js';
 import { summarizeAnnotation } from './annotation-summary.js';
 
@@ -56,7 +57,7 @@ function portableAnnotation(annotation, hasScreenshot) {
     } = target;
     return {
       ...portableTarget,
-      has_screenshot: Boolean(target.has_screenshot || targetScreenshot?.data_url || targetScreenshot?.attachment_id),
+      has_screenshot: targetHasScreenshot({ ...target, screenshot: targetScreenshot }),
     };
   });
   const portableVariantRequest = variant_request && {
@@ -77,12 +78,7 @@ function portableAnnotation(annotation, hasScreenshot) {
 
 export function toWatchAnnotation(annotation) {
   const targets = normalizeAnnotationTargets(annotation).targets;
-  return portableAnnotation(annotation, Boolean(
-    annotation.has_screenshot
-    || annotation.screenshot?.data_url
-    || annotation.screenshot?.attachment_id
-    || targets.some(target => target.has_screenshot || target.screenshot?.data_url || target.screenshot?.attachment_id),
-  ));
+  return portableAnnotation(annotation, annotationHasScreenshot(annotation, targets));
 }
 
 export function toReadAnnotation(annotation) {

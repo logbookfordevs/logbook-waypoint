@@ -51,3 +51,16 @@ test('canonical Target Sets retain selection order and require one to eight uniq
     /between 1 and 8 Targets/,
   );
 });
+
+test('multi-Target Annotations reject Element edits at the portable contract boundary', () => {
+  const targets = [{ selector: '#first' }, { selector: '#second' }];
+
+  assert.throws(
+    () => assertAnnotationTargets({ targets, pending_changes: { color: { value: 'red' } } }),
+    /cannot include Element edits/,
+  );
+  assert.throws(
+    () => assertAnnotationTargets({ targets, css: '#first { color: red; }' }),
+    /cannot include Element edits/,
+  );
+});

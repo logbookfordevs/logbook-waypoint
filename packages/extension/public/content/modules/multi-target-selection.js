@@ -7,6 +7,8 @@ var WaypointMultiTargetSelection = (() => {
   let draft = null;
   let rafId = null;
   let selectionURL = null;
+  let selectionSession = 0;
+  let selectionQueue = Promise.resolve();
 
   function init() {
     WaypointEvents.on('inspection:elementClicked', onElementClicked);
@@ -19,7 +21,7 @@ var WaypointMultiTargetSelection = (() => {
     return active || shiftKey;
   }
 
-  async function onElementClicked({ element, clientX, clientY, shiftKey = false }) {
+  function onElementClicked({ element, clientX, clientY, shiftKey = false }) {
     if (!shouldHandle(shiftKey) || composing) return false;
     const currentURL = window.location.href;
     if (selectionURL && selectionURL !== currentURL) {
@@ -28,18 +30,25 @@ var WaypointMultiTargetSelection = (() => {
     }
     active = true;
     selectionURL ||= currentURL;
-    const context = await WaypointElementContext.generate(element);
-    const existingIndex = selections.findIndex(selection => selection.context.selector === context.selector);
-    if (existingIndex >= 0) {
-      selections.splice(existingIndex, 1);
-    } else if (selections.length >= MAX_TARGETS) {
-      render('Up to 8 Targets can share one Annotation.');
+    const session = selectionSession;
+    const capture = async () => {
+      const context = await WaypointElementContext.generate(element);
+      if (session !== selectionSession || !active || composing) return true;
+      const existingIndex = selections.findIndex(selection => selection.context.selector === context.selector);
+      if (existingIndex >= 0) {
+        selections.splice(existingIndex, 1);
+      } else if (selections.length >= MAX_TARGETS) {
+        render('Up to 8 Targets can share one Annotation.');
+        return true;
+      } else {
+        selections.push({ element, context, clientX, clientY });
+      }
+      render();
       return true;
-    } else {
-      selections.push({ element, context, clientX, clientY });
-    }
-    render();
-    return true;
+    };
+    const pendingCapture = selectionQueue.then(capture, capture);
+    selectionQueue = pendingCapture.catch(() => {});
+    return pendingCapture;
   }
 
   function ensureTray() {
@@ -158,6 +167,8 @@ var WaypointMultiTargetSelection = (() => {
   }
 
   function reset() {
+    selectionSession += 1;
+    selectionQueue = Promise.resolve();
     selections.forEach(selection => selection.pin?.remove());
     selections = [];
     tray?.remove();

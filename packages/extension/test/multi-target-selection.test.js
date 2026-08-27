@@ -8,7 +8,7 @@ const wxtPackage = await realpath(new URL('../node_modules/wxt/package.json', im
 const requireFromWxt = createRequire(wxtPackage);
 const { parseHTML } = requireFromWxt('linkedom');
 
-async function setup() {
+async function setup({ generate } = {}) {
   const { window } = parseHTML('<div id="root"></div><main></main>');
   const handlers = new Map();
   const emitted = [];
@@ -27,13 +27,13 @@ async function setup() {
   };
   context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#root') };
   context.WaypointElementContext = {
-    generate: async element => ({
+    generate: generate || (async element => ({
       selector: `#${element.id}`,
       tag: element.tagName.toLowerCase(),
       position: { width: 40, height: 20 },
       viewport: { width: 1280, height: 720 },
       screenshot: { data_url: `data:image/png;base64,${element.id}` },
-    }),
+    })),
   };
   let reEnableCount = 0;
   context.WaypointInspectionMode = { reEnable() { reEnableCount += 1; } };
@@ -131,4 +131,49 @@ test('a route change cannot add a Target from a different page URL', async () =>
 
   assert.equal(context.WaypointMultiTargetSelection.getSelections().length, 0);
   assert.equal(context.WaypointMultiTargetSelection.isActive(), false);
+});
+
+test('asynchronous Target capture preserves click order', async () => {
+  const captures = new Map();
+  const { context, handlers, window } = await setup({
+    generate: element => new Promise(resolve => captures.set(element.id, resolve)),
+  });
+  const first = window.document.createElement('button');
+  first.id = 'first';
+  const second = window.document.createElement('button');
+  second.id = 'second';
+  window.document.querySelector('main').append(first, second);
+
+  const firstClick = handlers.get('inspection:elementClicked')({ element: first, shiftKey: true });
+  const secondClick = handlers.get('inspection:elementClicked')({ element: second });
+  await Promise.resolve();
+  captures.get('first')({ selector: '#first' });
+  await firstClick;
+  await Promise.resolve();
+  captures.get('second')({ selector: '#second' });
+  await secondClick;
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(context.WaypointMultiTargetSelection.getSelections().map(selection => selection.context.selector))),
+    ['#first', '#second'],
+  );
+});
+
+test('capture completing after reset cannot restore stale selection state', async () => {
+  let finishCapture;
+  const { context, handlers, window } = await setup({
+    generate: () => new Promise(resolve => { finishCapture = resolve; }),
+  });
+  const target = window.document.createElement('button');
+  target.id = 'target';
+  window.document.querySelector('main').append(target);
+
+  const click = handlers.get('inspection:elementClicked')({ element: target, shiftKey: true });
+  await Promise.resolve();
+  handlers.get('inspection:stopped')();
+  finishCapture({ selector: '#target' });
+  await click;
+
+  assert.equal(context.WaypointMultiTargetSelection.isActive(), false);
+  assert.equal(context.WaypointMultiTargetSelection.getSelections().length, 0);
 });

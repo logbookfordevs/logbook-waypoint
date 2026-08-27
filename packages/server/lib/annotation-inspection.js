@@ -1,3 +1,4 @@
+import { annotationHasScreenshot } from './annotation-media.js';
 import { annotationTargets } from './annotation-summary.js';
 import { toReadAnnotation } from './watch-queue.js';
 
@@ -23,16 +24,7 @@ export function inspectAnnotation(annotation) {
     ...clone(target),
   }));
   if (inspected.targets.length === 1) Object.assign(inspected, inspected.targets[0]);
-  inspected.has_screenshot = Boolean(
-    annotation.has_screenshot
-    || annotation.screenshot?.data_url
-    || annotation.screenshot?.attachment_id
-    || targets.some(target => (
-      target?.has_screenshot
-      || target?.screenshot?.data_url
-      || target?.screenshot?.attachment_id
-    )),
-  );
+  inspected.has_screenshot = annotationHasScreenshot(annotation, targets);
   inspected.has_attachments = Boolean(annotation.has_attachments || annotation.attachments?.length);
   return inspected;
 }
