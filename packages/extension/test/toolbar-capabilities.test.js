@@ -99,7 +99,7 @@ test('toolbar requests optional site access through the background message seam'
 test('toolbar onboarding uses the published CLI installer', async () => {
   const toolbar = await readFile(toolbarUrl, 'utf8');
 
-  assert.match(toolbar, /scripts\/install\.sh \| bash/);
+  assert.match(toolbar, /waypoint\.logbookfordevs\.com\/install\.sh \| bash/);
   assert.match(toolbar, /data-cmd="waypoint start"/);
   assert.doesNotMatch(toolbar, /node packages\/server\/bin\/cli\.js start/);
 });

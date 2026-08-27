@@ -7,7 +7,7 @@ Global MCP server for Logbook Waypoint browser extension.
 Install the latest checksummed release directly:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/logbookfordevs/logbook-waypoint/main/scripts/install.sh | bash
+curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
 ```
 
 Or install through npm:

@@ -18,7 +18,7 @@ Copy and export work without MCP. The server becomes useful when the agent shoul
 Install the latest checksummed CLI release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/logbookfordevs/logbook-waypoint/main/scripts/install.sh | bash
+curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
 waypoint start
 ```
 

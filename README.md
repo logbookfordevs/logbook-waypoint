@@ -76,7 +76,7 @@ Waypoint release.
 Install directly from the latest GitHub release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/logbookfordevs/logbook-waypoint/main/scripts/install.sh | bash
+curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
 ```
 
 Or install through npm:
