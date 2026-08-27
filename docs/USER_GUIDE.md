@@ -121,6 +121,7 @@ See [Use Design Actions](DESIGN_ACTIONS.md) for setup requirements, the action c
 - **Show Design Actions** controls whether Impeccable-powered authoring appears for new work.
 - **Keyboard shortcut** records a custom Annotate shortcut.
 - **Site access** grants persistent annotation access on the current non-local site.
+- **Data & Storage** shows a lightweight maintenance summary and loads project details only when opened. Review old Pending work, delete old history, remove one project's records, or clear all local Waypoint data with confirmation.
 - **Import/Export** moves portable Annotation records in or out of Waypoint.
 
 ## Know what remains local

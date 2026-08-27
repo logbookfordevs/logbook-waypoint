@@ -41,7 +41,7 @@ Call `read_annotations` without a URL when the project is not yet known:
 }
 ```
 
-If more than one project has matching Annotations, Waypoint returns project discovery metadata and recommended URL filters—not every Annotation body. Repeat the call with the intended project:
+An unscoped call always returns project discovery metadata and recommended URL filters—not Annotation bodies. This remains true when only one stored project exists, so an agent never guesses that old work belongs to the current task. Repeat the call with the intended project:
 
 ```json
 {

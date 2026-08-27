@@ -147,7 +147,7 @@ The HTTP API and MCP tools share one Annotation lifecycle: Pending Annotations m
 
 ### Annotation context workflow
 
-Use `read_annotations` to survey the Queue. If an unfiltered call discovers multiple projects, select one of its recommended URL filters and repeat the read; annotation bodies remain withheld until the project scope is explicit. Scoped reads return compact summaries normalized across legacy single-Target and multi-Target records. Compact describes response size, not an incomplete brief: Survey should usually provide enough context to implement the request.
+Use `read_annotations` to survey the Queue. An unfiltered call discovers projects without returning Annotation bodies, even when only one project exists. Select one recommended URL filter and repeat the read. Scoped reads return compact summaries normalized across legacy single-Target and multi-Target records. Compact describes response size, not an incomplete brief: Survey should usually provide enough context to implement the request.
 
 Use `inspect_annotations` with one or more Annotation IDs when selected work needs complete diagnostic context such as computed styles, exact placement, full ancestry, Source Identity hints, or Target relationships. Batch IDs for Annotations being understood or implemented together. Inspection is optional when the compact summary already makes the work clear.
 

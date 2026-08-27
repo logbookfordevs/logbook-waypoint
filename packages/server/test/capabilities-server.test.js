@@ -207,7 +207,7 @@ test('server shares strict loopback project scope across read, context, deletion
   await assert.rejects(server.deleteProjectAnnotations({ url_pattern: 'https://example.com/*' }), /loopback/i);
 });
 
-test('unfiltered reads require project selection before returning multi-project annotation bodies', async () => {
+test('unfiltered reads discover projects without returning annotation bodies', async () => {
   const server = new LocalAnnotationsServer();
   const annotations = [
     { id, url: 'http://localhost:3000/', comment: 'Waypoint feedback', status: 'pending' },
@@ -236,6 +236,24 @@ test('unfiltered reads require project selection before returning multi-project 
 
   assert.deepEqual(filtered.annotations.map(annotation => annotation.id), [id]);
   assert.equal(filtered.multiProjectWarning, null);
+});
+
+test('unfiltered reads require project selection even when only one project exists', async () => {
+  const server = new LocalAnnotationsServer();
+  server.loadAnnotations = async () => [{
+    id,
+    url: 'http://localhost:3000/settings',
+    comment: 'Old project feedback',
+    status: 'pending',
+  }];
+
+  const discovery = await server.readAnnotations({ status: 'pending' });
+
+  assert.deepEqual(discovery.annotations, []);
+  assert.equal(discovery.projectInfo.length, 1);
+  assert.equal(discovery.projectInfo[0].recommended_filter, 'http://localhost:3000/*');
+  assert.equal(discovery.multiProjectWarning, null);
+  assert.match(discovery.projectSelection.recommendation, /url.*filter/i);
 });
 
 test('server file-backs screenshots and extension attachments while explicit retrieval controls bytes', async () => {

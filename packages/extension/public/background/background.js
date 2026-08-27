@@ -6,6 +6,7 @@ importScripts('../annotation-collection.js');
 importScripts('../design-intent.js');
 importScripts('../variant-intent.js');
 importScripts('../annotation-validation.js');
+importScripts('../data-management.js');
 importScripts('../export-codec.js');
 importScripts('queue-sync.js');
 importScripts('site-access.js');
@@ -40,6 +41,7 @@ class WaypointAnnotationsBackground {
 
     await this.migrateAnnotationStatuses();
     await this.migrateSyncFlags();
+    await this.refreshDataHealthSummary();
 
     // Set up event listeners
     this.setupInstallListener();
@@ -165,6 +167,24 @@ class WaypointAnnotationsBackground {
         case 'deleteAnnotationsByUrl':
           this.deleteAnnotationsByUrl(request.url)
             .then(({ count }) => sendResponse({ success: true, count }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+          break;
+
+        case 'getDataHealthSummary':
+          this.getDataHealthSummary()
+            .then(summary => sendResponse({ success: true, summary }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+          break;
+
+        case 'getDataManagerSnapshot':
+          this.getDataManagerSnapshot()
+            .then(snapshot => sendResponse({ success: true, snapshot }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+          break;
+
+        case 'deleteDataSelection':
+          this.deleteDataSelection(request.selection)
+            .then(result => sendResponse({ success: true, ...result }))
             .catch(error => sendResponse({ success: false, error: error.message }));
           break;
 
@@ -298,6 +318,7 @@ class WaypointAnnotationsBackground {
     // saveAnnotation, deleteAnnotation, and importAnnotations. Syncing here causes races
     // because this fires on every storage write, including writes from smartSync itself.
     try {
+      await this.refreshDataHealthSummary(annotations);
       const tabs = await chrome.tabs.query({});
       const supportedTabs = [];
       for (const tab of tabs) {
@@ -310,6 +331,67 @@ class WaypointAnnotationsBackground {
     } catch (error) {
       console.error('Error updating badges after storage change:', error);
     }
+  }
+
+  async refreshDataHealthSummary(annotations) {
+    if (!annotations) {
+      const stored = await chrome.storage.local.get(['waypointAnnotations']);
+      annotations = WaypointAnnotationCollection.canonicalize(stored.waypointAnnotations);
+    }
+    const summary = WaypointDataManagement.summarize(annotations);
+    await chrome.storage.local.set({ waypointDataHealthSummary: summary });
+    return summary;
+  }
+
+  async getDataHealthSummary() {
+    const stored = await chrome.storage.local.get(['waypointDataHealthSummary']);
+    return stored.waypointDataHealthSummary || this.refreshDataHealthSummary();
+  }
+
+  async getDataManagerSnapshot() {
+    const stored = await chrome.storage.local.get(['waypointAnnotations']);
+    return WaypointDataManagement.snapshot(
+      WaypointAnnotationCollection.canonicalize(stored.waypointAnnotations),
+    );
+  }
+
+  async deleteDataSelection(selection) {
+    return this._withStorageLock(async () => {
+      const stored = await chrome.storage.local.get([
+        'waypointAnnotations',
+        'waypointDeletedAnnotationIds',
+        'waypointDesignIntentRemovalIds',
+        'waypointVariantIntentRemovalIds',
+      ]);
+      const annotations = WaypointAnnotationCollection.canonicalize(stored.waypointAnnotations);
+      const selectedIds = new Set(WaypointDataManagement.selectIds(annotations, selection));
+      const selected = annotations.filter(annotation => selectedIds.has(annotation.id));
+      for (const annotation of selected) WaypointVariantPolicy.assertDeleteAllowed(annotation);
+      if (!selected.length) return { deleted_count: 0, snapshot: WaypointDataManagement.snapshot(annotations) };
+
+      const deletedIds = new Set(stored.waypointDeletedAnnotationIds || []);
+      for (const annotation of selected) deletedIds.add(annotation.id);
+      const remaining = annotations.filter(annotation => !selectedIds.has(annotation.id));
+      await chrome.storage.local.set({
+        waypointAnnotations: remaining,
+        waypointDeletedAnnotationIds: [...deletedIds],
+        waypointDesignIntentRemovalIds: WaypointDesignIntent.removeIds(
+          stored.waypointDesignIntentRemovalIds || [],
+          [...selectedIds],
+        ),
+        waypointVariantIntentRemovalIds: WaypointVariantIntent.removeIds(
+          stored.waypointVariantIntentRemovalIds || [],
+          [...selectedIds],
+        ),
+      });
+
+      await Promise.allSettled(selected.map(annotation => this.deleteAnnotationFromAPI(annotation.id)));
+      await this.updateAllBadges();
+      return {
+        deleted_count: selected.length,
+        snapshot: WaypointDataManagement.snapshot(remaining),
+      };
+    });
   }
 
   async syncAnnotationsToAPI(annotations, designIntentRemovals = [], variantIntentRemovals = []) {

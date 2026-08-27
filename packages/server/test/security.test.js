@@ -308,7 +308,7 @@ describe('local HTTP security boundary', () => {
       await client.connect(transport);
       const result = await client.callTool({
         name: 'read_annotations',
-        arguments: { status: 'pending' }
+        arguments: { status: 'pending', url: 'http://localhost:3000/*' }
       });
       const payload = JSON.parse(result.content[0].text);
 
@@ -428,7 +428,7 @@ describe('local HTTP security boundary', () => {
       await client.connect(transport);
       const read = await client.callTool({
         name: 'read_annotations',
-        arguments: { status: 'pending' }
+        arguments: { status: 'pending', url: 'http://localhost:3000/*' }
       });
       const readPayload = JSON.parse(read.content[0].text);
       assert.equal(readPayload.data.annotations[0].has_screenshot, true);
@@ -472,7 +472,7 @@ describe('local HTTP security boundary', () => {
       await client.connect(transport);
       const read = await client.callTool({
         name: 'read_annotations',
-        arguments: { status: 'pending' }
+        arguments: { status: 'pending', url: 'http://localhost:3000/*' }
       });
       const readPayload = JSON.parse(read.content[0].text);
       assert.equal(readPayload.data.annotations.length, 1);

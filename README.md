@@ -112,7 +112,7 @@ For JSON-based MCP clients:
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
-For annotation context, agents first survey a project with compact `read_annotations` summaries and inspect selected IDs only when complete diagnostic context is useful. Compact summaries are intended to be sufficient for normal implementation; “compact” describes the response size, not a partial brief. Unfiltered reads discover projects before returning cross-project annotation bodies. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
+For annotation context, agents first discover stored projects with an unscoped `read_annotations` call, then select one URL scope to receive compact summaries. Unscoped reads never return Annotation bodies, even when only one project exists. Inspect selected IDs only when complete diagnostic context is useful. Compact summaries are intended to be sufficient for normal implementation; “compact” describes the response size, not a partial brief. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
 
 ### Design Actions setup
 

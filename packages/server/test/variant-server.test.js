@@ -115,7 +115,7 @@ test('server atomically cancels an unresolved Variant Set while preserving its P
   assert.equal('variant_request' in cancelled, false);
   assert.equal('variant_presentation' in cancelled, false);
   assert.equal('pending_changes' in cancelled, false);
-  const read = await server.readAnnotations({ status: 'pending' });
+  const read = await server.readAnnotations({ status: 'pending', url: 'http://localhost:3000/*' });
   assert.equal('variant_request' in read.annotations[0], false);
   assert.equal(read.annotations[0].status, 'pending');
 });
