@@ -243,6 +243,21 @@ test('settings retain Enable when the current site lacks persistent access', asy
   assert.match(root.querySelector('.waypoint-setting-description').textContent, /enable annotation access/i);
 });
 
+test('documentation and workflow guides opt into the wider reading layout', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  root.querySelector('.waypoint-get-started-btn').click();
+  const dropdown = root.querySelector('.waypoint-settings-dropdown');
+  assert.equal(dropdown.classList.contains('guidance-open'), true);
+
+  root.querySelector('[data-workflow="multi-page"]').click();
+  assert.equal(dropdown.classList.contains('guidance-open'), true);
+  assert.match(dropdown.textContent, /Editing multiple pages/);
+});
+
 test('settings show cached maintenance guidance and load Data & Storage details only on demand', async () => {
   const summary = {
     project_count: 2,

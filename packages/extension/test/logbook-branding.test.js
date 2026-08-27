@@ -86,3 +86,9 @@ test('data storage view gets a wider responsive layout with inline breathing roo
   assert.match(contentStyles, /\.waypoint-settings-dropdown\.data-storage-open\s*{[^}]*width:\s*min\(360px, calc\(100vw - 24px\)\)/s);
   assert.match(contentStyles, /\.waypoint-data-storage-view\s*{[^}]*padding:\s*10px/s);
 });
+
+test('instructional settings views get a wider responsive reading measure', async () => {
+  const contentStyles = await readFile(contentStylesUrl, 'utf8');
+
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\.guidance-open\s*{[^}]*width:\s*min\(340px, calc\(100vw - 24px\)\)/s);
+});

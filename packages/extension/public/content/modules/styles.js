@@ -1492,6 +1492,10 @@ var WAYPOINT_STYLES = `
   width: min(360px, calc(100vw - 24px));
 }
 
+.waypoint-settings-dropdown.guidance-open {
+  width: min(340px, calc(100vw - 24px));
+}
+
 .waypoint-settings-header {
   display: flex;
   align-items: center;

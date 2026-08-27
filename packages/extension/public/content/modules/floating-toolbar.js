@@ -628,6 +628,7 @@ var WaypointToolbar = (() => {
 
   function showDocumentation() {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('guidance-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
@@ -689,6 +690,7 @@ var WaypointToolbar = (() => {
 
   function showGetStartedGuide() {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('guidance-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
@@ -805,6 +807,7 @@ var WaypointToolbar = (() => {
 
   function showWorkflow(type) {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('guidance-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
