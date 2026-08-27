@@ -38,9 +38,20 @@ var WaypointBadgeManager = (() => {
   let domObserver = null;
   let rematchDebounceTimer = null;
   let lastTotal = 0; // total annotations (including unanchored)
+  const savedTargets = new Map();
+
+  function annotationLabel(annotation) {
+    const comment = typeof annotation.comment === 'string' ? annotation.comment.trim() : '';
+    if (comment) return comment;
+    if (annotation.pending_changes?.copyChange) return 'Text content edit';
+    return 'Annotation';
+  }
 
   function init() {
     WaypointEvents.on('annotations:render', render);
+    WaypointEvents.on('annotation:saved', ({ annotation, element }) => {
+      if (annotation?.id && element) savedTargets.set(annotation.id, element);
+    });
     WaypointEvents.on('annotation:deleted', onDeleted);
     WaypointEvents.on('annotation:updated', onUpdated);
     WaypointEvents.on('inspection:elementClicked', onProvisionalPin);
@@ -142,7 +153,10 @@ var WaypointBadgeManager = (() => {
       badgeIndex++;
       const annotationTargets = WaypointAnnotationTargets.get(annotation);
       annotationTargets.forEach((targetData, targetIndex) => {
-        const target = WaypointElementContext.findElementBySelector(targetData);
+        const savedTarget = targetIndex === 0 ? savedTargets.get(annotation.id) : null;
+        const target = savedTarget?.isConnected
+          ? savedTarget
+          : WaypointElementContext.findElementBySelector(targetData);
         if (!target) return;
         // Rehydrate pending design changes
         const rpc = annotationTargets.length === 1 ? annotation.pending_changes : null;
@@ -166,7 +180,7 @@ var WaypointBadgeManager = (() => {
           existing.targetElement = target;
           existing.el.childNodes[0].textContent = label;
           const tooltip = existing.el.querySelector('.waypoint-badge-tooltip');
-          if (tooltip) tooltip.textContent = annotation.comment;
+          if (tooltip) tooltip.textContent = annotationLabel(annotation);
           badges.push(existing);
           positionBadge(existing);
           previousBadges.delete(key);
@@ -174,6 +188,7 @@ var WaypointBadgeManager = (() => {
           addBadge(target, annotation, targetData, targetIndex, label);
         }
       });
+      savedTargets.delete(annotation.id);
     });
 
     for (const entry of previousBadges.values()) {
@@ -238,7 +253,7 @@ var WaypointBadgeManager = (() => {
     // Tooltip
     const tooltip = document.createElement('div');
     tooltip.className = 'waypoint-badge-tooltip';
-    tooltip.textContent = annotation.comment;
+    tooltip.textContent = annotationLabel(annotation);
     badge.appendChild(tooltip);
 
     root.appendChild(badge);
@@ -313,6 +328,7 @@ var WaypointBadgeManager = (() => {
       entry.el.remove();
     }
     badges = [];
+    savedTargets.clear();
     lastTotal = 0;
     stopRAF();
     clearTimeout(rematchDebounceTimer);
@@ -331,6 +347,7 @@ var WaypointBadgeManager = (() => {
   }
 
   function onDeleted({ id, annotation }) {
+    savedTargets.delete(id);
     // Remove companion style tag if any (both standalone stylesheet and element-anchored css)
     const styleIdx = styleInjections.findIndex(s => s.annotation.id === id);
     if (styleIdx !== -1) {
@@ -375,7 +392,7 @@ var WaypointBadgeManager = (() => {
     const entries = badges.filter(b => b.annotation.id === id);
     for (const entry of entries) {
       const tooltip = entry.el.querySelector('.waypoint-badge-tooltip');
-      if (tooltip) tooltip.textContent = comment;
+      if (tooltip) tooltip.textContent = annotationLabel({ ...entry.annotation, comment, pending_changes });
       const oldPC = entry.annotation.pending_changes;
       // Revert old copy change before applying new state
       entry.annotation = WaypointDesignIntent.applyUpdate(

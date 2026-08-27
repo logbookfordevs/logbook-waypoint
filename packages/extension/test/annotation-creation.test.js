@@ -108,6 +108,28 @@ test('content can request the current site permission through the background bou
   }]);
 });
 
+test('content can read whether the current site already has persistent access', async () => {
+  const messages = [];
+  const context = vm.createContext({
+    window: { location: { protocol: 'https:', origin: 'https://example.test' } },
+    URL,
+    chrome: {
+      runtime: {
+        sendMessage: async message => {
+          messages.push(message);
+          return { success: true, granted: true };
+        },
+      },
+    },
+  });
+  context.globalThis = context;
+
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  assert.equal(await context.WaypointAPI.hasCurrentSiteAccess(), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(messages)), [{ action: 'getCurrentSiteAccess' }]);
+});
+
 test('Design Actions visibility defaults on and persists through the extension preference boundary', async () => {
   const writes = [];
   let stored = {};
@@ -168,6 +190,10 @@ test('background validates attachment payloads before forwarding an annotation t
 
   assert.match(source, /case 'requestOptionalSitePermission'/);
   assert.match(source, /requestOptionalSitePermission\(originPattern/);
+  assert.match(source, /case 'getCurrentSiteAccess'/);
+  assert.match(source, /hasCurrentSiteAccess\(senderUrl\)/);
+  assert.match(source, /WaypointSiteAccess\.hasCurrentSiteAccess/);
+  assert.match(source, /chrome\.permissions\.contains\(\{ origins: \[originPattern\] \}\)/);
   assert.match(source, /chrome\.permissions\.request\(\{ origins: \[originPattern\] \}\)/);
   assert.match(source, /validateAnnotationAttachments\(annotation\)/);
   assert.match(source, /apiServerUrl}\/api\/annotations/);

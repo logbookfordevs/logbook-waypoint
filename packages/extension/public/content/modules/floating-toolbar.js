@@ -42,6 +42,7 @@ var WaypointToolbar = (() => {
     // Links
     github: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>',
     server: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>',
+    database: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>',
     camera: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
     keyboard: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>',
     newspaper: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>',
@@ -270,10 +271,10 @@ var WaypointToolbar = (() => {
             ${ICONS.globe}
             <div>
               <span>Site access</span>
-              <div class="waypoint-setting-description">Enable annotation access for this site</div>
+              <div class="waypoint-setting-description">Checking site access…</div>
             </div>
           </div>
-          <button class="waypoint-btn waypoint-btn-secondary waypoint-site-permission-btn" type="button">Enable</button>
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-site-permission-btn" type="button" disabled>Checking…</button>
         </div>
         <p class="waypoint-site-permission-status" aria-live="polite"></p>
         <div class="waypoint-settings-separator"></div>
@@ -322,6 +323,12 @@ var WaypointToolbar = (() => {
           <button class="waypoint-shortcut-btn" type="button">${escapeHTML(shortcutHint)}</button>
         </div>
         <div class="waypoint-settings-separator"></div>
+        <button class="waypoint-settings-link waypoint-data-storage-btn" type="button">
+          ${ICONS.database}
+          <span>Data &amp; Storage</span>
+          <span class="waypoint-data-health-badge" aria-live="polite"></span>
+          <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
+        </button>
         <button class="waypoint-settings-link waypoint-export-btn" type="button">
           ${ICONS.upload}
           <span>Export annotations</span>
@@ -339,6 +346,18 @@ var WaypointToolbar = (() => {
     `;
 
     toolbarEl.appendChild(settingsDropdown);
+
+    WaypointAPI.getDataHealthSummary().then(summary => {
+      if (!settingsDropdown) return;
+      const badge = settingsDropdown.querySelector('.waypoint-data-health-badge');
+      if (!badge) return;
+      if (summary.review_count > 0) {
+        badge.textContent = `${summary.review_count} to review`;
+        badge.hidden = false;
+      } else {
+        badge.hidden = true;
+      }
+    }).catch(() => {});
 
     // Theme toggle
     settingsDropdown.querySelector('.waypoint-theme-btn').addEventListener('click', () => {
@@ -376,6 +395,15 @@ var WaypointToolbar = (() => {
 
     const permissionButton = settingsDropdown.querySelector('.waypoint-site-permission-btn');
     const permissionStatus = settingsDropdown.querySelector('.waypoint-site-permission-status');
+    const permissionDescription = settingsDropdown.querySelector('.waypoint-site-permission .waypoint-setting-description');
+    WaypointAPI.hasCurrentSiteAccess().then(granted => {
+      if (!permissionButton.isConnected) return;
+      permissionButton.textContent = granted ? 'Enabled' : 'Enable';
+      permissionButton.disabled = granted;
+      permissionDescription.textContent = granted
+        ? 'Annotation access is already enabled for this site'
+        : 'Enable annotation access for this site';
+    });
     permissionButton.addEventListener('click', async () => {
       permissionButton.disabled = true;
       permissionStatus.textContent = 'Requesting site access…';
@@ -383,6 +411,7 @@ var WaypointToolbar = (() => {
         const granted = await WaypointAPI.requestOptionalSitePermission();
         if (granted) {
           permissionButton.textContent = 'Enabled';
+          permissionDescription.textContent = 'Annotation access is already enabled for this site';
           permissionStatus.textContent = 'Site access enabled. Refresh this page to start annotating.';
         } else {
           permissionButton.disabled = false;
@@ -453,6 +482,10 @@ var WaypointToolbar = (() => {
       showDocumentation();
     });
 
+    settingsDropdown.querySelector('.waypoint-data-storage-btn').addEventListener('click', () => {
+      showDataStorage();
+    });
+
     // Export
     settingsDropdown.querySelector('.waypoint-export-btn').addEventListener('click', () => {
       closeSettings();
@@ -483,8 +516,119 @@ var WaypointToolbar = (() => {
     }, 0);
   }
 
+  function formatStorageBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return 'Less than 1 KB';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function formatActivity(value) {
+    if (!value) return 'Unknown activity';
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return 'Unknown activity';
+    return `Last activity ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }
+
+  async function showDataStorage() {
+    if (!settingsDropdown) return;
+    settingsDropdown.classList.add('data-storage-open');
+    const header = settingsDropdown.querySelector('.waypoint-settings-header');
+    const body = settingsDropdown.querySelector('.waypoint-settings-body');
+    header.innerHTML = `
+      <button class="waypoint-guide-back-btn" type="button">
+        ${ICONS.back}
+        <span>Data &amp; Storage</span>
+      </button>
+    `;
+    body.className = 'waypoint-settings-body waypoint-data-storage-view';
+    body.innerHTML = '<p class="waypoint-data-storage-loading" role="status">Loading stored projects…</p>';
+    header.querySelector('.waypoint-guide-back-btn').addEventListener('click', () => {
+      closeSettings();
+      openSettings();
+    });
+
+    try {
+      const snapshot = await WaypointAPI.getDataManagerSnapshot();
+      if (!settingsDropdown || !body.isConnected) return;
+      renderDataStorage(body, snapshot);
+    } catch (error) {
+      if (!body.isConnected) return;
+      body.innerHTML = `<p class="waypoint-data-storage-error" role="alert">${escapeHTML(error?.message || 'Could not load stored data.')}</p>`;
+    }
+  }
+
+  function renderDataStorage(body, snapshot) {
+    const summary = snapshot.summary || {};
+    const projects = snapshot.projects || [];
+    body.innerHTML = `
+      <div class="waypoint-data-storage-summary">
+        <strong>${summary.annotation_count || 0} annotation${summary.annotation_count === 1 ? '' : 's'}</strong>
+        <span>across ${summary.project_count || 0} project${summary.project_count === 1 ? '' : 's'}</span>
+        ${summary.old_pending_count > 0 ? `<span class="waypoint-data-storage-review">${summary.old_pending_count} Pending for more than ${summary.stale_after_days || 30} days</span>` : ''}
+      </div>
+      <div class="waypoint-data-storage-projects">
+        ${projects.length ? projects.map(project => `
+          <section class="waypoint-data-storage-project" data-origin="${escapeHTML(project.origin)}">
+            <div class="waypoint-data-storage-project-header">
+              <div>
+                <strong>${escapeHTML(project.origin)}</strong>
+                <span>${project.annotation_count} annotation${project.annotation_count === 1 ? '' : 's'} · ${project.route_count} route${project.route_count === 1 ? '' : 's'}</span>
+              </div>
+              <span>${escapeHTML(formatStorageBytes(project.approximate_bytes))} record data</span>
+            </div>
+            <p>${escapeHTML(formatActivity(project.last_activity_at))}</p>
+            <p>${project.status_counts.pending} Pending · ${project.status_counts.claimed} Claimed · ${project.status_counts.resolved} Resolved · ${project.status_counts.discarded} Discarded</p>
+            <button class="waypoint-data-delete-project" type="button" data-origin="${escapeHTML(project.origin)}" data-count="${project.annotation_count}">Delete project data</button>
+          </section>
+        `).join('') : '<p class="waypoint-data-storage-empty">No stored annotations.</p>'}
+      </div>
+      ${summary.cleanup_candidate_count > 0 ? `<button class="waypoint-data-delete-history" type="button" data-count="${summary.cleanup_candidate_count}">Delete old history (${summary.cleanup_candidate_count})</button>` : ''}
+      ${summary.annotation_count > 0 ? `<button class="waypoint-data-delete-all" type="button" data-count="${summary.annotation_count}">Clear all Waypoint data</button>` : ''}
+      <p class="waypoint-data-storage-feedback" role="status" aria-live="polite"></p>
+    `;
+
+    body.querySelectorAll('.waypoint-data-delete-project').forEach(button => {
+      wireDataDeletion(button, { scope: 'project', origin: button.dataset.origin }, snapshot);
+    });
+    const historyButton = body.querySelector('.waypoint-data-delete-history');
+    if (historyButton) wireDataDeletion(historyButton, { scope: 'old_history' }, snapshot);
+    const allButton = body.querySelector('.waypoint-data-delete-all');
+    if (allButton) wireDataDeletion(allButton, { scope: 'all' }, snapshot);
+  }
+
+  function wireDataDeletion(button, selection, snapshot) {
+    let confirming = false;
+    const initialLabel = button.textContent;
+    button.addEventListener('click', async () => {
+      if (!confirming) {
+        confirming = true;
+        button.textContent = `Confirm permanent deletion of ${button.dataset.count}`;
+        button.classList.add('confirming');
+        return;
+      }
+      button.disabled = true;
+      button.textContent = 'Deleting…';
+      const feedback = settingsDropdown?.querySelector('.waypoint-data-storage-feedback');
+      try {
+        const result = await WaypointAPI.deleteDataSelection(selection);
+        if (!settingsDropdown) return;
+        renderDataStorage(settingsDropdown.querySelector('.waypoint-data-storage-view'), result.snapshot || snapshot);
+        const nextFeedback = settingsDropdown.querySelector('.waypoint-data-storage-feedback');
+        if (nextFeedback) nextFeedback.textContent = `${result.deleted_count} annotation${result.deleted_count === 1 ? '' : 's'} permanently deleted.`;
+      } catch (error) {
+        confirming = false;
+        button.disabled = false;
+        button.classList.remove('confirming');
+        button.textContent = initialLabel;
+        if (feedback) feedback.textContent = error?.message || 'Could not delete stored data.';
+      }
+    });
+  }
+
   function showDocumentation() {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('guidance-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
@@ -507,14 +651,14 @@ var WaypointToolbar = (() => {
         <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <div class="waypoint-settings-separator"></div>
-      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="single-page" type="button">
-        ${ICONS.webpage}
-        <span>Editing a single page</span>
+      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="copy-paste" type="button">
+        ${ICONS.copy}
+        <span>Quick edits with copy &amp; paste</span>
         <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
-      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="multi-page" type="button">
-        ${ICONS.globe}
-        <span>Editing multiple pages</span>
+      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="agent-mcp" type="button">
+        ${ICONS.robot}
+        <span>Working with an agent through MCP</span>
         <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="collaborate" type="button">
@@ -546,6 +690,7 @@ var WaypointToolbar = (() => {
 
   function showGetStartedGuide() {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('guidance-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
@@ -573,15 +718,20 @@ var WaypointToolbar = (() => {
         <div class="waypoint-guide-section">
           <div class="waypoint-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--waypoint-text-secondary);">(optional)</span></div>
           <p class="waypoint-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
-          <div class="waypoint-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
-            <code>pnpm add --global @logbookfordevs/waypoint</code>
+          <div class="waypoint-guide-cmd" data-cmd="curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash">
+            <code>curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
           <div class="waypoint-guide-cmd" data-cmd="waypoint start">
             <code>waypoint start</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent:</p>
+          <p class="waypoint-guide-text" style="margin-top:8px;">Recommended: let Add MCP detect and configure supported agents:</p>
+          <div class="waypoint-guide-cmd" data-cmd="npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global">
+            <code>npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global</code>
+            <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
+          </div>
+          <p class="waypoint-guide-text" style="margin-top:8px;">Or configure your agent manually:</p>
           <div class="waypoint-guide-tabs">
             <button class="waypoint-guide-tab active" data-tab="claude">Claude Code</button>
             <button class="waypoint-guide-tab" data-tab="cursor">Cursor</button>
@@ -662,59 +812,67 @@ var WaypointToolbar = (() => {
 
   function showWorkflow(type) {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('guidance-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
 
     const workflows = {
-      'single-page': {
-        title: 'Editing a single page',
+      'copy-paste': {
+        title: 'Quick edits with copy & paste',
         content: `
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Best for quick edits</div>
-            <p class="waypoint-guide-text">For a few annotations on one page, <strong>copy & paste</strong> is the fastest option. No server, no setup.</p>
+            <p class="waypoint-guide-text">For a few annotations—on one page or across a small set—<strong>copy &amp; paste</strong> is the fastest option. No server or MCP setup is required.</p>
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Workflow</div>
-            <p class="waypoint-guide-text">1. Annotate elements on the page (comments, CSS tweaks, text changes)</p>
-            <p class="waypoint-guide-text">2. Click <strong>Copy</strong> in the toolbar</p>
+            <p class="waypoint-guide-text">1. Annotate elements on any pages you need</p>
+            <p class="waypoint-guide-text">2. Select the work in the Queue and click <strong>Copy</strong></p>
             <p class="waypoint-guide-text">3. Paste into any AI chat (Claude, ChatGPT, Cursor...) and ask the agent to implement the changes</p>
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Tips</div>
             <p class="waypoint-guide-text">Enable <strong>Clear on copy</strong> in settings to auto-delete annotations after copying. Keeps things clean between iterations.</p>
             <p class="waypoint-guide-text">Each annotation includes the selector, your comment, element context, and any pending changes. The agent gets everything it needs to locate and edit the right code.</p>
+            <p class="waypoint-guide-text">Choose the MCP workflow when the agent should discover new Queue work without another copy and paste.</p>
           </div>
         `
       },
-      'multi-page': {
-        title: 'Editing multiple pages',
+      'agent-mcp': {
+        title: 'Working with an agent through MCP',
         content: `
           <div class="waypoint-guide-section">
-            <div class="waypoint-guide-label">Best for cross-page changes</div>
-            <p class="waypoint-guide-text">When you're annotating across multiple routes, the <strong>MCP server</strong> is preferable. Your coding agent can read and resolve annotations from all pages at once, without manual copy-paste per route.</p>
+            <div class="waypoint-guide-label">Best for ongoing agent work</div>
+            <p class="waypoint-guide-text">Use MCP when your agent should discover, implement, and resolve Queue work directly—across routes, repeated sessions, or an active feedback loop.</p>
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Setup</div>
-            <div class="waypoint-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
-              <code>pnpm add --global @logbookfordevs/waypoint</code>
+            <div class="waypoint-guide-cmd" data-cmd="curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash">
+              <code>curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
             <div class="waypoint-guide-cmd" data-cmd="waypoint start">
               <code>waypoint start</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent (e.g. Claude Code):</p>
-            <div class="waypoint-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
-              <code>claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp</code>
+            <p class="waypoint-guide-text" style="margin-top:8px;">Then let Add MCP detect and configure supported agents:</p>
+            <div class="waypoint-guide-cmd" data-cmd="npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global">
+              <code>npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
           <div class="waypoint-guide-section">
-            <div class="waypoint-guide-label">Workflow</div>
-            <p class="waypoint-guide-text">1. Navigate your app and annotate elements across as many routes as needed</p>
-            <p class="waypoint-guide-text">2. Tell your agent: <em>"read Logbook Waypoint annotations and implement the changes"</em></p>
-            <p class="waypoint-guide-text">3. The agent pulls pending annotations via MCP, edits your source files, then resolves each completed annotation as retained history</p>
+            <div class="waypoint-guide-label">Across multiple pages</div>
+            <p class="waypoint-guide-text">Annotate as many routes as needed, then ask your agent to read the project Queue. It can implement pending work across those pages in one session and resolve each completed Annotation without route-by-route copy and paste.</p>
+          </div>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Read now</div>
+            <p class="waypoint-guide-text">Ask your agent: <em>"Read my pending Waypoint annotations and implement them."</em> It surveys the Queue with <strong>read_annotations</strong>, claims work when implementation begins, and resolves completed Annotations as retained history.</p>
+          </div>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Watch continuously</div>
+            <p class="waypoint-guide-text">During an active review, ask your agent: <em>"Watch Waypoint for new annotations."</em> <strong>watch_annotations</strong> waits for new or changed Queue activity without claiming anything until the agent is ready to work.</p>
           </div>
         `
       },

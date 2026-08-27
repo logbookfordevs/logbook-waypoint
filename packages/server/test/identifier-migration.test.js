@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
@@ -38,6 +39,7 @@ function trackedSourceFiles() {
     .toString('utf8')
     .split('\0')
     .filter(file => file && !file.includes('/test/') && !file.startsWith('test/'))
+    .filter(file => existsSync(path.join(repositoryRoot, file)))
     .filter(file => sourceExtensions.has(path.extname(file)) || file === 'LICENSE');
 }
 

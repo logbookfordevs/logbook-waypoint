@@ -69,7 +69,7 @@ program
 program
   .command('start')
   .description('Start the Logbook Waypoint server')
-  .option('-d, --daemon', 'Run as daemon (background process)')
+  .option('-f, --foreground', 'Keep the server attached to this terminal')
   .action(async (options) => {
     if (isServerRunning()) {
       console.log(chalk.yellow('✓ Server is already running'));
@@ -82,7 +82,7 @@ program
 
     const serverPath = join(dirname(__dirname), 'lib', 'server.js');
     
-    if (options.daemon) {
+    if (!options.foreground) {
       // Run as daemon
       const out = fs.openSync(LOG_FILE, 'a');
       const err = fs.openSync(LOG_FILE, 'a');
@@ -176,8 +176,8 @@ program
       }
     }
     
-    // Start with daemon flag
-    program.parse(['node', 'cli.js', 'start', '--daemon'], { from: 'user' });
+    // Start with the default background behavior
+    program.parse(['node', 'cli.js', 'start'], { from: 'user' });
   });
 
 program

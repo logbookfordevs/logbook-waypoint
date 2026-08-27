@@ -26,6 +26,7 @@ const CONTENT_MODULES = [
   'design-intent.js',
   'variant-intent.js',
   'annotation-validation.js',
+  'data-management.js',
   'export-codec.js',
   'agent-setup-config.js',
   'content/modules/event-bus.js',

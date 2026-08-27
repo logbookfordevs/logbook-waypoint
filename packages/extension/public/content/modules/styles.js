@@ -1057,11 +1057,6 @@ var WAYPOINT_STYLES = `
   pointer-events: none;
 }
 
-:host([data-lfd-theme="night"]) .waypoint-tb-settings {
-  background: rgb(244 239 222 / 12%);
-  box-shadow: inset 0 0 0 1px rgb(244 239 222 / 10%);
-}
-
 :host([data-lfd-theme="night"]) .waypoint-branded-settings-icon {
   filter: drop-shadow(0 0 1px rgb(244 239 222 / 90%)) drop-shadow(0 0 4px rgb(244 239 222 / 20%));
 }
@@ -1240,6 +1235,37 @@ var WAYPOINT_STYLES = `
   color: var(--waypoint-text-secondary);
   font: 11px/1.4 var(--waypoint-font-mono);
 }
+
+.waypoint-queue-sync-status {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px 6px 16px;
+  border-bottom: 1px solid var(--waypoint-outline);
+  background: var(--waypoint-surface-2);
+  color: var(--waypoint-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.waypoint-queue-sync-now {
+  min-height: 30px;
+  flex: 0 0 auto;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--waypoint-accent);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.waypoint-queue-sync-now:hover:not(:disabled) { background: var(--waypoint-surface-3); }
+.waypoint-queue-sync-now:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
+.waypoint-queue-sync-now:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .waypoint-queue-views {
   display: grid;
@@ -1441,7 +1467,7 @@ var WAYPOINT_STYLES = `
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 280px;
+  width: min(304px, calc(100vw - 24px));
   background: var(--waypoint-surface-1);
   border: 1px solid var(--waypoint-outline);
   border-radius: var(--waypoint-radius-md);
@@ -1456,6 +1482,14 @@ var WAYPOINT_STYLES = `
   top: auto;
   bottom: calc(100% + 10px);
   animation-name: waypoint-slide-down;
+}
+
+.waypoint-settings-dropdown.data-storage-open {
+  width: min(360px, calc(100vw - 24px));
+}
+
+.waypoint-settings-dropdown.guidance-open {
+  width: min(340px, calc(100vw - 24px));
 }
 
 .waypoint-settings-header {
@@ -1550,7 +1584,7 @@ var WAYPOINT_STYLES = `
 }
 
 .waypoint-setting-help {
-  color: var(--waypoint-accent);
+  color: var(--waypoint-text-secondary);
   font-size: 11px;
   line-height: 1.35;
   text-underline-offset: 2px;
@@ -1588,6 +1622,123 @@ var WAYPOINT_STYLES = `
   height: 16px;
   flex-shrink: 0;
 }
+
+.waypoint-data-health-badge {
+  margin-left: auto;
+  padding: 2px 7px;
+  border: 1px solid var(--waypoint-warning);
+  border-radius: var(--waypoint-radius-full);
+  background: var(--waypoint-warning-container);
+  color: var(--waypoint-warning);
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.waypoint-data-health-badge[hidden] { display: none; }
+
+.waypoint-guide-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--waypoint-text-secondary);
+  cursor: pointer;
+  font-family: var(--waypoint-font);
+  font-size: 13px;
+}
+
+.waypoint-guide-back-btn:focus-visible,
+.waypoint-data-delete-project:focus-visible,
+.waypoint-data-delete-history:focus-visible,
+.waypoint-data-delete-all:focus-visible {
+  outline: 2px solid var(--waypoint-accent);
+  outline-offset: 2px;
+}
+
+.waypoint-data-storage-view {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  max-height: min(520px, calc(100vh - 120px));
+  overflow-y: auto;
+}
+
+.waypoint-data-storage-loading,
+.waypoint-data-storage-empty,
+.waypoint-data-storage-error,
+.waypoint-data-storage-feedback {
+  margin: 0;
+  color: var(--waypoint-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.waypoint-data-storage-error { color: var(--waypoint-danger); }
+
+.waypoint-data-storage-summary,
+.waypoint-data-storage-project {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid var(--waypoint-outline);
+  border-radius: var(--waypoint-radius-sm);
+  background: var(--waypoint-surface-1);
+}
+
+.waypoint-data-storage-summary > span,
+.waypoint-data-storage-project span,
+.waypoint-data-storage-project p {
+  margin: 0;
+  color: var(--waypoint-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.waypoint-data-storage-review { color: var(--waypoint-warning) !important; }
+.waypoint-data-storage-projects { display: grid; gap: 8px; }
+
+.waypoint-data-storage-project-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.waypoint-data-storage-project-header > div { display: grid; gap: 2px; min-width: 0; }
+.waypoint-data-storage-project-header strong { overflow-wrap: anywhere; font-size: 12px; }
+
+.waypoint-data-delete-project,
+.waypoint-data-delete-history,
+.waypoint-data-delete-all {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: var(--waypoint-danger);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 0;
+}
+
+.waypoint-data-delete-history,
+.waypoint-data-delete-all {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--waypoint-outline);
+  border-radius: var(--waypoint-radius-sm);
+  text-align: left;
+}
+
+.waypoint-data-delete-project.confirming,
+.waypoint-data-delete-history.confirming,
+.waypoint-data-delete-all.confirming { font-weight: 700; }
+
+.waypoint-data-delete-project:disabled,
+.waypoint-data-delete-history:disabled,
+.waypoint-data-delete-all:disabled { cursor: wait; opacity: 0.65; }
 
 .waypoint-settings-separator {
   height: 1px;
@@ -1651,10 +1802,12 @@ var WAYPOINT_STYLES = `
 .waypoint-guide-cmd code {
   font-family: var(--waypoint-font-mono);
   font-size: 11px;
+  line-height: 1.45;
   color: var(--waypoint-text-primary);
   flex: 1;
-  overflow-x: auto;
-  white-space: nowrap;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .waypoint-guide-copy {
   flex-shrink: 0;

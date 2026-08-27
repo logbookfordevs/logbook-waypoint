@@ -10,14 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Waypoint annotation lifecycle, Watch, Variant, Design Action, Work Notice, and Resolution Record contracts
 - MCP tools for durable annotation watching, screenshot retrieval, lifecycle updates, Variant delivery, and finalization
+- Batched `inspect_annotations` diagnostics for selected Annotation IDs
 - HTTP, JSON, and legacy SSE connection guidance for MCP clients
 - Version information in the health endpoint and package-derived CLI version output
+- Dual CLI distribution through npm and checksummed GitHub release archives from one tagged release
 
 ### Changed
+- Made `waypoint start` run in the background by default, with `--foreground` for terminal-attached sessions
 - Renamed the package and commands for Logbook Waypoint while retaining loopback port compatibility
 - Hardened host, origin, payload, attachment, annotation ID, and persistence validation
 - Made Watch recovery durable across server restarts and annotation recreation
+- Made `read_annotations` return compact project-scoped summaries, with project discovery before cross-project annotation bodies and one normalized Target shape
 - Replaced remote update checks with local extension compatibility guidance
+- Clarified repository-based setup before publication, corrected streamable HTTP client guidance, and linked the complete MCP workflow and tool reference
 
 ### Fixed
 - Preserved lifecycle, Variant, screenshot, attachment, and Design Action state during full synchronization

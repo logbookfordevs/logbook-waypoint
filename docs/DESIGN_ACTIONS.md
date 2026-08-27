@@ -12,7 +12,7 @@ You need:
 2. Waypoint connected to your coding agent through MCP.
 3. Impeccable installed for that agent using its current installation instructions.
 
-Waypoint does not install Impeccable or detect whether your agent can load it. If the skill is missing, the Annotation stays Pending and shows a setup-required notice instead of silently falling back to generic design work.
+Waypoint does not install Impeccable or detect whether your agent can load it. If the executing agent cannot load the skill, it should not silently substitute generic design work: it releases the Annotation to Pending with a `workflow_unavailable` Work Notice explaining the missing setup.
 
 ## Request a Design Action
 

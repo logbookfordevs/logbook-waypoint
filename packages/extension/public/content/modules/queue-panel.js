@@ -37,6 +37,13 @@ var WaypointQueuePanel = (() => {
     return captured || target.selector || 'Target';
   }
 
+  function annotationTitle(annotation) {
+    const comment = typeof annotation.comment === 'string' ? annotation.comment.trim() : '';
+    if (comment) return comment;
+    if (annotation.pending_changes?.copyChange) return 'Text content edit';
+    return 'Untitled annotation';
+  }
+
   function signalIcon(type, label, path) {
     return `<span class="waypoint-queue-signal" data-signal="${type}" role="img" aria-label="${escapeHTML(label)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg></span>`;
   }
@@ -106,9 +113,9 @@ var WaypointQueuePanel = (() => {
     const details = [statusLabel(annotation.status), formatTargetSummary(annotation), ...variantLabels(annotation)];
     return `
       <div class="waypoint-queue-row${selectable ? '' : ' waypoint-queue-row-history'}" data-annotation-id="${escapeHTML(annotation.id)}">
-        ${selectable ? `<input class="waypoint-queue-select" type="checkbox" value="${escapeHTML(annotation.id)}" aria-label="Select annotation: ${escapeHTML(annotation.comment || 'Untitled annotation')}">` : ''}
+        ${selectable ? `<input class="waypoint-queue-select" type="checkbox" value="${escapeHTML(annotation.id)}" aria-label="Select annotation: ${escapeHTML(annotationTitle(annotation))}">` : ''}
         <span class="waypoint-queue-copy">
-          <span class="waypoint-queue-comment">${escapeHTML(annotation.comment || 'Untitled annotation')}</span>
+          <span class="waypoint-queue-comment">${escapeHTML(annotationTitle(annotation))}</span>
           <span class="waypoint-queue-meta">${details.map(escapeHTML).join(' · ')}</span>
           ${renderSignals(annotation)}
         </span>
@@ -144,17 +151,54 @@ var WaypointQueuePanel = (() => {
   }
 
   function close(restoreFocus = true) {
+    document.removeEventListener('click', onOutsideClick);
     panel?.remove();
     panel = null;
     if (restoreFocus) opener?.focus?.();
     opener = null;
   }
 
+  function onOutsideClick(event) {
+    if (!panel) return;
+    const path = event.composedPath?.() || [];
+    const clickedPanel = path.includes(panel) || panel.contains(event.target);
+    const clickedOpener = path.includes(opener) || opener?.contains?.(event.target);
+    if (!clickedPanel && !clickedOpener) close(false);
+  }
+
+  function syncStatusMessage(status) {
+    const count = status?.pending_count || 0;
+    if (!status?.connected) {
+      return count > 0
+        ? `${count} local ${count === 1 ? 'change' : 'changes'}; server unavailable`
+        : 'Server unavailable';
+    }
+    if (count > 0) return `${count} ${count === 1 ? 'change' : 'changes'} not synced`;
+    return 'Up to date';
+  }
+
+  function renderSyncStatus(status) {
+    return `
+      <div class="waypoint-queue-sync-status" role="status" aria-live="polite">
+        <span>${escapeHTML(syncStatusMessage(status))}</span>
+        <button class="waypoint-queue-sync-now" type="button">Sync now</button>
+      </div>
+    `;
+  }
+
+  function loadSyncStatus() {
+    if (typeof WaypointAPI.getSyncStatus !== 'function') {
+      return Promise.resolve({ connected: false });
+    }
+    return WaypointAPI.getSyncStatus().catch(error => ({ connected: false, error: error.message }));
+  }
+
   async function open(anchor, actions = {}) {
     close();
-    const [annotations, projectAnnotations] = await Promise.all([
+    const [annotations, projectAnnotations, syncStatus] = await Promise.all([
       WaypointAPI.loadAnnotations(),
       WaypointAPI.loadProjectAnnotations(),
+      loadSyncStatus(),
     ]);
     const root = WaypointShadowHost.getRoot();
     if (!root) return;
@@ -163,7 +207,7 @@ var WaypointQueuePanel = (() => {
       route: window.location.pathname + window.location.search + window.location.hash,
       isCurrent: true,
     };
-    const queue = { actions, currentRoute, otherRoutes: groupOtherRoutes(projectAnnotations) };
+    const queue = { actions, currentRoute, otherRoutes: groupOtherRoutes(projectAnnotations), syncStatus };
     opener = anchor.querySelector?.('.waypoint-tb-queue') || anchor;
 
     panel = document.createElement('section');
@@ -174,6 +218,7 @@ var WaypointQueuePanel = (() => {
       if (event.key === 'Escape') close();
     };
     root.appendChild(panel);
+    document.addEventListener('click', onOutsideClick);
     renderRouteView(queue, currentRoute);
     position(anchor);
     panel.querySelector('.waypoint-queue-close')?.focus();
@@ -196,6 +241,7 @@ var WaypointQueuePanel = (() => {
           <button class="waypoint-queue-close" type="button" aria-label="Close Queue">×</button>
         </div>
       </header>
+      ${renderSyncStatus(queue.syncStatus)}
       ${visibleAnnotations.length ? renderSignalKey() : ''}
       <nav class="waypoint-queue-views" aria-label="Queue views">
         <button class="waypoint-queue-active-view" type="button" aria-pressed="${view === 'active'}">Active <span>${activeAnnotations.length}</span></button>
@@ -229,6 +275,21 @@ var WaypointQueuePanel = (() => {
       ` : ''}
     `;
     panel.querySelector('.waypoint-queue-close').addEventListener('click', close);
+    panel.querySelector('.waypoint-queue-sync-now').addEventListener('click', async event => {
+      const button = event.currentTarget;
+      const status = button.closest('.waypoint-queue-sync-status');
+      button.disabled = true;
+      button.textContent = 'Syncing…';
+      try {
+        queue.syncStatus = await WaypointAPI.syncNow();
+        status.querySelector('span').textContent = syncStatusMessage(queue.syncStatus);
+      } catch (error) {
+        status.querySelector('span').textContent = error?.message || 'Sync failed. Try again.';
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Sync now';
+      }
+    });
     panel.querySelector('.waypoint-queue-other-routes')?.addEventListener('click', () => renderRouteList(queue));
     panel.querySelector('.waypoint-queue-active-view').addEventListener('click', () => renderRouteView(queue, routeState, 'active'));
     panel.querySelector('.waypoint-queue-history-view').addEventListener('click', () => renderRouteView(queue, routeState, 'history'));
