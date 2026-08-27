@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const WAYPOINT_MCP_URL = 'http://127.0.0.1:3846/mcp';
+const ADD_MCP_COMMAND = `npx add-mcp ${WAYPOINT_MCP_URL} --name logbook-waypoint --global`;
 
 test('generated toolbar guides every supported coding agent without OpenClaw', async () => {
   const source = await readFile(
@@ -17,6 +18,7 @@ test('generated toolbar guides every supported coding agent without OpenClaw', a
 
   assert.doesNotMatch(source, /OpenClaw/i);
   assert.match(source, /WaypointAgentSetup/);
+  assert.ok(source.includes(ADD_MCP_COMMAND));
 });
 
 test('generated setup data is the single Waypoint-native source for agent configurations', async () => {

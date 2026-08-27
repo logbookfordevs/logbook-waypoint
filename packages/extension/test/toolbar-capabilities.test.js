@@ -96,12 +96,14 @@ test('toolbar requests optional site access through the background message seam'
   assert.match(toolbar, /waypoint-site-permission/);
 });
 
-test('toolbar onboarding uses repository setup while the package is unpublished', async () => {
+test('toolbar onboarding uses the published CLI installer', async () => {
   const toolbar = await readFile(toolbarUrl, 'utf8');
 
-  assert.match(toolbar, /node packages\/server\/bin\/cli\.js start/);
-  assert.doesNotMatch(toolbar, /pnpm add --global @logbookfordevs\/waypoint/);
-  assert.doesNotMatch(toolbar, /data-cmd="waypoint start"/);
+  assert.match(toolbar, /data-workflow="copy-paste"/);
+  assert.match(toolbar, /Quick edits with copy &amp; paste/);
+  assert.match(toolbar, /waypoint\.logbookfordevs\.com\/install\.sh \| bash/);
+  assert.match(toolbar, /data-cmd="waypoint start"/);
+  assert.doesNotMatch(toolbar, /node packages\/server\/bin\/cli\.js start/);
 });
 
 test('toolbar exposes synchronized theme, pin color, and clear-on-copy settings', async () => {

@@ -80,6 +80,12 @@ test('settings help links use a readable text role across themes', async () => {
   assert.doesNotMatch(helpLinkStyles, /color:\s*var\(--waypoint-accent\)/);
 });
 
+test('settings popover gives controls a slightly wider responsive measure', async () => {
+  const contentStyles = await readFile(contentStylesUrl, 'utf8');
+
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\s*{[^}]*width:\s*min\(304px, calc\(100vw - 24px\)\)/s);
+});
+
 test('data storage view gets a wider responsive layout with inline breathing room', async () => {
   const contentStyles = await readFile(contentStylesUrl, 'utf8');
 

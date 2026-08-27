@@ -4,55 +4,79 @@ Global MCP server for Logbook Waypoint browser extension.
 
 ## Installation
 
-The package is not published yet. Use it from this repository during early development:
+Install the latest checksummed release directly:
 
 ```bash
-pnpm install
+curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
 ```
 
-Until the package is published, run its CLI from the repository root with `node packages/server/bin/cli.js`.
+Or install through npm:
+
+```bash
+npm install --global @logbookfordevs/waypoint
+```
+
+For a one-off run, use `npx @logbookfordevs/waypoint --help`.
 
 ## Usage
 
 ### Start the server
 
 ```bash
-node packages/server/bin/cli.js start
+waypoint start
 ```
 
 The server will run in the background on port 3846.
 
+Keep it attached to the current terminal for a temporary session or debugging:
+
+```bash
+waypoint start --foreground
+```
+
 ### Stop the server
 
 ```bash
-node packages/server/bin/cli.js stop
+waypoint stop
 ```
 
 ### Check server status
 
 ```bash
-node packages/server/bin/cli.js status
+waypoint status
 ```
 
 ### Restart the server
 
 ```bash
-node packages/server/bin/cli.js restart
+waypoint restart
 ```
 
 ### View logs
 
 ```bash
-node packages/server/bin/cli.js logs
+waypoint logs
 # or follow logs
-node packages/server/bin/cli.js logs -f
+waypoint logs -f
 ```
 
 ## AI Coding Agent Integration
 
 After starting the server, connect it to your AI coding agent. The server supports multiple agents via MCP (Model Context Protocol) using both HTTP and SSE transports.
 
-### Claude Code
+### Recommended: Add MCP
+
+The fastest setup for supported coding agents is [Add MCP](https://add-mcp.com/):
+
+```bash
+npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global
+```
+
+Add MCP detects supported agents and guides you through the configurations it will update. The `--global` option makes Waypoint available across projects. It configures the MCP connection but does not install or start Waypoint, so run `waypoint start` first.
+
+### Manual configuration
+
+#### Claude Code
 
 In your project directory, run:
 
@@ -64,7 +88,7 @@ claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp
 claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse
 ```
 
-### Cursor
+#### Cursor
 
 1. Open Cursor → Settings → Cursor Settings
 2. Go to the Tools & Integrations tab
@@ -81,7 +105,7 @@ claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse
 }
 ```
 
-### Windsurf
+#### Windsurf
 
 1. Navigate to Windsurf → Settings → Advanced Settings
 2. Scroll down to the Cascade section
@@ -98,7 +122,46 @@ claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse
 }
 ```
 
-### VS Code
+#### Codex
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.logbook-waypoint]
+url = "http://127.0.0.1:3846/mcp"
+```
+
+#### Pi
+
+Pi uses MCP through an extension. After installing one, add to `~/.pi/agent/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "logbook-waypoint": {
+      "url": "http://127.0.0.1:3846/mcp"
+    }
+  }
+}
+```
+
+#### OpenCode
+
+Add to `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "mcp": {
+    "logbook-waypoint": {
+      "type": "remote",
+      "url": "http://127.0.0.1:3846/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+#### VS Code
 
 1. Install an AI extension that supports MCP (like GitHub Copilot Chat or Continue)
 2. Go to Code → Settings → Settings or use the shortcut ⌘,
@@ -119,7 +182,7 @@ claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse
 
 **Note:** MCP support varies by AI extension. Check your extension's documentation for specific setup instructions.
 
-### Other Editors
+#### Other Editors
 
 Other editors and tools can connect when they support MCP over streamable HTTP or legacy SSE. Check the client's documentation for its exact configuration shape. Prefer the HTTP endpoint when both transports are available:
 

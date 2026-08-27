@@ -13,14 +13,22 @@ Waypoint turns feedback on a running interface into a Queue that a developer or 
 
 Copy and export work without MCP. The server becomes useful when the agent should discover, claim, update, and resolve Queue work directly.
 
-## Set up the development build
+## Install Waypoint and build the extension
 
-Waypoint is not published yet. From the repository root:
+Install the latest checksummed CLI release:
+
+```bash
+curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
+waypoint start
+```
+
+You can alternatively install the CLI through npm with `npm install --global @logbookfordevs/waypoint`.
+
+Until the browser extension is published, build it from the repository root:
 
 ```bash
 pnpm install
 pnpm build
-node packages/server/bin/cli.js start
 ```
 
 Load the extension:

@@ -1466,7 +1466,7 @@ var WAYPOINT_STYLES = `
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 280px;
+  width: min(304px, calc(100vw - 24px));
   background: var(--waypoint-surface-1);
   border: 1px solid var(--waypoint-outline);
   border-radius: var(--waypoint-radius-md);
@@ -1801,10 +1801,12 @@ var WAYPOINT_STYLES = `
 .waypoint-guide-cmd code {
   font-family: var(--waypoint-font-mono);
   font-size: 11px;
+  line-height: 1.45;
   color: var(--waypoint-text-primary);
   flex: 1;
-  overflow-x: auto;
-  white-space: nowrap;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .waypoint-guide-copy {
   flex-shrink: 0;

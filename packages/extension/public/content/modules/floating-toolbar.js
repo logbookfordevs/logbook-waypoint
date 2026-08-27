@@ -651,14 +651,14 @@ var WaypointToolbar = (() => {
         <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <div class="waypoint-settings-separator"></div>
-      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="single-page" type="button">
-        ${ICONS.webpage}
-        <span>Editing a single page</span>
+      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="copy-paste" type="button">
+        ${ICONS.copy}
+        <span>Quick edits with copy &amp; paste</span>
         <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
-      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="multi-page" type="button">
-        ${ICONS.globe}
-        <span>Editing multiple pages</span>
+      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="agent-mcp" type="button">
+        ${ICONS.robot}
+        <span>Working with an agent through MCP</span>
         <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="collaborate" type="button">
@@ -718,15 +718,20 @@ var WaypointToolbar = (() => {
         <div class="waypoint-guide-section">
           <div class="waypoint-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--waypoint-text-secondary);">(optional)</span></div>
           <p class="waypoint-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
-          <div class="waypoint-guide-cmd" data-cmd="pnpm install">
-            <code>pnpm install</code>
+          <div class="waypoint-guide-cmd" data-cmd="curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash">
+            <code>curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <div class="waypoint-guide-cmd" data-cmd="node packages/server/bin/cli.js start">
-            <code>node packages/server/bin/cli.js start</code>
+          <div class="waypoint-guide-cmd" data-cmd="waypoint start">
+            <code>waypoint start</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent:</p>
+          <p class="waypoint-guide-text" style="margin-top:8px;">Recommended: let Add MCP detect and configure supported agents:</p>
+          <div class="waypoint-guide-cmd" data-cmd="npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global">
+            <code>npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global</code>
+            <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
+          </div>
+          <p class="waypoint-guide-text" style="margin-top:8px;">Or configure your agent manually:</p>
           <div class="waypoint-guide-tabs">
             <button class="waypoint-guide-tab active" data-tab="claude">Claude Code</button>
             <button class="waypoint-guide-tab" data-tab="cursor">Cursor</button>
@@ -813,54 +818,61 @@ var WaypointToolbar = (() => {
     if (!header || !body) return;
 
     const workflows = {
-      'single-page': {
-        title: 'Editing a single page',
+      'copy-paste': {
+        title: 'Quick edits with copy & paste',
         content: `
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Best for quick edits</div>
-            <p class="waypoint-guide-text">For a few annotations on one page, <strong>copy & paste</strong> is the fastest option. No server, no setup.</p>
+            <p class="waypoint-guide-text">For a few annotations—on one page or across a small set—<strong>copy &amp; paste</strong> is the fastest option. No server or MCP setup is required.</p>
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Workflow</div>
-            <p class="waypoint-guide-text">1. Annotate elements on the page (comments, CSS tweaks, text changes)</p>
-            <p class="waypoint-guide-text">2. Click <strong>Copy</strong> in the toolbar</p>
+            <p class="waypoint-guide-text">1. Annotate elements on any pages you need</p>
+            <p class="waypoint-guide-text">2. Select the work in the Queue and click <strong>Copy</strong></p>
             <p class="waypoint-guide-text">3. Paste into any AI chat (Claude, ChatGPT, Cursor...) and ask the agent to implement the changes</p>
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Tips</div>
             <p class="waypoint-guide-text">Enable <strong>Clear on copy</strong> in settings to auto-delete annotations after copying. Keeps things clean between iterations.</p>
             <p class="waypoint-guide-text">Each annotation includes the selector, your comment, element context, and any pending changes. The agent gets everything it needs to locate and edit the right code.</p>
+            <p class="waypoint-guide-text">Choose the MCP workflow when the agent should discover new Queue work without another copy and paste.</p>
           </div>
         `
       },
-      'multi-page': {
-        title: 'Editing multiple pages',
+      'agent-mcp': {
+        title: 'Working with an agent through MCP',
         content: `
           <div class="waypoint-guide-section">
-            <div class="waypoint-guide-label">Best for cross-page changes</div>
-            <p class="waypoint-guide-text">When you're annotating across multiple routes, the <strong>MCP server</strong> is preferable. Your coding agent can read and resolve annotations from all pages at once, without manual copy-paste per route.</p>
+            <div class="waypoint-guide-label">Best for ongoing agent work</div>
+            <p class="waypoint-guide-text">Use MCP when your agent should discover, implement, and resolve Queue work directly—across routes, repeated sessions, or an active feedback loop.</p>
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Setup</div>
-            <div class="waypoint-guide-cmd" data-cmd="pnpm install">
-              <code>pnpm install</code>
+            <div class="waypoint-guide-cmd" data-cmd="curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash">
+              <code>curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <div class="waypoint-guide-cmd" data-cmd="node packages/server/bin/cli.js start">
-              <code>node packages/server/bin/cli.js start</code>
+            <div class="waypoint-guide-cmd" data-cmd="waypoint start">
+              <code>waypoint start</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent (e.g. Claude Code):</p>
-            <div class="waypoint-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
-              <code>claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp</code>
+            <p class="waypoint-guide-text" style="margin-top:8px;">Then let Add MCP detect and configure supported agents:</p>
+            <div class="waypoint-guide-cmd" data-cmd="npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global">
+              <code>npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
           <div class="waypoint-guide-section">
-            <div class="waypoint-guide-label">Workflow</div>
-            <p class="waypoint-guide-text">1. Navigate your app and annotate elements across as many routes as needed</p>
-            <p class="waypoint-guide-text">2. Tell your agent: <em>"read Logbook Waypoint annotations and implement the changes"</em></p>
-            <p class="waypoint-guide-text">3. The agent pulls pending annotations via MCP, edits your source files, then resolves each completed annotation as retained history</p>
+            <div class="waypoint-guide-label">Across multiple pages</div>
+            <p class="waypoint-guide-text">Annotate as many routes as needed, then ask your agent to read the project Queue. It can implement pending work across those pages in one session and resolve each completed Annotation without route-by-route copy and paste.</p>
+          </div>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Read now</div>
+            <p class="waypoint-guide-text">Ask your agent: <em>"Read my pending Waypoint annotations and implement them."</em> It surveys the Queue with <strong>read_annotations</strong>, claims work when implementation begins, and resolves completed Annotations as retained history.</p>
+          </div>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Watch continuously</div>
+            <p class="waypoint-guide-text">During an active review, ask your agent: <em>"Watch Waypoint for new annotations."</em> <strong>watch_annotations</strong> waits for new or changed Queue activity without claiming anything until the agent is ready to work.</p>
           </div>
         `
       },
