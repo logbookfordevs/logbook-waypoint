@@ -689,6 +689,7 @@ var WAYPOINT_STYLES = `
 .waypoint-variant-intent-label:only-child { grid-column:1 / -1; }
 .waypoint-variant-intent-label:hover { border-color:var(--waypoint-outline); background:var(--waypoint-surface-hover); }
 .waypoint-agent-direction-icon { display:grid; place-items:center; width:22px; height:22px; border-radius:var(--waypoint-radius-xs); color:var(--waypoint-accent); background:var(--waypoint-surface-hover); }
+:host([data-lfd-theme="night"]) .waypoint-agent-direction-icon { color:var(--waypoint-highlight); }
 .waypoint-agent-direction-icon svg { width:12px; height:12px; }
 .waypoint-design-intent-row { display:grid; gap:7px; }
 .waypoint-design-intent-dependency { justify-self:start; color:var(--waypoint-accent); font-size:11px; line-height:1.35; text-underline-offset:2px; }

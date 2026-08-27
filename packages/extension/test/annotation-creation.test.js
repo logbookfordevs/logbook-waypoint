@@ -301,6 +301,10 @@ test('annotation options group keeps its guided workflow choices compact and acc
   assert.match(styles, /\.waypoint-variant-intent-title\s*\{[^}]*white-space:\s*nowrap/s);
   assert.match(styles, /\.waypoint-variant-intent\s*\{[^}]*appearance:\s*none/s);
   assert.match(styles, /\.waypoint-variant-intent:focus-visible/);
+  assert.match(
+    styles,
+    /:host\(\[data-lfd-theme="night"\]\) \.waypoint-agent-direction-icon\s*\{[^}]*color:\s*var\(--waypoint-highlight\)/s,
+  );
   assert.match(styles, /\.waypoint-design-action-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,minmax\(0,1fr\)\)/s);
 });
 
