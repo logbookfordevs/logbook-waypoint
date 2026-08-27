@@ -64,8 +64,8 @@ test('floating toolbar uses Atlantic Chartroom roles without legacy palette colo
   assert.match(toolbarStyles, /color:\s*var\(--waypoint-on-selection\)/);
   assert.match(toolbarStyles, /background:\s*var\(--waypoint-warning\)/);
   assert.match(toolbarStyles, /background:\s*#bd9348/i);
-  assert.match(toolbarStyles, /:host\(\[data-lfd-theme="night"\]\) \.waypoint-tb-settings/);
-  assert.match(toolbarStyles, /rgb\(244 239 222 \/ 12%\)/);
+  assert.doesNotMatch(toolbarStyles, /:host\(\[data-lfd-theme="night"\]\) \.waypoint-tb-settings/);
+  assert.doesNotMatch(toolbarStyles, /rgb\(244 239 222 \/ 12%\)/);
   assert.match(toolbarStyles, /drop-shadow\(0 0 1px rgb\(244 239 222 \/ 90%\)\)/);
   assert.doesNotMatch(toolbarStyles, /#fbf4e3|#cfb881|#efe2c5|#bd4d29|#a9894f|#10b981|#ef4444|#ec4899/i);
 });

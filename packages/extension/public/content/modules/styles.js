@@ -1056,11 +1056,6 @@ var WAYPOINT_STYLES = `
   pointer-events: none;
 }
 
-:host([data-lfd-theme="night"]) .waypoint-tb-settings {
-  background: rgb(244 239 222 / 12%);
-  box-shadow: inset 0 0 0 1px rgb(244 239 222 / 10%);
-}
-
 :host([data-lfd-theme="night"]) .waypoint-branded-settings-icon {
   filter: drop-shadow(0 0 1px rgb(244 239 222 / 90%)) drop-shadow(0 0 4px rgb(244 239 222 / 20%));
 }
