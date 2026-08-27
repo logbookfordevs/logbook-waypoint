@@ -532,6 +532,7 @@ var WaypointToolbar = (() => {
 
   async function showDataStorage() {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('data-storage-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     header.innerHTML = `

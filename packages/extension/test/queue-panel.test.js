@@ -281,6 +281,7 @@ test('settings show cached maintenance guidance and load Data & Storage details 
   await new Promise(resolve => setImmediate(resolve));
 
   assert.equal(dataRequests.snapshot, 1);
+  assert.equal(root.querySelector('.waypoint-settings-dropdown').classList.contains('data-storage-open'), true);
   assert.match(root.querySelector('.waypoint-data-storage-view').textContent, /localhost:3001/);
   assert.match(root.querySelector('.waypoint-data-storage-view').textContent, /5 annotations/);
 

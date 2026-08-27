@@ -79,3 +79,10 @@ test('settings help links use a readable text role across themes', async () => {
   assert.match(helpLinkStyles, /color:\s*var\(--waypoint-text-secondary\)/);
   assert.doesNotMatch(helpLinkStyles, /color:\s*var\(--waypoint-accent\)/);
 });
+
+test('data storage view gets a wider responsive layout with inline breathing room', async () => {
+  const contentStyles = await readFile(contentStylesUrl, 'utf8');
+
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\.data-storage-open\s*{[^}]*width:\s*min\(360px, calc\(100vw - 24px\)\)/s);
+  assert.match(contentStyles, /\.waypoint-data-storage-view\s*{[^}]*padding:\s*10px/s);
+});

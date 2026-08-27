@@ -1488,6 +1488,10 @@ var WAYPOINT_STYLES = `
   animation-name: waypoint-slide-down;
 }
 
+.waypoint-settings-dropdown.data-storage-open {
+  width: min(360px, calc(100vw - 24px));
+}
+
 .waypoint-settings-header {
   display: flex;
   align-items: center;
@@ -1657,6 +1661,7 @@ var WAYPOINT_STYLES = `
 .waypoint-data-storage-view {
   display: grid;
   gap: 10px;
+  padding: 10px;
   max-height: min(520px, calc(100vh - 120px));
   overflow-y: auto;
 }
