@@ -1071,7 +1071,7 @@ class AnnotationsPopup {
         const commands = [
           'pnpm add --global @logbookfordevs/waypoint',
           'waypoint start',
-          'claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp'
+          'npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global'
         ];
         const allCommands = commands.join('\n');
         try {

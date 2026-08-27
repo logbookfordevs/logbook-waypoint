@@ -576,7 +576,12 @@ var WaypointToolbar = (() => {
             <code>waypoint start</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent:</p>
+          <p class="waypoint-guide-text" style="margin-top:8px;">Recommended: let Add MCP detect and configure supported agents:</p>
+          <div class="waypoint-guide-cmd" data-cmd="npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global">
+            <code>npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global</code>
+            <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
+          </div>
+          <p class="waypoint-guide-text" style="margin-top:8px;">Or configure your agent manually:</p>
           <div class="waypoint-guide-tabs">
             <button class="waypoint-guide-tab active" data-tab="claude">Claude Code</button>
             <button class="waypoint-guide-tab" data-tab="cursor">Cursor</button>
@@ -699,9 +704,9 @@ var WaypointToolbar = (() => {
               <code>waypoint start</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <p class="waypoint-guide-text" style="margin-top:8px;">Then connect your agent (e.g. Claude Code):</p>
-            <div class="waypoint-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
-              <code>claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp</code>
+            <p class="waypoint-guide-text" style="margin-top:8px;">Then let Add MCP detect and configure supported agents:</p>
+            <div class="waypoint-guide-cmd" data-cmd="npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global">
+              <code>npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>

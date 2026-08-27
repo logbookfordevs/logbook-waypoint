@@ -103,20 +103,37 @@ Use `waypoint start --foreground` for a temporary terminal session.
 
 ### MCP connection
 
-Use the HTTP endpoint when your coding agent supports streamable HTTP:
+After installing the CLI and starting Waypoint, the fastest way to connect supported coding agents is [Add MCP](https://add-mcp.com/):
+
+```bash
+waypoint start
+npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global
+```
+
+Add MCP detects supported agents and guides you through the configurations it will update. The `--global` option makes Waypoint available across projects. Add MCP configures the connection; it does not install or start the Waypoint CLI.
+
+#### Manual configuration
+
+If you prefer to configure an agent yourself, use the HTTP endpoint when it supports streamable HTTP:
 
 ```text
 http://127.0.0.1:3846/mcp
 ```
 
-For Codex:
+For Claude Code:
+
+```bash
+claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp
+```
+
+For Codex, add this to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.logbook-waypoint]
 url = "http://127.0.0.1:3846/mcp"
 ```
 
-For JSON-based MCP clients:
+For Cursor and other JSON-based MCP clients:
 
 ```json
 {
@@ -127,6 +144,46 @@ For JSON-based MCP clients:
   }
 }
 ```
+
+For Windsurf, add this to its MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "logbook-waypoint": {
+      "serverUrl": "http://127.0.0.1:3846/mcp"
+    }
+  }
+}
+```
+
+For Pi, first install an MCP extension and then add this to `~/.pi/agent/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "logbook-waypoint": {
+      "url": "http://127.0.0.1:3846/mcp"
+    }
+  }
+}
+```
+
+For OpenCode, add this to `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "mcp": {
+    "logbook-waypoint": {
+      "type": "remote",
+      "url": "http://127.0.0.1:3846/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+VS Code MCP configuration depends on the AI extension you use. Configure Waypoint as a remote HTTP server with the same `/mcp` URL.
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
