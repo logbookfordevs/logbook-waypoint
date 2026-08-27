@@ -1580,7 +1580,7 @@ var WAYPOINT_STYLES = `
 }
 
 .waypoint-setting-help {
-  color: var(--waypoint-accent);
+  color: var(--waypoint-text-secondary);
   font-size: 11px;
   line-height: 1.35;
   text-underline-offset: 2px;

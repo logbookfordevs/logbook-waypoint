@@ -69,3 +69,13 @@ test('floating toolbar uses Atlantic Chartroom roles without legacy palette colo
   assert.match(toolbarStyles, /drop-shadow\(0 0 1px rgb\(244 239 222 \/ 90%\)\)/);
   assert.doesNotMatch(toolbarStyles, /#fbf4e3|#cfb881|#efe2c5|#bd4d29|#a9894f|#10b981|#ef4444|#ec4899/i);
 });
+
+test('settings help links use a readable text role across themes', async () => {
+  const contentStyles = await readFile(contentStylesUrl, 'utf8');
+  const helpLinkStart = contentStyles.indexOf('.waypoint-setting-help {');
+  const helpLinkEnd = contentStyles.indexOf('}', helpLinkStart) + 1;
+  const helpLinkStyles = contentStyles.slice(helpLinkStart, helpLinkEnd);
+
+  assert.match(helpLinkStyles, /color:\s*var\(--waypoint-text-secondary\)/);
+  assert.doesNotMatch(helpLinkStyles, /color:\s*var\(--waypoint-accent\)/);
+});
