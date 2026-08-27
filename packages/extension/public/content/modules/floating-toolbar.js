@@ -58,6 +58,7 @@ var WaypointToolbar = (() => {
     webpage: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>',
     globe: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>',
     robot: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>',
+    targets: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="m8 8 2.5 7M16 8l-2.5 7"/></svg>',
     book: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>'
   };
 
@@ -656,6 +657,11 @@ var WaypointToolbar = (() => {
         <span>Quick edits with copy &amp; paste</span>
         <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
+      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="multi-target" type="button">
+        ${ICONS.targets}
+        <span>Annotating multiple Targets</span>
+        <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
+      </button>
       <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="agent-mcp" type="button">
         ${ICONS.robot}
         <span>Working with an agent through MCP</span>
@@ -836,6 +842,27 @@ var WaypointToolbar = (() => {
             <p class="waypoint-guide-text">Enable <strong>Clear on copy</strong> in settings to auto-delete annotations after copying. Keeps things clean between iterations.</p>
             <p class="waypoint-guide-text">Each annotation includes the selector, your comment, element context, and any pending changes. The agent gets everything it needs to locate and edit the right code.</p>
             <p class="waypoint-guide-text">Choose the MCP workflow when the agent should discover new Queue work without another copy and paste.</p>
+          </div>
+        `
+      },
+      'multi-target': {
+        title: 'Annotating multiple Targets',
+        content: `
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">One request, several places</div>
+            <p class="waypoint-guide-text">When the same feedback applies in several places, combine those Targets into one Annotation. The shared brief appears once in the Queue and keeps one claim, lifecycle, and resolution.</p>
+          </div>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Create a Target Set</div>
+            <p class="waypoint-guide-text">1. Enter annotation mode, then hold <strong>Shift</strong> while selecting the first Target</p>
+            <p class="waypoint-guide-text">2. Release <strong>Shift</strong> and select or deselect other Targets</p>
+            <p class="waypoint-guide-text">3. With two to eight Targets selected, choose <strong>Annotate</strong></p>
+            <p class="waypoint-guide-text">4. Write the shared brief and save the Annotation</p>
+          </div>
+          <div class="waypoint-guide-section">
+            <div class="waypoint-guide-label">Before you save</div>
+            <p class="waypoint-guide-text">Every Target must be on the same exact page URL. Choose <strong>Edit selection</strong> to change the Target Set without losing your draft.</p>
+            <p class="waypoint-guide-text">Multi-Target Annotations are feedback-only. Element text, style, and CSS edits remain available when annotating one Target.</p>
           </div>
         `
       },

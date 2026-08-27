@@ -264,6 +264,25 @@ test('documentation and workflow guides opt into the wider reading layout', asyn
   assert.match(dropdown.textContent, /Watch continuously/);
 });
 
+test('Documentation teaches the multi-Target annotation workflow', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  root.querySelector('.waypoint-get-started-btn').click();
+  const item = root.querySelector('[data-workflow="multi-target"]');
+  assert.equal(item.textContent.trim().includes('Annotating multiple Targets'), true);
+
+  item.click();
+  const dropdown = root.querySelector('.waypoint-settings-dropdown');
+  assert.match(dropdown.textContent, /One request, several places/);
+  assert.match(dropdown.textContent, /Shift/);
+  assert.match(dropdown.textContent, /two to eight Targets/);
+  assert.match(dropdown.textContent, /same exact page URL/);
+  assert.match(dropdown.textContent, /Edit selection/);
+});
+
 test('settings show cached maintenance guidance and load Data & Storage details only on demand', async () => {
   const summary = {
     project_count: 2,
