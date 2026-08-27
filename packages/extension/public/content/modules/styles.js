@@ -29,6 +29,8 @@ var WAYPOINT_STYLES = `
   --waypoint-danger: #a63d32;
   --waypoint-danger-hover: #a63d3214;
   --waypoint-highlight: #3f8580;
+  --waypoint-selection: #102c2c;
+  --waypoint-on-selection: #f4efde;
   --waypoint-badge-bg: #173f5f;
   --waypoint-tooltip-bg: #102c2c;
   --waypoint-primary-btn: #102c2c;
@@ -254,35 +256,110 @@ var WAYPOINT_STYLES = `
   color: var(--waypoint-text-primary);
 }
 
-/* Tab bar (pills) — single-line, scrollable */
+/* Adaptive Element edits drawer */
+.waypoint-element-edits {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--waypoint-outline);
+}
+.waypoint-element-edits-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.waypoint-element-edits-heading strong,
+.waypoint-element-edits-heading small {
+  display: block;
+}
+.waypoint-element-edits-heading strong {
+  color: var(--waypoint-text-primary);
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.waypoint-element-edits-heading small {
+  margin-top: 1px;
+  color: var(--waypoint-text-secondary);
+  font-size: 10px;
+  line-height: 1.35;
+}
 .waypoint-tab-bar {
   display: flex;
-  gap: 4px;
-  padding: 4px 14px 8px;
+  align-items: center;
   flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  gap: 3px;
+  margin-top: 8px;
+  padding: 4px;
+  border-radius: var(--waypoint-radius-md);
+  background: var(--waypoint-textarea-bg);
 }
-.waypoint-tab-bar::-webkit-scrollbar { display: none; }
 .waypoint-tab {
-  padding: 3px 10px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex: 0 0 32px;
+  width: 32px;
+  min-width: 0;
+  height: 32px;
+  padding: 0;
   background: none;
-  border: 1px solid var(--waypoint-outline);
-  border-radius: var(--waypoint-radius-full);
+  border: none;
+  border-radius: var(--waypoint-radius-sm);
   color: var(--waypoint-text-secondary);
   font-family: var(--waypoint-font);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: color .15s, background .15s, border-color .15s;
+  overflow: hidden;
+  transition: color .15s, background .15s, flex-basis .15s;
 }
-.waypoint-tab:hover { color: var(--waypoint-text-primary); border-color: var(--waypoint-outline-highlight); }
-.waypoint-tab.active { color: #071b1d; background: var(--waypoint-highlight); border-color: var(--waypoint-highlight); }
+.waypoint-tab-saved-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--waypoint-surface-1);
+  border-radius: var(--waypoint-radius-full);
+  background: var(--waypoint-warning);
+}
+.waypoint-tab-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+.waypoint-tab-icon svg { width: 13px; height: 13px; }
+.waypoint-tab-label { display: none; overflow: hidden; text-overflow: ellipsis; }
+.waypoint-tab:hover { color: var(--waypoint-text-primary); background: var(--waypoint-surface-hover); }
+.waypoint-tab.active {
+  flex: 1 1 auto;
+  width: auto;
+  color: var(--waypoint-on-accent);
+  background: var(--waypoint-accent);
+}
+.waypoint-tab.active .waypoint-tab-label { display: block; }
+.waypoint-tab:focus-visible { outline: 2px solid var(--waypoint-highlight); outline-offset: 2px; }
 
 /* Tab panels */
-.waypoint-tab-panel { padding-top: 4px; }
+.waypoint-tab-panel-heading { margin-bottom: 8px; }
+.waypoint-tab-panel-heading strong,
+.waypoint-tab-panel-heading span { display: block; }
+.waypoint-tab-panel-heading strong {
+  color: var(--waypoint-text-primary);
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.waypoint-tab-panel-heading span {
+  margin-top: 1px;
+  color: var(--waypoint-text-secondary);
+  font-size: 9px;
+  line-height: 1.35;
+}
 
 /* Raw CSS textarea */
 .waypoint-raw-css {
@@ -362,8 +439,10 @@ var WAYPOINT_STYLES = `
 
 /* Design toolbar */
 .waypoint-design-toolbar {
-  padding: 6px 14px;
-  border-bottom: 1px solid var(--waypoint-outline);
+  margin-top: 6px;
+  padding: 9px;
+  border-radius: var(--waypoint-radius-sm);
+  background: var(--waypoint-textarea-bg);
 }
 
 .waypoint-design-row {
@@ -601,28 +680,37 @@ var WAYPOINT_STYLES = `
 .waypoint-image-attachment-input { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
 .waypoint-attachment-status { min-width:0; color:var(--waypoint-text-secondary); font-size:10px; line-height:1.3; }
 .waypoint-attachment-status[role="alert"] { color:var(--waypoint-danger); }
-.waypoint-variant-intent-label { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; padding:8px 10px; border:1px solid transparent; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+.waypoint-agent-direction { display:grid; gap:7px; }
+.waypoint-agent-direction-heading { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.waypoint-agent-direction-heading strong { color:var(--waypoint-text-primary); font-size:11px; line-height:1.35; font-weight:600; }
+.waypoint-agent-direction-heading span { color:var(--waypoint-text-secondary); font-size:9px; line-height:1.35; }
+.waypoint-agent-direction-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.waypoint-variant-intent-label { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:6px; min-height:40px; padding:6px 7px; border:1px solid transparent; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+.waypoint-variant-intent-label:only-child { grid-column:1 / -1; }
 .waypoint-variant-intent-label:hover { border-color:var(--waypoint-outline); background:var(--waypoint-surface-hover); }
-.waypoint-design-intent-row { display:grid; gap:4px; }
+.waypoint-agent-direction-icon { display:grid; place-items:center; width:22px; height:22px; border-radius:var(--waypoint-radius-xs); color:var(--waypoint-accent); background:var(--waypoint-surface-hover); }
+.waypoint-agent-direction-icon svg { width:12px; height:12px; }
+.waypoint-design-intent-row { display:grid; gap:7px; }
 .waypoint-design-intent-dependency { justify-self:start; color:var(--waypoint-accent); font-size:11px; line-height:1.35; text-underline-offset:2px; }
 .waypoint-design-intent-dependency:focus-visible { outline:2px solid var(--waypoint-accent); outline-offset:2px; border-radius:2px; }
-.waypoint-variant-intent-copy { display:grid; gap:1px; min-width:0; }
-.waypoint-variant-intent-title { color:var(--waypoint-text-primary); font-size:11px; line-height:1.35; font-weight:600; }
-.waypoint-variant-intent-description { color:var(--waypoint-text-secondary); font-size:10px; line-height:1.35; }
+.waypoint-variant-intent-title { min-width:0; overflow:hidden; color:var(--waypoint-text-primary); font-size:10px; line-height:1.2; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
 .waypoint-variant-intent { appearance:none; -webkit-appearance:none; width:18px; height:18px; flex:0 0 auto; border:1.5px solid var(--waypoint-outline-highlight); border-radius:5px; background:var(--waypoint-surface-1); cursor:pointer; position:relative; transition:background .15s ease, border-color .15s ease; }
 .waypoint-variant-intent:checked { border-color:var(--waypoint-highlight); background:var(--waypoint-highlight); }
 .waypoint-variant-intent:checked::after { content:''; position:absolute; left:5px; top:2px; width:4px; height:8px; border:solid var(--waypoint-on-accent); border-width:0 1.5px 1.5px 0; transform:rotate(45deg); }
 .waypoint-variant-intent:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }
+.waypoint-variant-intent-note { display:flex; align-items:center; gap:6px; padding:7px 8px; border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-hover); color:var(--waypoint-text-secondary); font-size:9px; line-height:1.35; }
+.waypoint-variant-intent-note[hidden] { display:none; }
+.waypoint-variant-intent-note svg { width:12px; height:12px; flex:0 0 auto; color:var(--waypoint-accent); }
 .waypoint-design-actions { display:grid; gap:8px; }
-.waypoint-design-action-catalog { display:grid; gap:7px; padding:0 2px 2px; }
+.waypoint-design-action-catalog { display:grid; gap:7px; padding:9px; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); }
 .waypoint-design-action-catalog[hidden] { display:none; }
 .waypoint-design-action-heading { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
 .waypoint-design-action-state { color:var(--waypoint-text-primary); font-size:10px; line-height:1.35; font-weight:600; }
 .waypoint-design-action-dependency { color:var(--waypoint-text-secondary); font-size:9px; line-height:1.35; }
-.waypoint-design-action-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
-.waypoint-design-action { min-width:0; min-height:30px; padding:5px 8px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-1); color:var(--waypoint-text-primary); font:600 10px/1.2 var(--waypoint-font); text-align:left; cursor:pointer; transition:border-color .15s ease,background .15s ease,color .15s ease; }
+.waypoint-design-action-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
+.waypoint-design-action { min-width:0; min-height:32px; padding:6px 5px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-1); color:var(--waypoint-text-primary); font:600 9.5px/1.2 var(--waypoint-font); text-align:center; cursor:pointer; transition:border-color .15s ease,background .15s ease,color .15s ease; }
 .waypoint-design-action:hover { border-color:var(--waypoint-outline-highlight); background:var(--waypoint-surface-hover); }
-.waypoint-design-action[aria-pressed="true"] { border-color:var(--waypoint-accent); background:color-mix(in srgb,var(--waypoint-accent) 14%,var(--waypoint-surface-1)); color:var(--waypoint-accent); }
+.waypoint-design-action[aria-pressed="true"] { border-color:var(--waypoint-accent); background:var(--waypoint-accent); color:var(--waypoint-on-accent); }
 .waypoint-design-action:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }
 .waypoint-design-action-description { min-height:14px; color:var(--waypoint-text-secondary); font-size:9px; line-height:1.4; }
 
@@ -929,8 +1017,8 @@ var WAYPOINT_STYLES = `
 }
 
 .waypoint-toolbar-btn.active {
-  background: var(--waypoint-highlight);
-  color: #071b1d;
+  background: var(--waypoint-selection);
+  color: var(--waypoint-on-selection);
 }
 
 .waypoint-toolbar-btn.active:hover {
@@ -966,11 +1054,6 @@ var WAYPOINT_STYLES = `
   height: 24px;
   object-fit: contain;
   pointer-events: none;
-}
-
-:host([data-lfd-theme="night"]) .waypoint-tb-settings {
-  background: rgb(244 239 222 / 12%);
-  box-shadow: inset 0 0 0 1px rgb(244 239 222 / 10%);
 }
 
 :host([data-lfd-theme="night"]) .waypoint-branded-settings-icon {
@@ -1152,6 +1235,37 @@ var WAYPOINT_STYLES = `
   font: 11px/1.4 var(--waypoint-font-mono);
 }
 
+.waypoint-queue-sync-status {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px 6px 16px;
+  border-bottom: 1px solid var(--waypoint-outline);
+  background: var(--waypoint-surface-2);
+  color: var(--waypoint-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.waypoint-queue-sync-now {
+  min-height: 30px;
+  flex: 0 0 auto;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--waypoint-accent);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.waypoint-queue-sync-now:hover:not(:disabled) { background: var(--waypoint-surface-3); }
+.waypoint-queue-sync-now:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
+.waypoint-queue-sync-now:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .waypoint-queue-views {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1324,7 +1438,13 @@ var WAYPOINT_STYLES = `
 .waypoint-queue-actions button:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
 .waypoint-queue-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
 .waypoint-queue-discard-selected { color: var(--waypoint-danger) !important; }
-.waypoint-queue-copy-selected { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
+.waypoint-queue-copy-selected { min-width: 72px; margin-left: auto; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
+.waypoint-queue-export { position: relative; display: flex; }
+.waypoint-queue-export-selected { min-width: 72px; padding: 0 10px !important; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
+.waypoint-queue-export-chevron { opacity: 0.72; }
+.waypoint-queue-export-menu { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 2; width: 174px; padding: 4px; border: 1px solid var(--waypoint-outline); border-radius: 10px; background: var(--waypoint-surface-1); box-shadow: 0 12px 28px rgba(35, 46, 40, 0.18), 0 2px 6px rgba(35, 46, 40, 0.1); }
+.waypoint-queue-export-menu[hidden] { display: none; }
+.waypoint-queue-export-menu button { width: 100%; min-height: 32px; padding: 0 9px; justify-content: flex-start; text-align: left; white-space: nowrap; }
 .waypoint-queue-history-actions { justify-content: space-between; color: var(--waypoint-text-secondary); font-size: 11px; }
 .waypoint-queue-clear-history { color: var(--waypoint-danger) !important; }
 .waypoint-queue-cleanup { display: grid; gap: 12px; padding: 12px 16px 14px; }
@@ -1361,6 +1481,14 @@ var WAYPOINT_STYLES = `
   top: auto;
   bottom: calc(100% + 10px);
   animation-name: waypoint-slide-down;
+}
+
+.waypoint-settings-dropdown.data-storage-open {
+  width: min(360px, calc(100vw - 24px));
+}
+
+.waypoint-settings-dropdown.guidance-open {
+  width: min(340px, calc(100vw - 24px));
 }
 
 .waypoint-settings-header {
@@ -1455,7 +1583,7 @@ var WAYPOINT_STYLES = `
 }
 
 .waypoint-setting-help {
-  color: var(--waypoint-accent);
+  color: var(--waypoint-text-secondary);
   font-size: 11px;
   line-height: 1.35;
   text-underline-offset: 2px;
@@ -1493,6 +1621,123 @@ var WAYPOINT_STYLES = `
   height: 16px;
   flex-shrink: 0;
 }
+
+.waypoint-data-health-badge {
+  margin-left: auto;
+  padding: 2px 7px;
+  border: 1px solid var(--waypoint-warning);
+  border-radius: var(--waypoint-radius-full);
+  background: var(--waypoint-warning-container);
+  color: var(--waypoint-warning);
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.waypoint-data-health-badge[hidden] { display: none; }
+
+.waypoint-guide-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--waypoint-text-secondary);
+  cursor: pointer;
+  font-family: var(--waypoint-font);
+  font-size: 13px;
+}
+
+.waypoint-guide-back-btn:focus-visible,
+.waypoint-data-delete-project:focus-visible,
+.waypoint-data-delete-history:focus-visible,
+.waypoint-data-delete-all:focus-visible {
+  outline: 2px solid var(--waypoint-accent);
+  outline-offset: 2px;
+}
+
+.waypoint-data-storage-view {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  max-height: min(520px, calc(100vh - 120px));
+  overflow-y: auto;
+}
+
+.waypoint-data-storage-loading,
+.waypoint-data-storage-empty,
+.waypoint-data-storage-error,
+.waypoint-data-storage-feedback {
+  margin: 0;
+  color: var(--waypoint-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.waypoint-data-storage-error { color: var(--waypoint-danger); }
+
+.waypoint-data-storage-summary,
+.waypoint-data-storage-project {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid var(--waypoint-outline);
+  border-radius: var(--waypoint-radius-sm);
+  background: var(--waypoint-surface-1);
+}
+
+.waypoint-data-storage-summary > span,
+.waypoint-data-storage-project span,
+.waypoint-data-storage-project p {
+  margin: 0;
+  color: var(--waypoint-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.waypoint-data-storage-review { color: var(--waypoint-warning) !important; }
+.waypoint-data-storage-projects { display: grid; gap: 8px; }
+
+.waypoint-data-storage-project-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.waypoint-data-storage-project-header > div { display: grid; gap: 2px; min-width: 0; }
+.waypoint-data-storage-project-header strong { overflow-wrap: anywhere; font-size: 12px; }
+
+.waypoint-data-delete-project,
+.waypoint-data-delete-history,
+.waypoint-data-delete-all {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: var(--waypoint-danger);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 0;
+}
+
+.waypoint-data-delete-history,
+.waypoint-data-delete-all {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--waypoint-outline);
+  border-radius: var(--waypoint-radius-sm);
+  text-align: left;
+}
+
+.waypoint-data-delete-project.confirming,
+.waypoint-data-delete-history.confirming,
+.waypoint-data-delete-all.confirming { font-weight: 700; }
+
+.waypoint-data-delete-project:disabled,
+.waypoint-data-delete-history:disabled,
+.waypoint-data-delete-all:disabled { cursor: wait; opacity: 0.65; }
 
 .waypoint-settings-separator {
   height: 1px;

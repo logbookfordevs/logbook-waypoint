@@ -17,16 +17,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Design Actions for freeform or guided Impeccable workflows, with resolution records and optional Variant Intent
 - Element screenshots, image attachments, and refined floating-toolbar controls
 - Optional JSON import/export, project context, bulk cleanup, keyboard inspection, and annotation appearance settings
+- Batched MCP inspection for selected Annotations and complete diagnostic Target context
+- Queue sync status with manual retry for local changes awaiting the server
+- A global Data & Storage manager with project summaries, maintenance guidance, and confirmed project-wide or all-data deletion
+- Workflow-first MCP documentation with concrete calls, compact Survey guidance, diagnostic Inspect guidance, and a complete 19-tool reference
+- A basic-to-advanced user guide for annotation, Queue, copy/export, MCP, Design Actions, settings, and local-data behavior
 
 ### Changed
 - Made `waypoint start` run in the background by default, with `--foreground` for terminal-attached sessions
 - Rebuilt the product from the final MIT-licensed foundation under the Logbook Waypoint identity
 - Reworked the extension around the Atlantic Chartroom Driftwood palette, with Day Chart and Night Watch appearances and product-role colors for actions, navigation, signals, and pins
+- Reorganized Element edits below the annotation brief with an adaptive expanding rail, saved-change markers, and compact optional Variant and Design Action controls
 - Hardened the local server to loopback-only access with strict host, origin, request-size, and identifier validation
 - Made annotation routes preserve full paths, queries, and hashes
 - Improved selector portability, target re-anchoring, keyboard navigation, design rollback, and queues larger than 50 annotations
+- Made unscoped MCP Queue reads discovery-only so agents must select a project before annotation bodies are returned
+- Made Queue follow-ups survive server outages by retaining unsynced saves, deletions, and Design or Variant Intent removals until synchronization recovers
 - Replaced remote update promotion with local extension/server compatibility guidance
 - Added HTTP and JSON MCP connection guidance for coding agents
+- Replaced the inherited contribution template with Waypoint-specific setup, validation, contract, pull request, and release guidance
 
 ### Fixed
 - Prevented deleted annotations from returning during synchronization
@@ -34,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kept unresolved Variant Sets protected from ordinary mutation or deletion
 - Restored target selection and badge placement across shadow DOM, repeated elements, and rerendered pages
 - Made hiding Design Actions affect authoring UI without invalidating existing requests
+- Kept manual Queue synchronization retryable while the server is unavailable and limited offline counts to locally proven unsynced changes
+- Made commentless text edits retain their pin, use a meaningful Queue label, and restore their original text when deleted
+- Made Site access settings show whether the current page is already enabled instead of always offering an unnecessary permission action
 
 ### Removed
 - Public page-world annotation automation and mutation APIs

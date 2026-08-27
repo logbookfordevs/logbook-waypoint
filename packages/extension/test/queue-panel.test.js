@@ -9,10 +9,17 @@ const requireFromWxt = createRequire(wxtPackage);
 const { parseHTML } = requireFromWxt('linkedom');
 
 const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel.js', import.meta.url);
-const toolbarUrl = new URL('../.output/chrome-mv3/content/modules/floating-toolbar.js', import.meta.url);
+const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
 
-function createHarness(annotations, { projectAnnotations } = {}) {
+function createHarness(annotations, {
+  projectAnnotations,
+  siteAccess = true,
+  syncStatus = { connected: true, pending_count: 0 },
+  syncNow = async () => ({ connected: true, pending_count: 0 }),
+  dataHealthSummary = { project_count: 0, annotation_count: 0, old_pending_count: 0, cleanup_candidate_count: 0, review_count: 0 },
+  dataManagerSnapshot = { summary: dataHealthSummary, projects: [] },
+} = {}) {
   const { window } = parseHTML('<html><body><div id="root"></div><button id="target">Target</button></body></html>');
   window.innerHeight = 900;
   window.innerWidth = 1200;
@@ -21,14 +28,27 @@ function createHarness(annotations, { projectAnnotations } = {}) {
   const emitted = [];
   const root = window.document.querySelector('#root');
   const clipboardWrites = [];
+  const downloads = [];
+  const downloadBlobs = [];
   const discarded = [];
   const deleted = [];
+  const dataRequests = { summary: 0, snapshot: 0, deletions: [] };
+  class HarnessURL extends URL {}
+  HarnessURL.createObjectURL = blob => {
+    downloadBlobs.push(blob);
+    return 'blob:waypoint-export';
+  };
+  HarnessURL.revokeObjectURL = () => {};
+  window.HTMLAnchorElement.prototype.click = function click() {
+    downloads.push({ filename: this.download, href: this.href });
+  };
   const context = vm.createContext({
     window,
     document: window.document,
     navigator: { platform: 'MacIntel', clipboard: { writeText: async value => clipboardWrites.push(value) } },
     chrome: { runtime: { getURL: path => path, getManifest: () => ({ version: '1.0.0' }) } },
-    URL,
+    Blob,
+    URL: HarnessURL,
     setInterval: () => 1,
     clearInterval: () => {},
     setTimeout,
@@ -40,6 +60,12 @@ function createHarness(annotations, { projectAnnotations } = {}) {
   context.WaypointShadowHost = { getRoot: () => root };
   context.WaypointThemeManager = { getPreference: () => 'system' };
   context.WaypointExportCodec = {
+    createExportEnvelope: (selectedAnnotations, options) => ({
+      waypoint_annotations_export: true,
+      annotations: selectedAnnotations,
+      ...options,
+    }),
+    formatAnnotationsAsMarkdown: selectedAnnotations => selectedAnnotations.map(annotation => annotation.comment).join('\n'),
     getAnnotationRoute: annotation => new URL(annotation.url).pathname,
   };
   context.WaypointElementContext = {
@@ -58,6 +84,23 @@ function createHarness(annotations, { projectAnnotations } = {}) {
     getCustomShortcut: async () => null,
     checkServerStatus: async () => ({ connected: true }),
     getToolbarPosition: async () => null,
+    getSkipDeleteConfirm: async () => true,
+    hasCurrentSiteAccess: async () => siteAccess,
+    requestOptionalSitePermission: async () => true,
+    getSyncStatus: async () => syncStatus,
+    syncNow,
+    getDataHealthSummary: async () => {
+      dataRequests.summary += 1;
+      return dataHealthSummary;
+    },
+    getDataManagerSnapshot: async () => {
+      dataRequests.snapshot += 1;
+      return dataManagerSnapshot;
+    },
+    deleteDataSelection: async selection => {
+      dataRequests.deletions.push(selection);
+      return { deleted_count: selection.scope === 'all' ? dataManagerSnapshot.summary.annotation_count : 0 };
+    },
     loadAnnotations: async () => annotations,
     loadProjectAnnotations: async () => projectAnnotations || [
       ...annotations,
@@ -77,9 +120,20 @@ function createHarness(annotations, { projectAnnotations } = {}) {
       deleted.push(id);
       return true;
     },
+    deleteAnnotationsByUrl: async () => true,
   };
 
-  return { clipboardWrites, context, deleted, discarded, emitted, root };
+  return {
+    clipboardWrites,
+    context,
+    dataRequests,
+    deleted,
+    discarded,
+    downloadBlobs,
+    downloads,
+    emitted,
+    root,
+  };
 }
 
 async function openQueue(annotations, options) {
@@ -121,6 +175,8 @@ test('toolbar Queue button opens an anchored panel with current-route Annotation
   assert.match(panel.textContent, /Make the invitation action easier to scan/);
   assert.match(panel.textContent, /Pending/);
   const legend = panel.querySelector('.waypoint-queue-signal-key');
+  const panelSections = [...panel.children];
+  assert.ok(panelSections.indexOf(legend) < panelSections.indexOf(panel.querySelector('.waypoint-queue-views')));
   assert.match(legend.textContent, /Indicators/);
   assert.match(legend.textContent, /File/);
   assert.equal(legend.querySelector('[data-signal="design-action-key"]').getAttribute('aria-label'), 'Design action');
@@ -141,6 +197,129 @@ test('Queue remains available on an empty current route so other-route work stay
 
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /No active annotations on this route/);
   assert.match(root.querySelector('.waypoint-queue-header').textContent, /1 other route/);
+});
+
+test('Queue keeps manual synchronization retryable while the server is unavailable', async () => {
+  let attempts = 0;
+  const { root } = await openQueue([], {
+    syncStatus: { connected: false, pending_count: 1 },
+    syncNow: async () => {
+      attempts += 1;
+      return { connected: true, pending_count: 0 };
+    },
+  });
+  const button = root.querySelector('.waypoint-queue-sync-now');
+
+  assert.equal(button.disabled, false);
+  button.click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(attempts, 1);
+  assert.equal(button.disabled, false);
+  assert.match(root.querySelector('.waypoint-queue-sync-status').textContent, /Up to date/);
+});
+
+test('settings show existing site access without an Enable action', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const button = root.querySelector('.waypoint-site-permission-btn');
+  assert.equal(button.textContent, 'Enabled');
+  assert.equal(button.disabled, true);
+  assert.match(root.querySelector('.waypoint-setting-description').textContent, /already enabled/i);
+});
+
+test('settings retain Enable when the current site lacks persistent access', async () => {
+  const { root } = await openQueue([], { siteAccess: false });
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const button = root.querySelector('.waypoint-site-permission-btn');
+  assert.equal(button.textContent, 'Enable');
+  assert.equal(button.disabled, false);
+  assert.match(root.querySelector('.waypoint-setting-description').textContent, /enable annotation access/i);
+});
+
+test('documentation and workflow guides opt into the wider reading layout', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  root.querySelector('.waypoint-get-started-btn').click();
+  const dropdown = root.querySelector('.waypoint-settings-dropdown');
+  assert.equal(dropdown.classList.contains('guidance-open'), true);
+
+  root.querySelector('[data-workflow="multi-page"]').click();
+  assert.equal(dropdown.classList.contains('guidance-open'), true);
+  assert.match(dropdown.textContent, /Editing multiple pages/);
+});
+
+test('settings show cached maintenance guidance and load Data & Storage details only on demand', async () => {
+  const summary = {
+    project_count: 2,
+    annotation_count: 5,
+    old_pending_count: 1,
+    cleanup_candidate_count: 2,
+    review_count: 3,
+    stale_after_days: 30,
+  };
+  const snapshot = {
+    summary,
+    projects: [{
+      origin: 'http://localhost:3001',
+      annotation_count: 5,
+      route_count: 2,
+      status_counts: { pending: 2, claimed: 0, resolved: 2, discarded: 1 },
+      old_pending_count: 1,
+      cleanup_candidate_count: 2,
+      last_activity_at: '2026-08-20T00:00:00.000Z',
+      approximate_bytes: 2048,
+    }],
+  };
+  const { dataRequests, root } = await openQueue([], {
+    dataHealthSummary: summary,
+    dataManagerSnapshot: snapshot,
+  });
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(dataRequests.summary, 1);
+  assert.equal(dataRequests.snapshot, 0);
+  assert.match(root.querySelector('.waypoint-data-storage-btn').textContent, /3 to review/);
+
+  root.querySelector('.waypoint-data-storage-btn').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(dataRequests.snapshot, 1);
+  assert.equal(root.querySelector('.waypoint-settings-dropdown').classList.contains('data-storage-open'), true);
+  assert.match(root.querySelector('.waypoint-data-storage-view').textContent, /localhost:3001/);
+  assert.match(root.querySelector('.waypoint-data-storage-view').textContent, /5 annotations/);
+
+  root.querySelector('.waypoint-tb-settings').click();
+  assert.equal(root.querySelector('.waypoint-data-storage-view'), null);
+});
+
+test('clicking delete all closes an open Queue through outside-click handling', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000000_deleteall',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: 'Remove this annotation',
+    selector: '#target',
+  };
+  const { context, root } = await openQueue([annotation]);
+
+  assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
+  const deleteAllButton = root.querySelector('.waypoint-tb-delete');
+  deleteAllButton.removeAttribute('disabled');
+  deleteAllButton.dispatchEvent(new context.window.Event('click', { bubbles: true, composed: true }));
+
+  assert.equal(root.querySelector('.waypoint-queue-panel'), null);
 });
 
 test('Queue separates actionable Annotations from retained History', async () => {
@@ -193,6 +372,25 @@ test('Queue summarizes captured Target context and pending Variant Intent', asyn
   assert.match(queueText, /Variants requested/);
   assert.match(queueText, /CheckoutButton/);
   assert.doesNotMatch(queueText, /opaque-generated-selector|checkout-action/);
+});
+
+test('Queue gives commentless text edits a meaningful title', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000002_commentless',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: '',
+    selector: '#target',
+    element_context: { tag: 'button', text: 'Old' },
+    pending_changes: {
+      copyChange: { original: 'Old', value: 'New' },
+    },
+  };
+  const { root } = await openQueue([annotation]);
+
+  const title = root.querySelector('.waypoint-queue-comment');
+  assert.equal(title.textContent, 'Text content edit');
+  assert.doesNotMatch(root.querySelector('.waypoint-queue-list').textContent, /undefined|untitled/i);
 });
 
 test('Queue keeps permanent deletion secondary and requires an explicit confirmation', async () => {
@@ -367,6 +565,40 @@ test('Queue selection copies only the selected Annotations', async () => {
   assert.match(root.querySelector('.waypoint-queue-copy-selected').textContent, /Copied/);
 });
 
+test('Queue exports only the selected Annotations from a quick menu beside Copy', async () => {
+  const annotations = [
+    { id: 'waypoint_1750000000000_abc123xyz', url: 'http://localhost:3000/settings/members', status: 'pending', comment: 'First request', selector: '#first' },
+    { id: 'waypoint_1750000000001_abc123xyz', url: 'http://localhost:3000/settings/members', status: 'pending', comment: 'Second request', selector: '#second' },
+  ];
+  const { context, downloadBlobs, downloads, root } = await openQueue(annotations);
+  const copy = root.querySelector('.waypoint-queue-copy-selected');
+  const exportButton = root.querySelector('.waypoint-queue-export-selected');
+  assert.equal(copy.nextElementSibling.classList.contains('waypoint-queue-export'), true);
+  assert.equal(exportButton.textContent.trim(), 'Export');
+  assert.equal(exportButton.disabled, true);
+
+  const selected = root.querySelector(`[value="${annotations[1].id}"]`);
+  selected.checked = true;
+  selected.dispatchEvent(new context.window.Event('click'));
+  assert.equal(exportButton.disabled, false);
+
+  exportButton.click();
+  const exportMenu = root.querySelector('.waypoint-queue-export-menu');
+  assert.equal(exportMenu.hidden, false);
+  assert.equal(exportMenu.querySelectorAll('[role="menuitem"]').length, 2);
+  assert.doesNotMatch(exportMenu.textContent, /Share/);
+  root.querySelector('.waypoint-queue-export-json').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(downloads.length, 1);
+  assert.match(downloads[0].filename, /\.json$/);
+  assert.equal(downloads[0].href, 'blob:waypoint-export');
+  const exportedContent = await downloadBlobs[0].text();
+  assert.doesNotMatch(exportedContent, /First request/);
+  assert.match(exportedContent, /Second request/);
+  assert.equal(exportMenu.hidden, true);
+});
+
 test('Queue Open resolves the Target and reopens the existing Annotation editor', async () => {
   const annotation = {
     id: 'waypoint_1750000000000_abc123xyz',
@@ -395,6 +627,21 @@ test('Queue supports keyboard dismissal with Escape', async () => {
   const { root } = await openQueue([annotation]);
   const panel = root.querySelector('.waypoint-queue-panel');
   panel.onkeydown({ key: 'Escape' });
+
+  assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+});
+
+test('Queue closes when the user clicks outside it', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: 'Dismissible request',
+    selector: '#target',
+  };
+  const { context, root } = await openQueue([annotation]);
+
+  context.document.body.dispatchEvent(new context.window.Event('click', { bubbles: true }));
 
   assert.equal(root.querySelector('.waypoint-queue-panel'), null);
 });

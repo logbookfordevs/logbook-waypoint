@@ -6,17 +6,16 @@ import vm from 'node:vm';
 const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const codecUrl = new URL('../public/export-codec.js', import.meta.url);
 const statusUrl = new URL('../public/annotation-status.js', import.meta.url);
-const popupUrl = new URL('../public/popup/popup.js', import.meta.url);
-const popupHtmlUrl = new URL('../public/popup/popup.html', import.meta.url);
 const stylesUrl = new URL('../public/content/modules/styles.js', import.meta.url);
 
-test('toolbar exports status-filtered Markdown and can invoke native sharing', async () => {
+test('toolbar exports status-filtered Markdown without a native sharing branch', async () => {
   const toolbar = await readFile(toolbarUrl, 'utf8');
 
   assert.match(toolbar, /waypoint-export-status/);
   assert.match(toolbar, /WaypointExportCodec\.filterAnnotationsByStatus/);
   assert.match(toolbar, /WaypointExportCodec\.formatAnnotationsAsMarkdown/);
-  assert.match(toolbar, /navigator\.share\(/);
+  assert.doesNotMatch(toolbar, /navigator\.share\(/);
+  assert.doesNotMatch(toolbar, /Share Markdown/);
   assert.match(toolbar, /text\/markdown/);
 });
 
@@ -97,79 +96,58 @@ test('toolbar requests optional site access through the background message seam'
   assert.match(toolbar, /waypoint-site-permission/);
 });
 
-test('popup exposes synchronized theme, pin color, and clear-on-copy settings', async () => {
-  const [popup, html] = await Promise.all([
-    readFile(popupUrl, 'utf8'),
-    readFile(popupHtmlUrl, 'utf8'),
-  ]);
+test('toolbar onboarding uses the published CLI installer', async () => {
+  const toolbar = await readFile(toolbarUrl, 'utf8');
 
-  assert.match(html, /id="clear-on-copy-toggle"/);
-  assert.match(html, /name="badge-color"/);
-  assert.match(popup, /waypointClearOnCopy/);
-  assert.match(popup, /waypointBadgeColor/);
+  assert.match(toolbar, /scripts\/install\.sh \| bash/);
+  assert.match(toolbar, /data-cmd="waypoint start"/);
+  assert.doesNotMatch(toolbar, /node packages\/server\/bin\/cli\.js start/);
+});
+
+test('toolbar exposes synchronized theme, pin color, and clear-on-copy settings', async () => {
+  const toolbar = await readFile(toolbarUrl, 'utf8');
+
+  assert.match(toolbar, /waypoint-clear-on-copy/);
+  assert.match(toolbar, /waypoint-color-dot/);
+  assert.match(toolbar, /saveClearOnCopy/);
+  assert.match(toolbar, /saveBadgeColor/);
 });
 
 test('screenshot settings distinguish automatic MCP context from manual attachments', async () => {
   const toolbar = await readFile(new URL('../public/content/modules/floating-toolbar.js', import.meta.url), 'utf8');
-  const popup = await readFile(new URL('../public/popup/popup.html', import.meta.url), 'utf8');
 
   assert.match(toolbar, /Automatically capture the selected Target for MCP context/);
   assert.match(toolbar, /Manual reference images stay available/);
-  assert.match(popup, /Automatically capture the selected Target for MCP context/);
-  assert.match(popup, /Manual reference images remain available/);
 });
 
-test('toolbar and popup expose the global Design Actions preference with Impeccable guidance', async () => {
-  const [toolbar, popup, popupHtml, readme] = await Promise.all([
+test('toolbar exposes the global Design Actions preference with Impeccable guidance', async () => {
+  const [toolbar, readme] = await Promise.all([
     readFile(toolbarUrl, 'utf8'),
-    readFile(popupUrl, 'utf8'),
-    readFile(popupHtmlUrl, 'utf8'),
     readFile(new URL('../../../README.md', import.meta.url), 'utf8'),
   ]);
 
   assert.match(toolbar, /Show Design Actions/);
   assert.match(toolbar, /Requires Impeccable/);
   assert.match(toolbar, /saveShowDesignActions/);
-  assert.match(popupHtml, /id="show-design-actions-toggle"/);
-  assert.match(popupHtml, /Requires Impeccable/);
-  assert.match(popup, /waypointShowDesignActions/);
   assert.match(readme, /Design Actions require \[Impeccable\]\(https:\/\/github\.com\/pbakaus\/impeccable\)/);
   assert.match(readme, /Tested[^]*Expected[^]*Unknown/);
 });
 
-test('popup presents retained Queue states and Claim ownership explicitly', async () => {
-  const popup = await readFile(popupUrl, 'utf8');
-
-  assert.match(popup, /Annotation queue/);
-  assert.match(popup, /status-\$\{annotation\.status\}/);
-  assert.match(popup, /annotation\.claim\?\.owner/);
-  assert.doesNotMatch(popup, /Pending annotations/);
-});
-
-test('toolbar and popup retain keyboard-visible auto-resize styling hooks', async () => {
-  const [styles, popup] = await Promise.all([
-    readFile(stylesUrl, 'utf8'),
-    readFile(popupUrl, 'utf8'),
-  ]);
+test('toolbar retains keyboard-visible responsive styling hooks', async () => {
+  const styles = await readFile(stylesUrl, 'utf8');
 
   assert.match(styles, /waypoint-toolbar.*touch-action: none/s);
   assert.match(styles, /@media \(max-width: 480px\)/);
-  assert.match(popup, /textarea\.style\.height = 'auto'/);
-  assert.match(popup, /scrollHeight/);
 });
 
 test('extension has no release promotion banner, NEW badge, or changelog behavior', async () => {
-  const [background, popup, html, entrypoint] = await Promise.all([
+  const [background, entrypoint] = await Promise.all([
     readFile(new URL('../public/background/background.js', import.meta.url), 'utf8'),
-    readFile(popupUrl, 'utf8'),
-    readFile(popupHtmlUrl, 'utf8'),
     readFile(new URL('../entrypoints/intervention.html', import.meta.url), 'utf8'),
   ]);
 
   assert.doesNotMatch(background, /setBadgeText\(\{ text: 'NEW' \}\)/);
   assert.doesNotMatch(background, /getChangelogForVersion/);
-  assert.doesNotMatch(popup, /checkForUpdateNotification|showChangelog|dismissUpdateBanner/);
-  assert.doesNotMatch(html, /update-banner|What's new|Extension updated/);
   assert.doesNotMatch(entrypoint, /update-banner|updateLink|updateDismiss/);
   assert.match(background, /compatibility_message/);
 });

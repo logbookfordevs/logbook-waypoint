@@ -42,6 +42,7 @@ var WaypointToolbar = (() => {
     // Links
     github: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>',
     server: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>',
+    database: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>',
     camera: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
     keyboard: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>',
     newspaper: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>',
@@ -177,6 +178,11 @@ var WaypointToolbar = (() => {
         copy: copyAnnotations,
         delete: deleteAnnotation,
         discard: discardAnnotations,
+        export: (annotations, { format }) => doExport(annotations, {
+          scope: 'selection',
+          status: 'all',
+          format,
+        }),
         navigate: annotation => { window.location.href = annotation.url; },
         open: openAnnotation,
       });
@@ -265,10 +271,10 @@ var WaypointToolbar = (() => {
             ${ICONS.globe}
             <div>
               <span>Site access</span>
-              <div class="waypoint-setting-description">Enable annotation access for this site</div>
+              <div class="waypoint-setting-description">Checking site access…</div>
             </div>
           </div>
-          <button class="waypoint-btn waypoint-btn-secondary waypoint-site-permission-btn" type="button">Enable</button>
+          <button class="waypoint-btn waypoint-btn-secondary waypoint-site-permission-btn" type="button" disabled>Checking…</button>
         </div>
         <p class="waypoint-site-permission-status" aria-live="polite"></p>
         <div class="waypoint-settings-separator"></div>
@@ -317,6 +323,12 @@ var WaypointToolbar = (() => {
           <button class="waypoint-shortcut-btn" type="button">${escapeHTML(shortcutHint)}</button>
         </div>
         <div class="waypoint-settings-separator"></div>
+        <button class="waypoint-settings-link waypoint-data-storage-btn" type="button">
+          ${ICONS.database}
+          <span>Data &amp; Storage</span>
+          <span class="waypoint-data-health-badge" aria-live="polite"></span>
+          <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
+        </button>
         <button class="waypoint-settings-link waypoint-export-btn" type="button">
           ${ICONS.upload}
           <span>Export annotations</span>
@@ -334,6 +346,18 @@ var WaypointToolbar = (() => {
     `;
 
     toolbarEl.appendChild(settingsDropdown);
+
+    WaypointAPI.getDataHealthSummary().then(summary => {
+      if (!settingsDropdown) return;
+      const badge = settingsDropdown.querySelector('.waypoint-data-health-badge');
+      if (!badge) return;
+      if (summary.review_count > 0) {
+        badge.textContent = `${summary.review_count} to review`;
+        badge.hidden = false;
+      } else {
+        badge.hidden = true;
+      }
+    }).catch(() => {});
 
     // Theme toggle
     settingsDropdown.querySelector('.waypoint-theme-btn').addEventListener('click', () => {
@@ -371,6 +395,15 @@ var WaypointToolbar = (() => {
 
     const permissionButton = settingsDropdown.querySelector('.waypoint-site-permission-btn');
     const permissionStatus = settingsDropdown.querySelector('.waypoint-site-permission-status');
+    const permissionDescription = settingsDropdown.querySelector('.waypoint-site-permission .waypoint-setting-description');
+    WaypointAPI.hasCurrentSiteAccess().then(granted => {
+      if (!permissionButton.isConnected) return;
+      permissionButton.textContent = granted ? 'Enabled' : 'Enable';
+      permissionButton.disabled = granted;
+      permissionDescription.textContent = granted
+        ? 'Annotation access is already enabled for this site'
+        : 'Enable annotation access for this site';
+    });
     permissionButton.addEventListener('click', async () => {
       permissionButton.disabled = true;
       permissionStatus.textContent = 'Requesting site access…';
@@ -378,6 +411,7 @@ var WaypointToolbar = (() => {
         const granted = await WaypointAPI.requestOptionalSitePermission();
         if (granted) {
           permissionButton.textContent = 'Enabled';
+          permissionDescription.textContent = 'Annotation access is already enabled for this site';
           permissionStatus.textContent = 'Site access enabled. Refresh this page to start annotating.';
         } else {
           permissionButton.disabled = false;
@@ -448,6 +482,10 @@ var WaypointToolbar = (() => {
       showDocumentation();
     });
 
+    settingsDropdown.querySelector('.waypoint-data-storage-btn').addEventListener('click', () => {
+      showDataStorage();
+    });
+
     // Export
     settingsDropdown.querySelector('.waypoint-export-btn').addEventListener('click', () => {
       closeSettings();
@@ -478,8 +516,119 @@ var WaypointToolbar = (() => {
     }, 0);
   }
 
+  function formatStorageBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return 'Less than 1 KB';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function formatActivity(value) {
+    if (!value) return 'Unknown activity';
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return 'Unknown activity';
+    return `Last activity ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }
+
+  async function showDataStorage() {
+    if (!settingsDropdown) return;
+    settingsDropdown.classList.add('data-storage-open');
+    const header = settingsDropdown.querySelector('.waypoint-settings-header');
+    const body = settingsDropdown.querySelector('.waypoint-settings-body');
+    header.innerHTML = `
+      <button class="waypoint-guide-back-btn" type="button">
+        ${ICONS.back}
+        <span>Data &amp; Storage</span>
+      </button>
+    `;
+    body.className = 'waypoint-settings-body waypoint-data-storage-view';
+    body.innerHTML = '<p class="waypoint-data-storage-loading" role="status">Loading stored projects…</p>';
+    header.querySelector('.waypoint-guide-back-btn').addEventListener('click', () => {
+      closeSettings();
+      openSettings();
+    });
+
+    try {
+      const snapshot = await WaypointAPI.getDataManagerSnapshot();
+      if (!settingsDropdown || !body.isConnected) return;
+      renderDataStorage(body, snapshot);
+    } catch (error) {
+      if (!body.isConnected) return;
+      body.innerHTML = `<p class="waypoint-data-storage-error" role="alert">${escapeHTML(error?.message || 'Could not load stored data.')}</p>`;
+    }
+  }
+
+  function renderDataStorage(body, snapshot) {
+    const summary = snapshot.summary || {};
+    const projects = snapshot.projects || [];
+    body.innerHTML = `
+      <div class="waypoint-data-storage-summary">
+        <strong>${summary.annotation_count || 0} annotation${summary.annotation_count === 1 ? '' : 's'}</strong>
+        <span>across ${summary.project_count || 0} project${summary.project_count === 1 ? '' : 's'}</span>
+        ${summary.old_pending_count > 0 ? `<span class="waypoint-data-storage-review">${summary.old_pending_count} Pending for more than ${summary.stale_after_days || 30} days</span>` : ''}
+      </div>
+      <div class="waypoint-data-storage-projects">
+        ${projects.length ? projects.map(project => `
+          <section class="waypoint-data-storage-project" data-origin="${escapeHTML(project.origin)}">
+            <div class="waypoint-data-storage-project-header">
+              <div>
+                <strong>${escapeHTML(project.origin)}</strong>
+                <span>${project.annotation_count} annotation${project.annotation_count === 1 ? '' : 's'} · ${project.route_count} route${project.route_count === 1 ? '' : 's'}</span>
+              </div>
+              <span>${escapeHTML(formatStorageBytes(project.approximate_bytes))} record data</span>
+            </div>
+            <p>${escapeHTML(formatActivity(project.last_activity_at))}</p>
+            <p>${project.status_counts.pending} Pending · ${project.status_counts.claimed} Claimed · ${project.status_counts.resolved} Resolved · ${project.status_counts.discarded} Discarded</p>
+            <button class="waypoint-data-delete-project" type="button" data-origin="${escapeHTML(project.origin)}" data-count="${project.annotation_count}">Delete project data</button>
+          </section>
+        `).join('') : '<p class="waypoint-data-storage-empty">No stored annotations.</p>'}
+      </div>
+      ${summary.cleanup_candidate_count > 0 ? `<button class="waypoint-data-delete-history" type="button" data-count="${summary.cleanup_candidate_count}">Delete old history (${summary.cleanup_candidate_count})</button>` : ''}
+      ${summary.annotation_count > 0 ? `<button class="waypoint-data-delete-all" type="button" data-count="${summary.annotation_count}">Clear all Waypoint data</button>` : ''}
+      <p class="waypoint-data-storage-feedback" role="status" aria-live="polite"></p>
+    `;
+
+    body.querySelectorAll('.waypoint-data-delete-project').forEach(button => {
+      wireDataDeletion(button, { scope: 'project', origin: button.dataset.origin }, snapshot);
+    });
+    const historyButton = body.querySelector('.waypoint-data-delete-history');
+    if (historyButton) wireDataDeletion(historyButton, { scope: 'old_history' }, snapshot);
+    const allButton = body.querySelector('.waypoint-data-delete-all');
+    if (allButton) wireDataDeletion(allButton, { scope: 'all' }, snapshot);
+  }
+
+  function wireDataDeletion(button, selection, snapshot) {
+    let confirming = false;
+    const initialLabel = button.textContent;
+    button.addEventListener('click', async () => {
+      if (!confirming) {
+        confirming = true;
+        button.textContent = `Confirm permanent deletion of ${button.dataset.count}`;
+        button.classList.add('confirming');
+        return;
+      }
+      button.disabled = true;
+      button.textContent = 'Deleting…';
+      const feedback = settingsDropdown?.querySelector('.waypoint-data-storage-feedback');
+      try {
+        const result = await WaypointAPI.deleteDataSelection(selection);
+        if (!settingsDropdown) return;
+        renderDataStorage(settingsDropdown.querySelector('.waypoint-data-storage-view'), result.snapshot || snapshot);
+        const nextFeedback = settingsDropdown.querySelector('.waypoint-data-storage-feedback');
+        if (nextFeedback) nextFeedback.textContent = `${result.deleted_count} annotation${result.deleted_count === 1 ? '' : 's'} permanently deleted.`;
+      } catch (error) {
+        confirming = false;
+        button.disabled = false;
+        button.classList.remove('confirming');
+        button.textContent = initialLabel;
+        if (feedback) feedback.textContent = error?.message || 'Could not delete stored data.';
+      }
+    });
+  }
+
   function showDocumentation() {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('guidance-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
@@ -541,6 +690,7 @@ var WaypointToolbar = (() => {
 
   function showGetStartedGuide() {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('guidance-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
@@ -568,8 +718,8 @@ var WaypointToolbar = (() => {
         <div class="waypoint-guide-section">
           <div class="waypoint-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--waypoint-text-secondary);">(optional)</span></div>
           <p class="waypoint-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
-          <div class="waypoint-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
-            <code>pnpm add --global @logbookfordevs/waypoint</code>
+          <div class="waypoint-guide-cmd" data-cmd="curl -fsSL https://raw.githubusercontent.com/logbookfordevs/logbook-waypoint/main/scripts/install.sh | bash">
+            <code>curl -fsSL https://raw.githubusercontent.com/logbookfordevs/logbook-waypoint/main/scripts/install.sh | bash</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
           <div class="waypoint-guide-cmd" data-cmd="waypoint start">
@@ -662,6 +812,7 @@ var WaypointToolbar = (() => {
 
   function showWorkflow(type) {
     if (!settingsDropdown) return;
+    settingsDropdown.classList.add('guidance-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
     const body = settingsDropdown.querySelector('.waypoint-settings-body');
     if (!header || !body) return;
@@ -696,8 +847,8 @@ var WaypointToolbar = (() => {
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Setup</div>
-            <div class="waypoint-guide-cmd" data-cmd="pnpm add --global @logbookfordevs/waypoint">
-              <code>pnpm add --global @logbookfordevs/waypoint</code>
+            <div class="waypoint-guide-cmd" data-cmd="curl -fsSL https://raw.githubusercontent.com/logbookfordevs/logbook-waypoint/main/scripts/install.sh | bash">
+              <code>curl -fsSL https://raw.githubusercontent.com/logbookfordevs/logbook-waypoint/main/scripts/install.sh | bash</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
             <div class="waypoint-guide-cmd" data-cmd="waypoint start">
@@ -996,7 +1147,7 @@ var WaypointToolbar = (() => {
     backdrop.innerHTML = `
       <div class="waypoint-confirm">
         <div class="waypoint-confirm-title">Export annotations</div>
-        <div class="waypoint-confirm-msg">Choose the scope, status, and share format.</div>
+        <div class="waypoint-confirm-msg">Choose the scope, status, and file format.</div>
         <label class="waypoint-export-field">Scope
           <select class="waypoint-export-scope">
             <option value="page">This page only</option>
@@ -1015,7 +1166,6 @@ var WaypointToolbar = (() => {
         <div class="waypoint-confirm-actions waypoint-export-actions">
           <button class="waypoint-btn waypoint-btn-secondary waypoint-export-json" type="button">Download JSON</button>
           <button class="waypoint-btn waypoint-btn-primary waypoint-export-markdown" type="button">Download Markdown</button>
-          <button class="waypoint-btn waypoint-btn-secondary waypoint-export-share" type="button">Share Markdown</button>
         </div>
         <div class="waypoint-confirm-actions" style="margin-top:8px;justify-content:flex-start;">
           <button class="waypoint-btn waypoint-btn-secondary waypoint-export-cancel">Cancel</button>
@@ -1027,7 +1177,7 @@ var WaypointToolbar = (() => {
     backdrop.querySelector('.waypoint-export-cancel').addEventListener('click', () => backdrop.remove());
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
 
-    const runExport = async (format, share) => {
+    const runExport = async format => {
       const scope = backdrop.querySelector('.waypoint-export-scope').value;
       const status = backdrop.querySelector('.waypoint-export-status').value;
       const annotations = scope === 'page'
@@ -1039,16 +1189,15 @@ var WaypointToolbar = (() => {
         showInfoModal('Nothing to export', `No ${status === 'all' ? '' : `${status} `}annotations in this scope.`);
         return;
       }
-      await doExport(filtered, { scope, status, format, share });
+      await doExport(filtered, { scope, status, format });
       backdrop.remove();
     };
 
-    backdrop.querySelector('.waypoint-export-json').addEventListener('click', () => runExport('json', false));
-    backdrop.querySelector('.waypoint-export-markdown').addEventListener('click', () => runExport('markdown', false));
-    backdrop.querySelector('.waypoint-export-share').addEventListener('click', () => runExport('markdown', true));
+    backdrop.querySelector('.waypoint-export-json').addEventListener('click', () => runExport('json'));
+    backdrop.querySelector('.waypoint-export-markdown').addEventListener('click', () => runExport('markdown'));
   }
 
-  async function doExport(annotations, { scope, status, format, share }) {
+  async function doExport(annotations, { scope, status, format }) {
     const loc = window.location;
     const exportData = WaypointExportCodec.createExportEnvelope(annotations, { scope, status, source: loc });
 
@@ -1060,20 +1209,6 @@ var WaypointToolbar = (() => {
       : JSON.stringify(exportData, null, 2);
     const type = isMarkdown ? 'text/markdown' : 'application/json';
     const filename = `logbook-waypoint-${hostStr}-${dateStr}.${isMarkdown ? 'md' : 'json'}`;
-    const file = new File([content], filename, { type });
-
-    if (share && typeof navigator.share === 'function') {
-      const shareData = { title: 'Logbook Waypoint annotations', text: 'Annotations exported from Logbook Waypoint.' };
-      if (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ ...shareData, files: [file] });
-          return;
-        } catch (error) {
-          if (error?.name === 'AbortError') return;
-        }
-      }
-    }
-
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
 
