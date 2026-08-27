@@ -1,5 +1,3 @@
-import { toReadAnnotation } from './watch-queue.js';
-
 const CURATED_STYLE_KEYS = [
   'display',
   'position',
@@ -68,21 +66,22 @@ function compactParent(parentChain) {
 }
 
 function compactSourceIdentity(target) {
-  const componentName = FRAMEWORK_COMPONENT_NAMES.has(target?.component_name)
+  const identity = target?.source_identity || target;
+  const componentName = FRAMEWORK_COMPONENT_NAMES.has(identity?.component_name)
     ? undefined
-    : target?.component_name || undefined;
-  const sourceFilePath = target?.source_file_path || undefined;
-  const sourceLineRange = target?.source_line_range || undefined;
+    : identity?.component_name || undefined;
+  const sourceFilePath = identity?.source_file_path || undefined;
+  const sourceLineRange = identity?.source_line_range || undefined;
   if (!componentName && !sourceFilePath && !sourceLineRange) return undefined;
   return definedEntries([
     ['component_name', componentName],
     ['source_file_path', sourceFilePath],
     ['source_line_range', clone(sourceLineRange)],
-    ['source_map_available', target?.source_map_available === true ? true : undefined],
+    ['source_map_available', identity?.source_map_available === true ? true : undefined],
   ]);
 }
 
-function annotationTargets(annotation) {
+export function annotationTargets(annotation) {
   if (Array.isArray(annotation.targets) && annotation.targets.length) return annotation.targets;
   return [{
     selector: annotation.selector,
@@ -102,15 +101,15 @@ function annotationTargets(annotation) {
 }
 
 function compactTarget(target, index) {
-  const context = target?.element_context || {};
+  const context = target?.element_context || target || {};
   return definedEntries([
     ['index', index],
     ['selector', target?.selector],
     ['tag', context.tag],
     ['text', typeof context.text === 'string' ? context.text : undefined],
     ['styles', compactStyles(context.styles)],
-    ['size', compactSize(context.position)],
-    ['context', compactParent(target?.parent_chain)],
+    ['size', compactSize(context.position) || clone(target?.size)],
+    ['context', compactParent(target?.parent_chain) || clone(target?.context)],
     ['source_identity', compactSourceIdentity(target)],
   ]);
 }
@@ -163,29 +162,6 @@ export function summarizeAnnotation(annotation) {
     ['created_at', annotation.created_at],
     ['updated_at', annotation.updated_at],
   ]);
-}
-
-function withoutEmbeddedContent(value) {
-  if (Array.isArray(value)) return value.map(withoutEmbeddedContent);
-  if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => key !== 'data_url')
-      .map(([key, nestedValue]) => [key, withoutEmbeddedContent(nestedValue)]),
-  );
-}
-
-export function inspectAnnotation(annotation) {
-  const inspected = withoutEmbeddedContent(toReadAnnotation(annotation));
-  const targets = annotationTargets(annotation);
-  inspected.targets = targets.map((target, index) => withoutEmbeddedContent({
-    ...inspected.targets?.[index],
-    ...clone(target),
-  }));
-  if (inspected.targets.length === 1) Object.assign(inspected, inspected.targets[0]);
-  inspected.has_screenshot = hasScreenshot(annotation, targets);
-  inspected.has_attachments = Boolean(annotation.has_attachments || annotation.attachments?.length);
-  return inspected;
 }
 
 export const FRAMEWORK_COMPONENTS_OMITTED_FROM_SUMMARIES = FRAMEWORK_COMPONENT_NAMES;

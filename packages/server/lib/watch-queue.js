@@ -9,6 +9,7 @@ import { assertAnnotationDesignIntent } from './design-intent.js';
 import { assertResolutionRecordSummary } from './resolution-record.js';
 import { assertAnnotationVariantIntent } from './variant-intent.js';
 import { normalizeAnnotationTargets } from './annotation-targets.js';
+import { summarizeAnnotation } from './annotation-summary.js';
 
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
@@ -99,13 +100,7 @@ export function toReadAnnotation(annotation) {
 }
 
 function normalizeJournalAnnotation(annotation) {
-  const targets = normalizeAnnotationTargets(annotation).targets;
-  return portableAnnotation(annotation, Boolean(
-    annotation.has_screenshot
-    || annotation.screenshot?.data_url
-    || annotation.screenshot?.attachment_id
-    || targets.some(target => target.has_screenshot || target.screenshot?.data_url || target.screenshot?.attachment_id),
-  ));
+  return summarizeAnnotation(annotation);
 }
 
 function validateSavedQueue(saved) {
@@ -170,8 +165,8 @@ export class WatchQueue {
   recordChanges(previousAnnotations, nextAnnotations) {
     const previousById = new Map(
       previousAnnotations.map(annotation => {
-        const portableAnnotation = toWatchAnnotation(annotation);
-        return [portableAnnotation.id, portableAnnotation];
+        const summary = summarizeAnnotation(annotation);
+        return [summary.id, summary];
       }),
     );
     return this.recordChangesFrom(previousById, nextAnnotations);
@@ -184,7 +179,7 @@ export class WatchQueue {
       if (!isValidAnnotationId(rawAnnotation?.id)) {
         throw new TypeError('Invalid Waypoint annotation ID');
       }
-      const annotation = toWatchAnnotation(rawAnnotation);
+      const annotation = summarizeAnnotation(rawAnnotation);
       const previous = previousById.get(annotation.id);
       if (!previous || comparableAnnotation(previous) !== comparableAnnotation(annotation)) {
         const sequence = ++this.sequence;
@@ -209,8 +204,8 @@ export class WatchQueue {
     const changes = this.recordChangesFrom(this.latestById, nextAnnotations);
     this.latestById = new Map(
       nextAnnotations.map(annotation => {
-        const portable = toWatchAnnotation(annotation);
-        return [portable.id, portable];
+        const summary = summarizeAnnotation(annotation);
+        return [summary.id, summary];
       }),
     );
     return changes;

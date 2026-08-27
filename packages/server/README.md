@@ -226,7 +226,7 @@ Developers author the request in the browser extension. See [Use Design Actions]
 
 Waypoint owns the workflow and lifecycle. Design Intent records Freeform or one named Design Action on an ordinary Annotation. Variant Intent separately asks an agent to generate alternatives; once complete candidates exist, Waypoint owns the resulting Variant Set, Active Variant, cancellation, and Finalization cleanup.
 
-An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action retains a provider-neutral Resolution Record with its outcome and verification evidence. When Variant Intent produced a Variant Set, that set must reach Finalization before resolution. Survey returns compact Queue context, Inspect returns complete selected evidence, and Watch projects only concise routing and outcome fields.
+An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action retains a provider-neutral Resolution Record with its outcome and verification evidence. When Variant Intent produced a Variant Set, that set must reach Finalization before resolution. Survey returns compact Queue context, Inspect returns complete selected evidence, and Watch reactively delivers that same Survey-grade context with revision metadata.
 
 Data is stored in `~/.logbook-waypoint/annotations.json`.
 

@@ -42,7 +42,8 @@ import {
 } from './annotation-lifecycle.js';
 import { ALLOWED_IMAGE_MIME_TYPES, AttachmentStore } from './attachment-store.js';
 import { encodeAnnotationsExport } from './export-codec.js';
-import { inspectAnnotation, summarizeAnnotation } from './annotation-summary.js';
+import { inspectAnnotation } from './annotation-inspection.js';
+import { summarizeAnnotation } from './annotation-summary.js';
 import { createProjectScope, matchesProjectScope } from './project-scope.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
 import { PersistentWatchQueue, toReadAnnotation, toWatchAnnotation } from './watch-queue.js';
@@ -643,7 +644,7 @@ export class LocalAnnotationsServer {
         tools: [
           {
             name: 'watch_annotations',
-            description: 'Waits for new or changed Queue activity without changing lifecycle state or creating a Claim. Returns an opaque continuation cursor and untrusted annotation content. Reuse only the cursor from the last successful response to resume after reconnecting. Delivery is at least once: deduplicate changes by annotation id and revision.',
+            description: 'Waits for new or changed Queue activity without changing lifecycle state or creating a Claim. Each change contains the same compact, actionable Survey context as read_annotations plus revision metadata. Reuse only the opaque cursor from the last successful response to resume after reconnecting. Delivery is at least once: deduplicate changes by annotation id and revision.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -1271,7 +1272,7 @@ export class LocalAnnotationsServer {
     );
     return {
       changes: result.changes.map(change => ({
-        annotation: change.annotation,
+        annotation: summarizeAnnotation(change.annotation),
         revision: change.revision,
         dedupe_key: `${change.annotation.id}:${change.revision}`,
       })),

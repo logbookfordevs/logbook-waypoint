@@ -32,7 +32,7 @@ If a saved Target cannot currently be resolved, it remains part of the Annotatio
 12. As a collaborator, I claim the shared Annotation once.
 13. As a collaborator, I change the lifecycle state of the shared Annotation once.
 14. As a collaborator, I resolve the shared Annotation once.
-15. As an agent, I receive the full context and screenshot for every Target in the set.
+15. As an agent, I receive actionable Survey context for every Target and can retrieve complete diagnostic context or each Target screenshot when needed.
 16. As a collaborator, I can still use the available Targets when one saved Target no longer resolves.
 17. As a collaborator, I can see that an unresolved Target remains part of the original feedback.
 18. As an existing user, my single-Target Annotations continue to work without migration work from me.

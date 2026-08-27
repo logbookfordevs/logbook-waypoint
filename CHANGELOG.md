@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Made annotation routes preserve full paths, queries, and hashes
 - Improved selector portability, target re-anchoring, keyboard navigation, design rollback, and queues larger than 50 annotations
 - Made unscoped MCP Queue reads discovery-only so agents must select a project before annotation bodies are returned
+- Made Watch deliver the same compact Survey context as scoped Queue reads while preserving revision-safe reactive delivery
 - Made Queue follow-ups survive server outages by retaining unsynced saves, deletions, and Design or Variant Intent removals until synchronization recovers
 - Replaced remote update promotion with local extension/server compatibility guidance
 - Added HTTP and JSON MCP connection guidance for coding agents
