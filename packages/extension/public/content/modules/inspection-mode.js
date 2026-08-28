@@ -235,7 +235,7 @@ var WaypointInspectionMode = (() => {
   function handleKeyDown(e) {
     if (!active || !hoveredElement) return;
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    if (isOurUI(e) && !isScopeControlEvent(e)) return;
+    if (isOurUI(e) && !isScopeControlEvent(e) && !isInspectionTriggerEvent(e)) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -245,6 +245,10 @@ var WaypointInspectionMode = (() => {
   function isScopeControlEvent(e) {
     if (!scopeControlsEl) return false;
     return e.composedPath().includes(scopeControlsEl);
+  }
+
+  function isInspectionTriggerEvent(e) {
+    return e.composedPath().some(node => node?.matches?.('.waypoint-tb-annotate'));
   }
 
   function isApproachingScopeControls(e) {

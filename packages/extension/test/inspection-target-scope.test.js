@@ -20,8 +20,18 @@ async function createHarness() {
   `);
   const host = window.document.querySelector('#waypoint-host');
   const root = host.attachShadow({ mode: 'open' });
+  const inspectButton = window.document.createElement('button');
+  inspectButton.className = 'waypoint-tb-annotate';
+  inspectButton.textContent = 'Inspect';
+  root.appendChild(inspectButton);
   const handlers = new Map();
+  const documentListeners = new Map();
   const emitted = [];
+  const addDocumentListener = window.document.addEventListener.bind(window.document);
+  window.document.addEventListener = (name, handler, options) => {
+    documentListeners.set(name, handler);
+    addDocumentListener(name, handler, options);
+  };
   const context = vm.createContext({
     window,
     document: window.document,
@@ -58,7 +68,7 @@ async function createHarness() {
     window.document.querySelector(`#${id}`).getBoundingClientRect = () => rect;
   }
 
-  return { emitted, root, window };
+  return { documentListeners, emitted, inspectButton, root, window };
 }
 
 function dispatch(window, target, type, properties = {}) {
@@ -90,6 +100,23 @@ test('inspection arrows resize the highlighted target and click confirms the adj
   dispatch(window, leaf, 'pointerdown', { clientX: 50, clientY: 40 });
   const selection = emitted.find(event => event.name === 'inspection:elementClicked');
   assert.equal(selection.payload.element, button);
+});
+
+test('inspection arrows work while the toolbar inspect button retains focus', async () => {
+  const { documentListeners, inspectButton, root, window } = await createHarness();
+  const leaf = window.document.querySelector('#leaf');
+  const highlight = root.querySelector('.waypoint-highlight');
+
+  dispatch(window, leaf, 'mouseover');
+  inspectButton.focus();
+  documentListeners.get('keydown')({
+    key: 'ArrowRight',
+    composedPath: () => [inspectButton, root, root.host, window.document],
+    preventDefault() {},
+    stopPropagation() {},
+  });
+
+  assert.equal(highlight.style.width, '90px');
 });
 
 test('mouse controls resize the target without exposing DOM hierarchy', async () => {
