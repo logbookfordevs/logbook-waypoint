@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.1.1] - 2026-08-28
+
 ### Added
 - Waypoint-branded extension, local server, CLI, storage, annotation IDs, and MCP configuration
 - Dual CLI distribution through npm and checksummed GitHub release archives from one tagged release
@@ -23,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A global Data & Storage manager with project summaries, maintenance guidance, and confirmed project-wide or all-data deletion
 - Workflow-first MCP documentation with concrete calls, compact Survey guidance, diagnostic Inspect guidance, and a complete 19-tool reference
 - A basic-to-advanced user guide for annotation, Queue, copy/export, MCP, Design Actions, settings, and local-data behavior
+- Precise Target correction during inspection with arrow keys and optional compact Smaller and Larger pointer controls
 
 ### Changed
 - Made `waypoint start` run in the background by default, with `--foreground` for terminal-attached sessions
@@ -38,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced remote update promotion with local extension/server compatibility guidance
 - Added HTTP and JSON MCP connection guidance for coding agents
 - Replaced the inherited contribution template with Waypoint-specific setup, validation, contract, pull request, and release guidance
+- Grouped annotation-experience preferences in an expanded-by-default disclosure, widened the settings surface, and let users hide pointer Target controls without disabling keyboard correction
 
 ### Fixed
 - Prevented deleted annotations from returning during synchronization

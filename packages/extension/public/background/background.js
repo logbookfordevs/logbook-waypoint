@@ -77,7 +77,7 @@ class WaypointAnnotationsBackground {
       await chrome.storage.local.set({
         waypointAnnotations: [],
         waypointSettings: {
-          version: '0.1.0',
+          version: chrome.runtime.getManifest().version,
           firstInstall: Date.now(),
           apiEnabled: false
         }

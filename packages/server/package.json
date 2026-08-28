@@ -1,6 +1,6 @@
 {
   "name": "@logbookfordevs/waypoint",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Global MCP server for Logbook Waypoint browser extension",
   "main": "lib/server.js",
   "type": "module",

@@ -32,12 +32,12 @@ if [[ "$(basename "$0")" = "curl" ]]; then
     https://github.com/logbookfordevs/logbook-waypoint/releases/latest)
       [[ "$output_path" = "/dev/null" ]]
       [[ "$write_format" = "%{url_effective}" ]]
-      printf 'https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v0.1.0'
+      printf 'https://github.com/logbookfordevs/logbook-waypoint/releases/tag/v0.1.1'
       ;;
-    https://github.com/logbookfordevs/logbook-waypoint/releases/download/v0.1.0/waypoint-cli.tar.gz)
+    https://github.com/logbookfordevs/logbook-waypoint/releases/download/v0.1.1/waypoint-cli.tar.gz)
       cp "$FAKE_ARCHIVE" "$output_path"
       ;;
-    https://github.com/logbookfordevs/logbook-waypoint/releases/download/v0.1.0/waypoint-cli.tar.gz.sha256)
+    https://github.com/logbookfordevs/logbook-waypoint/releases/download/v0.1.1/waypoint-cli.tar.gz.sha256)
       printf '%s  waypoint-cli.tar.gz\n' "$FAKE_CHECKSUM"
       ;;
     *)
@@ -69,9 +69,9 @@ PAYLOAD_DIR="$TEST_DIR/payload"
 
 mkdir -p "$FAKE_BIN" "$PAYLOAD_DIR/bin" "$PAYLOAD_DIR/lib"
 ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/curl"
-printf '#!/usr/bin/env node\nif (process.argv.includes("--version")) console.log("0.1.0");\n' > "$PAYLOAD_DIR/bin/cli.js"
+printf '#!/usr/bin/env node\nif (process.argv.includes("--version")) console.log("0.1.1");\n' > "$PAYLOAD_DIR/bin/cli.js"
 printf 'export {};\n' > "$PAYLOAD_DIR/lib/server.js"
-printf '{"name":"@logbookfordevs/waypoint","version":"0.1.0","type":"module"}\n' > "$PAYLOAD_DIR/package.json"
+printf '{"name":"@logbookfordevs/waypoint","version":"0.1.1","type":"module"}\n' > "$PAYLOAD_DIR/package.json"
 tar -czf "$FAKE_ARCHIVE" -C "$PAYLOAD_DIR" .
 FAKE_CHECKSUM="$(shasum -a 256 "$FAKE_ARCHIVE" | awk '{print $1}')"
 export FAKE_ARCHIVE FAKE_CHECKSUM FAKE_CURL_LOG
@@ -84,11 +84,11 @@ install_output="$(
 )"
 
 grep -q 'releases/latest' "$FAKE_CURL_LOG"
-grep -q 'releases/download/v0.1.0/waypoint-cli.tar.gz' "$FAKE_CURL_LOG"
-test -f "$INSTALL_ROOT/releases/v0.1.0/bin/cli.js"
-test -f "$INSTALL_ROOT/releases/v0.1.0/lib/server.js"
+grep -q 'releases/download/v0.1.1/waypoint-cli.tar.gz' "$FAKE_CURL_LOG"
+test -f "$INSTALL_ROOT/releases/v0.1.1/bin/cli.js"
+test -f "$INSTALL_ROOT/releases/v0.1.1/lib/server.js"
 test -x "$BIN_DIR/waypoint"
-"$BIN_DIR/waypoint" --version | grep -q '^0.1.0$'
+"$BIN_DIR/waypoint" --version | grep -q '^0.1.1$'
 
 printf '0%.0s' {1..64} > "$TEST_DIR/bad-checksum"
 if PATH="$FAKE_BIN:$PATH" \

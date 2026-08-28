@@ -183,7 +183,7 @@ export class LocalAnnotationsServer {
     this.mcpServer = new Server(
       {
         name: PRODUCT_IDENTITY.mcpConfigKey,
-        version: '0.1.0',
+        version: packageJson.version,
       },
       {
         capabilities: {
@@ -620,7 +620,7 @@ export class LocalAnnotationsServer {
     const server = new Server(
       {
         name: PRODUCT_IDENTITY.mcpConfigKey,
-        version: '0.1.0',
+        version: packageJson.version,
       },
       {
         capabilities: {

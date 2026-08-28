@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.1.1] - 2026-08-28
+
 ### Added
 - Waypoint annotation lifecycle, Watch, Variant, Design Action, Work Notice, and Resolution Record contracts
 - MCP tools for durable annotation watching, screenshot retrieval, lifecycle updates, Variant delivery, and finalization

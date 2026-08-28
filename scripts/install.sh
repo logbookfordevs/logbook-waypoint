@@ -35,7 +35,7 @@ Options:
 
 Examples:
   curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
-  ./scripts/install.sh --version v0.1.0
+  ./scripts/install.sh --version v0.1.1
   ./scripts/install.sh --unlink
 USAGE
 }
