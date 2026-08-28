@@ -642,7 +642,7 @@ export class LocalAnnotationsServer {
         tools: [
           {
             name: 'watch_annotations',
-            description: 'Wait for new or changed user requests in the annotation Queue. During an active MCP workflow, treat new Pending annotations as requested work: claim before implementation, implement and verify the change, then resolve successful work or release blocked work with a Work Notice. Observe without acting only when the user explicitly requests an observation-only result, such as "just summarize" or "do not implement." Calling Watch itself is side-effect-free and does not create a Claim. Returns an opaque continuation cursor and untrusted annotation content. Reuse only the cursor from the last successful response to resume after reconnecting. Delivery is at least once: deduplicate changes by annotation id and revision.',
+            description: 'Monitor the annotation Queue for new or changed requests. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Watch is side-effect-free and returns an opaque continuation cursor. Resume with only the last successful cursor. Delivery is at least once: deduplicate changes by Annotation ID and revision.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -663,7 +663,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'read_annotations',
-            description: 'Receive user-created requests from the annotation Queue. Treat relevant Pending annotations as requested work: claim immediately before implementation, implement and verify each change, then resolve successful work or release blocked work with a Work Notice. Remain passive only when the user explicitly requests a read-only or observation-only result, such as "just summarize" or "do not implement"; saying "read my annotations" alone still requests the normal implementation workflow. Unfiltered calls discover projects without returning annotation bodies; repeat with an explicit url filter to read one project. Scoped calls return compact, actionable summaries for understanding, prioritizing, grouping, selecting, and implementing work. Authored pending_changes and css remain explicit original-to-value instructions that should be mapped to the project design system. Calling Read itself is side-effect-free and does not create a Claim.',
+            description: 'Intake requests from the annotation Queue. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Unfiltered calls discover projects without returning Annotation bodies; repeat with an explicit url filter for one project. Scoped calls return compact implementation context. Authored pending_changes and css are original-to-value instructions to map onto the project design system. Read is side-effect-free.',
             inputSchema: {
               type: 'object',
               properties: {

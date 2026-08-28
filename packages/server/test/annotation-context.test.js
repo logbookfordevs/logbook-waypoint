@@ -125,9 +125,9 @@ test('inspect_annotations diagnoses selected IDs with complete captured context'
   const tools = await listTools();
   const readTool = tools.tools.find(tool => tool.name === 'read_annotations');
   const inspectTool = tools.tools.find(tool => tool.name === 'inspect_annotations');
-  assert.match(readTool.description, /^Receive user-created requests\b/);
-  assert.match(readTool.description, /claim immediately before implementation/i);
-  assert.match(readTool.description, /saying "read my annotations" alone still requests the normal implementation workflow/i);
+  assert.match(readTool.description, /^Intake requests\b/);
+  assert.match(readTool.description, /Pending Annotations are actionable work/i);
+  assert.match(readTool.description, /claim before implementation, resolve after verification, or release when blocked/i);
   assert.match(inspectTool.description, /^Diagnose\b/);
   assert.equal(inspectTool.inputSchema.properties.ids.maxItems, undefined);
 

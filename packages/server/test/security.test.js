@@ -345,8 +345,8 @@ describe('local HTTP security boundary', () => {
       const tools = await client.listTools();
       const watchTool = tools.tools.find(tool => tool.name === 'watch_annotations');
       assert.match(watchTool.description, /deduplicate.*annotation.*id.*revision/i);
-      assert.match(watchTool.description, /treat new Pending annotations as requested work/i);
-      assert.match(watchTool.description, /explicitly requests an observation-only result/i);
+      assert.match(watchTool.description, /Pending Annotations are actionable work/i);
+      assert.match(watchTool.description, /claim before implementation, resolve after verification, or release when blocked/i);
       const empty = await client.callTool({
         name: 'watch_annotations',
         arguments: { timeout_ms: 0 }
