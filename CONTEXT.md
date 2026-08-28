@@ -20,6 +20,18 @@ _Avoid_: annotation group, linked annotations, multi-pin group
 The collection of Annotations available to or retained from agent work.
 _Avoid_: inbox, backlog, annotation list
 
+**Page**:
+A stable annotation surface identified by its origin and pathname, independent of transient query or hash state.
+_Avoid_: exact URL, route variant, screen URL
+
+**View State**:
+Query or hash state that changes what is presented within one Page, such as an active tab or filter.
+_Avoid_: Page, route
+
+**Captured URL**:
+The exact URL retained with an Annotation to describe and revisit the View State where it was created.
+_Avoid_: Page identity, project URL
+
 ## Design workflow
 
 **Design Intent**:

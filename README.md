@@ -70,8 +70,7 @@ pnpm build
 ## CLI installation
 
 Tagged releases provide the same `waypoint` CLI through npm and a checksummed
-GitHub release archive. These commands will become available with the first
-Waypoint release.
+GitHub release archive.
 
 Install directly from the latest GitHub release:
 
@@ -91,14 +90,26 @@ Use npm without a permanent installation for a first look:
 npx @logbookfordevs/waypoint --help
 ```
 
-### Local server
+### Start Waypoint
+
+After installing with either method, start the server:
+
+```bash
+waypoint start
+```
+
+Waypoint runs in the background by default. Use `waypoint status` to check it,
+`waypoint logs` to inspect it, and `waypoint stop` when you are finished. For a
+temporary terminal-attached session, use `waypoint start --foreground`.
+
+### Local development
+
+When running Waypoint directly from this repository instead of an installed
+release:
 
 ```bash
 pnpm --filter @logbookfordevs/waypoint start
 ```
-
-Installed CLI releases start the server in the background with `waypoint start`.
-Use `waypoint start --foreground` for a temporary terminal session.
 
 ### Browser extension
 
@@ -109,10 +120,9 @@ Use `waypoint start --foreground` for a temporary terminal session.
 
 ### MCP connection
 
-After installing the CLI and starting Waypoint, the fastest way to connect supported coding agents is [Add MCP](https://add-mcp.com/):
+With Waypoint running, the fastest way to connect supported coding agents is [Add MCP](https://add-mcp.com/):
 
 ```bash
-waypoint start
 npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global
 ```
 
@@ -193,7 +203,7 @@ VS Code MCP configuration depends on the AI extension you use. Configure Waypoin
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
-For annotation context, agents first discover stored projects with an unscoped `read_annotations` call, then select one URL scope to receive compact summaries. Unscoped reads never return Annotation bodies, even when only one project exists. Inspect selected IDs only when complete diagnostic context is useful. Compact summaries are intended to be sufficient for normal implementation; “compact” describes the response size, not a partial brief. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
+Through MCP, annotations are user requests. Agents handle relevant Pending annotations through Claim, implementation, verification, and resolution or safe release unless the user explicitly requests a read-only or observation-only result. Saying “read my annotations” alone still requests the normal implementation workflow. Agents first discover stored projects with an unscoped `read_annotations` call, then select one URL scope to receive compact summaries. Unscoped reads never return Annotation bodies, even when only one project exists. Inspect selected IDs only when complete diagnostic context is useful. Compact summaries are intended to be sufficient for normal implementation; “compact” describes the response size, not a partial brief. Read and Inspect calls are side-effect-free; lifecycle changes remain explicit. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
 
 ### Design Actions setup
 

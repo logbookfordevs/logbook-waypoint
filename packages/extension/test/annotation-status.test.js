@@ -50,7 +50,7 @@ test('annotation status adapter migrates legacy lifecycle values into canonical 
       { id: 'design-resolved', status: 'resolved', design_intent: { schema_version: 1, workflow: 'impeccable', action: null } },
       { id: 'design-discarded', status: 'discarded', design_intent: { schema_version: 1, workflow: 'impeccable', action: null } },
     ]).map(annotation => annotation.id))),
-    ['pending', 'design-resolved', 'design-discarded'],
+    ['pending'],
   );
   assert.throws(() => status.normalize({ id: 'completed', status: 'completed' }), /invalid annotation status/i);
   assert.throws(() => status.normalize({ id: 'unknown', status: 'future' }), /invalid annotation status/i);

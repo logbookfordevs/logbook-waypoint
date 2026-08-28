@@ -188,7 +188,7 @@ console.log('[Waypoint] content.js loaded');
         localSaveCount--;
         return;
       }
-      annotations = (allAnnotations || []).filter(a => a.url === window.location.href);
+      annotations = (allAnnotations || []).filter(a => WaypointAnnotationPage.matches(a.url, window.location.href));
       // Don't re-render if overlay is closed (styles should stay stripped)
       if (WaypointShadowHost.isVisible()) {
         WaypointEvents.emit('annotations:render', annotations);

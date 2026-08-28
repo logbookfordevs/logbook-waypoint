@@ -22,7 +22,7 @@ Choose the shortest route for what you need to understand or change.
 - [Product Identifiers](contracts/product-identifiers.md) — canonical repository, package, MCP, storage, and Annotation identifiers.
 - [Source Identity](contracts/source-identity.md) — bounded framework and source hints captured for a Target.
 - [Variants](contracts/variants.md) — candidate creation, activation, discard, cancellation, Finalization, and Scaffold cleanup.
-- [Watch Mode](contracts/watch-mode.md) — passive at-least-once delivery, cursors, reconnection, and Claim separation.
+- [Watch Mode](contracts/watch-mode.md) — side-effect-free at-least-once request delivery, cursors, reconnection, and Claim separation.
 
 ## Specifications
 
