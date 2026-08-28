@@ -78,6 +78,117 @@ test('offline sync status counts only locally proven unsynced annotations', asyn
   );
 });
 
+test('manual sync pulls resolved server lifecycle into the local Queue before reporting success', async () => {
+  const id = 'waypoint_1750000000000_resolved';
+  const store = {
+    waypointAnnotations: [{
+      id,
+      url: 'http://localhost:3000/account',
+      status: 'pending',
+      comment: 'Fix the warning state',
+      updated_at: '2026-08-28T11:20:00.000Z',
+      _synced: true,
+    }],
+    waypointDeletedAnnotationIds: [],
+    waypointDesignIntentRemovalIds: [],
+    waypointVariantIntentRemovalIds: [],
+  };
+  const serverAnnotation = {
+    ...store.waypointAnnotations[0],
+    status: 'resolved',
+    updated_at: '2026-08-28T11:41:00.000Z',
+  };
+  delete serverAnnotation._synced;
+
+  const context = vm.createContext({
+    URL,
+    console,
+    importScripts: () => {},
+    fetch: async () => ({
+      ok: true,
+      json: async () => ({ annotations: [serverAnnotation] }),
+    }),
+    chrome: {
+      storage: { local: {
+        get: async keys => Object.fromEntries(keys.map(key => [key, store[key]])),
+        set: async values => Object.assign(store, values),
+      } },
+    },
+    WaypointAnnotationCollection: { canonicalize: annotations => annotations || [] },
+    WaypointAnnotationId: { isValid: candidate => candidate.startsWith('waypoint_') },
+    WaypointAnnotationStatus: { normalize: annotation => annotation },
+    WaypointDesignIntent: {
+      preserve: (_source, target) => target,
+      removeIds: (ids, removed) => ids.filter(candidate => !removed.includes(candidate)),
+    },
+    WaypointVariantIntent: {
+      preserve: (_source, target) => target,
+      removeIds: (ids, removed) => ids.filter(candidate => !removed.includes(candidate)),
+    },
+    globalThis: null,
+  });
+  context.globalThis = context;
+  vm.runInContext(await readFile(queueSyncUrl, 'utf8'), context, { filename: 'queue-sync.js' });
+  const backgroundSource = await readFile(backgroundUrl, 'utf8');
+  vm.runInContext(
+    backgroundSource.slice(0, backgroundSource.indexOf('// Initialize the background service worker')),
+    context,
+    { filename: 'background.js' },
+  );
+  const background = vm.runInContext('Object.create(WaypointAnnotationsBackground.prototype)', context);
+  background.apiServerUrl = 'http://127.0.0.1:3846';
+  background._syncCyclePromise = null;
+  background._withStorageLock = operation => operation();
+  background.assertSyncOrigin = async origin => origin;
+  background.checkAPIConnectionStatus = async () => ({ connected: true });
+  background.updateAllBadges = async () => {};
+  background.getSyncStatus = async () => ({
+    connected: true,
+    pending_count: store.waypointAnnotations.filter(annotation => annotation.status === 'pending').length,
+  });
+
+  const status = await background.syncNow('http://localhost:3000');
+
+  assert.equal(store.waypointAnnotations[0].status, 'resolved');
+  assert.equal(store.waypointAnnotations[0]._synced, true);
+  assert.equal(status.pending_count, 0);
+});
+
+test('connected server health checks automatically reconcile MCP lifecycle changes', async () => {
+  let messageListener;
+  let reconciliationCount = 0;
+  const context = vm.createContext({
+    URL,
+    console,
+    importScripts: () => {},
+    chrome: {
+      runtime: {
+        onMessage: {
+          addListener: listener => { messageListener = listener; },
+        },
+      },
+    },
+  });
+  const backgroundSource = await readFile(backgroundUrl, 'utf8');
+  vm.runInContext(
+    backgroundSource.slice(0, backgroundSource.indexOf('// Initialize the background service worker')),
+    context,
+    { filename: 'background.js' },
+  );
+  const background = vm.runInContext('Object.create(WaypointAnnotationsBackground.prototype)', context);
+  background.checkAPIConnectionStatus = async () => ({ connected: true });
+  background.syncAutomatically = async () => { reconciliationCount += 1; };
+  background.setupMessageListener();
+
+  const response = await new Promise(resolve => {
+    messageListener({ action: 'checkMCPStatus' }, {}, resolve);
+  });
+
+  assert.equal(response.success, true);
+  assert.equal(response.status.connected, true);
+  assert.equal(reconciliationCount, 1);
+});
+
 test('site access policy executes every sender URL and permission branch', async () => {
   const context = vm.createContext({ URL });
   vm.runInContext(await readFile(siteAccessUrl, 'utf8'), context);

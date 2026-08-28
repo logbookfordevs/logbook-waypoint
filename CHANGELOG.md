@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Prevented deleted annotations from returning during synchronization
+- Made the connected extension automatically pull server lifecycle changes, while manual recovery reconciles them before reporting the Queue as up to date
+- Removed resolved and discarded pins from the active page canvas while retaining their Queue history
 - Preserved annotation lifecycle, Variant, screenshot, and attachment data across sync and restart boundaries
 - Kept unresolved Variant Sets protected from ordinary mutation or deletion
 - Restored target selection and badge placement across shadow DOM, repeated elements, and rerendered pages
