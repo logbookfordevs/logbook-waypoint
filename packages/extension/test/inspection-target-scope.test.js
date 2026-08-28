@@ -69,7 +69,7 @@ async function createHarness() {
     window.document.querySelector(`#${id}`).getBoundingClientRect = () => rect;
   }
 
-  return { documentListeners, emitted, inspectButton, root, window };
+  return { documentListeners, emitted, handlers, inspectButton, root, window };
 }
 
 function dispatch(window, target, type, properties = {}) {
@@ -137,6 +137,19 @@ test('mouse controls resize the target without exposing DOM hierarchy', async ()
   larger.click();
   assert.equal(highlight.style.width, '90px');
   assert.equal(smaller.disabled, false);
+});
+
+test('the visibility preference hides mouse controls without disabling keyboard targeting', async () => {
+  const { handlers, root, window } = await createHarness();
+  const leaf = window.document.querySelector('#leaf');
+  const highlight = root.querySelector('.waypoint-highlight');
+
+  dispatch(window, leaf, 'mouseover');
+  handlers.get('inspection:scopeControlsVisibility')({ visible: false });
+  assert.equal(root.querySelector('.waypoint-scope-controls').style.display, 'none');
+
+  dispatch(window, window.document, 'keydown', { key: 'ArrowRight' });
+  assert.equal(highlight.style.width, '90px');
 });
 
 test('moving to another element resets the target scope to that exact element', async () => {

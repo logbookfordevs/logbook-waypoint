@@ -11,6 +11,7 @@ var WaypointInspectionMode = (() => {
   let scopeAnchor = null;
   let scopePath = [];
   let scopeIndex = 0;
+  let showScopeControls = true;
 
   // Bound handlers for removal
   let onMouseOver = null;
@@ -24,6 +25,10 @@ var WaypointInspectionMode = (() => {
   function init() {
     WaypointEvents.on('inspection:start', start);
     WaypointEvents.on('inspection:stop', stop);
+    WaypointEvents.on('inspection:scopeControlsVisibility', ({ visible }) => {
+      showScopeControls = visible !== false;
+      updateScopeControls();
+    });
   }
 
   function start() {
@@ -350,7 +355,7 @@ var WaypointInspectionMode = (() => {
 
   function updateScopeControls() {
     if (!scopeControlsEl) return;
-    scopeControlsEl.style.display = hoveredElement ? 'flex' : 'none';
+    scopeControlsEl.style.display = showScopeControls && hoveredElement ? 'flex' : 'none';
     const smaller = scopeControlsEl.querySelector('[data-scope="smaller"]');
     const larger = scopeControlsEl.querySelector('[data-scope="larger"]');
     smaller.disabled = !hoveredElement || scopeIndex === 0;
