@@ -121,6 +121,45 @@ var WAYPOINT_STYLES = `
   margin-top: 2px;
 }
 
+.waypoint-scope-controls {
+  position: fixed;
+  pointer-events: auto;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--waypoint-outline);
+  border-radius: var(--waypoint-radius-sm);
+  background: var(--waypoint-surface);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 10;
+}
+
+.waypoint-scope-controls button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--waypoint-outline);
+  border-radius: 6px;
+  background: var(--waypoint-surface-1);
+  color: var(--waypoint-text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.waypoint-scope-controls button:hover:not(:disabled) {
+  border-color: var(--waypoint-highlight);
+}
+
+.waypoint-scope-controls button:focus-visible {
+  outline: 2px solid var(--waypoint-highlight);
+  outline-offset: 2px;
+}
+
+.waypoint-scope-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* ===== Badges (numbered pins) ===== */
 .waypoint-badge {
   position: fixed;
