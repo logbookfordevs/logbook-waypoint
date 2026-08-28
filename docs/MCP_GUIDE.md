@@ -29,7 +29,9 @@ read_annotations
                          resolve_annotation  release_annotation
 ```
 
-Reading, inspection, project context, export, and Watch are passive. They do not create or refresh a Claim. An agent claims only when it is ready to begin the bounded work.
+MCP annotations are user requests. An agent continues from Survey into the implementation workflow above unless the user explicitly requests a read-only or observation-only result, such as “just summarize” or “do not implement.” Saying “read my annotations” alone still requests the normal implementation workflow.
+
+The retrieval tools themselves remain side-effect-free: Reading, inspection, project context, export, and Watch do not create or refresh a Claim. The agent explicitly claims an Annotation only when it is ready to begin that bounded work.
 
 ## Start with a compact Survey
 
@@ -144,9 +146,9 @@ If the work cannot continue safely, release it instead of pretending it succeede
 
 The supported Work Notice codes are `workflow_unavailable` and `execution_failed`. Release returns the Annotation to Pending and retains only the latest safe notice.
 
-## Watch without taking ownership
+## Watch for incoming requests
 
-`watch_annotations` waits for new or changed Queue activity without creating a Claim:
+`watch_annotations` waits for new or changed requests without creating a Claim by itself:
 
 ```json
 {
@@ -163,7 +165,7 @@ Reuse only the cursor from the last successful response:
 }
 ```
 
-A timeout is a successful empty response. Delivery is at least once, so consumers deduplicate changes using the Annotation ID and revision returned by Watch.
+A timeout is a successful empty response. Delivery is at least once, so consumers deduplicate changes using the Annotation ID and revision returned by Watch. During an active MCP workflow, the agent normally claims and handles new Pending requests. It remains observation-only only when the user explicitly says not to implement them.
 
 ## Understand the response boundary
 
