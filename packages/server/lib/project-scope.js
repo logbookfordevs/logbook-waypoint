@@ -51,6 +51,7 @@ export function createProjectScope(value) {
     pathname: url.pathname,
     search: url.search,
     hash: url.hash,
+    viewState: Boolean(url.search || url.hash),
     wildcard: hasWildcard,
     projectRoot: !hasWildcard && url.pathname === '/' && !url.search && !url.hash,
   };
@@ -76,7 +77,7 @@ export function matchesProjectScope(annotationUrl, scope) {
     return url.pathname === scopeRoot || url.pathname.startsWith(normalizedScope.pathname);
   }
 
-  return url.pathname === normalizedScope.pathname
-    && url.search === normalizedScope.search
-    && url.hash === normalizedScope.hash;
+  if (url.pathname !== normalizedScope.pathname) return false;
+  if (!normalizedScope.viewState) return true;
+  return url.search === normalizedScope.search && url.hash === normalizedScope.hash;
 }
