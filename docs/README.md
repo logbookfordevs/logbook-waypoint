@@ -27,6 +27,7 @@ Choose the shortest route for what you need to understand or change.
 ## Specifications
 
 - [Design Actions specification](specs/design-actions.md) — accepted product behavior, decisions, edge cases, and test seams behind the user guide.
+- [Multi-Target Annotations specification](specs/multi-target-annotations.md) — ordered Target Sets, shared feedback, selection behavior, and portable contract boundaries.
 
 ## Architectural decisions
 
@@ -36,6 +37,7 @@ Choose the shortest route for what you need to understand or change.
 - [ADR 0004](adr/0004-start-without-vibe-data-migration.md) — start without predecessor data migration.
 - [ADR 0005](adr/0005-keep-waypoint-as-design-workflow-authority.md) — keep Waypoint as design-workflow authority.
 - [ADR 0006](adr/0006-separate-variant-intent-from-generated-sets.md) — separate authored Variant Intent from generated Variant Sets.
+- [ADR 0007](adr/0007-one-annotation-owns-a-target-set.md) — keep shared feedback and lifecycle in one Annotation owning its Target Set.
 
 ## Release notes
 

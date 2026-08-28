@@ -8,6 +8,9 @@ import { assertAnnotationLifecycleState } from './annotation-lifecycle.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
 import { assertResolutionRecordSummary } from './resolution-record.js';
 import { assertAnnotationVariantIntent } from './variant-intent.js';
+import { annotationHasScreenshot, targetHasScreenshot } from './annotation-media.js';
+import { normalizeAnnotationTargets } from './annotation-targets.js';
+import { summarizeAnnotation } from './annotation-summary.js';
 
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
@@ -22,6 +25,7 @@ function comparableAnnotation(annotation) {
 }
 
 function portableAnnotation(annotation, hasScreenshot) {
+  annotation = normalizeAnnotationTargets(annotation);
   const {
     screenshot,
     has_screenshot,
@@ -39,6 +43,23 @@ function portableAnnotation(annotation, hasScreenshot) {
     resolution_record,
     ...portableFields
   } = annotation;
+  const targets = annotation.targets.map((target) => {
+    const {
+      screenshot: targetScreenshot,
+      source_file_path: targetSourceFilePath,
+      source_line_range: targetSourceLineRange,
+      source_map_available: targetSourceMapAvailable,
+      context_hints: targetContextHints,
+      component_name: targetComponentName,
+      source_identity: targetSourceIdentity,
+      source_mapping: targetSourceMapping,
+      ...portableTarget
+    } = target;
+    return {
+      ...portableTarget,
+      has_screenshot: targetHasScreenshot({ ...target, screenshot: targetScreenshot }),
+    };
+  });
   const portableVariantRequest = variant_request && {
     status: variant_request.status,
     active_variant_key: variant_request.active_variant_key,
@@ -46,6 +67,7 @@ function portableAnnotation(annotation, hasScreenshot) {
   };
   return {
     ...portableFields,
+    targets,
     ...(!variant_request && pending_changes !== undefined ? { pending_changes } : {}),
     ...(!variant_request && css !== undefined ? { css } : {}),
     ...(portableVariantRequest ? { variant_request: portableVariantRequest } : {}),
@@ -55,11 +77,8 @@ function portableAnnotation(annotation, hasScreenshot) {
 }
 
 export function toWatchAnnotation(annotation) {
-  return portableAnnotation(annotation, Boolean(
-    annotation.has_screenshot
-    || annotation.screenshot?.data_url
-    || annotation.screenshot?.attachment_id,
-  ));
+  const targets = normalizeAnnotationTargets(annotation).targets;
+  return portableAnnotation(annotation, annotationHasScreenshot(annotation, targets));
 }
 
 export function toReadAnnotation(annotation) {
@@ -77,11 +96,7 @@ export function toReadAnnotation(annotation) {
 }
 
 function normalizeJournalAnnotation(annotation) {
-  return portableAnnotation(annotation, Boolean(
-    annotation.has_screenshot
-    || annotation.screenshot?.data_url
-    || annotation.screenshot?.attachment_id,
-  ));
+  return summarizeAnnotation(annotation);
 }
 
 function validateSavedQueue(saved) {
@@ -146,8 +161,8 @@ export class WatchQueue {
   recordChanges(previousAnnotations, nextAnnotations) {
     const previousById = new Map(
       previousAnnotations.map(annotation => {
-        const portableAnnotation = toWatchAnnotation(annotation);
-        return [portableAnnotation.id, portableAnnotation];
+        const summary = summarizeAnnotation(annotation);
+        return [summary.id, summary];
       }),
     );
     return this.recordChangesFrom(previousById, nextAnnotations);
@@ -160,7 +175,7 @@ export class WatchQueue {
       if (!isValidAnnotationId(rawAnnotation?.id)) {
         throw new TypeError('Invalid Waypoint annotation ID');
       }
-      const annotation = toWatchAnnotation(rawAnnotation);
+      const annotation = summarizeAnnotation(rawAnnotation);
       const previous = previousById.get(annotation.id);
       if (!previous || comparableAnnotation(previous) !== comparableAnnotation(annotation)) {
         const sequence = ++this.sequence;
@@ -185,8 +200,8 @@ export class WatchQueue {
     const changes = this.recordChangesFrom(this.latestById, nextAnnotations);
     this.latestById = new Map(
       nextAnnotations.map(annotation => {
-        const portable = toWatchAnnotation(annotation);
-        return [portable.id, portable];
+        const summary = summarizeAnnotation(annotation);
+        return [summary.id, summary];
       }),
     );
     return changes;

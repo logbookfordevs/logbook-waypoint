@@ -53,6 +53,28 @@ Waypoint places a numbered pin beside the Target and adds the request to the Que
 
 A comment is not required when the Annotation already contains a meaningful element edit or image attachment. A text-only edit receives the label **Text content edit** so its pin and Queue row remain understandable.
 
+### Annotate several related Targets together
+
+When the same feedback applies to several places on one page, create one shared
+Annotation instead of repeating the message:
+
+1. While annotation mode is active, hold **Shift** and select the first Target.
+2. Release **Shift**, then select or deselect other Targets on the page.
+3. After selecting between two and eight Targets, choose **Annotate** in the
+   selection tray.
+4. Write the shared brief and save the Annotation.
+
+Temporary pins show the Target order before saving. The finished Annotation
+keeps that order, appears once in the Queue, and uses one shared comment, Design
+Intent, attachment collection, claim, and lifecycle. Opening it later outlines
+the available Targets and lets you preview them without changing the shared
+message.
+
+All Targets must belong to the same exact page URL. Multi-Target Annotations are
+feedback-only in this version, so element text, style, and CSS edits remain
+available only when annotating one Target. Use **Edit selection** before saving
+if you need to change the Target Set without losing the current draft.
+
 ### Screenshots and attachments
 
 Automatic screenshots capture visual context for the selected Target when **Screenshots** is enabled in settings. Uploaded image attachments remain separate reference evidence.

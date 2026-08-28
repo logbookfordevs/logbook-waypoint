@@ -215,8 +215,13 @@ var WaypointInspectionMode = (() => {
     if (!pointerTarget || pointerTarget === document.body || pointerTarget === document.documentElement) return;
     const target = scopeAnchor === pointerTarget && hoveredElement ? hoveredElement : pointerTarget;
 
-    tempDisable();
-    WaypointEvents.emit('inspection:elementClicked', { element: target, clientX: e.clientX, clientY: e.clientY });
+    if (!WaypointMultiTargetSelection.shouldHandle(e.shiftKey)) tempDisable();
+    WaypointEvents.emit('inspection:elementClicked', {
+      element: target,
+      clientX: e.clientX,
+      clientY: e.clientY,
+      shiftKey: e.shiftKey,
+    });
   }
 
   // Safety nets — swallow mousedown/click so frameworks never see the interaction

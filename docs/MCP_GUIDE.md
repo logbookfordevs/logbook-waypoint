@@ -88,9 +88,14 @@ Retrieve a screenshot when exact visual hierarchy, positioning, color, or surrou
 
 ```json
 {
-  "id": "waypoint_1750000000000_abc123xyz"
+  "id": "waypoint_1750000000000_abc123xyz",
+  "target_index": 1
 }
 ```
+
+`target_index` is zero-based and defaults to the first Target. For a Target Set,
+request each screenshot that earns its context cost rather than retrieving every
+Target image automatically.
 
 Retrieve an uploaded attachment separately. Metadata is the default; content requires explicit consent in the call:
 
@@ -165,6 +170,10 @@ Reuse only the cursor from the last successful response:
 }
 ```
 
+A Watch change contains the same compact, actionable Survey context as a scoped
+`read_annotations` result, plus its revision and deduplication key. Escalate to
+`inspect_annotations` only when that context leaves a diagnostic question.
+
 A timeout is a successful empty response. Delivery is at least once, so consumers deduplicate changes using the Annotation ID and revision returned by Watch. During an active MCP workflow, the agent normally claims and handles new Pending requests. It remains observation-only only when the user explicitly says not to implement them.
 
 ## Understand the response boundary
@@ -214,7 +223,7 @@ Resolve and discard retain history. Delete is a separate destructive operation. 
 
 | Tool | Main inputs | Use it for | Changes state? |
 | --- | --- | --- | --- |
-| `get_annotation_screenshot` | `id` | Retrieve the captured Target screenshot when visual evidence is needed. | No |
+| `get_annotation_screenshot` | `id`, `target_index?` | Retrieve one captured Target screenshot when visual evidence is needed. | No |
 | `get_annotation_attachment` | `id`, `attachment_id`, `include_content?` | Retrieve attachment metadata or explicitly request its content. | No |
 | `export_annotations` | `format?`, `status?`, `url?` | Export scoped Queue records as JSON or Markdown without media bytes. | No |
 | `delete_project_annotations` | `url_pattern`, `confirm?` | Preview, then permanently delete all Annotations in one project scope. | **Yes, irreversible when confirmed** |

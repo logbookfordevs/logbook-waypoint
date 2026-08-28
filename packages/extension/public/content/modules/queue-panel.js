@@ -25,13 +25,16 @@ var WaypointQueuePanel = (() => {
   }
 
   function formatTargetSummary(annotation) {
-    if (annotation.component_name) return annotation.component_name;
-    const context = annotation.element_context || {};
+    const targets = WaypointAnnotationTargets.get(annotation);
+    if (targets.length > 1) return `${targets.length} Targets`;
+    const target = targets[0];
+    if (target.component_name) return target.component_name;
+    const context = target.element_context || {};
     const tag = context.tag ? `<${context.tag}>` : '';
     const text = typeof context.text === 'string' ? context.text.trim().replace(/\s+/g, ' ') : '';
     const boundedText = text.length > 34 ? `${text.slice(0, 31)}…` : text;
     const captured = [tag, boundedText ? `“${boundedText}”` : ''].filter(Boolean).join(' ');
-    return captured || annotation.selector || annotation.element || 'Target';
+    return captured || target.selector || 'Target';
   }
 
   function annotationTitle(annotation) {
@@ -84,7 +87,8 @@ var WaypointQueuePanel = (() => {
       key: 'screenshot',
       legend: 'Screenshot',
       path: '<path d="M14.5 4 16 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l1.5-3h5Z"/><circle cx="12" cy="13" r="3"/>',
-      describe: annotation => annotation.screenshot || annotation.has_screenshot ? 'Automatic screenshot' : null,
+      describe: annotation => WaypointAnnotationTargets.get(annotation).some(target => target.screenshot || target.has_screenshot)
+        || annotation.has_screenshot ? 'Automatic screenshot' : null,
     },
   ];
 

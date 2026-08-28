@@ -1,3 +1,4 @@
+import { hasSameAnnotationTargetSet } from './annotation-targets.js';
 import { requestedVariantCount } from './variant-intent.js';
 
 const VARIANT_KEY = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
@@ -239,6 +240,9 @@ export function assertGenericAnnotationUpdateAllowed(current, updates) {
     fail('Variant presentation can only be changed through the Variant module');
   }
   const merged = { ...current, ...updates };
+  if ((current?.targets?.length > 1 || merged?.targets?.length > 1) && !hasSameAnnotationTargetSet(current, merged)) {
+    fail('Saved Target Set membership is immutable');
+  }
   if (merged.status === 'resolved') assertAnnotationResolvable(merged);
 }
 
@@ -257,6 +261,9 @@ export function assertSyncedAnnotationAllowed(current, incoming) {
   }
   if (JSON.stringify(incoming.work_notice ?? null) !== JSON.stringify(current.work_notice ?? null)) {
     fail('Synchronization cannot change Work Notice');
+  }
+  if ((current.targets?.length > 1 || incoming.targets?.length > 1) && !hasSameAnnotationTargetSet(current, incoming)) {
+    fail('Synchronization cannot change saved Target Set membership');
   }
   if (
     (current.status !== 'pending' || current.variant_request?.status === 'unresolved')

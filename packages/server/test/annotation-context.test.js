@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
@@ -150,6 +153,42 @@ test('inspect_annotations diagnoses selected IDs with complete captured context'
   assert.doesNotMatch(JSON.stringify(payload), /Unrelated work/);
 });
 
+test('inspect_annotations preserves complete ordered Target Sets', async () => {
+  const server = new LocalAnnotationsServer();
+  const id = 'waypoint_1750000000000_multitarget';
+  server.loadAnnotations = async () => [{
+    id,
+    url: 'http://localhost:3000/workflow',
+    comment: 'Align these related Targets',
+    status: 'pending',
+    targets: [{
+      selector: '#workflow-title',
+      element_context: { tag: 'h2', text: 'Workflow', styles: { lineHeight: '40px' } },
+      parent_chain: [{ tag: 'header' }],
+      component_name: 'WorkflowTitle',
+      screenshot: { data_url: 'data:image/png;base64,AAAA' },
+    }, {
+      selector: '.browser-surface',
+      element_context: { tag: 'div', text: 'localhost:3000/dashboard' },
+      parent_chain: [{ tag: 'main' }],
+      component_name: 'BrowserSurface',
+    }],
+  }];
+
+  const result = await server.inspectAnnotations({ ids: [id] });
+  const [annotation] = result.annotations;
+
+  assert.deepEqual(annotation.targets.map(target => target.selector), [
+    '#workflow-title',
+    '.browser-surface',
+  ]);
+  assert.equal(annotation.targets[0].element_context.styles.lineHeight, '40px');
+  assert.equal(annotation.targets[0].component_name, 'WorkflowTitle');
+  assert.equal(annotation.targets[1].component_name, 'BrowserSurface');
+  assert.equal(annotation.has_screenshot, true);
+  assert.doesNotMatch(JSON.stringify(annotation), /data:image/);
+});
+
 test('compact surveys omit known framework component noise deterministically', async () => {
   const server = new LocalAnnotationsServer();
   server.loadAnnotations = async () => [{
@@ -204,4 +243,58 @@ test('compact surveys preserve stored multi-Target annotations in canonical orde
     selector: '.browser-surface',
     component_name: 'BrowserSurface',
   }]);
+});
+
+test('Watch delivers Survey-grade multi-Target context with event metadata', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-survey-'));
+  const server = new LocalAnnotationsServer({
+    watchHistoryFile: path.join(directory, 'watch-history.json'),
+  });
+  server.loadAnnotations = async () => [{
+    id: 'waypoint_1750000000000_multitarget',
+    url: 'http://localhost:3000/workflow',
+    comment: 'Align these related Targets',
+    status: 'pending',
+    targets: [{
+      selector: '#workflow-title',
+      element_context: {
+        tag: 'h2',
+        text: 'Workflow',
+        styles: { display: 'flex', lineHeight: '40px' },
+        position: { x: 40, y: 80, width: 420.4, height: 40.2 },
+      },
+      parent_chain: [{ tag: 'header', classes: ['workflow-heading', 'stack'] }],
+      component_name: 'WorkflowTitle',
+      source_file_path: 'src/WorkflowTitle.tsx',
+      context_hints: ['React component: WorkflowTitle'],
+      badge_offset: { x: 8, y: -4 },
+    }, {
+      selector: '.browser-surface',
+      element_context: { tag: 'div', text: 'localhost:3000/dashboard' },
+      component_name: 'BrowserSurface',
+    }],
+    design_intent: { schema_version: 1, workflow: 'impeccable', action: 'Polish' },
+  }];
+
+  try {
+    const result = await server.watchAnnotations({ timeout_ms: 0 });
+    const [change] = result.changes;
+
+    assert.equal(change.annotation.target_count, 2);
+    assert.deepEqual(change.annotation.targets.map(target => target.selector), [
+      '#workflow-title',
+      '.browser-surface',
+    ]);
+    assert.equal(change.annotation.targets[0].source_identity.component_name, 'WorkflowTitle');
+    assert.deepEqual(change.annotation.design_intent, {
+      schema_version: 1,
+      workflow: 'impeccable',
+      action: 'Polish',
+    });
+    assert.equal(typeof change.revision, 'string');
+    assert.equal(change.dedupe_key, `${change.annotation.id}:${change.revision}`);
+    assert.doesNotMatch(JSON.stringify(change.annotation), /lineHeight|context_hints|badge_offset/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

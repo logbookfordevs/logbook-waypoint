@@ -21,6 +21,7 @@ import {
 } from './security.js';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertValidAnnotation } from './annotation-validation.js';
+import { normalizeAnnotationTargets } from './annotation-targets.js';
 import {
   applyDesignIntentUpdate,
   assertAnnotationDesignIntent,
@@ -41,7 +42,8 @@ import {
 } from './annotation-lifecycle.js';
 import { ALLOWED_IMAGE_MIME_TYPES, AttachmentStore } from './attachment-store.js';
 import { encodeAnnotationsExport } from './export-codec.js';
-import { inspectAnnotation, summarizeAnnotation } from './annotation-summary.js';
+import { inspectAnnotation } from './annotation-inspection.js';
+import { summarizeAnnotation } from './annotation-summary.js';
 import { createProjectScope, matchesProjectScope } from './project-scope.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
 import { PersistentWatchQueue, toReadAnnotation, toWatchAnnotation } from './watch-queue.js';
@@ -642,7 +644,7 @@ export class LocalAnnotationsServer {
         tools: [
           {
             name: 'watch_annotations',
-            description: 'Monitor the annotation Queue for new or changed requests. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Watch is side-effect-free and returns an opaque continuation cursor. Resume with only the last successful cursor. Delivery is at least once: deduplicate changes by Annotation ID and revision.',
+            description: 'Monitor the annotation Queue for new or changed requests without changing lifecycle state or creating a Claim. Each change contains the same compact, actionable Survey context as read_annotations plus revision metadata. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Resume with only the opaque cursor from the last successful response. Delivery is at least once: deduplicate changes by Annotation ID and revision.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -893,7 +895,13 @@ export class LocalAnnotationsServer {
                 id: {
                   type: 'string',
                   description: 'Annotation ID to get screenshot for'
-                }
+                },
+                target_index: {
+                  type: 'integer',
+                  minimum: 0,
+                  maximum: 7,
+                  description: 'Zero-based Target index; defaults to the first Target'
+                },
               },
               required: ['id'],
               additionalProperties: false
@@ -1113,7 +1121,9 @@ export class LocalAnnotationsServer {
         return [];
       }
       if (!Array.isArray(annotations)) return [];
-      const validAnnotations = annotations.filter(annotation => isValidAnnotationId(annotation?.id));
+      const validAnnotations = annotations
+        .filter(annotation => isValidAnnotationId(annotation?.id))
+        .map(normalizeAnnotationTargets);
       validAnnotations.forEach(assertAnnotationLifecycleState);
       validAnnotations.forEach(assertAnnotationDesignIntent);
       validAnnotations.forEach(assertAnnotationResolutionRecord);
@@ -1133,6 +1143,7 @@ export class LocalAnnotationsServer {
     if (!Array.isArray(annotations) || annotations.some(annotation => !isValidAnnotationId(annotation?.id))) {
       throw new TypeError('Invalid Waypoint annotation ID');
     }
+    annotations = annotations.map(normalizeAnnotationTargets);
     annotations.forEach(assertAnnotationLifecycleState);
     annotations.forEach(assertAnnotationDesignIntent);
     annotations.forEach(assertAnnotationResolutionRecord);
@@ -1261,7 +1272,7 @@ export class LocalAnnotationsServer {
     );
     return {
       changes: result.changes.map(change => ({
-        annotation: change.annotation,
+        annotation: summarizeAnnotation(change.annotation),
         revision: change.revision,
         dedupe_key: `${change.annotation.id}:${change.revision}`,
       })),
@@ -1307,6 +1318,7 @@ export class LocalAnnotationsServer {
       throw new TypeError('Annotation must be an object');
     }
     if (!isValidAnnotationId(annotation.id)) throw new Error('Invalid annotation ID');
+    annotation = normalizeAnnotationTargets(annotation);
 
     const createdAttachments = stagedAttachments ?? [];
     const ownsStagedAttachments = stagedAttachments === undefined;
@@ -1370,38 +1382,40 @@ export class LocalAnnotationsServer {
         }
       }
 
-      if (annotation.screenshot?.data_url) {
-        const { data_url: dataUrl, attachment_id: ignoredAttachmentId, ...screenshot } = annotation.screenshot;
-        const mimeType = /^data:(image\/(?:png|jpeg|webp|gif));base64,/.exec(dataUrl)?.[1];
-        if (!mimeType) throw new TypeError('Screenshot must be a supported image data URL');
-        const saved = await saveAttachment({
-          annotationId: annotation.id,
-          kind: 'screenshot',
-          mimeType,
-          content: dataUrl,
-          name: 'screenshot',
-        });
-        normalized.screenshot = {
-          ...screenshot,
-          attachment_id: saved.id,
-          mime_type: saved.mime_type,
-          size_bytes: saved.byte_size,
-        };
-        normalized.has_screenshot = true;
-      } else if (annotation.screenshot?.attachment_id) {
-        const stored = await this.attachmentStore.get({
-          annotationId: annotation.id,
-          attachmentId: annotation.screenshot.attachment_id,
-        });
-        if (!stored || stored.kind !== 'screenshot') {
-          throw new TypeError('Screenshot reference does not exist for this Annotation');
+      normalized.targets = [];
+      for (const [targetIndex, target] of annotation.targets.entries()) {
+        const normalizedTarget = { ...target };
+        if (target.screenshot?.data_url) {
+          const { data_url: dataUrl, attachment_id: ignoredAttachmentId, ...screenshot } = target.screenshot;
+          const mimeType = /^data:(image\/(?:png|jpeg|webp|gif));base64,/.exec(dataUrl)?.[1];
+          if (!mimeType) throw new TypeError('Screenshot must be a supported image data URL');
+          const saved = await saveAttachment({
+            annotationId: annotation.id,
+            kind: 'screenshot',
+            mimeType,
+            content: dataUrl,
+            name: `screenshot-${targetIndex + 1}`,
+          });
+          normalizedTarget.screenshot = {
+            ...screenshot,
+            attachment_id: saved.id,
+            mime_type: saved.mime_type,
+            size_bytes: saved.byte_size,
+          };
+          normalized.has_screenshot = true;
+        } else if (target.screenshot?.attachment_id) {
+          const stored = await this.attachmentStore.get({
+            annotationId: annotation.id,
+            attachmentId: target.screenshot.attachment_id,
+          });
+          if (!stored || stored.kind !== 'screenshot') {
+            throw new TypeError('Screenshot reference does not exist for this Annotation');
+          }
+          if (stored.mime_type !== target.screenshot.mime_type || stored.byte_size !== target.screenshot.size_bytes) {
+            throw new TypeError('Screenshot reference metadata does not match stored media');
+          }
         }
-        if (
-          stored.mime_type !== annotation.screenshot.mime_type
-          || stored.byte_size !== annotation.screenshot.size_bytes
-        ) {
-          throw new TypeError('Screenshot reference metadata does not match stored media');
-        }
+        normalized.targets.push(normalizedTarget);
       }
 
       return normalized;
@@ -1413,8 +1427,10 @@ export class LocalAnnotationsServer {
 
   attachmentReferences(annotation) {
     const references = [];
-    if (annotation?.screenshot?.attachment_id) {
-      references.push({ annotationId: annotation.id, attachmentId: annotation.screenshot.attachment_id });
+    for (const target of annotation ? normalizeAnnotationTargets(annotation).targets : []) {
+      if (target.screenshot?.attachment_id) {
+        references.push({ annotationId: annotation.id, attachmentId: target.screenshot.attachment_id });
+      }
     }
     for (const attachment of annotation?.attachments ?? []) {
       if (attachment?.id) references.push({ annotationId: annotation.id, attachmentId: attachment.id });
@@ -1649,6 +1665,7 @@ export class LocalAnnotationsServer {
    */
   async getAnnotationScreenshot(args) {
     const id = args?.id;
+    const targetIndex = args?.target_index ?? 0;
 
     // Validate input
     if (!isValidAnnotationId(id)) {
@@ -1670,8 +1687,8 @@ export class LocalAnnotationsServer {
         };
       }
 
-      // Check if annotation has screenshot data
-      if (!annotation.screenshot) {
+      const target = normalizeAnnotationTargets(annotation).targets[targetIndex];
+      if (!target?.screenshot) {
         return {
           annotation_id: id,
           screenshot: null,
@@ -1679,11 +1696,11 @@ export class LocalAnnotationsServer {
         };
       }
 
-      let dataUrl = annotation.screenshot.data_url;
-      if (!dataUrl && annotation.screenshot.attachment_id) {
+      let dataUrl = target.screenshot.data_url;
+      if (!dataUrl && target.screenshot.attachment_id) {
         const attachment = await this.attachmentStore.get({
           annotationId: id,
-          attachmentId: annotation.screenshot.attachment_id,
+          attachmentId: target.screenshot.attachment_id,
           includeContent: true,
         });
         if (attachment) dataUrl = `data:${attachment.mime_type};base64,${attachment.content}`;
@@ -1699,13 +1716,14 @@ export class LocalAnnotationsServer {
       // Return screenshot data in the contract format
       return {
         annotation_id: id,
+        target_index: targetIndex,
         screenshot: {
           data_url: dataUrl,
-          compression: annotation.screenshot.compression,
-          crop_area: annotation.screenshot.crop_area,
-          element_bounds: annotation.screenshot.element_bounds,
-          timestamp: annotation.screenshot.timestamp,
-          viewport: annotation.viewport || null
+          compression: target.screenshot.compression,
+          crop_area: target.screenshot.crop_area,
+          element_bounds: target.screenshot.element_bounds,
+          timestamp: target.screenshot.timestamp,
+          viewport: target.viewport || null
         },
         message: 'Screenshot retrieved successfully'
       };

@@ -5,7 +5,7 @@
 
 var WaypointAnnotationPopover = (() => {
   let currentPopover = null;
-  let currentTargetHighlight = null;
+  let currentTargetHighlights = [];
   let highlightRafId = null;
   let escHandler = null;
   let activeElement = null;
@@ -200,6 +200,7 @@ var WaypointAnnotationPopover = (() => {
   function init() {
     WaypointEvents.on('inspection:elementClicked', onElementClicked);
     WaypointEvents.on('annotation:edit', onEditRequested);
+    WaypointEvents.on('multi-target:compose', onMultiTargetCompose);
   }
 
   function getTabsForType(elType) {
@@ -275,12 +276,18 @@ var WaypointAnnotationPopover = (() => {
     return str.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
   }
 
-  async function onElementClicked({ element, clientX, clientY }) {
+  async function onElementClicked({ element, clientX, clientY, shiftKey = false }) {
+    if (WaypointMultiTargetSelection.shouldHandle(shiftKey)) return;
     const context = await WaypointElementContext.generate(element);
     return show(element, context, null, clientX, clientY);
   }
 
-  async function onEditRequested({ annotation, element }) {
+  function onMultiTargetCompose({ selections, draft }) {
+    const first = selections[0];
+    return show(first.element, first.context, null, first.clientX, first.clientY, { selections, draft });
+  }
+
+  async function onEditRequested({ annotation, element, targetElements, targetIndex = 0 }) {
     WaypointInspectionMode.tempDisable();
     if (WaypointVariantPicker.handles(annotation)) {
       dismiss();
@@ -288,18 +295,25 @@ var WaypointAnnotationPopover = (() => {
       return;
     }
     const context = await WaypointElementContext.generate(element);
-    return show(element, context, annotation);
+    return show(element, context, annotation, null, null, { targetElements, targetIndex });
   }
 
   // --- Show popover ---
 
-  async function show(targetElement, context, existingAnnotation, clickX, clickY) {
+  async function show(targetElement, context, existingAnnotation, clickX, clickY, options = {}) {
     dismiss();
 
     const root = WaypointShadowHost.getRoot();
     if (!root) return;
 
     const isEdit = !!existingAnnotation;
+    const existingTargets = isEdit ? WaypointAnnotationTargets.get(existingAnnotation) : [];
+    const selections = options.selections || [];
+    const isMultiTarget = existingTargets.length > 1 || selections.length > 1;
+    const targetElements = selections.length
+      ? selections.map(selection => selection.element)
+      : options.targetElements || [targetElement];
+    let focusedTargetIndex = options.targetIndex || 0;
     const lifecycleLocked = isEdit && existingAnnotation.status !== 'pending';
     const presentationLocked = lifecycleLocked || WaypointVariantPicker.locksPresentation(existingAnnotation);
     const isHistorical = ['resolved', 'discarded'].includes(existingAnnotation?.status);
@@ -309,10 +323,7 @@ var WaypointAnnotationPopover = (() => {
     const showDesignActions = !!existingAnnotation?.design_intent || await WaypointAPI.getShowDesignActions();
 
     // Target highlight
-    currentTargetHighlight = document.createElement('div');
-    currentTargetHighlight.className = 'waypoint-target-highlight';
-    root.appendChild(currentTargetHighlight);
-    positionTargetHighlight(targetElement);
+    positionTargetHighlights(targetElements, focusedTargetIndex);
 
     // Anchor wrapper (full viewport, catches outside clicks)
     const anchor = document.createElement('div');
@@ -321,7 +332,7 @@ var WaypointAnnotationPopover = (() => {
 
     // Popover card
     const popover = document.createElement('div');
-    popover.className = 'waypoint-popover';
+    popover.className = `waypoint-popover${isMultiTarget ? ' waypoint-popover-multi-target' : ''}`;
 
     // Warning bar (file protocol only — server status is shown in toolbar/settings)
     let warningHTML = '';
@@ -414,10 +425,29 @@ var WaypointAnnotationPopover = (() => {
     ).join('');
 
     // Build short selector label for title
-    const selectorLabel = context.classes.length
+    const selectorLabel = isMultiTarget
+      ? `${existingTargets.length || selections.length} Targets`
+      : context.classes.length
       ? `${context.tag}.${context.classes[0]}`
       : context.tag;
     const resolutionRecord = existingAnnotation?.resolution_record;
+    const targetCount = existingTargets.length || selections.length;
+    const targetNavigatorHTML = isMultiTarget ? `
+      <nav class="waypoint-target-navigator" aria-label="Preview Annotation Targets">
+        <div class="waypoint-target-navigator-copy">
+          <strong>Preview Targets</strong>
+          <span class="waypoint-shared-annotation-note">One annotation applies to all ${targetCount} Targets</span>
+        </div>
+        <div class="waypoint-target-navigator-controls">
+          <button class="waypoint-target-previous" type="button" aria-label="Preview previous available Target">${ICONS.chevron}</button>
+          <span class="waypoint-target-steps" aria-hidden="true">
+            ${Array.from({ length: targetCount }, (_, index) => `<span class="waypoint-target-step${index === focusedTargetIndex ? ' active' : ''}${targetElements[index]?.isConnected ? '' : ' unavailable'}">${String.fromCharCode(97 + index)}</span>`).join('')}
+          </span>
+          <span class="waypoint-target-position" aria-live="polite">Target ${String.fromCharCode(97 + focusedTargetIndex)} of ${targetCount}</span>
+          <button class="waypoint-target-next" type="button" aria-label="Preview next available Target">${ICONS.chevron}</button>
+        </div>
+      </nav>
+    ` : '';
     const resolutionHTML = resolutionRecord ? `
       <section class="waypoint-resolution-record" aria-label="Resolution history">
         <div class="waypoint-resolution-label">Resolution</div>
@@ -435,13 +465,14 @@ var WaypointAnnotationPopover = (() => {
         <span>${isHistorical ? `Viewing ${historicalStatus} annotation` : 'Editing'} <code>${escapeHTML(selectorLabel)}</code></span>
         <button class="waypoint-design-reset" type="button" title="${presentationLocked ? 'Finalized Variant presentation' : 'Reset all'}" ${presentationLocked ? 'disabled' : ''}>${ICONS.reset}</button>
       </div>
+      ${targetNavigatorHTML}
       ${warningHTML}
       ${workNoticeHTML}
       ${readOnlyNoticeHTML}
       <div class="waypoint-popover-body">
         ${resolutionHTML}
         <div class="waypoint-input-wrap">
-          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000" ${isHistorical ? 'readonly aria-describedby="waypoint-readonly-notice"' : ''}>${isEdit ? escapeHTML(existingAnnotation.comment) : ''}</textarea>
+          <textarea class="waypoint-textarea" placeholder="What should change?" maxlength="1000" ${isHistorical ? 'readonly aria-describedby="waypoint-readonly-notice"' : ''}>${escapeHTML(isEdit ? existingAnnotation.comment : options.draft?.comment || '')}</textarea>
           ${isHistorical ? '' : `<span class="waypoint-kbd-hint">${kbdHint} to save</span>`}
         </div>
         <section class="waypoint-element-edits" aria-labelledby="waypoint-element-edits-title">
@@ -505,7 +536,8 @@ var WaypointAnnotationPopover = (() => {
       <div class="waypoint-popover-footer">
         <div class="waypoint-footer-left">
           ${isEdit ? `<button class="waypoint-btn-icon waypoint-delete-btn" title="Delete">${ICONS.trash}</button>` : ''}
-          <span class="waypoint-viewport-info">${getDeviceIcon(window.innerWidth)} ${window.innerWidth}w</span>
+          ${isMultiTarget && !isEdit ? '<button class="waypoint-btn waypoint-btn-secondary waypoint-edit-selection-btn" type="button">Edit selection</button>' : ''}
+          ${isMultiTarget ? '' : `<span class="waypoint-viewport-info">${getDeviceIcon(window.innerWidth)} ${window.innerWidth}w</span>`}
         </div>
         <div class="waypoint-footer-right">
           <button class="waypoint-btn waypoint-btn-secondary waypoint-cancel-btn">${isHistorical ? 'Close' : 'Cancel'}</button>
@@ -519,6 +551,12 @@ var WaypointAnnotationPopover = (() => {
 
     // Position
     positionPopover(anchor, targetElement, clickX, clickY);
+    if (isMultiTarget && !isEdit) {
+      popover.style.top = 'auto';
+      popover.style.bottom = '84px';
+      popover.style.left = '50%';
+      popover.style.transform = 'translateX(-50%)';
+    }
 
     // Wire drag handle
     const dragHandle = popover.querySelector('.waypoint-drag-handle');
@@ -536,9 +574,10 @@ var WaypointAnnotationPopover = (() => {
     const variantIntentInput = popover.querySelector('.waypoint-variant-intent');
     const designIntentInput = popover.querySelector('.waypoint-design-intent');
     const workNoticeDismiss = popover.querySelector('.waypoint-work-notice-dismiss');
+    const targetPosition = popover.querySelector('.waypoint-target-position');
     let attachments = Array.isArray(existingAnnotation?.attachments)
       ? existingAnnotation.attachments.filter(isImageAttachmentMetadata)
-      : [];
+      : Array.isArray(options.draft?.attachments) ? options.draft.attachments.filter(isImageAttachmentMetadata) : [];
     const originalAttachments = JSON.stringify(attachments);
 
     // Track active element for revert-on-dismiss
@@ -546,6 +585,28 @@ var WaypointAnnotationPopover = (() => {
     activeOriginalCssText = targetElement.style.cssText;
     activeExistingAnnotation = existingAnnotation;
     activeElType = elType;
+
+    function focusTarget(direction) {
+      if (!isMultiTarget || targetElements.length < 2) return;
+      let candidate = focusedTargetIndex;
+      for (let attempts = 0; attempts < targetElements.length; attempts++) {
+        candidate = (candidate + direction + targetElements.length) % targetElements.length;
+        if (targetElements[candidate]?.isConnected) break;
+      }
+      if (!targetElements[candidate]?.isConnected) return;
+      focusedTargetIndex = candidate;
+      currentTargetHighlights.forEach((entry, index) => {
+        entry.highlight.classList.toggle('waypoint-target-highlight-focused', index === focusedTargetIndex);
+      });
+      targetPosition.textContent = `Target ${String.fromCharCode(97 + focusedTargetIndex)} of ${targetCount}`;
+      popover.querySelectorAll('.waypoint-target-step').forEach((step, index) => {
+        step.classList.toggle('active', index === focusedTargetIndex);
+      });
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      targetElements[focusedTargetIndex].scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
+    }
+    popover.querySelector('.waypoint-target-previous')?.addEventListener('click', () => focusTarget(-1));
+    popover.querySelector('.waypoint-target-next')?.addEventListener('click', () => focusTarget(1));
 
     if (lifecycleLocked) {
       if (!isHistorical) textarea.disabled = true;
@@ -829,7 +890,7 @@ var WaypointAnnotationPopover = (() => {
     const designActionDescription = popover.querySelector('.waypoint-design-action-description');
     const designActionButtons = [...popover.querySelectorAll('.waypoint-design-action')];
     const variantIntentNote = popover.querySelector('.waypoint-variant-intent-note');
-    variantIntentInput.checked = Boolean(existingAnnotation?.variant_intent);
+    variantIntentInput.checked = Boolean(existingAnnotation?.variant_intent || options.draft?.variant_intent);
     const updateVariantIntentPresentation = () => {
       variantIntentNote.hidden = !variantIntentInput.checked;
     };
@@ -837,8 +898,8 @@ var WaypointAnnotationPopover = (() => {
       updateVariantIntentPresentation();
       updateSave();
     });
-    let selectedDesignAction = existingAnnotation?.design_intent?.action || null;
-    if (designIntentInput) designIntentInput.checked = Boolean(existingAnnotation?.design_intent);
+    let selectedDesignAction = existingAnnotation?.design_intent?.action || options.draft?.design_intent?.action || null;
+    if (designIntentInput) designIntentInput.checked = Boolean(existingAnnotation?.design_intent || options.draft?.design_intent);
     const updateDesignActions = () => {
       if (!designIntentInput) return;
       if (!designIntentInput.checked) selectedDesignAction = null;
@@ -910,9 +971,21 @@ var WaypointAnnotationPopover = (() => {
     // Ensure click-to-focus works even if a framework capture-handler cancelled pointerdown
     textarea.addEventListener('pointerdown', () => textarea.focus());
 
+    const draftSnapshot = () => ({
+      comment: textarea.value,
+      attachments,
+      design_intent: designIntentInput?.checked ? WaypointDesignIntent.create(selectedDesignAction) : null,
+      variant_intent: getExplicitVariantIntent(variantIntentInput),
+    });
+    const returnToSelection = () => {
+      WaypointEvents.emit('multi-target:edit-selection', draftSnapshot());
+      dismiss(false);
+    };
+
     // Cancel / close
-    const close = () => dismiss(true);
+    const close = () => isMultiTarget && !isEdit ? returnToSelection() : dismiss(true);
     cancelBtn.addEventListener('click', close);
+    popover.querySelector('.waypoint-edit-selection-btn')?.addEventListener('click', returnToSelection);
 
     // Click outside
     anchor.addEventListener('pointerdown', (e) => {
@@ -977,18 +1050,18 @@ var WaypointAnnotationPopover = (() => {
           variant_intent: updates.variant_intent,
         });
       } else {
-        const annotation = buildAnnotation(context, comment, pendingChanges);
+        const targetInputs = selections.length
+          ? selections
+          : [{ element: targetElement, context, clientX: clickX, clientY: clickY }];
+        const annotation = buildAnnotation(context, comment, isMultiTarget ? null : pendingChanges, targetInputs);
         if (cssField) annotation.css = cssField;
         if (attachments.length) annotation.attachments = attachments;
         const variantIntent = getExplicitVariantIntent(variantIntentInput);
         if (variantIntent) annotation.variant_intent = variantIntent;
         if (designIntentInput?.checked) annotation.design_intent = WaypointDesignIntent.create(selectedDesignAction);
-        if (clickX != null) {
-          const r = targetElement.getBoundingClientRect();
-          annotation.badge_offset = { x: clickX - r.left, y: clickY - r.top };
-        }
         await WaypointAPI.saveAnnotation(annotation);
         WaypointEvents.emit('annotation:saved', { annotation, element: targetElement });
+        if (isMultiTarget) WaypointEvents.emit('multi-target:saved');
       }
 
       dismiss(true, true);
@@ -2394,7 +2467,8 @@ var WaypointAnnotationPopover = (() => {
 
     if (currentPopover) { currentPopover.remove(); currentPopover = null; }
     stopHighlightRAF();
-    if (currentTargetHighlight) { currentTargetHighlight.remove(); currentTargetHighlight = null; }
+    currentTargetHighlights.forEach(entry => entry.highlight.remove());
+    currentTargetHighlights = [];
     if (escHandler) { document.removeEventListener('keydown', escHandler); escHandler = null; }
     activeElement = null;
     activeExistingAnnotation = null;
@@ -2478,15 +2552,29 @@ var WaypointAnnotationPopover = (() => {
     popover.style.left = `${left}px`;
   }
 
-  function positionTargetHighlight(element) {
-    if (!currentTargetHighlight) return;
+  function positionTargetHighlights(elements, focusedIndex = 0) {
+    const root = WaypointShadowHost.getRoot();
+    if (!root) return;
+    currentTargetHighlights = elements.map((element, index) => {
+      const highlight = document.createElement('div');
+      highlight.className = `waypoint-target-highlight${index === focusedIndex ? ' waypoint-target-highlight-focused' : ''}`;
+      root.appendChild(highlight);
+      return { element, highlight };
+    });
     const update = () => {
-      if (!currentTargetHighlight) return;
-      const rect = element.getBoundingClientRect();
-      currentTargetHighlight.style.top = `${rect.top - 2}px`;
-      currentTargetHighlight.style.left = `${rect.left - 2}px`;
-      currentTargetHighlight.style.width = `${rect.width + 4}px`;
-      currentTargetHighlight.style.height = `${rect.height + 4}px`;
+      if (!currentTargetHighlights.length) return;
+      for (const entry of currentTargetHighlights) {
+        if (!entry.element?.isConnected) {
+          entry.highlight.style.display = 'none';
+          continue;
+        }
+        const rect = entry.element.getBoundingClientRect();
+        entry.highlight.style.display = '';
+        entry.highlight.style.top = `${rect.top - 2}px`;
+        entry.highlight.style.left = `${rect.left - 2}px`;
+        entry.highlight.style.width = `${rect.width + 4}px`;
+        entry.highlight.style.height = `${rect.height + 4}px`;
+      }
       highlightRafId = requestAnimationFrame(update);
     };
     update();
@@ -2541,29 +2629,40 @@ var WaypointAnnotationPopover = (() => {
 
   // --- Build annotation data ---
 
-  function buildAnnotation(context, comment, pendingChanges) {
-    const annotation = {
-      id: WaypointAnnotationId.create(),
-      url: window.location.href,
+  function buildTarget({ context, element, clientX, clientY }) {
+    const target = {
       selector: context.selector,
-      comment,
       viewport: context.viewport,
       element_context: {
         tag: context.tag,
         classes: context.classes,
         text: context.text,
         styles: context.styles,
-        position: context.position
+        position: context.position,
       },
       source_file_path: context.source_mapping?.source_file_path || null,
       source_line_range: context.source_mapping?.source_line_range || null,
       component_name: context.source_mapping?.component_name || null,
       project_area: context.source_mapping?.project_area || 'unknown',
-      url_path: context.source_mapping?.url_path || `${window.location.pathname}${window.location.search}${window.location.hash}`,
       source_map_available: context.source_mapping?.source_map_available || false,
       context_hints: context.source_mapping?.context_hints || null,
       screenshot: context.screenshot || null,
       parent_chain: context.parent_chain || null,
+    };
+    if (clientX != null && element) {
+      const rect = element.getBoundingClientRect();
+      target.badge_offset = { x: clientX - rect.left, y: clientY - rect.top };
+    }
+    return target;
+  }
+
+  function buildAnnotation(context, comment, pendingChanges, targetInputs) {
+    const annotation = {
+      id: WaypointAnnotationId.create(),
+      url: window.location.href,
+      targets: targetInputs.map(buildTarget),
+      comment,
+      url_path: context.source_mapping?.url_path || `${window.location.pathname}${window.location.search}${window.location.hash}`,
       status: 'pending',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()

@@ -89,3 +89,18 @@ test('Markdown exports retain route query and hash details', () => {
   assert.match(result.content, /## `\/app\?tab=closed#feedback`/);
   assert.match(result.content, /\[pending\] Align the heading/);
 });
+
+test('Markdown writes shared feedback once followed by ordered Target sections', () => {
+  const result = encodeAnnotationsExport([{
+    ...annotations[0],
+    comment: 'Align both actions',
+    targets: [
+      { selector: '#primary', element_context: { tag: 'button', text: 'Save' } },
+      { selector: '#secondary', element_context: { tag: 'button', text: 'Cancel' } },
+    ],
+  }], { format: 'markdown' });
+
+  assert.equal(result.content.match(/Align both actions/g)?.length, 1);
+  assert.match(result.content, /Target a: <button> “Save”/);
+  assert.match(result.content, /Target b: <button> “Cancel”/);
+});
