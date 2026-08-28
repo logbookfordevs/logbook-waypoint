@@ -10,7 +10,9 @@ Waypoint separates annotation discovery, work context, diagnostic context, and v
 2. `inspect_annotations` diagnoses one or more selected Annotations by canonical ID with their complete captured context.
 3. `get_annotation_screenshot` retrieves visual evidence for one selected Target when text context is insufficient.
 
-Reading and inspection are passive. They do not create or refresh a Claim, change lifecycle state, acknowledge Watch delivery, or retrieve embedded image bytes.
+In MCP, Annotations are user requests. The agent uses this context to select work and continue through Claim, implementation, verification, and resolution or safe release unless the user explicitly requests a read-only or observation-only result. Saying “read my annotations” alone still requests the normal implementation workflow.
+
+The Reading and Inspect operations themselves are side-effect-free. They do not create or refresh a Claim, change lifecycle state, acknowledge Watch delivery, or retrieve embedded image bytes.
 
 ## Survey
 

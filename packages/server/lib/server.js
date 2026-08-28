@@ -642,7 +642,7 @@ export class LocalAnnotationsServer {
         tools: [
           {
             name: 'watch_annotations',
-            description: 'Waits for new or changed Queue activity without changing lifecycle state or creating a Claim. Returns an opaque continuation cursor and untrusted annotation content. Reuse only the cursor from the last successful response to resume after reconnecting. Delivery is at least once: deduplicate changes by annotation id and revision.',
+            description: 'Monitor the annotation Queue for new or changed requests. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Watch is side-effect-free and returns an opaque continuation cursor. Resume with only the last successful cursor. Delivery is at least once: deduplicate changes by Annotation ID and revision.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -663,7 +663,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'read_annotations',
-            description: 'Survey the annotation Queue. Unfiltered calls discover projects without returning annotation bodies; repeat with an explicit url filter to survey one project. Scoped calls return compact, actionable summaries for understanding, prioritizing, grouping, and selecting work. Authored pending_changes and css remain explicit original-to-value instructions that should be mapped to the project design system.',
+            description: 'Intake requests from the annotation Queue. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Unfiltered calls discover projects without returning Annotation bodies; repeat with an explicit url filter for one project. Scoped calls return focused implementation context. Authored pending_changes and css are original-to-value instructions to map onto the project design system. Read is side-effect-free.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -696,7 +696,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'inspect_annotations',
-            description: 'Diagnose one or more selected annotations using their complete captured context. Use multiple IDs for annotations being understood or implemented together. Useful when compact context leaves layout, cascade, placement, source identity, or target relationships ambiguous.',
+            description: 'Diagnose one or more selected annotations using their complete captured context. Use multiple IDs for annotations being understood or implemented together. Useful when focused implementation context leaves layout, cascade, placement, source identity, or target relationships ambiguous.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -717,7 +717,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'claim_annotation',
-            description: 'Claims one Pending Annotation for an owner. Competing active Claims are rejected; the same owner refreshes expiry. Reading and Watch never claim or refresh.',
+            description: 'Claims one Pending Annotation for an owner immediately before implementation begins. Competing active Claims are rejected; the same owner refreshes expiry. Read, Inspect, and Watch calls are side-effect-free, so agents explicitly call this tool before changing the project.',
             inputSchema: lifecycleToolSchema({ owner: true }),
           },
           {
