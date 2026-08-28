@@ -215,8 +215,35 @@ test('Queue keeps manual synchronization retryable while the server is unavailab
   await new Promise(resolve => setImmediate(resolve));
 
   assert.equal(attempts, 1);
-  assert.equal(button.disabled, false);
+  assert.equal(root.querySelector('.waypoint-queue-sync-now').disabled, false);
   assert.match(root.querySelector('.waypoint-queue-sync-status').textContent, /Up to date/);
+});
+
+test('Queue refreshes Active and History in place after manual synchronization', async () => {
+  const annotations = [
+    {
+      id: 'waypoint_1750000000010_sync',
+      url: 'http://localhost:3000/settings/members',
+      status: 'pending',
+      comment: 'Resolve this request on the server',
+      selector: '#target',
+    },
+  ];
+  const { root } = await openQueue(annotations, {
+    syncNow: async () => {
+      annotations.splice(0, 1, { ...annotations[0], status: 'resolved' });
+      return { connected: true, pending_count: 0 };
+    },
+  });
+
+  root.querySelector('.waypoint-queue-sync-now').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const panel = root.querySelector('.waypoint-queue-panel');
+  assert.notEqual(panel, null);
+  assert.match(panel.querySelector('.waypoint-queue-active-view').textContent, /Active 0/);
+  assert.match(panel.querySelector('.waypoint-queue-history-view').textContent, /History 1/);
+  assert.match(panel.querySelector('.waypoint-queue-list').textContent, /No active annotations/);
 });
 
 test('settings show existing site access without an Enable action', async () => {

@@ -189,6 +189,17 @@ var WaypointQueuePanel = (() => {
     return WaypointAPI.getSyncStatus().catch(error => ({ connected: false, error: error.message }));
   }
 
+  async function refreshQueue(queue, routeState) {
+    const [annotations, projectAnnotations] = await Promise.all([
+      WaypointAPI.loadAnnotations(),
+      WaypointAPI.loadProjectAnnotations(),
+    ]);
+    queue.currentRoute = { ...queue.currentRoute, annotations };
+    queue.otherRoutes = groupOtherRoutes(projectAnnotations);
+    if (routeState.isCurrent) return queue.currentRoute;
+    return queue.otherRoutes.get(routeState.route) || { ...routeState, annotations: [] };
+  }
+
   async function open(anchor, actions = {}) {
     close();
     const [annotations, projectAnnotations, syncStatus] = await Promise.all([
@@ -278,12 +289,16 @@ var WaypointQueuePanel = (() => {
       button.textContent = 'Syncing…';
       try {
         queue.syncStatus = await WaypointAPI.syncNow();
-        status.querySelector('span').textContent = syncStatusMessage(queue.syncStatus);
+        const refreshedRoute = await refreshQueue(queue, routeState);
+        renderRouteView(queue, refreshedRoute, view);
+        panel.querySelector('.waypoint-queue-sync-now')?.focus();
       } catch (error) {
         status.querySelector('span').textContent = error?.message || 'Sync failed. Try again.';
       } finally {
-        button.disabled = false;
-        button.textContent = 'Sync now';
+        if (button.isConnected) {
+          button.disabled = false;
+          button.textContent = 'Sync now';
+        }
       }
     });
     panel.querySelector('.waypoint-queue-other-routes')?.addEventListener('click', () => renderRouteList(queue));
