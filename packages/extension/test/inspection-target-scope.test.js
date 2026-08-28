@@ -51,6 +51,7 @@ async function createHarness() {
     getRoot: () => root,
     getHost: () => host,
   };
+  context.WaypointMultiTargetSelection = { shouldHandle: () => false };
 
   const shadowUtils = await readFile(new URL('../public/content/modules/shadow-dom-utils.js', import.meta.url), 'utf8');
   const inspectionMode = await readFile(new URL('../public/content/modules/inspection-mode.js', import.meta.url), 'utf8');

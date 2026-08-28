@@ -259,7 +259,7 @@ var WaypointInspectionMode = (() => {
   function isApproachingScopeControls(e) {
     if (!scopeControlsEl || scopeControlsEl.style.display === 'none') return false;
     const rect = scopeControlsEl.getBoundingClientRect();
-    const approachGap = 12;
+    const approachGap = 8;
     return e.clientX >= rect.left - approachGap
       && e.clientX <= rect.right + approachGap
       && e.clientY >= rect.top - approachGap
@@ -320,8 +320,12 @@ var WaypointInspectionMode = (() => {
     scopeControlsEl.setAttribute('role', 'group');
     scopeControlsEl.setAttribute('aria-label', 'Adjust selected target');
     scopeControlsEl.innerHTML = `
-      <button type="button" data-scope="smaller" aria-label="Select a smaller target">&larr; <span>Smaller</span></button>
-      <button type="button" data-scope="larger" aria-label="Select a larger target"><span>Larger</span> &rarr;</button>
+      <button type="button" data-scope="smaller" aria-label="Select a smaller target" title="Smaller target">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 3.5 6 8l4.5 4.5" /></svg>
+      </button>
+      <button type="button" data-scope="larger" aria-label="Select a larger target" title="Larger target">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 10 8l-4.5 4.5" /></svg>
+      </button>
     `;
     scopeControlsEl.querySelector('[data-scope="smaller"]').addEventListener('click', () => moveScope(-1));
     scopeControlsEl.querySelector('[data-scope="larger"]').addEventListener('click', () => moveScope(1));
@@ -331,9 +335,9 @@ var WaypointInspectionMode = (() => {
 
   function positionScopeControls(clientX, clientY) {
     if (!scopeControlsEl || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return;
-    const estimatedWidth = 176;
-    const estimatedHeight = 52;
-    const gap = 12;
+    const estimatedWidth = 68;
+    const estimatedHeight = 36;
+    const gap = 8;
     const left = clientX + gap + estimatedWidth <= window.innerWidth
       ? clientX + gap
       : Math.max(gap, clientX - estimatedWidth - gap);

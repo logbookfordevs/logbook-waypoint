@@ -124,30 +124,40 @@ var WAYPOINT_STYLES = `
 .waypoint-scope-controls {
   position: fixed;
   pointer-events: auto;
-  gap: 8px;
-  padding: 6px;
-  border: 1px solid var(--waypoint-outline);
-  border-radius: var(--waypoint-radius-sm);
+  gap: 2px;
+  padding: 3px;
+  border-radius: 7px;
   background: var(--waypoint-surface);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.14);
   z-index: 10;
 }
 
 .waypoint-scope-controls button {
-  min-height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--waypoint-outline);
-  border-radius: 6px;
-  background: var(--waypoint-surface-1);
-  color: var(--waypoint-text-primary);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--waypoint-text-secondary);
   cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.waypoint-scope-controls svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .waypoint-scope-controls button:hover:not(:disabled) {
-  border-color: var(--waypoint-highlight);
+  background: var(--waypoint-surface-hover);
+  color: var(--waypoint-text-primary);
 }
 
 .waypoint-scope-controls button:focus-visible {
@@ -156,8 +166,15 @@ var WAYPOINT_STYLES = `
 }
 
 .waypoint-scope-controls button:disabled {
-  opacity: 0.4;
+  opacity: 0.28;
   cursor: default;
+}
+
+@media (pointer: coarse) {
+  .waypoint-scope-controls button {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* ===== Badges (numbered pins) ===== */
