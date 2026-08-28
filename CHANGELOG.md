@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed resolved and discarded pins from the active page canvas while retaining their Queue history
 - Refreshed the open Queue immediately after successful manual synchronization, without requiring it to be reopened
 - Updated canvas pins and toolbar counts immediately after permanently deleting an annotation from the Queue
+- Stopped annotation targeting when opening the Queue so background hover and Escape behavior no longer overlap Queue management
 - Preserved annotation lifecycle, Variant, screenshot, and attachment data across sync and restart boundaries
 - Kept unresolved Variant Sets protected from ordinary mutation or deletion
 - Restored target selection and badge placement across shadow DOM, repeated elements, and rerendered pages

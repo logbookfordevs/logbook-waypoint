@@ -132,6 +132,7 @@ function createHarness(annotations, {
     downloadBlobs,
     downloads,
     emitted,
+    listeners,
     root,
   };
 }
@@ -147,10 +148,35 @@ async function openQueue(annotations, options) {
   vm.runInContext(queuePanelSource, harness.context, { filename: 'queue-panel.js' });
   vm.runInContext(toolbarSource, harness.context, { filename: 'floating-toolbar.js' });
   await harness.context.WaypointToolbar.init();
+  if (options?.annotationModeActive) {
+    harness.listeners.get('inspection:started')?.();
+  }
   harness.root.querySelector('.waypoint-tb-queue').click();
+  if (options?.annotationModeActive && harness.emitted.some(event => event.name === 'inspection:stop')) {
+    harness.listeners.get('inspection:stopped')?.();
+  }
   await new Promise(resolve => setImmediate(resolve));
   return harness;
 }
+
+test('opening Queue stops active annotation targeting without restoring it', async () => {
+  const { emitted, root } = await openQueue([], { annotationModeActive: true });
+
+  assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
+  assert.equal(root.querySelector('.waypoint-tb-annotate').classList.contains('active'), false);
+  assert.equal(emitted.filter(event => event.name === 'inspection:stop').length, 1);
+
+  root.querySelector('.waypoint-queue-close').click();
+  assert.equal(root.querySelector('.waypoint-tb-annotate').classList.contains('active'), false);
+  assert.equal(emitted.filter(event => event.name === 'inspection:start').length, 0);
+});
+
+test('opening Queue leaves inactive annotation targeting unchanged', async () => {
+  const { emitted, root } = await openQueue([]);
+
+  assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
+  assert.equal(emitted.filter(event => event.name === 'inspection:stop').length, 0);
+});
 
 test('toolbar Queue button opens an anchored panel with current-route Annotations', async () => {
   const annotations = [
