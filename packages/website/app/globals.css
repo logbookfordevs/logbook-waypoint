@@ -56,6 +56,12 @@
   --radius-lg: 1rem;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --type-display: clamp(3.2rem, 4vw, 4rem);
+  --type-chapter: clamp(2.15rem, 3.6vw, 3.55rem);
+  --type-proof: clamp(2rem, 2.8vw, 2.6rem);
+  --type-feature: clamp(1.65rem, 2.25vw, 2.25rem);
+  --type-reading-title: clamp(2.75rem, 5vw, 4.5rem);
+  --type-article-heading: clamp(1.8rem, 3vw, 2.5rem);
   --space-proof: clamp(2.25rem, 4vw, 3.75rem);
   --space-chapter: clamp(5.5rem, 8vw, 7.5rem);
   --space-transition: clamp(4.5rem, 6vw, 6rem);

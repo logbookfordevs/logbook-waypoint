@@ -21,15 +21,17 @@
 .docs-article h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-variation-settings: "wght" 610;
-  letter-spacing: -0.035em;
+  font-weight: 610;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .hero h1 {
   max-width: 16ch;
   margin-top: 0.75rem;
-  font-size: clamp(3rem, 4.8vw, 4.9rem);
+  font-size: var(--type-display);
   line-height: 0.96;
+  letter-spacing: -0.03em;
 }
 
 .hero__statement {

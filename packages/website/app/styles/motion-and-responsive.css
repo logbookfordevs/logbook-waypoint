@@ -40,7 +40,7 @@
 
   .hero h1 {
     margin-top: 0;
-    font-size: clamp(3.25rem, 4.25vw, 4.15rem);
+    font-size: var(--type-display);
   }
 
   .hero__statement {
@@ -374,7 +374,7 @@
   }
 
   .hero h1 {
-    font-size: clamp(3rem, 15vw, 4.6rem);
+    font-size: clamp(2.75rem, 12vw, 3.45rem);
   }
 
   .hero-route {
@@ -517,7 +517,7 @@
 
   .docs-index h1,
   .docs-article h1 {
-    font-size: clamp(2.8rem, 15vw, 4.8rem);
+    font-size: clamp(2.6rem, 12vw, 3.4rem);
   }
 
   .article-toc {

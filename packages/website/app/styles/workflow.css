@@ -63,8 +63,9 @@
 }
 
 .workflow-field__heading h2 {
-  font-size: clamp(2rem, 3vw, 3rem);
+  font-size: var(--type-proof);
   line-height: 1.02;
+  letter-spacing: -0.025em;
 }
 
 .workflow-field__description {

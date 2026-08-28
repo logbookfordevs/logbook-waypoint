@@ -16,21 +16,27 @@ colors:
 typography:
   display:
     fontFamily: "Besley Variable, Besley, serif"
-    fontSize: "clamp(3rem, 4.8vw, 4.9rem)"
+    fontSize: "clamp(3.2rem, 4vw, 4rem)"
     fontWeight: 610
     lineHeight: 0.96
-    letterSpacing: "-0.035em"
+    letterSpacing: "-0.03em"
   headline:
     fontFamily: "Besley Variable, Besley, serif"
-    fontSize: "clamp(2.3rem, 4.8vw, 4.7rem)"
+    fontSize: "clamp(2.15rem, 3.6vw, 3.55rem)"
     fontWeight: 610
     lineHeight: 1.03
     letterSpacing: "-0.025em"
   title:
     fontFamily: "Besley Variable, Besley, serif"
-    fontSize: "clamp(1.7rem, 3vw, 2.8rem)"
-    fontWeight: 680
+    fontSize: "clamp(1.65rem, 2.25vw, 2.25rem)"
+    fontWeight: 610
     lineHeight: 1.06
+  readingTitle:
+    fontFamily: "Besley Variable, Besley, serif"
+    fontSize: "clamp(2.75rem, 5vw, 4.5rem)"
+    fontWeight: 610
+    lineHeight: 0.98
+    letterSpacing: "-0.025em"
   body:
     fontFamily: "Waypoint Sans, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1rem"
