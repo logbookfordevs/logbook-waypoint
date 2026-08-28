@@ -66,8 +66,8 @@
   }
 
   .workflow-field {
-    padding-top: 1rem;
-    padding-bottom: 1.35rem;
+    padding-top: 1.75rem;
+    padding-bottom: 1.75rem;
   }
 
   .workflow-field__heading {
@@ -76,7 +76,7 @@
     grid-template-columns: minmax(0, 1.25fr) minmax(24rem, 0.75fr);
     column-gap: 3rem;
     align-items: end;
-    margin-bottom: 0.65rem;
+    margin-bottom: 1.35rem;
   }
 
   .workflow-field__heading h2 {
@@ -138,7 +138,7 @@
   }
 
   .queue-surface select {
-    min-height: 2.2rem;
+    min-height: 2.75rem;
   }
 
   .queue-surface__records {
@@ -176,7 +176,7 @@
   }
 
   .agent-surface__action {
-    min-height: 2.35rem;
+    min-height: 2.75rem;
     margin-top: 0.55rem;
   }
 }
@@ -204,6 +204,10 @@
     grid-template-columns: 1fr;
   }
 
+  .workflow-field {
+    padding-block: var(--space-proof);
+  }
+
   .hero h1 {
     max-width: 16ch;
   }
@@ -220,8 +224,9 @@
 
   .workflow-stage {
     display: grid;
-    grid-template-columns: minmax(9rem, 0.34fr) minmax(0, 1fr);
-    gap: 1rem;
+    grid-template-columns: minmax(9rem, 0.28fr) minmax(0, 42rem);
+    gap: clamp(1rem, 4vw, 2.5rem);
+    justify-content: space-between;
   }
 
   .workflow-stage__heading {
@@ -233,7 +238,7 @@
   .browser-surface,
   .queue-surface,
   .agent-surface {
-    min-height: 24rem;
+    min-height: 0;
   }
 }
 
@@ -247,6 +252,7 @@
     top: calc(100% + 0.5rem);
     right: 1rem;
     width: min(22rem, calc(100vw - 2rem));
+    max-height: min(36rem, calc(100dvh - 6rem));
     display: grid;
     gap: 0;
     padding: 0.75rem;
@@ -257,6 +263,8 @@
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     transform: translateY(-0.5rem) scale(0.97);
     transform-origin: top right;
     transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out), visibility 0s linear 180ms;
@@ -310,6 +318,10 @@
     order: 2;
   }
 
+  .boundary-radar {
+    width: min(19rem, 68vw);
+  }
+
   .docs-passage__chart {
     min-height: 18rem;
   }
@@ -340,6 +352,11 @@
 }
 
 @media (max-width: 38rem) {
+  :root {
+    --space-chapter: 4.5rem;
+    --space-transition: 4rem;
+  }
+
   .site-header__inner,
   .hero,
   .manifest-section,
@@ -352,7 +369,8 @@
   }
 
   .hero {
-    padding-top: 3rem;
+    gap: 2.25rem;
+    padding-block: 2.5rem 2.75rem;
   }
 
   .hero h1 {
@@ -360,13 +378,13 @@
   }
 
   .hero-route {
-    min-height: 18rem;
+    min-height: 12rem;
   }
 
   .hero-route ol {
     grid-template-columns: 1fr;
     justify-items: start;
-    gap: 1rem;
+    gap: 0.8rem;
     padding-left: 1rem;
   }
 
@@ -391,6 +409,10 @@
 
   .workflow-field {
     padding-inline: 1rem;
+  }
+
+  .workflow-field__heading {
+    margin-bottom: 1.5rem;
   }
 
   .workflow-stage {
@@ -438,6 +460,29 @@
   .local-boundary,
   .docs-passage {
     padding-inline: 1rem;
+  }
+
+  .launch-status {
+    width: min(100%, 21rem);
+  }
+
+  .launch-status__message {
+    position: relative;
+    top: auto;
+    width: 100%;
+    max-height: 0;
+    margin-top: 0;
+    padding: 0 1rem;
+    overflow: hidden;
+    transform: none;
+    transition: max-height 180ms var(--ease-out), margin 180ms var(--ease-out), padding 180ms var(--ease-out), opacity 180ms var(--ease-out);
+  }
+
+  .launch-status__message[data-visible="true"] {
+    max-height: 12rem;
+    margin-top: 0.65rem;
+    padding: 0.9rem 1rem;
+    transform: none;
   }
 
   .local-boundary__copy dl div {

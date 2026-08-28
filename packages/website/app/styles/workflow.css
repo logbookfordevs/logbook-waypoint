@@ -2,7 +2,7 @@
   position: relative;
   isolation: isolate;
   padding: clamp(2rem, 2.8vw, 3rem) max(1.5rem, calc((100vw - 88rem) / 2)) clamp(2.5rem, 4vw, 4rem);
-  overflow: hidden;
+  overflow: clip;
   background-color: var(--ocean);
   background-image:
     linear-gradient(color-mix(in srgb, var(--ocean) 72%, transparent), color-mix(in srgb, var(--ocean) 80%, transparent)),
@@ -59,7 +59,7 @@
 
 .workflow-field__heading {
   width: min(100%, 54rem);
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .workflow-field__heading h2 {
@@ -87,6 +87,11 @@
 .workflow-field__evidence span + span {
   padding-left: 0.8rem;
   border-left: 1px solid color-mix(in srgb, var(--brass) 55%, transparent);
+}
+
+.workflow-field code,
+.workflow-field__evidence {
+  overflow-wrap: anywhere;
 }
 
 .workflow-stage-list {
@@ -284,7 +289,7 @@
 
 .queue-surface select {
   width: 100%;
-  min-height: 2.55rem;
+  min-height: 2.75rem;
   padding: 0 0.75rem;
   border: 1px solid #4a6668;
   border-radius: 0.45rem;
@@ -456,7 +461,7 @@
 
 .agent-surface__action {
   width: 100%;
-  min-height: 2.65rem;
+  min-height: 2.75rem;
   margin-top: 0.9rem;
   border: 1px solid var(--verdigris);
   border-radius: 0.45rem;

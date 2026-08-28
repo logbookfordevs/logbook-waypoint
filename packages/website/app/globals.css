@@ -56,6 +56,9 @@
   --radius-lg: 1rem;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --space-proof: clamp(2.25rem, 4vw, 3.75rem);
+  --space-chapter: clamp(5.5rem, 8vw, 7.5rem);
+  --space-transition: clamp(4.5rem, 6vw, 6rem);
 }
 
 .theme-boundary[data-appearance="night"] {
@@ -226,6 +229,9 @@ button:disabled {
 
 .primary-navigation > a {
   position: relative;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
   font-size: 0.88rem;
   font-weight: 650;
   text-decoration: none;
@@ -264,8 +270,8 @@ button:disabled {
 
 .appearance-toggle,
 .navigation-trigger {
-  width: 2.45rem;
-  height: 2.45rem;
+  width: 2.75rem;
+  height: 2.75rem;
   display: inline-grid;
   place-items: center;
   border: 1px solid var(--line);

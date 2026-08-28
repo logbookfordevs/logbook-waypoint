@@ -2,7 +2,7 @@
 .guided-work {
   width: min(100% - 3rem, 84rem);
   margin-inline: auto;
-  padding-block: clamp(4.5rem, 8vw, 8rem);
+  padding-block: var(--space-chapter);
 }
 
 .section-heading {
@@ -74,7 +74,7 @@
   grid-template-columns: minmax(20rem, 0.72fr) minmax(0, 1fr);
   gap: clamp(3rem, 8vw, 9rem);
   align-items: center;
-  padding: clamp(4.5rem, 8vw, 8rem) max(1.5rem, calc((100vw - 84rem) / 2));
+  padding: var(--space-transition) max(1.5rem, calc((100vw - 84rem) / 2));
   background: var(--page-soft);
 }
 
@@ -168,6 +168,7 @@
 
 .local-boundary__copy > a,
 .guided-work a {
+  min-height: 2.75rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -261,7 +262,7 @@
   grid-template-columns: 0.85fr 1.15fr;
   gap: 4rem;
   align-items: center;
-  padding: clamp(4rem, 8vw, 8rem) max(1.5rem, calc((100vw - 84rem) / 2));
+  padding: var(--space-transition) max(1.5rem, calc((100vw - 84rem) / 2));
   overflow: hidden;
   background: var(--ocean);
   color: var(--ocean-ink);
