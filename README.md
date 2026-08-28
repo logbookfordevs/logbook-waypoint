@@ -70,8 +70,7 @@ pnpm build
 ## CLI installation
 
 Tagged releases provide the same `waypoint` CLI through npm and a checksummed
-GitHub release archive. These commands will become available with the first
-Waypoint release.
+GitHub release archive.
 
 Install directly from the latest GitHub release:
 
@@ -91,14 +90,26 @@ Use npm without a permanent installation for a first look:
 npx @logbookfordevs/waypoint --help
 ```
 
-### Local server
+### Start Waypoint
+
+After installing with either method, start the server:
+
+```bash
+waypoint start
+```
+
+Waypoint runs in the background by default. Use `waypoint status` to check it,
+`waypoint logs` to inspect it, and `waypoint stop` when you are finished. For a
+temporary terminal-attached session, use `waypoint start --foreground`.
+
+### Local development
+
+When running Waypoint directly from this repository instead of an installed
+release:
 
 ```bash
 pnpm --filter @logbookfordevs/waypoint start
 ```
-
-Installed CLI releases start the server in the background with `waypoint start`.
-Use `waypoint start --foreground` for a temporary terminal session.
 
 ### Browser extension
 
@@ -109,10 +120,9 @@ Use `waypoint start --foreground` for a temporary terminal session.
 
 ### MCP connection
 
-After installing the CLI and starting Waypoint, the fastest way to connect supported coding agents is [Add MCP](https://add-mcp.com/):
+With Waypoint running, the fastest way to connect supported coding agents is [Add MCP](https://add-mcp.com/):
 
 ```bash
-waypoint start
 npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global
 ```
 
