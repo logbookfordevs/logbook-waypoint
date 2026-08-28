@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hardened host, origin, payload, attachment, annotation ID, and persistence validation
 - Made Watch recovery durable across server restarts and annotation recreation
 - Made `read_annotations` return compact project-scoped summaries, with project discovery before cross-project annotation bodies and one normalized Target shape
+- Made Watch deliver the same compact Survey context as scoped Queue reads while preserving revision and deduplication metadata
 - Made MCP Page URL filters include every query or hash View State on that pathname, while complete Captured URLs remain exact
 - Replaced remote update checks with local extension compatibility guidance
 - Clarified repository-based setup before publication, corrected streamable HTTP client guidance, and linked the complete MCP workflow and tool reference

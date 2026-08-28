@@ -272,7 +272,13 @@ test('server file-backs screenshots and extension attachments while explicit ret
         url: 'http://localhost:3000/app',
         comment: 'Check visual hierarchy',
         status: 'pending',
-        screenshot: { data_url: 'data:image/png;base64,c2NyZWVuc2hvdA==', compression: 'png' },
+        targets: [{
+          selector: '#primary',
+          screenshot: { data_url: 'data:image/png;base64,c2NyZWVuc2hvdA==', compression: 'png' },
+        }, {
+          selector: '#secondary',
+          screenshot: { data_url: 'data:image/png;base64,c2Vjb25k', compression: 'png' },
+        }],
         attachments: [{
           name: 'detail.png',
           mime_type: 'image/png',
@@ -286,16 +292,19 @@ test('server file-backs screenshots and extension attachments while explicit ret
     const persisted = JSON.parse(await readFile(annotationsFile, 'utf8'))[0];
     const attachmentId = saved.attachments[0].id;
 
-    assert.equal('data_url' in persisted.screenshot, false);
+    assert.equal('data_url' in persisted.targets[0].screenshot, false);
     assert.equal('data_url' in persisted.attachments[0], false);
-    assert.match(persisted.screenshot.attachment_id, /^[a-f0-9-]{36}$/);
+    assert.match(persisted.targets[0].screenshot.attachment_id, /^[a-f0-9-]{36}$/);
     const metadata = await server.getAnnotationAttachment({ id, attachment_id: attachmentId });
     const content = await server.getAnnotationAttachment({ id, attachment_id: attachmentId, include_content: true });
     const screenshot = await server.getAnnotationScreenshot({ id });
+    const secondScreenshot = await server.getAnnotationScreenshot({ id, target_index: 1 });
 
     assert.equal(metadata.attachment.content, undefined);
     assert.equal(content.attachment.content, 'ZGV0YWls');
     assert.equal(screenshot.screenshot.data_url, 'data:image/png;base64,c2NyZWVuc2hvdA==');
+    assert.equal(secondScreenshot.target_index, 1);
+    assert.equal(secondScreenshot.screenshot.data_url, 'data:image/png;base64,c2Vjb25k');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

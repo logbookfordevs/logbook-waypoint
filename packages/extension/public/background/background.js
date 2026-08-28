@@ -2,6 +2,7 @@
 
 importScripts('../annotation-id.js');
 importScripts('../annotation-status.js');
+importScripts('../annotation-targets.js');
 importScripts('../annotation-collection.js');
 importScripts('../annotation-page.js');
 importScripts('../design-intent.js');
@@ -1451,6 +1452,7 @@ class WaypointAnnotationsBackground {
         js: [
           'annotation-id.js',
           'annotation-status.js',
+          'annotation-targets.js',
           'annotation-collection.js',
           'design-intent.js',
           'variant-intent.js',
@@ -1466,6 +1468,7 @@ class WaypointAnnotationsBackground {
           'content/modules/shadow-dom-utils.js',
           'content/modules/source-identity.js',
           'content/modules/element-context.js',
+          'content/modules/multi-target-selection.js',
           'content/modules/badge-manager.js',
           'content/modules/inspection-mode.js',
           'content/modules/keyboard-target.js',

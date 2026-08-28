@@ -231,7 +231,7 @@ test('persistent Watch reconciles a committed Queue after journal recovery', asy
   }
 });
 
-test('persistent Watch journal excludes screenshots and Source Identity hints', async () => {
+test('persistent Watch journal retains Survey Source Identity without diagnostic or media content', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-'));
   const historyFile = path.join(directory, 'watch-history.json');
   const watch = new PersistentWatchQueue({ historyFile });
@@ -246,7 +246,8 @@ test('persistent Watch journal excludes screenshots and Source Identity hints', 
     })]);
     const journal = await readFile(historyFile, 'utf8');
 
-    assert.doesNotMatch(journal, /data:image|source_file_path|source_line_range|context_hints/);
+    assert.doesNotMatch(journal, /data:image|context_hints/);
+    assert.match(journal, /source_file_path|source_line_range/);
     assert.match(journal, /Move this button/);
   } finally {
     await rm(directory, { recursive: true, force: true });

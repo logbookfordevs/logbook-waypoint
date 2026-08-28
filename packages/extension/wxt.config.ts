@@ -21,6 +21,7 @@ const LOCAL_MATCHES = [
 const CONTENT_MODULES = [
   'annotation-id.js',
   'annotation-status.js',
+  'annotation-targets.js',
   'annotation-collection.js',
   'annotation-page.js',
   'design-intent.js',
@@ -39,6 +40,7 @@ const CONTENT_MODULES = [
   'content/modules/source-identity.js',
   'content/modules/screenshot-capture.js',
   'content/modules/element-context.js',
+  'content/modules/multi-target-selection.js',
   'content/modules/badge-manager.js',
   'content/modules/inspection-mode.js',
   'content/modules/keyboard-target.js',

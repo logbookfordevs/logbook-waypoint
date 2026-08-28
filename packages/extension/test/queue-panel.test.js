@@ -11,6 +11,7 @@ const { parseHTML } = requireFromWxt('linkedom');
 const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel.js', import.meta.url);
 const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
+const targetsUrl = new URL('../.output/chrome-mv3/annotation-targets.js', import.meta.url);
 const pageUrl = new URL('../.output/chrome-mv3/annotation-page.js', import.meta.url);
 
 function createHarness(annotations, {
@@ -70,7 +71,7 @@ function createHarness(annotations, {
     getAnnotationRoute: annotation => new URL(annotation.url).pathname,
   };
   context.WaypointElementContext = {
-    findElementBySelector: () => context.document.querySelector('#target'),
+    findElementBySelector: candidate => context.document.querySelector(candidate.selector || candidate),
   };
   context.WaypointEvents = {
     on: (name, listener) => listeners.set(name, listener),
@@ -140,13 +141,15 @@ function createHarness(annotations, {
 
 async function openQueue(annotations, options) {
   const harness = createHarness(annotations, options);
-  const [statusSource, pageSource, queuePanelSource, toolbarSource] = await Promise.all([
+  const [statusSource, targetsSource, pageSource, queuePanelSource, toolbarSource] = await Promise.all([
     readFile(statusUrl, 'utf8'),
+    readFile(targetsUrl, 'utf8'),
     readFile(pageUrl, 'utf8'),
     readFile(queuePanelUrl, 'utf8'),
     readFile(toolbarUrl, 'utf8'),
   ]);
   vm.runInContext(statusSource, harness.context, { filename: 'annotation-status.js' });
+  vm.runInContext(targetsSource, harness.context, { filename: 'annotation-targets.js' });
   vm.runInContext(pageSource, harness.context, { filename: 'annotation-page.js' });
   vm.runInContext(queuePanelSource, harness.context, { filename: 'queue-panel.js' });
   vm.runInContext(toolbarSource, harness.context, { filename: 'floating-toolbar.js' });
@@ -315,6 +318,25 @@ test('documentation and workflow guides opt into the wider reading layout', asyn
   assert.match(dropdown.textContent, /Across multiple pages/);
   assert.match(dropdown.textContent, /Read now/);
   assert.match(dropdown.textContent, /Watch continuously/);
+});
+
+test('Documentation teaches the multi-Target annotation workflow', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  root.querySelector('.waypoint-get-started-btn').click();
+  const item = root.querySelector('[data-workflow="multi-target"]');
+  assert.equal(item.textContent.trim().includes('Annotating multiple Targets'), true);
+
+  item.click();
+  const dropdown = root.querySelector('.waypoint-settings-dropdown');
+  assert.match(dropdown.textContent, /One request, several places/);
+  assert.match(dropdown.textContent, /Shift/);
+  assert.match(dropdown.textContent, /two to eight Targets/);
+  assert.match(dropdown.textContent, /same exact page URL/);
+  assert.match(dropdown.textContent, /Edit selection/);
 });
 
 test('settings show cached maintenance guidance and load Data & Storage details only on demand', async () => {
@@ -676,6 +698,22 @@ test('Queue Open resolves the Target and reopens the existing Annotation editor'
   assert.equal(editEvent.payload.annotation.id, annotation.id);
   assert.equal(editEvent.payload.element.id, 'target');
   assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+});
+
+test('Queue Open starts at the first available Target when an earlier Target is unavailable', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: 'Reopen the available Target',
+    targets: [{ selector: '#missing' }, { selector: '#target' }],
+  };
+  const { emitted, root } = await openQueue([annotation]);
+  root.querySelector('.waypoint-queue-open').click();
+
+  const editEvent = emitted.find(event => event.name === 'annotation:edit');
+  assert.equal(editEvent.payload.element.id, 'target');
+  assert.equal(editEvent.payload.targetIndex, 1);
 });
 
 test('Queue supports keyboard dismissal with Escape', async () => {

@@ -286,9 +286,7 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
     assert.deepEqual(JSON.parse(mcpRead.content[0].text).data.annotations[0].resolution_record, resolutionRecord);
 
     const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, {
-      summary: resolutionRecord.summary,
-    });
+    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, resolutionRecord);
 
     for (const synchronized of [
       { ...persisted, resolution_record: undefined },
@@ -378,9 +376,7 @@ test('expired Variant work can be finalized, reclaimed, verified, and resolved w
     assert.deepEqual(read.design_intent, designIntent);
     assert.deepEqual(read.resolution_record, resolutionRecord);
     const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, {
-      summary: resolutionRecord.summary,
-    });
+    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, resolutionRecord);
     assert.equal('variant_presentation' in watched.changes.at(-1).annotation, false);
     const persisted = JSON.parse(await readFile(path.join(directory, 'annotations.json'), 'utf8'))[0];
     assert.deepEqual(persisted.variant_request.scaffold, []);

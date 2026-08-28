@@ -1,4 +1,4 @@
-import { toReadAnnotation } from './watch-queue.js';
+import { annotationHasScreenshot } from './annotation-media.js';
 
 const CURATED_STYLE_KEYS = [
   'display',
@@ -68,21 +68,22 @@ function compactParent(parentChain) {
 }
 
 function compactSourceIdentity(target) {
-  const componentName = FRAMEWORK_COMPONENT_NAMES.has(target?.component_name)
+  const identity = target?.source_identity || target;
+  const componentName = FRAMEWORK_COMPONENT_NAMES.has(identity?.component_name)
     ? undefined
-    : target?.component_name || undefined;
-  const sourceFilePath = target?.source_file_path || undefined;
-  const sourceLineRange = target?.source_line_range || undefined;
+    : identity?.component_name || undefined;
+  const sourceFilePath = identity?.source_file_path || undefined;
+  const sourceLineRange = identity?.source_line_range || undefined;
   if (!componentName && !sourceFilePath && !sourceLineRange) return undefined;
   return definedEntries([
     ['component_name', componentName],
     ['source_file_path', sourceFilePath],
     ['source_line_range', clone(sourceLineRange)],
-    ['source_map_available', target?.source_map_available === true ? true : undefined],
+    ['source_map_available', identity?.source_map_available === true ? true : undefined],
   ]);
 }
 
-function annotationTargets(annotation) {
+export function annotationTargets(annotation) {
   if (Array.isArray(annotation.targets) && annotation.targets.length) return annotation.targets;
   return [{
     selector: annotation.selector,
@@ -93,19 +94,24 @@ function annotationTargets(annotation) {
     source_file_path: annotation.source_file_path,
     source_line_range: annotation.source_line_range,
     source_map_available: annotation.source_map_available,
+    context_hints: annotation.context_hints,
+    source_identity: annotation.source_identity,
+    source_mapping: annotation.source_mapping,
+    screenshot: annotation.screenshot,
+    badge_offset: annotation.badge_offset,
   }];
 }
 
 function compactTarget(target, index) {
-  const context = target?.element_context || {};
+  const context = target?.element_context || target || {};
   return definedEntries([
     ['index', index],
     ['selector', target?.selector],
     ['tag', context.tag],
     ['text', typeof context.text === 'string' ? context.text : undefined],
     ['styles', compactStyles(context.styles)],
-    ['size', compactSize(context.position)],
-    ['context', compactParent(target?.parent_chain)],
+    ['size', compactSize(context.position) || clone(target?.size)],
+    ['context', compactParent(target?.parent_chain) || clone(target?.context)],
     ['source_identity', compactSourceIdentity(target)],
   ]);
 }
@@ -119,19 +125,6 @@ function compactVariantRequest(request) {
       ? request.variants.map(({ key, name, state }) => ({ key, name, state }))
       : undefined],
   ]);
-}
-
-function hasScreenshot(annotation, targets) {
-  return Boolean(
-    annotation.has_screenshot
-    || annotation.screenshot?.data_url
-    || annotation.screenshot?.attachment_id
-    || targets.some(target => (
-      target?.has_screenshot
-      || target?.screenshot?.data_url
-      || target?.screenshot?.attachment_id
-    )),
-  );
 }
 
 export function summarizeAnnotation(annotation) {
@@ -153,38 +146,11 @@ export function summarizeAnnotation(annotation) {
     ['claim', clone(annotation.claim)],
     ['work_notice', clone(annotation.work_notice)],
     ['resolution_record', clone(annotation.resolution_record)],
-    ['has_screenshot', hasScreenshot(annotation, targets)],
+    ['has_screenshot', annotationHasScreenshot(annotation, targets)],
     ['has_attachments', Boolean(annotation.has_attachments || annotation.attachments?.length)],
     ['created_at', annotation.created_at],
     ['updated_at', annotation.updated_at],
   ]);
-}
-
-function withoutEmbeddedContent(value) {
-  if (Array.isArray(value)) return value.map(withoutEmbeddedContent);
-  if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => key !== 'data_url')
-      .map(([key, nestedValue]) => [key, withoutEmbeddedContent(nestedValue)]),
-  );
-}
-
-export function inspectAnnotation(annotation) {
-  const inspected = withoutEmbeddedContent(toReadAnnotation(annotation));
-  const targets = annotationTargets(annotation);
-  for (const field of [
-    'component_name',
-    'source_file_path',
-    'source_line_range',
-    'source_map_available',
-    'context_hints',
-  ]) {
-    if (annotation[field] !== undefined) inspected[field] = clone(annotation[field]);
-  }
-  inspected.has_screenshot = hasScreenshot(annotation, targets);
-  inspected.has_attachments = Boolean(annotation.has_attachments || annotation.attachments?.length);
-  return inspected;
 }
 
 export const FRAMEWORK_COMPONENTS_OMITTED_FROM_SUMMARIES = FRAMEWORK_COMPONENT_NAMES;

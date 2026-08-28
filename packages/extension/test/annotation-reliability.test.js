@@ -9,6 +9,9 @@ const requireFromWxt = createRequire(wxtPackage);
 const { parseHTML } = requireFromWxt('linkedom');
 
 async function loadScript(context, relativePath) {
+  if (['annotation-collection.js', 'annotation-validation.js', 'content/modules/api-bridge.js', 'content/modules/badge-manager.js', 'background/queue-sync.js'].includes(relativePath) && !context.WaypointAnnotationTargets) {
+    await loadScript(context, 'annotation-targets.js');
+  }
   if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationPage) {
     await loadScript(context, 'annotation-page.js');
   }
@@ -556,7 +559,7 @@ test('Queue sync retains migrated terminal history missing from the server', asy
   };
 
   const result = context.WaypointQueueSync.merge([migrated], [], []);
-  assert.deepEqual(JSON.parse(JSON.stringify(result.annotations)), [migrated]);
+  assert.deepEqual(JSON.parse(JSON.stringify(result.annotations)), [{ ...migrated, targets: [{}] }]);
 
   const background = await readFile(new URL('../public/background/background.js', import.meta.url), 'utf8');
   assert.match(background, /serverIds\.has\(annotation\.id\) \|\| annotation\.status === 'pending'/);
@@ -717,6 +720,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   const overlay = context.document.querySelector('#overlay');
   const annotation = {
     id: 'waypoint_1750000000001_abcdefghi',
+    selector: '#target',
     comment: 'Change it',
     status: 'pending',
     created_at: '2026-01-01T00:00:00.000Z',
@@ -728,7 +732,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   };
   context.WaypointShadowHost = { getRoot: () => overlay };
   let resolvedTarget = target;
-  context.WaypointElementContext = { findElementBySelector: candidate => candidate.id === annotation.id ? resolvedTarget : null };
+  context.WaypointElementContext = { findElementBySelector: candidate => candidate.selector === '#target' ? resolvedTarget : null };
   await loadScript(context, 'annotation-status.js');
   await loadScript(context, 'content/modules/event-bus.js');
   await loadScript(context, 'content/modules/badge-manager.js');
@@ -755,6 +759,32 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   assert.equal(replacement.style.backgroundColor, 'yellow');
   assert.equal(replacement.textContent, 'Old');
   assert.equal(context.document.querySelector('[data-waypoint-style]'), null);
+});
+
+test('deleting an earlier Annotation preserves shared Target badge ordinals', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="single"></button><button id="first"></button><button id="second"></button></body></html>');
+  const overlay = context.document.querySelector('#overlay');
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  context.WaypointElementContext = {
+    findElementBySelector: candidate => context.document.querySelector(candidate.selector),
+  };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  const single = {
+    id: 'waypoint_1750000000000_abcdefghi', status: 'pending', comment: 'Single', created_at: '2026-01-01T00:00:00.000Z', targets: [{ selector: '#single' }],
+  };
+  const shared = {
+    id: 'waypoint_1750000000001_abcdefghi', status: 'pending', comment: 'Shared', created_at: '2026-01-01T00:00:01.000Z', targets: [{ selector: '#first' }, { selector: '#second' }],
+  };
+  context.WaypointBadgeManager.init();
+  context.WaypointBadgeManager.render([single, shared]);
+  context.WaypointEvents.emit('annotation:deleted', { id: single.id, annotation: single });
+
+  assert.deepEqual(
+    [...overlay.querySelectorAll('.waypoint-badge')].map(badge => badge.childNodes[0].textContent),
+    ['1a', '1b'],
+  );
 });
 
 test('commentless text edits render a labeled pin and deleting all restores the original text', async () => {

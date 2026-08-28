@@ -202,8 +202,13 @@ var WaypointInspectionMode = (() => {
     const target = getDeepTarget(e);
     if (!target || target === document.body || target === document.documentElement) return;
 
-    tempDisable();
-    WaypointEvents.emit('inspection:elementClicked', { element: target, clientX: e.clientX, clientY: e.clientY });
+    if (!WaypointMultiTargetSelection.shouldHandle(e.shiftKey)) tempDisable();
+    WaypointEvents.emit('inspection:elementClicked', {
+      element: target,
+      clientX: e.clientX,
+      clientY: e.clientY,
+      shiftKey: e.shiftKey,
+    });
   }
 
   // Safety nets — swallow mousedown/click so frameworks never see the interaction
