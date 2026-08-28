@@ -399,6 +399,36 @@ var WaypointAPI = (() => {
     } catch { /* ignore */ }
   }
 
+  async function getShowTargetControls() {
+    try {
+      const result = await chrome.storage.local.get(['waypointShowTargetControls']);
+      return result.waypointShowTargetControls !== false;
+    } catch {
+      return true;
+    }
+  }
+
+  async function saveShowTargetControls(enabled) {
+    try {
+      await chrome.storage.local.set({ waypointShowTargetControls: Boolean(enabled) });
+    } catch { /* ignore */ }
+  }
+
+  async function getAnnotationExperienceExpanded() {
+    try {
+      const result = await chrome.storage.local.get(['waypointAnnotationExperienceExpanded']);
+      return result.waypointAnnotationExperienceExpanded !== false;
+    } catch {
+      return true;
+    }
+  }
+
+  async function saveAnnotationExperienceExpanded(expanded) {
+    try {
+      await chrome.storage.local.set({ waypointAnnotationExperienceExpanded: Boolean(expanded) });
+    } catch { /* ignore */ }
+  }
+
   async function getToolbarPosition() {
     try {
       const r = await chrome.storage.local.get(['waypointToolbarPos']);
@@ -535,6 +565,10 @@ var WaypointAPI = (() => {
     saveScreenshotEnabled,
     getShowDesignActions,
     saveShowDesignActions,
+    getShowTargetControls,
+    saveShowTargetControls,
+    getAnnotationExperienceExpanded,
+    saveAnnotationExperienceExpanded,
     getToolbarPosition,
     saveToolbarPosition,
     getToolbarCollapsed,

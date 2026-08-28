@@ -125,6 +125,23 @@ test('screenshot settings distinguish automatic MCP context from manual attachme
   assert.match(toolbar, /Manual reference images stay available/);
 });
 
+test('settings can hide mouse target controls without presenting keyboard targeting as disabled', async () => {
+  const toolbar = await readFile(toolbarUrl, 'utf8');
+
+  assert.match(toolbar, /Show target controls/);
+  assert.match(toolbar, /Show mouse controls while inspecting\. Arrow keys always work\./);
+  assert.match(toolbar, /saveShowTargetControls/);
+});
+
+test('annotation experience switches share an expanded-by-default disclosure with a live summary', async () => {
+  const toolbar = await readFile(toolbarUrl, 'utf8');
+
+  assert.match(toolbar, /Annotation experience/);
+  assert.match(toolbar, /aria-expanded="\$\{annotationExperienceExpanded\}"/);
+  assert.match(toolbar, /waypoint-annotation-experience-count/);
+  assert.match(toolbar, /saveAnnotationExperienceExpanded/);
+});
+
 test('toolbar exposes the global Design Actions preference with Impeccable guidance', async () => {
   const [toolbar, readme] = await Promise.all([
     readFile(toolbarUrl, 'utf8'),

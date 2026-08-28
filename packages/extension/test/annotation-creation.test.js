@@ -157,6 +157,60 @@ test('Design Actions visibility defaults on and persists through the extension p
   assert.deepEqual(JSON.parse(JSON.stringify(writes)), [{ waypointShowDesignActions: false }]);
 });
 
+test('target controls default on and persist independently from keyboard targeting', async () => {
+  const writes = [];
+  let stored = {};
+  const context = vm.createContext({
+    window: { location: { protocol: 'https:' } },
+    chrome: {
+      runtime: { sendMessage: async () => ({ success: true }) },
+      storage: {
+        local: {
+          get: async () => stored,
+          set: async update => {
+            stored = { ...stored, ...update };
+            writes.push(update);
+          },
+        },
+      },
+    },
+  });
+  context.globalThis = context;
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  assert.equal(await context.WaypointAPI.getShowTargetControls(), true);
+  await context.WaypointAPI.saveShowTargetControls(false);
+  assert.equal(await context.WaypointAPI.getShowTargetControls(), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(writes)), [{ waypointShowTargetControls: false }]);
+});
+
+test('annotation experience disclosure defaults open and persists the user choice', async () => {
+  const writes = [];
+  let stored = {};
+  const context = vm.createContext({
+    window: { location: { protocol: 'https:' } },
+    chrome: {
+      runtime: { sendMessage: async () => ({ success: true }) },
+      storage: {
+        local: {
+          get: async () => stored,
+          set: async update => {
+            stored = { ...stored, ...update };
+            writes.push(update);
+          },
+        },
+      },
+    },
+  });
+  context.globalThis = context;
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  assert.equal(await context.WaypointAPI.getAnnotationExperienceExpanded(), true);
+  await context.WaypointAPI.saveAnnotationExperienceExpanded(false);
+  assert.equal(await context.WaypointAPI.getAnnotationExperienceExpanded(), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(writes)), [{ waypointAnnotationExperienceExpanded: false }]);
+});
+
 test('content rejects non-image or oversized attachment payloads before they reach the background', async () => {
   const messages = [];
   const context = vm.createContext({
