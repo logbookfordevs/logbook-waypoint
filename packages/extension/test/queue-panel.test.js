@@ -431,7 +431,7 @@ test('Queue keeps permanent deletion secondary and requires an explicit confirma
     comment: 'Historical request',
     selector: '#target',
   };
-  const { deleted, root } = await openQueue([annotation]);
+  const { deleted, emitted, root } = await openQueue([annotation]);
   root.querySelector('.waypoint-queue-history-view').click();
   root.querySelector('.waypoint-queue-delete').click();
   assert.equal(deleted.length, 0);
@@ -440,6 +440,9 @@ test('Queue keeps permanent deletion secondary and requires an explicit confirma
   root.querySelector('.waypoint-queue-confirm-delete').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(deleted, [annotation.id]);
+  const deletedEvent = emitted.find(event => event.name === 'annotation:deleted');
+  assert.equal(deletedEvent?.payload.id, annotation.id);
+  assert.equal(deletedEvent?.payload.annotation.id, annotation.id);
   assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
   assert.equal(root.querySelector('.waypoint-queue-history-view').getAttribute('aria-pressed'), 'true');
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /No history on this route/);

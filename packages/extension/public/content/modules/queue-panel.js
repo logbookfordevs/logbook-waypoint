@@ -424,6 +424,7 @@ var WaypointQueuePanel = (() => {
     menu.querySelector('.waypoint-queue-confirm-delete').addEventListener('click', async () => {
       try {
         await actions.delete?.(annotation);
+        WaypointEvents.emit('annotation:deleted', { id: annotation.id, annotation });
         const deletedIndex = annotations.findIndex(candidate => candidate.id === annotation.id);
         if (deletedIndex >= 0) annotations.splice(deletedIndex, 1);
         renderRouteView(queue, routeState, view);
