@@ -11,6 +11,7 @@ const { parseHTML } = requireFromWxt('linkedom');
 const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel.js', import.meta.url);
 const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
+const pageUrl = new URL('../.output/chrome-mv3/annotation-page.js', import.meta.url);
 
 function createHarness(annotations, {
   projectAnnotations,
@@ -139,12 +140,14 @@ function createHarness(annotations, {
 
 async function openQueue(annotations, options) {
   const harness = createHarness(annotations, options);
-  const [statusSource, queuePanelSource, toolbarSource] = await Promise.all([
+  const [statusSource, pageSource, queuePanelSource, toolbarSource] = await Promise.all([
     readFile(statusUrl, 'utf8'),
+    readFile(pageUrl, 'utf8'),
     readFile(queuePanelUrl, 'utf8'),
     readFile(toolbarUrl, 'utf8'),
   ]);
   vm.runInContext(statusSource, harness.context, { filename: 'annotation-status.js' });
+  vm.runInContext(pageSource, harness.context, { filename: 'annotation-page.js' });
   vm.runInContext(queuePanelSource, harness.context, { filename: 'queue-panel.js' });
   vm.runInContext(toolbarSource, harness.context, { filename: 'floating-toolbar.js' });
   await harness.context.WaypointToolbar.init();
@@ -519,10 +522,10 @@ test('Queue offers compact access to other routes without replacing its route-fi
   root.querySelector('.waypoint-queue-other-routes').click();
   await new Promise(resolve => setImmediate(resolve));
 
-  assert.match(root.querySelector('.waypoint-queue-list').textContent, /\/dashboard\?tab=activity#today/);
-  root.querySelector('[data-route="/dashboard?tab=activity#today"]').click();
+  assert.match(root.querySelector('.waypoint-queue-list').textContent, /\/dashboard/);
+  root.querySelector('[data-route="/dashboard"]').click();
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /Other route request/);
-  assert.match(root.querySelector('.waypoint-queue-header').textContent, /dashboard\?tab=activity#today/);
+  assert.match(root.querySelector('.waypoint-queue-header').textContent, /dashboard/);
 });
 
 test('Queue navigates to another route without resolving its Target in the current document', async () => {
@@ -543,7 +546,7 @@ test('Queue navigates to another route without resolving its Target in the curre
   const { context, emitted, root } = await openQueue([current], { projectAnnotations: [current, other] });
 
   root.querySelector('.waypoint-queue-other-routes').click();
-  root.querySelector('[data-route="/dashboard?tab=activity#today"]').click();
+  root.querySelector('[data-route="/dashboard"]').click();
   const routeAction = root.querySelector('.waypoint-queue-open');
   assert.equal(routeAction.textContent, 'Go to route');
   routeAction.click();

@@ -189,6 +189,99 @@ test('connected server health checks automatically reconcile MCP lifecycle chang
   assert.equal(reconciliationCount, 1);
 });
 
+test('health check pulls an MCP resolution into local storage and notifies the open page', async () => {
+  const id = 'waypoint_1750000000000_health';
+  const store = {
+    waypointAnnotations: [{
+      id,
+      url: 'http://localhost:3000/account?active=Notifications',
+      status: 'pending',
+      comment: 'Resolve through MCP',
+      created_at: '2026-08-28T12:43:31.998Z',
+      updated_at: '2026-08-28T12:43:32.020Z',
+      _synced: true,
+    }],
+    waypointDeletedAnnotationIds: [],
+    waypointDesignIntentRemovalIds: [],
+    waypointVariantIntentRemovalIds: [],
+  };
+  const serverAnnotation = {
+    ...store.waypointAnnotations[0],
+    status: 'resolved',
+    updated_at: '2026-08-28T12:47:09.355Z',
+  };
+  delete serverAnnotation._synced;
+  let messageListener;
+  const tabMessages = [];
+  const context = vm.createContext({
+    URL,
+    AbortSignal,
+    console,
+    importScripts: () => {},
+    fetch: async url => ({
+      ok: true,
+      json: async () => String(url).endsWith('/health')
+        ? { status: 'ok' }
+        : { annotations: [serverAnnotation] },
+    }),
+    chrome: {
+      runtime: {
+        getManifest: () => ({ version: '0.1.0' }),
+        onMessage: { addListener: listener => { messageListener = listener; } },
+      },
+      storage: { local: {
+        get: async keys => Object.fromEntries(keys.map(key => [key, store[key]])),
+        set: async values => Object.assign(store, values),
+      } },
+      tabs: {
+        query: async () => [{ id: 7, url: 'http://localhost:3000/account?active=Notifications' }],
+        sendMessage: async (tabId, message) => { tabMessages.push({ tabId, message }); },
+      },
+    },
+    WaypointAnnotationCollection: { canonicalize: annotations => annotations || [] },
+    WaypointAnnotationId: { isValid: candidate => candidate.startsWith('waypoint_') },
+    WaypointAnnotationStatus: { normalize: annotation => annotation },
+    WaypointDesignIntent: {
+      preserve: (_source, target) => target,
+      removeIds: (ids, removed) => ids.filter(candidate => !removed.includes(candidate)),
+    },
+    WaypointVariantIntent: {
+      preserve: (_source, target) => target,
+      removeIds: (ids, removed) => ids.filter(candidate => !removed.includes(candidate)),
+    },
+    globalThis: null,
+  });
+  context.globalThis = context;
+  vm.runInContext(await readFile(queueSyncUrl, 'utf8'), context, { filename: 'queue-sync.js' });
+  const backgroundSource = await readFile(backgroundUrl, 'utf8');
+  vm.runInContext(
+    backgroundSource.slice(0, backgroundSource.indexOf('// Initialize the background service worker')),
+    context,
+    { filename: 'background.js' },
+  );
+  const background = vm.runInContext('Object.create(WaypointAnnotationsBackground.prototype)', context);
+  background.apiServerUrl = 'http://127.0.0.1:3846';
+  background._syncCyclePromise = null;
+  background._automaticSyncPromise = null;
+  background._withStorageLock = operation => operation();
+  background.validateAnnotationAttachments = () => {};
+  background.updateAllBadges = async () => {};
+  background.isSupportedUrl = async () => true;
+  background.syncAnnotationsToAPI = async () => {};
+  background.setupMessageListener();
+
+  const response = await new Promise(resolve => {
+    messageListener({ action: 'checkMCPStatus' }, {}, resolve);
+  });
+
+  assert.equal(response.success, true);
+  assert.equal(response.status.connected, true);
+  assert.equal(store.waypointAnnotations[0].status, 'resolved');
+  assert.equal(tabMessages.length, 1);
+  assert.equal(tabMessages[0].tabId, 7);
+  assert.equal(tabMessages[0].message.action, 'annotationsUpdated');
+});
+
 test('site access policy executes every sender URL and permission branch', async () => {
   const context = vm.createContext({ URL });
   vm.runInContext(await readFile(siteAccessUrl, 'utf8'), context);

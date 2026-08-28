@@ -3,6 +3,7 @@
 importScripts('../annotation-id.js');
 importScripts('../annotation-status.js');
 importScripts('../annotation-collection.js');
+importScripts('../annotation-page.js');
 importScripts('../design-intent.js');
 importScripts('../variant-intent.js');
 importScripts('../annotation-validation.js');
@@ -703,9 +704,9 @@ class WaypointAnnotationsBackground {
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       const deletedIds = result.waypointDeletedAnnotationIds || [];
 
-      const toDelete = all.filter(a => a.url === url);
+      const toDelete = all.filter(a => WaypointAnnotationPage.matches(a.url, url));
       for (const annotation of toDelete) WaypointVariantPolicy.assertDeleteAllowed(annotation);
-      const remaining = all.filter(a => a.url !== url);
+      const remaining = all.filter(a => !WaypointAnnotationPage.matches(a.url, url));
 
       for (const a of toDelete) {
         if (!deletedIds.includes(a.id)) deletedIds.push(a.id);
@@ -1222,7 +1223,7 @@ class WaypointAnnotationsBackground {
         const mergeResult = WaypointQueueSync.merge(
           localAnnotations,
           serverAnnotations,
-          deletedIds,
+          [...deletedIds],
           activeDesignIntentRemovalIds,
           activeVariantIntentRemovalIds
         );

@@ -128,7 +128,7 @@ var WaypointQueuePanel = (() => {
   function routeFor(annotation) {
     try {
       const url = new URL(annotation.url);
-      return `${url.pathname}${url.search}${url.hash}`;
+      return url.pathname;
     } catch {
       return annotation.url || 'Unknown route';
     }
@@ -137,7 +137,7 @@ var WaypointQueuePanel = (() => {
   function groupOtherRoutes(projectAnnotations) {
     const groups = new Map();
     for (const annotation of projectAnnotations) {
-      if (annotation.url === window.location.href) continue;
+      if (WaypointAnnotationPage.matches(annotation.url, window.location.href)) continue;
       const route = routeFor(annotation);
       const routeState = groups.get(route) || { annotations: [], route, isCurrent: false };
       routeState.annotations.push(annotation);
@@ -211,7 +211,7 @@ var WaypointQueuePanel = (() => {
     if (!root) return;
     const currentRoute = {
       annotations,
-      route: window.location.pathname + window.location.search + window.location.hash,
+      route: window.location.pathname,
       isCurrent: true,
     };
     const queue = { actions, currentRoute, otherRoutes: groupOtherRoutes(projectAnnotations), syncStatus };

@@ -9,6 +9,9 @@ const requireFromWxt = createRequire(wxtPackage);
 const { parseHTML } = requireFromWxt('linkedom');
 
 async function loadScript(context, relativePath) {
+  if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationPage) {
+    await loadScript(context, 'annotation-page.js');
+  }
   if ((relativePath === 'content/modules/api-bridge.js' || relativePath === 'background/queue-sync.js') && !context.WaypointAnnotationStatus) {
     await loadScript(context, 'annotation-status.js');
     await loadScript(context, 'annotation-collection.js');
@@ -37,6 +40,7 @@ function createBrowserContext(html = '<html><head></head><body></body></html>') 
     Node: window.Node,
     Element: window.Element,
     MutationObserver: window.MutationObserver,
+    URL,
     CSS: { escape: value => String(value).replace(/([^a-zA-Z0-9_-])/g, '\\$1') },
     console,
     setTimeout,
@@ -387,6 +391,33 @@ test('storage reads ignore predecessor Annotation IDs', async () => {
 
   assert.deepEqual(annotations.map(annotation => annotation.id), [
     'waypoint_1750000000000_abc123xyz',
+  ]);
+});
+
+test('storage reads include every View State on the current Page', async () => {
+  const context = createBrowserContext();
+  context.window.location = new URL('http://localhost:3001/account?active=Notifications');
+  context.chrome = {
+    storage: {
+      local: {
+        get: async () => ({
+          waypointAnnotations: [
+            { id: 'waypoint_1750000000000_profile', url: 'http://localhost:3001/account?active=Profile', status: 'pending' },
+            { id: 'waypoint_1750000000001_notifications', url: 'http://localhost:3001/account?active=Notifications', status: 'pending' },
+            { id: 'waypoint_1750000000002_dashboard', url: 'http://localhost:3001/dashboard', status: 'pending' },
+          ],
+        }),
+      },
+    },
+  };
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  const annotations = await context.WaypointAPI.loadAnnotations();
+
+  assert.deepEqual(annotations.map(annotation => annotation.id), [
+    'waypoint_1750000000000_profile',
+    'waypoint_1750000000001_notifications',
   ]);
 });
 
@@ -760,4 +791,41 @@ test('commentless text edits render a labeled pin and deleting all restores the 
 
   assert.equal(target.textContent, 'Old');
   assert.equal(overlay.querySelector('.waypoint-badge'), null);
+});
+
+test('Page annotations render pins only for Targets present in the current View State', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="notifications">Email alerts</button></body></html>');
+  const overlay = context.document.querySelector('#overlay');
+  const notificationsTarget = context.document.querySelector('#notifications');
+  const annotations = [
+    {
+      id: 'waypoint_1750000000003_profile',
+      url: 'http://localhost:3001/account?active=Profile',
+      status: 'pending',
+      created_at: '2026-01-01T00:00:00.000Z',
+      comment: 'Profile request',
+      selector: '#profile',
+    },
+    {
+      id: 'waypoint_1750000000004_notifications',
+      url: 'http://localhost:3001/account?active=Notifications',
+      status: 'pending',
+      created_at: '2026-01-01T00:00:01.000Z',
+      comment: 'Notifications request',
+      selector: '#notifications',
+    },
+  ];
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  context.WaypointElementContext = {
+    findElementBySelector: annotation => annotation.selector === '#notifications' ? notificationsTarget : null,
+  };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+
+  context.WaypointBadgeManager.render(annotations);
+
+  const badges = overlay.querySelectorAll('.waypoint-badge');
+  assert.equal(badges.length, 1);
+  assert.equal(badges[0].dataset.annotationId, annotations[1].id);
 });

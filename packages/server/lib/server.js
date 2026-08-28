@@ -688,7 +688,7 @@ export class LocalAnnotationsServer {
                 },
                 url: {
                   type: 'string',
-                  description: 'Filter by specific localhost URL. Supports exact match (e.g., "http://localhost:3000/dashboard") or pattern match with base URL (e.g., "http://localhost:3000/" or "http://localhost:3000/*" to get all annotations from that project)'
+                  description: 'Filter by localhost scope. A Page URL without query or hash includes every View State on that pathname (e.g., "http://localhost:3000/account"). A complete Captured URL filters one exact View State. Use a project root or wildcard (e.g., "http://localhost:3000/" or "http://localhost:3000/*") for the entire project.'
                 }
               },
               additionalProperties: false

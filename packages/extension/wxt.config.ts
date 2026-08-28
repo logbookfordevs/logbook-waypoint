@@ -22,6 +22,7 @@ const CONTENT_MODULES = [
   'annotation-id.js',
   'annotation-status.js',
   'annotation-collection.js',
+  'annotation-page.js',
   'design-intent.js',
   'variant-intent.js',
   'annotation-validation.js',

@@ -150,7 +150,7 @@ var WaypointAPI = (() => {
       const result = await chrome.storage.local.get(['waypointAnnotations']);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
       all.forEach(WaypointDesignIntent.assertAnnotation);
-      return all.filter(a => a.url === window.location.href);
+      return all.filter(a => WaypointAnnotationPage.matches(a.url, window.location.href));
     } catch {
       return [];
     }
@@ -340,11 +340,11 @@ var WaypointAPI = (() => {
         'waypointDeletedAnnotationIds',
       ]);
       const all = WaypointAnnotationCollection.canonicalize(result.waypointAnnotations);
-      const removed = all.filter(candidate => candidate.url === window.location.href);
+      const removed = all.filter(candidate => WaypointAnnotationPage.matches(candidate.url, window.location.href));
       for (const annotation of removed) {
         WaypointVariantPolicy.assertDeleteAllowed(annotation);
       }
-      const remaining = all.filter(a => a.url !== window.location.href);
+      const remaining = all.filter(a => !WaypointAnnotationPage.matches(a.url, window.location.href));
       const deletedIds = result.waypointDeletedAnnotationIds || [];
       for (const annotation of removed) {
         if (!deletedIds.includes(annotation.id)) deletedIds.push(annotation.id);
