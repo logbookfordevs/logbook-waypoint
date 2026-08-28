@@ -663,7 +663,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'read_annotations',
-            description: 'Intake requests from the annotation Queue. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Unfiltered calls discover projects without returning Annotation bodies; repeat with an explicit url filter for one project. Scoped calls return compact implementation context. Authored pending_changes and css are original-to-value instructions to map onto the project design system. Read is side-effect-free.',
+            description: 'Intake requests from the annotation Queue. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Unfiltered calls discover projects without returning Annotation bodies; repeat with an explicit url filter for one project. Scoped calls return focused implementation context. Authored pending_changes and css are original-to-value instructions to map onto the project design system. Read is side-effect-free.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -696,7 +696,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'inspect_annotations',
-            description: 'Diagnose one or more selected annotations using their complete captured context. Use multiple IDs for annotations being understood or implemented together. Useful when compact context leaves layout, cascade, placement, source identity, or target relationships ambiguous.',
+            description: 'Diagnose one or more selected annotations using their complete captured context. Use multiple IDs for annotations being understood or implemented together. Useful when focused implementation context leaves layout, cascade, placement, source identity, or target relationships ambiguous.',
             inputSchema: {
               type: 'object',
               properties: {
