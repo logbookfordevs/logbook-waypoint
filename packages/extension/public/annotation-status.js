@@ -92,9 +92,7 @@ globalThis.WaypointAnnotationStatus = (() => {
   }
 
   function isRenderable(annotation) {
-    const normalized = normalize(annotation);
-    return ACTIONABLE_STATUSES.has(normalized.status)
-      || normalized.design_intent !== undefined && ['resolved', 'discarded'].includes(normalized.status);
+    return isActionable(annotation);
   }
 
   function filterRenderable(annotations) {

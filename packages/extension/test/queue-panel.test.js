@@ -11,6 +11,7 @@ const { parseHTML } = requireFromWxt('linkedom');
 const queuePanelUrl = new URL('../.output/chrome-mv3/content/modules/queue-panel.js', import.meta.url);
 const toolbarUrl = new URL('../public/content/modules/floating-toolbar.js', import.meta.url);
 const statusUrl = new URL('../.output/chrome-mv3/annotation-status.js', import.meta.url);
+const pageUrl = new URL('../.output/chrome-mv3/annotation-page.js', import.meta.url);
 
 function createHarness(annotations, {
   projectAnnotations,
@@ -132,25 +133,53 @@ function createHarness(annotations, {
     downloadBlobs,
     downloads,
     emitted,
+    listeners,
     root,
   };
 }
 
 async function openQueue(annotations, options) {
   const harness = createHarness(annotations, options);
-  const [statusSource, queuePanelSource, toolbarSource] = await Promise.all([
+  const [statusSource, pageSource, queuePanelSource, toolbarSource] = await Promise.all([
     readFile(statusUrl, 'utf8'),
+    readFile(pageUrl, 'utf8'),
     readFile(queuePanelUrl, 'utf8'),
     readFile(toolbarUrl, 'utf8'),
   ]);
   vm.runInContext(statusSource, harness.context, { filename: 'annotation-status.js' });
+  vm.runInContext(pageSource, harness.context, { filename: 'annotation-page.js' });
   vm.runInContext(queuePanelSource, harness.context, { filename: 'queue-panel.js' });
   vm.runInContext(toolbarSource, harness.context, { filename: 'floating-toolbar.js' });
   await harness.context.WaypointToolbar.init();
+  if (options?.annotationModeActive) {
+    harness.listeners.get('inspection:started')?.();
+  }
   harness.root.querySelector('.waypoint-tb-queue').click();
+  if (options?.annotationModeActive && harness.emitted.some(event => event.name === 'inspection:stop')) {
+    harness.listeners.get('inspection:stopped')?.();
+  }
   await new Promise(resolve => setImmediate(resolve));
   return harness;
 }
+
+test('opening Queue stops active annotation targeting without restoring it', async () => {
+  const { emitted, root } = await openQueue([], { annotationModeActive: true });
+
+  assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
+  assert.equal(root.querySelector('.waypoint-tb-annotate').classList.contains('active'), false);
+  assert.equal(emitted.filter(event => event.name === 'inspection:stop').length, 1);
+
+  root.querySelector('.waypoint-queue-close').click();
+  assert.equal(root.querySelector('.waypoint-tb-annotate').classList.contains('active'), false);
+  assert.equal(emitted.filter(event => event.name === 'inspection:start').length, 0);
+});
+
+test('opening Queue leaves inactive annotation targeting unchanged', async () => {
+  const { emitted, root } = await openQueue([]);
+
+  assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
+  assert.equal(emitted.filter(event => event.name === 'inspection:stop').length, 0);
+});
 
 test('toolbar Queue button opens an anchored panel with current-route Annotations', async () => {
   const annotations = [
@@ -215,8 +244,35 @@ test('Queue keeps manual synchronization retryable while the server is unavailab
   await new Promise(resolve => setImmediate(resolve));
 
   assert.equal(attempts, 1);
-  assert.equal(button.disabled, false);
+  assert.equal(root.querySelector('.waypoint-queue-sync-now').disabled, false);
   assert.match(root.querySelector('.waypoint-queue-sync-status').textContent, /Up to date/);
+});
+
+test('Queue refreshes Active and History in place after manual synchronization', async () => {
+  const annotations = [
+    {
+      id: 'waypoint_1750000000010_sync',
+      url: 'http://localhost:3000/settings/members',
+      status: 'pending',
+      comment: 'Resolve this request on the server',
+      selector: '#target',
+    },
+  ];
+  const { root } = await openQueue(annotations, {
+    syncNow: async () => {
+      annotations.splice(0, 1, { ...annotations[0], status: 'resolved' });
+      return { connected: true, pending_count: 0 };
+    },
+  });
+
+  root.querySelector('.waypoint-queue-sync-now').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const panel = root.querySelector('.waypoint-queue-panel');
+  assert.notEqual(panel, null);
+  assert.match(panel.querySelector('.waypoint-queue-active-view').textContent, /Active 0/);
+  assert.match(panel.querySelector('.waypoint-queue-history-view').textContent, /History 1/);
+  assert.match(panel.querySelector('.waypoint-queue-list').textContent, /No active annotations/);
 });
 
 test('settings show existing site access without an Enable action', async () => {
@@ -404,7 +460,7 @@ test('Queue keeps permanent deletion secondary and requires an explicit confirma
     comment: 'Historical request',
     selector: '#target',
   };
-  const { deleted, root } = await openQueue([annotation]);
+  const { deleted, emitted, root } = await openQueue([annotation]);
   root.querySelector('.waypoint-queue-history-view').click();
   root.querySelector('.waypoint-queue-delete').click();
   assert.equal(deleted.length, 0);
@@ -413,6 +469,9 @@ test('Queue keeps permanent deletion secondary and requires an explicit confirma
   root.querySelector('.waypoint-queue-confirm-delete').click();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(deleted, [annotation.id]);
+  const deletedEvent = emitted.find(event => event.name === 'annotation:deleted');
+  assert.equal(deletedEvent?.payload.id, annotation.id);
+  assert.equal(deletedEvent?.payload.annotation.id, annotation.id);
   assert.notEqual(root.querySelector('.waypoint-queue-panel'), null);
   assert.equal(root.querySelector('.waypoint-queue-history-view').getAttribute('aria-pressed'), 'true');
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /No history on this route/);
@@ -463,10 +522,10 @@ test('Queue offers compact access to other routes without replacing its route-fi
   root.querySelector('.waypoint-queue-other-routes').click();
   await new Promise(resolve => setImmediate(resolve));
 
-  assert.match(root.querySelector('.waypoint-queue-list').textContent, /\/dashboard\?tab=activity#today/);
-  root.querySelector('[data-route="/dashboard?tab=activity#today"]').click();
+  assert.match(root.querySelector('.waypoint-queue-list').textContent, /\/dashboard/);
+  root.querySelector('[data-route="/dashboard"]').click();
   assert.match(root.querySelector('.waypoint-queue-list').textContent, /Other route request/);
-  assert.match(root.querySelector('.waypoint-queue-header').textContent, /dashboard\?tab=activity#today/);
+  assert.match(root.querySelector('.waypoint-queue-header').textContent, /dashboard/);
 });
 
 test('Queue navigates to another route without resolving its Target in the current document', async () => {
@@ -487,7 +546,7 @@ test('Queue navigates to another route without resolving its Target in the curre
   const { context, emitted, root } = await openQueue([current], { projectAnnotations: [current, other] });
 
   root.querySelector('.waypoint-queue-other-routes').click();
-  root.querySelector('[data-route="/dashboard?tab=activity#today"]').click();
+  root.querySelector('[data-route="/dashboard"]').click();
   const routeAction = root.querySelector('.waypoint-queue-open');
   assert.equal(routeAction.textContent, 'Go to route');
   routeAction.click();

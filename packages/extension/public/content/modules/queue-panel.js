@@ -128,7 +128,7 @@ var WaypointQueuePanel = (() => {
   function routeFor(annotation) {
     try {
       const url = new URL(annotation.url);
-      return `${url.pathname}${url.search}${url.hash}`;
+      return url.pathname;
     } catch {
       return annotation.url || 'Unknown route';
     }
@@ -137,7 +137,7 @@ var WaypointQueuePanel = (() => {
   function groupOtherRoutes(projectAnnotations) {
     const groups = new Map();
     for (const annotation of projectAnnotations) {
-      if (annotation.url === window.location.href) continue;
+      if (WaypointAnnotationPage.matches(annotation.url, window.location.href)) continue;
       const route = routeFor(annotation);
       const routeState = groups.get(route) || { annotations: [], route, isCurrent: false };
       routeState.annotations.push(annotation);
@@ -189,6 +189,17 @@ var WaypointQueuePanel = (() => {
     return WaypointAPI.getSyncStatus().catch(error => ({ connected: false, error: error.message }));
   }
 
+  async function refreshQueue(queue, routeState) {
+    const [annotations, projectAnnotations] = await Promise.all([
+      WaypointAPI.loadAnnotations(),
+      WaypointAPI.loadProjectAnnotations(),
+    ]);
+    queue.currentRoute = { ...queue.currentRoute, annotations };
+    queue.otherRoutes = groupOtherRoutes(projectAnnotations);
+    if (routeState.isCurrent) return queue.currentRoute;
+    return queue.otherRoutes.get(routeState.route) || { ...routeState, annotations: [] };
+  }
+
   async function open(anchor, actions = {}) {
     close();
     const [annotations, projectAnnotations, syncStatus] = await Promise.all([
@@ -200,7 +211,7 @@ var WaypointQueuePanel = (() => {
     if (!root) return;
     const currentRoute = {
       annotations,
-      route: window.location.pathname + window.location.search + window.location.hash,
+      route: window.location.pathname,
       isCurrent: true,
     };
     const queue = { actions, currentRoute, otherRoutes: groupOtherRoutes(projectAnnotations), syncStatus };
@@ -278,12 +289,16 @@ var WaypointQueuePanel = (() => {
       button.textContent = 'Syncing…';
       try {
         queue.syncStatus = await WaypointAPI.syncNow();
-        status.querySelector('span').textContent = syncStatusMessage(queue.syncStatus);
+        const refreshedRoute = await refreshQueue(queue, routeState);
+        renderRouteView(queue, refreshedRoute, view);
+        panel.querySelector('.waypoint-queue-sync-now')?.focus();
       } catch (error) {
         status.querySelector('span').textContent = error?.message || 'Sync failed. Try again.';
       } finally {
-        button.disabled = false;
-        button.textContent = 'Sync now';
+        if (button.isConnected) {
+          button.disabled = false;
+          button.textContent = 'Sync now';
+        }
       }
     });
     panel.querySelector('.waypoint-queue-other-routes')?.addEventListener('click', () => renderRouteList(queue));
@@ -409,6 +424,7 @@ var WaypointQueuePanel = (() => {
     menu.querySelector('.waypoint-queue-confirm-delete').addEventListener('click', async () => {
       try {
         await actions.delete?.(annotation);
+        WaypointEvents.emit('annotation:deleted', { id: annotation.id, annotation });
         const deletedIndex = annotations.findIndex(candidate => candidate.id === annotation.id);
         if (deletedIndex >= 0) annotations.splice(deletedIndex, 1);
         renderRouteView(queue, routeState, view);

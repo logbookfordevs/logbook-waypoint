@@ -173,6 +173,7 @@ var WaypointToolbar = (() => {
 
     toolbarEl.querySelector('.waypoint-tb-queue').addEventListener('click', (event) => {
       event.stopPropagation();
+      if (isAnnotating) WaypointEvents.emit('inspection:stop');
       closeSettings();
       WaypointQueuePanel.toggle(toolbarEl, {
         copy: copyAnnotations,
