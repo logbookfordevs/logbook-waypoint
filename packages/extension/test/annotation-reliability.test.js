@@ -761,6 +761,32 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   assert.equal(context.document.querySelector('[data-waypoint-style]'), null);
 });
 
+test('live copy preview survives a host rerender of the same Target', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><h1 id="target">Old</h1></body></html>');
+  const target = context.document.querySelector('#target');
+  const overlay = context.document.querySelector('#overlay');
+  const annotation = {
+    id: 'waypoint_1750000000001_copyrerender',
+    selector: '#target',
+    status: 'pending',
+    created_at: '2026-01-01T00:00:00.000Z',
+    pending_changes: { copyChange: { original: 'Old', value: 'New' } },
+  };
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  context.WaypointElementContext = { findElementBySelector: () => target };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  context.WaypointBadgeManager.init();
+  context.WaypointBadgeManager.render([annotation]);
+  assert.equal(target.textContent, 'New');
+
+  target.textContent = 'Old';
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  assert.equal(target.textContent, 'New');
+});
+
 test('deleting an earlier Annotation preserves shared Target badge ordinals', async () => {
   const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="single"></button><button id="first"></button><button id="second"></button></body></html>');
   const overlay = context.document.querySelector('#overlay');
