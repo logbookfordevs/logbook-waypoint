@@ -59,20 +59,23 @@ var WaypointBadgeManager = (() => {
     startDOMObserver();
   }
 
-  // --- DOM observer: detect when framework re-renders replace annotated elements ---
+  // --- DOM observer: keep previews attached through framework re-renders ---
   function startDOMObserver() {
     if (domObserver) return;
-    const onMutation = () => {
-      // Check if any badge targets got disconnected
+    const onMutation = (mutations) => {
       const hasDisconnected = badges.some(b => !b.targetElement.isConnected);
+      const hasChangedPreview = mutations.some(mutation => badges.some(entry => (
+        entry.targetElement === mutation.target || entry.targetElement.contains(mutation.target)
+      )));
+      if (hasChangedPreview) reconcileConnectedCopyPreviews();
       if (hasDisconnected) {
         // Debounce — frameworks often batch multiple mutations
         clearTimeout(rematchDebounceTimer);
-        rematchDebounceTimer = setTimeout(rematchDisconnectedBadges, 150);
+        rematchDebounceTimer = setTimeout(reconcileBadgeTargets, 150);
       }
     };
     domObserver = new MutationObserver(onMutation);
-    domObserver.observe(document.body, { childList: true, subtree: true });
+    domObserver.observe(document.body, { childList: true, characterData: true, subtree: true });
 
     // Also observe inside open shadow roots so we catch web component re-renders
     try {
@@ -80,13 +83,26 @@ var WaypointBadgeManager = (() => {
       for (const el of hosts) {
         if (el.shadowRoot) {
           const shadowObs = new MutationObserver(onMutation);
-          shadowObs.observe(el.shadowRoot, { childList: true, subtree: true });
+          shadowObs.observe(el.shadowRoot, { childList: true, characterData: true, subtree: true });
         }
       }
     } catch { /* skip — shadow roots may not be available yet */ }
   }
 
-  function rematchDisconnectedBadges() {
+  function reconcileConnectedCopyPreviews() {
+    let changed = false;
+    for (const entry of badges) {
+      if (!entry.targetElement.isConnected) continue;
+      const copyChange = entry.annotation.pending_changes?.copyChange;
+      if (copyChange && entry.targetElement.textContent !== copyChange.value) {
+        entry.targetElement.textContent = copyChange.value;
+        changed = true;
+      }
+    }
+    if (changed) console.log('[Waypoint] Restored copy preview after framework re-render');
+  }
+
+  function reconcileBadgeTargets() {
     let changed = false;
     for (const entry of badges) {
       if (!entry.targetElement.isConnected) {
@@ -104,9 +120,10 @@ var WaypointBadgeManager = (() => {
           }
           changed = true;
         }
+        continue;
       }
     }
-    if (changed) console.log('[Waypoint] Re-matched badges after framework re-render');
+    if (changed) console.log('[Waypoint] Re-matched badge Targets after framework re-render');
   }
 
   function onProvisionalPin({ clientX, clientY, shiftKey = false }) {
