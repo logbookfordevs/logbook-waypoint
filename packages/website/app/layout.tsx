@@ -1,4 +1,11 @@
 import '@fontsource-variable/besley';
+import '@fontsource/poppins/400.css';
+import '@fontsource/poppins/600.css';
+import '@fontsource/poppins/700.css';
+import '@fontsource/literata/400.css';
+import '@fontsource/literata/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/600.css';
 import type { Metadata } from 'next';
 
 import { SiteFooter } from '@/components/site-footer';
@@ -9,6 +16,8 @@ import { siteUrl } from '@/lib/site-config';
 import '@/app/globals.css';
 import '@/app/styles/hero.css';
 import '@/app/styles/workflow.css';
+import '@/app/styles/route-journey.css';
+import '@/app/styles/journey-home.css';
 import '@/app/styles/marketing.css';
 import '@/app/styles/docs.css';
 import '@/app/styles/motion-and-responsive.css';
