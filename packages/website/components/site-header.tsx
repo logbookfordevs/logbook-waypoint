@@ -8,8 +8,8 @@ import { useThemeBoundary } from '@/components/theme-boundary';
 import { useMediaQuery } from '@/lib/use-media-query';
 
 const navigationItems = [
-  { href: '/#workflow', label: 'Workflow' },
-  { href: '/#manifest', label: 'Manifest' },
+  { href: '/#journey', label: 'Journey' },
+  { href: '/#local-first', label: 'Local-first' },
   { href: '/docs', label: 'Docs' },
 ];
 
@@ -87,7 +87,7 @@ export function SiteHeader() {
             const itemHash = item.href.startsWith('/#') ? item.href.slice(1) : '';
             const isCurrent = isDocsItem
               ? pathname.startsWith('/docs')
-              : pathname === '/' && (currentHash === itemHash || (!currentHash && itemHash === '#workflow'));
+              : pathname === '/' && (currentHash === itemHash || (!currentHash && itemHash === '#journey'));
 
             return (
               <a

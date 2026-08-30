@@ -53,6 +53,6 @@ describe('site navigation', () => {
     renderHeader();
     fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
 
-    expect(screen.getByRole('link', { name: 'Workflow' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Journey' })).toHaveAttribute('aria-current', 'page');
   });
 });

@@ -2,61 +2,61 @@
 name: Logbook Waypoint
 description: Local-first visual feedback for coding agents.
 colors:
-  page: "#f1f4f0"
-  page-raised: "#f8faf7"
-  ink: "#102c34"
-  ocean: "#071f25"
-  ocean-raised: "#0b2a30"
-  verdigris: "#167b78"
-  rust: "#b5482e"
-  brass: "#b99247"
-  walnut: "#eee6d7"
-  walnut-raised: "#f8f2e7"
-  focus: "#e5913a"
+  page: "#e9e5d8"
+  page-raised: "#f3f0e7"
+  ink: "#17201e"
+  ocean: "#102c2c"
+  ocean-raised: "#132f31"
+  verdigris: "#3f8580"
+  rust: "#c94f35"
+  brass: "#bd9348"
+  walnut: "#e4d8c7"
+  walnut-raised: "#eee3d4"
+  focus: "#3f8580"
 typography:
   display:
-    fontFamily: "Besley Variable, Besley, serif"
-    fontSize: "clamp(3.2rem, 4vw, 4rem)"
-    fontWeight: 610
-    lineHeight: 0.96
-    letterSpacing: "-0.03em"
+    fontFamily: "Poppins, Avenir Next, Segoe UI, sans-serif"
+    fontSize: "clamp(3.25rem, 6.2vw, 5.5rem)"
+    fontWeight: 650
+    lineHeight: 0.92
+    letterSpacing: "-0.045em"
   headline:
-    fontFamily: "Besley Variable, Besley, serif"
-    fontSize: "clamp(2.15rem, 3.6vw, 3.55rem)"
-    fontWeight: 610
-    lineHeight: 1.03
-    letterSpacing: "-0.025em"
+    fontFamily: "Poppins, Avenir Next, Segoe UI, sans-serif"
+    fontSize: "clamp(2.3rem, 4.5vw, 4.2rem)"
+    fontWeight: 650
+    lineHeight: 1.02
+    letterSpacing: "-0.04em"
   title:
-    fontFamily: "Besley Variable, Besley, serif"
-    fontSize: "clamp(1.65rem, 2.25vw, 2.25rem)"
-    fontWeight: 610
-    lineHeight: 1.06
+    fontFamily: "Poppins, Avenir Next, Segoe UI, sans-serif"
+    fontSize: "clamp(1.55rem, 2.6vw, 2.15rem)"
+    fontWeight: 600
+    lineHeight: 1.1
   readingTitle:
-    fontFamily: "Besley Variable, Besley, serif"
+    fontFamily: "Literata, Georgia, Times New Roman, serif"
     fontSize: "clamp(2.75rem, 5vw, 4.5rem)"
-    fontWeight: 610
-    lineHeight: 0.98
-    letterSpacing: "-0.025em"
+    fontWeight: 600
+    lineHeight: 1.03
+    letterSpacing: "-0.02em"
   body:
-    fontFamily: "Waypoint Sans, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Literata, Georgia, Times New Roman, serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.7
   label:
-    fontFamily: "SFMono-Regular, Consolas, Liberation Mono, monospace"
+    fontFamily: "IBM Plex Mono, SFMono-Regular, Consolas, monospace"
     fontSize: "0.68rem"
     fontWeight: 700
     lineHeight: 1.4
     letterSpacing: "0.08em"
   navigation:
-    fontFamily: "Waypoint Sans, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Poppins, Avenir Next, Segoe UI, sans-serif"
     fontSize: "0.88rem"
     fontWeight: 650
   control:
-    fontFamily: "Waypoint Sans, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Poppins, Avenir Next, Segoe UI, sans-serif"
     fontSize: "0.78rem"
   evidence:
-    fontFamily: "SFMono-Regular, Consolas, Liberation Mono, monospace"
+    fontFamily: "IBM Plex Mono, SFMono-Regular, Consolas, monospace"
     fontSize: "0.72rem"
 rounded:
   code-control: "0.4rem"
@@ -132,29 +132,29 @@ Cool chart paper is the daylight canvas; semantic accents identify purpose, not 
 
 ## Typography
 
-**Display Font:** Besley Variable, Besley, serif
+**Display and UI Font:** Poppins, Avenir Next, Segoe UI, sans-serif
 
-**Body Font:** Waypoint Sans, ui-sans-serif, system-ui, sans-serif
+**Reading Font:** Literata, Georgia, Times New Roman, serif
 
-**Label/Mono Font:** SFMono-Regular, Consolas, Liberation Mono, monospace
+**Label/Mono Font:** IBM Plex Mono, SFMono-Regular, Consolas, monospace
 
-**Character:** Besley provides editorial navigation and narrative weight; the variable sans does the practical reading and control work. Mono is reserved for operational evidence, coordinates, lifecycle state, and code.
+**Character:** Bottle Letter treats the interface as the constructed bottle and the narrative as the message inside it. Poppins builds public structure and controls. Literata carries explanatory field notes and sustained reading. IBM Plex Mono verifies coordinates, lifecycle state, and code.
 
 ### Hierarchy
 
-- **Display:** carries the hero and document titles with compact, high-contrast line breaks.
+- **Display:** Poppins carries the marketing promise with confident, compact line breaks.
 - **Headline:** introduces major paper and instrument sections without competing with the route.
 - **Title:** names ledgers, routes, and contained feature surfaces.
-- **Body:** uses relaxed reading leading and bounded measures on article and explanatory copy.
+- **Body:** Literata uses relaxed reading leading and bounded measures for narrative and explanatory copy.
 - **Label:** compact uppercase or metadata-scale mono identifies route numbers, lifecycle evidence, URLs, and commands.
 
-**The Three Jobs Rule.** Use serif for narrative hierarchy, sans for human-facing interface copy, and mono only when content is operational evidence.
+**The Bottle Letter Rule.** Poppins constructs the interface, Literata reveals the authored message, and IBM Plex Mono verifies operational evidence. The homepage scopes this system to the marketing journey; the Walnut documentation surface remains a separate, stable reading experience until it receives its own deliberate migration.
 
 ## Layout
 
-The site uses wide, bounded fields: the header and hero cap at 92rem, major paper sections at 84rem, and the workflow can expand to an 88rem instrument field. Desktop presents the mechanism as three connected stages; below 72rem it becomes a staged vertical route, and below 38rem the hero route also becomes vertical. Documentation changes to a sticky Ocean navigation column with a Walnut reading surface, then collapses to a stacked mobile shell below 52rem.
+The homepage uses one native-scroll narrative. The first viewport keeps the promise, Docs, and Repository immediately available. A four-beat route alternates across the chart on desktop and becomes a deliberate vertical bearing on mobile. Local-boundary proof and the final handoff stay compact after the signature journey. Documentation remains a separate Walnut reading surface.
 
-**The Route Before Ornament Rule.** The Annotation-to-Queue-to-Resolve mechanism is the dominant first-viewport proof. Geometry and mascot support comprehension; they do not displace it.
+**The Route Before Ornament Rule.** The Annotation-to-Queue-to-agent-to-Resolution mechanism is the dominant proof. Geometry and Thelu support comprehension; they do not displace it.
 
 ## Elevation & Depth
 
@@ -182,10 +182,10 @@ The default form is gently rounded and measured: small controls use the small ra
 - **Style:** quiet paper header, editorial brand lockup, sans navigation, and a circular appearance control.
 - **State:** Verdigris underlines active hover paths on fine pointers; mobile opens a raised paper menu with the same controls.
 
-### Workflow Instruments
+### Route Journey
 
-- **Style:** three Deep Ocean panels with brass framing, compact mono evidence, serif titles, and selectively inset Rust annotation emphasis.
-- **Route:** dashed brass vector paths and checkpoint circles remain meaningful even when motion is reduced.
+- **Style:** four chart-paper field notes alternate around one Verdigris path; Signal Rust marks the initial Annotation, Brass marks bearings, and Deep Ocean contains operational surfaces.
+- **Route:** one normalized native-scroll progress value owns SVG draw, active checkpoint, and the traveling bearing. Continuous values stay outside React state. Reduced motion resolves the complete route statically.
 
 ### Ledgers and Notices
 
