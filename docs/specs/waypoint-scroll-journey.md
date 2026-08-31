@@ -1,5 +1,7 @@
 # Waypoint scroll journey
 
+> **Superseded production direction:** This route was implemented and validated before the director restarted the homepage from scratch. Its engineering findings may inform a technical scout, but its composition and motion are not approved for the Ink Route production. Continue from the [Director's Notebook](./waypoint-ink-route/production/director-notebook.md).
+
 ## Experience brief
 
 - **Primary mode:** Cinematic narrative, with kinetic clarity at each product beat.

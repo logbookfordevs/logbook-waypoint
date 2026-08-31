@@ -1,5 +1,7 @@
 # Logbook Waypoint Website
 
+> **Superseded homepage direction:** The composition and motion plan below are not creative authority for the restarted homepage production. Continue from the [Ink Route Director's Notebook](./waypoint-ink-route/production/director-notebook.md). Revalidate durable product, documentation, accessibility, and technical facts before carrying them forward.
+
 ## Problem Statement
 
 Logbook Waypoint has a working browser extension, local server, documented domain model, and a distinctive Logbook identity, but it does not yet have a product website. A developer encountering the project cannot quickly see how an in-page Annotation becomes structured Queue activity that a coding agent can Watch, Claim, and Resolve. The existing repository documentation explains the system, but it is not a persuasive, approachable, or visually memorable introduction to the product.
