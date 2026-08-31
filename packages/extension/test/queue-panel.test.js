@@ -83,6 +83,7 @@ function createHarness(annotations, {
     getScreenshotEnabled: async () => true,
     getShowDesignActions: async () => true,
     getBadgeColor: async () => '#4b5563',
+    saveBadgeColor: async () => {},
     getCustomShortcut: async () => null,
     checkServerStatus: async () => ({ connected: true }),
     getToolbarPosition: async () => null,
@@ -287,7 +288,7 @@ test('settings show existing site access without an Enable action', async () => 
   const button = root.querySelector('.waypoint-site-permission-btn');
   assert.equal(button.textContent, 'Enabled');
   assert.equal(button.disabled, true);
-  assert.match(root.querySelector('.waypoint-setting-description').textContent, /already enabled/i);
+  assert.match(root.querySelector('.waypoint-site-permission .waypoint-setting-description').textContent, /already enabled/i);
 });
 
 test('settings retain Enable when the current site lacks persistent access', async () => {
@@ -299,7 +300,67 @@ test('settings retain Enable when the current site lacks persistent access', asy
   const button = root.querySelector('.waypoint-site-permission-btn');
   assert.equal(button.textContent, 'Enable');
   assert.equal(button.disabled, false);
-  assert.match(root.querySelector('.waypoint-setting-description').textContent, /enable annotation access/i);
+  assert.match(root.querySelector('.waypoint-site-permission .waypoint-setting-description').textContent, /enable annotation access/i);
+});
+
+test('settings organize page setup as a Route Logbook without hiding utility actions', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const sectionTitles = [...root.querySelectorAll('.waypoint-settings-section-title')]
+    .map(title => title.textContent.trim());
+  const utilityRows = [...root.querySelectorAll('.waypoint-settings-utility-row')]
+    .map(row => [...row.querySelectorAll('button')].map(button => button.textContent.trim()));
+
+  assert.deepEqual(sectionTitles, ['Connection', 'Capture', 'Workflow']);
+  assert.deepEqual(utilityRows, [
+    ['Data & Storage', 'Documentation'],
+    ['Import annotations', 'Export annotations'],
+  ]);
+  assert.match(root.querySelector('.waypoint-close-overlay').textContent, /Close Logbook Waypoint/);
+});
+
+test('settings expose disclosure state, semantic context, and named pin colors', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  const trigger = root.querySelector('.waypoint-tb-settings');
+
+  assert.equal(trigger.getAttribute('aria-expanded'), 'false');
+  assert.equal(trigger.getAttribute('aria-controls'), 'waypoint-settings-dropdown');
+  trigger.click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const dropdown = root.querySelector('#waypoint-settings-dropdown');
+  const swatches = [...dropdown.querySelectorAll('.waypoint-color-dot')];
+  assert.equal(trigger.getAttribute('aria-expanded'), 'true');
+  assert.equal(dropdown.getAttribute('role'), 'region');
+  assert.equal(dropdown.getAttribute('aria-label'), 'Logbook Waypoint settings');
+  assert.match(dropdown.querySelector('.waypoint-pin-color-name').textContent, /custom color #4b5563/i);
+  assert.equal(swatches.filter(swatch => swatch.getAttribute('aria-pressed') === 'true').length, 0);
+  assert.ok(swatches.every(swatch => /annotation pins/i.test(swatch.getAttribute('aria-label'))));
+
+  swatches[0].click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(dropdown.querySelector('.waypoint-pin-color-name').textContent, /deep atlantic/i);
+  assert.equal(swatches[0].getAttribute('aria-pressed'), 'true');
+  assert.equal(swatches.filter(swatch => swatch.getAttribute('aria-pressed') === 'true').length, 1);
+});
+
+test('Escape closes settings and resets the trigger disclosure state', async () => {
+  const { context, root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  const trigger = root.querySelector('.waypoint-tb-settings');
+  trigger.click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const escape = new context.window.Event('keydown', { bubbles: true });
+  escape.key = 'Escape';
+  root.querySelector('.waypoint-settings-dropdown').dispatchEvent(escape);
+
+  assert.equal(root.querySelector('.waypoint-settings-dropdown'), null);
+  assert.equal(trigger.getAttribute('aria-expanded'), 'false');
 });
 
 test('documentation and workflow guides opt into the wider reading layout', async () => {

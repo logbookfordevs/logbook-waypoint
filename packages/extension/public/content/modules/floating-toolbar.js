@@ -16,10 +16,20 @@ var WaypointToolbar = (() => {
   let screenshotEnabled = true;
   let showDesignActions = true;
   let showTargetControls = true;
-  let annotationExperienceExpanded = true;
   let badgeColor = '#173f5f';
 
   const BADGE_COLORS = ['#102c2c', '#b8573c', '#3f8580', '#bd9348', '#173f5f'];
+  const BADGE_COLOR_LABELS = {
+    '#102c2c': 'Deep Atlantic',
+    '#b8573c': 'Signal coral',
+    '#3f8580': 'Tidepool teal',
+    '#bd9348': 'Brass marker',
+    '#173f5f': 'Ocean blue',
+  };
+
+  function getBadgeColorLabel(color) {
+    return BADGE_COLOR_LABELS[color] || `Custom color ${color}`;
+  }
 
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const defaultShortcutHint = isMac ? '\u2318\u21E7,' : 'Ctrl+Shift+,';
@@ -77,7 +87,6 @@ var WaypointToolbar = (() => {
     screenshotEnabled = await WaypointAPI.getScreenshotEnabled();
     showDesignActions = await WaypointAPI.getShowDesignActions();
     showTargetControls = await WaypointAPI.getShowTargetControls?.() ?? true;
-    annotationExperienceExpanded = await WaypointAPI.getAnnotationExperienceExpanded?.() ?? true;
     WaypointEvents.emit('inspection:scopeControlsVisibility', { visible: showTargetControls });
     badgeColor = await WaypointAPI.getBadgeColor();
     applyBadgeColor(badgeColor);
@@ -104,9 +113,15 @@ var WaypointToolbar = (() => {
 
   function buildToolbar(root) {
     const collapsedUrl = chrome.runtime.getURL('assets/thelu/thelu-waypoint-collapsed.png');
-    const settingsUrl = chrome.runtime.getURL('assets/thelu/thelu-settings.png');
+    const settingsDayUrl = chrome.runtime.getURL('assets/thelu/thelu-settings-day-smooth.png');
+    const settingsNightUrl = chrome.runtime.getURL('assets/thelu/thelu-settings-night.png');
     ICONS.collapsed = `<img class="waypoint-collapsed-icon" src="${collapsedUrl}" alt="">`;
-    ICONS.settings = `<img class="waypoint-branded-settings-icon" src="${settingsUrl}" alt="">`;
+    ICONS.settings = `
+      <span class="waypoint-branded-settings-icon" aria-hidden="true">
+        <img class="waypoint-branded-settings-icon-day" src="${settingsDayUrl}" alt="">
+        <img class="waypoint-branded-settings-icon-night" src="${settingsNightUrl}" alt="">
+      </span>
+    `;
 
     toolbarEl = document.createElement('div');
     toolbarEl.className = 'waypoint-toolbar' + (isCollapsed ? ' collapsed' : '');
@@ -135,7 +150,7 @@ var WaypointToolbar = (() => {
           <span class="waypoint-toolbar-tip">Delete all</span>
         </button>
         <div class="waypoint-toolbar-drag-handle" title="Drag to move"></div>
-        <button class="waypoint-toolbar-btn waypoint-tb-settings" title="Settings">
+        <button class="waypoint-toolbar-btn waypoint-tb-settings" title="Settings" aria-expanded="false" aria-controls="waypoint-settings-dropdown">
           ${ICONS.settings}
           <span class="waypoint-toolbar-tip">Settings</span>
         </button>
@@ -225,7 +240,7 @@ var WaypointToolbar = (() => {
 
   function toggleSettings() {
     if (settingsDropdown) {
-      closeSettings();
+      closeSettings({ restoreFocus: true });
     } else {
       openSettings();
     }
@@ -238,18 +253,31 @@ var WaypointToolbar = (() => {
     const currentTheme = WaypointThemeManager.getPreference();
     const themeIcon = THEME_ICONS[currentTheme] || THEME_ICONS.system;
     const route = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    const enabledExperienceCount = [screenshotEnabled, showTargetControls, showDesignActions].filter(Boolean).length;
-
     settingsDropdown = document.createElement('div');
     const rect = toolbarEl.getBoundingClientRect();
     const inLowerHalf = rect.top > window.innerHeight / 2;
     settingsDropdown.className = 'waypoint-settings-dropdown' + (inLowerHalf ? ' above' : '');
+    settingsDropdown.id = 'waypoint-settings-dropdown';
+    settingsDropdown.setAttribute('role', 'region');
+    settingsDropdown.setAttribute('aria-label', 'Logbook Waypoint settings');
+    toolbarEl.querySelector('.waypoint-tb-settings').setAttribute('aria-expanded', 'true');
 
     settingsDropdown.innerHTML = `
+      <!--
+      THESIS: Settings read as a Route Logbook for this Page, not a generic extension menu.
+      OWN-WORLD: Driftwood paper, Atlantic green masthead, chart-rule dividers, and compact field controls.
+      STORY: Confirm the Page connection, tune capture, shape the agent workflow, then manage or move data.
+      FIRST VIEWPORT: Branded masthead and Page route lead into Connection, Capture, and Workflow sections; utility actions close the logbook.
+      FORM: Compact operational logbook derived from the approved Route Logbook mockup; seed route-logbook-user-comp.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+      -->
       <div class="waypoint-settings-header">
-        <div>
-          <span class="waypoint-settings-title">${escapeHTML(route)}</span>
-          <span class="waypoint-settings-version">v${escapeHTML(version)}</span>
+        <div class="waypoint-settings-brand">
+          <span class="waypoint-settings-brand-mark">${ICONS.settings}</span>
+          <span>
+            <strong class="waypoint-settings-product">Logbook Waypoint</strong>
+            <span class="waypoint-settings-purpose">Page setup and agent handoff</span>
+          </span>
         </div>
         <div class="waypoint-settings-header-right">
           <button class="waypoint-theme-btn" title="${THEME_LABELS[currentTheme]} appearance">
@@ -257,119 +285,127 @@ var WaypointToolbar = (() => {
           </button>
         </div>
       </div>
+      <div class="waypoint-settings-route">
+        <span class="waypoint-settings-title">${escapeHTML(route)}</span>
+        <span class="waypoint-settings-version">v${escapeHTML(version)}</span>
+      </div>
       <div class="waypoint-settings-body">
-        <button class="waypoint-settings-link waypoint-get-started-btn" type="button">
-          ${ICONS.book}
-          <span>Documentation</span>
-          <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
-        </button>
-        <div class="waypoint-settings-separator"></div>
-        <div class="waypoint-settings-item">
-          <div class="waypoint-settings-item-left">
-            ${ICONS.server}
-            <span>MCP Server</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span class="waypoint-status-dot ${serverOnline ? 'online' : 'offline'}"></span>
-            <span class="waypoint-server-status-text" style="font-size:12px;color:var(--waypoint-text-secondary);">${escapeHTML(serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline'))}</span>
-          </div>
-        </div>
-        <div class="waypoint-settings-item waypoint-site-permission">
-          <div class="waypoint-settings-item-left">
-            ${ICONS.globe}
-            <div>
-              <span>Site access</span>
-              <div class="waypoint-setting-description">Checking site access…</div>
+        <section class="waypoint-settings-section">
+          <h2 class="waypoint-settings-section-title">Connection</h2>
+          <div class="waypoint-settings-item">
+            <div class="waypoint-settings-item-left">
+              ${ICONS.server}
+              <div>
+                <span>Agent bridge</span>
+                <div class="waypoint-setting-description">Local MCP server</div>
+              </div>
+            </div>
+            <div class="waypoint-settings-status">
+              <span class="waypoint-status-dot ${serverOnline ? 'online' : 'offline'}"></span>
+              <span class="waypoint-server-status-text">${escapeHTML(serverCompatibilityMessage || (serverOnline ? 'Connected' : 'Offline'))}</span>
             </div>
           </div>
-          <button class="waypoint-btn waypoint-btn-secondary waypoint-site-permission-btn" type="button" disabled>Checking…</button>
-        </div>
-        <p class="waypoint-site-permission-status" aria-live="polite"></p>
-        <div class="waypoint-settings-separator"></div>
-        <div class="waypoint-settings-item">
-          <div class="waypoint-settings-item-left">
-            ${ICONS.palette}
-            <span>Pin color</span>
+          <div class="waypoint-settings-item waypoint-site-permission">
+            <div class="waypoint-settings-item-left">
+              ${ICONS.globe}
+              <div>
+                <span>This site</span>
+                <div class="waypoint-setting-description">Checking site access…</div>
+              </div>
+            </div>
+            <button class="waypoint-btn waypoint-btn-secondary waypoint-site-permission-btn" type="button" disabled>Checking…</button>
           </div>
-          <div class="waypoint-color-picker" style="display:flex;gap:6px;">
-            ${BADGE_COLORS.map(c => `<button class="waypoint-color-dot${c === badgeColor ? ' active' : ''}" data-color="${c}" style="background:${c};" type="button"></button>`).join('')}
+          <p class="waypoint-site-permission-status" aria-live="polite"></p>
+        </section>
+
+        <section class="waypoint-settings-section">
+          <h2 class="waypoint-settings-section-title">Capture</h2>
+          <div class="waypoint-settings-item">
+            <div class="waypoint-settings-item-left">
+              ${ICONS.palette}
+              <div>
+                <span>Pin color</span>
+                <div class="waypoint-setting-description waypoint-pin-color-name">${escapeHTML(getBadgeColorLabel(badgeColor))}</div>
+              </div>
+            </div>
+            <div class="waypoint-color-picker">
+              ${BADGE_COLORS.map(c => `<button class="waypoint-color-dot${c === badgeColor ? ' active' : ''}" data-color="${c}" type="button" aria-label="Use ${BADGE_COLOR_LABELS[c]} for annotation pins" aria-pressed="${c === badgeColor}"><span style="background:${c};"></span></button>`).join('')}
+            </div>
           </div>
-        </div>
-        <div class="waypoint-settings-item">
-          <div class="waypoint-settings-item-left">
-            ${ICONS.copy}
-            <span>Clear after copy</span>
+          <div class="waypoint-settings-item">
+            <div class="waypoint-settings-item-left">
+              ${ICONS.camera}
+              <div>
+                <span>Screenshots</span>
+                <div class="waypoint-setting-description">Add selected Targets to agent context</div>
+              </div>
+            </div>
+            <button class="waypoint-toggle waypoint-screenshot-toggle ${screenshotEnabled ? 'on' : ''}" type="button" aria-label="Capture screenshots for agent context" aria-pressed="${screenshotEnabled}"></button>
           </div>
-          <button class="waypoint-toggle waypoint-clear-on-copy-toggle ${clearOnCopy ? 'on' : ''}" type="button"></button>
-        </div>
-        <div class="waypoint-settings-accordion">
-          <button class="waypoint-settings-accordion-trigger" type="button" aria-expanded="${annotationExperienceExpanded}" aria-controls="waypoint-annotation-experience">
-            <span class="waypoint-settings-item-left">
+          <div class="waypoint-settings-item">
+            <div class="waypoint-settings-item-left">
               ${ICONS.targets}
-              <span>Annotation experience</span>
-            </span>
-            <span class="waypoint-settings-accordion-meta">
-              <span class="waypoint-annotation-experience-count">${enabledExperienceCount} enabled</span>
-              <span class="waypoint-settings-accordion-chevron ${annotationExperienceExpanded ? 'open' : ''}">${ICONS.chevronRight}</span>
-            </span>
-          </button>
-          <div id="waypoint-annotation-experience" class="waypoint-settings-accordion-content" ${annotationExperienceExpanded ? '' : 'hidden'}>
-            <div class="waypoint-settings-item">
-              <div class="waypoint-settings-item-left">
-                ${ICONS.camera}
-                <div>
-                  <span>Screenshots</span>
-                  <div class="waypoint-setting-description">Automatically capture the selected Target for MCP context. Manual reference images stay available.</div>
-                </div>
+              <div>
+                <span>Inspection controls</span>
+                <div class="waypoint-setting-description">Show mouse controls; arrow keys always work</div>
               </div>
-              <button class="waypoint-toggle waypoint-screenshot-toggle ${screenshotEnabled ? 'on' : ''}" type="button"></button>
             </div>
-            <div class="waypoint-settings-item">
-              <div class="waypoint-settings-item-left">
-                ${ICONS.targets}
-                <div>
-                  <span>Show target controls</span>
-                  <div class="waypoint-setting-description">Show mouse controls while inspecting. Arrow keys always work.</div>
-                </div>
+            <button class="waypoint-toggle waypoint-target-controls-toggle ${showTargetControls ? 'on' : ''}" type="button" aria-label="Show inspection controls" aria-pressed="${showTargetControls}"></button>
+          </div>
+        </section>
+
+        <section class="waypoint-settings-section">
+          <h2 class="waypoint-settings-section-title">Workflow</h2>
+          <div class="waypoint-settings-item">
+            <div class="waypoint-settings-item-left">
+              ${ICONS.palette}
+              <div>
+                <span>Design Actions</span>
+                <div class="waypoint-setting-description">Show Impeccable controls for new Annotations</div>
+                <a href="https://github.com/pbakaus/impeccable" target="_blank" rel="noopener" class="waypoint-setting-help">Requires Impeccable</a>
               </div>
-              <button class="waypoint-toggle waypoint-target-controls-toggle ${showTargetControls ? 'on' : ''}" type="button" aria-label="Show target controls" aria-pressed="${showTargetControls}"></button>
             </div>
-            <div class="waypoint-settings-item">
-              <div class="waypoint-settings-item-left">
-                ${ICONS.palette}
-                <div>
-                  <span>Show Design Actions</span>
-                  <div class="waypoint-setting-description">Show Impeccable-powered controls for new Annotations. Saved Design Intent stays visible.</div>
-                  <a href="https://github.com/pbakaus/impeccable" target="_blank" rel="noopener" class="waypoint-setting-help">Requires Impeccable</a>
-                </div>
-              </div>
-              <button class="waypoint-toggle waypoint-design-actions-toggle ${showDesignActions ? 'on' : ''}" type="button" aria-label="Show Design Actions" aria-pressed="${showDesignActions}"></button>
+            <button class="waypoint-toggle waypoint-design-actions-toggle ${showDesignActions ? 'on' : ''}" type="button" aria-label="Show Design Actions" aria-pressed="${showDesignActions}"></button>
+          </div>
+          <div class="waypoint-settings-item">
+            <div class="waypoint-settings-item-left">
+              ${ICONS.copy}
+              <span>Clear after copy</span>
             </div>
+            <button class="waypoint-toggle waypoint-clear-on-copy-toggle ${clearOnCopy ? 'on' : ''}" type="button" aria-label="Clear annotations after copying" aria-pressed="${clearOnCopy}"></button>
+          </div>
+          <div class="waypoint-settings-item">
+            <div class="waypoint-settings-item-left">
+              ${ICONS.keyboard}
+              <span>Trigger hotkey</span>
+            </div>
+            <button class="waypoint-shortcut-btn" type="button">${escapeHTML(shortcutHint)}</button>
+          </div>
+        </section>
+
+        <div class="waypoint-settings-utilities">
+          <div class="waypoint-settings-utility-row">
+            <button class="waypoint-settings-link waypoint-data-storage-btn" type="button">
+              ${ICONS.database}
+              <span>Data &amp; Storage</span>
+              <span class="waypoint-data-health-badge" aria-live="polite"></span>
+            </button>
+            <button class="waypoint-settings-link waypoint-get-started-btn" type="button">
+              ${ICONS.book}
+              <span>Documentation</span>
+            </button>
+          </div>
+          <div class="waypoint-settings-utility-row">
+            <button class="waypoint-settings-link waypoint-import-btn" type="button">
+              ${ICONS.download}
+              <span>Import annotations</span>
+            </button>
+            <button class="waypoint-settings-link waypoint-export-btn" type="button">
+              ${ICONS.upload}
+              <span>Export annotations</span>
+            </button>
           </div>
         </div>
-        <div class="waypoint-settings-item">
-          <div class="waypoint-settings-item-left">
-            ${ICONS.keyboard}
-            <span>Trigger hotkey</span>
-          </div>
-          <button class="waypoint-shortcut-btn" type="button">${escapeHTML(shortcutHint)}</button>
-        </div>
-        <div class="waypoint-settings-separator"></div>
-        <button class="waypoint-settings-link waypoint-data-storage-btn" type="button">
-          ${ICONS.database}
-          <span>Data &amp; Storage</span>
-          <span class="waypoint-data-health-badge" aria-live="polite"></span>
-          <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
-        </button>
-        <button class="waypoint-settings-link waypoint-export-btn" type="button">
-          ${ICONS.upload}
-          <span>Export annotations</span>
-        </button>
-        <button class="waypoint-settings-link waypoint-import-btn" type="button">
-          ${ICONS.download}
-          <span>Import annotations</span>
-        </button>
-        <div class="waypoint-settings-separator"></div>
         <button class="waypoint-settings-link waypoint-close-overlay" type="button">
           ${ICONS.power}
           <span>Close Logbook Waypoint</span>
@@ -408,6 +444,7 @@ var WaypointToolbar = (() => {
     settingsDropdown.querySelector('.waypoint-clear-on-copy-toggle').addEventListener('click', async (e) => {
       clearOnCopy = !clearOnCopy;
       e.currentTarget.classList.toggle('on', clearOnCopy);
+      e.currentTarget.setAttribute('aria-pressed', String(clearOnCopy));
       await WaypointAPI.saveClearOnCopy(clearOnCopy);
     });
 
@@ -415,8 +452,8 @@ var WaypointToolbar = (() => {
     settingsDropdown.querySelector('.waypoint-screenshot-toggle').addEventListener('click', async (e) => {
       screenshotEnabled = !screenshotEnabled;
       e.currentTarget.classList.toggle('on', screenshotEnabled);
+      e.currentTarget.setAttribute('aria-pressed', String(screenshotEnabled));
       await WaypointAPI.saveScreenshotEnabled(screenshotEnabled);
-      updateAnnotationExperienceSummary();
     });
 
     settingsDropdown.querySelector('.waypoint-design-actions-toggle').addEventListener('click', async (e) => {
@@ -424,7 +461,6 @@ var WaypointToolbar = (() => {
       e.currentTarget.classList.toggle('on', showDesignActions);
       e.currentTarget.setAttribute('aria-pressed', String(showDesignActions));
       await WaypointAPI.saveShowDesignActions(showDesignActions);
-      updateAnnotationExperienceSummary();
     });
 
     settingsDropdown.querySelector('.waypoint-target-controls-toggle').addEventListener('click', async (e) => {
@@ -433,15 +469,6 @@ var WaypointToolbar = (() => {
       e.currentTarget.setAttribute('aria-pressed', String(showTargetControls));
       WaypointEvents.emit('inspection:scopeControlsVisibility', { visible: showTargetControls });
       await WaypointAPI.saveShowTargetControls?.(showTargetControls);
-      updateAnnotationExperienceSummary();
-    });
-
-    settingsDropdown.querySelector('.waypoint-settings-accordion-trigger').addEventListener('click', async (e) => {
-      annotationExperienceExpanded = !annotationExperienceExpanded;
-      e.currentTarget.setAttribute('aria-expanded', String(annotationExperienceExpanded));
-      settingsDropdown.querySelector('.waypoint-settings-accordion-content').hidden = !annotationExperienceExpanded;
-      settingsDropdown.querySelector('.waypoint-settings-accordion-chevron').classList.toggle('open', annotationExperienceExpanded);
-      await WaypointAPI.saveAnnotationExperienceExpanded?.(annotationExperienceExpanded);
     });
 
     const permissionButton = settingsDropdown.querySelector('.waypoint-site-permission-btn');
@@ -521,8 +548,13 @@ var WaypointToolbar = (() => {
     settingsDropdown.querySelectorAll('.waypoint-color-dot').forEach(dot => {
       dot.addEventListener('click', async () => {
         badgeColor = dot.dataset.color;
-        settingsDropdown.querySelectorAll('.waypoint-color-dot').forEach(d => d.classList.remove('active'));
+        settingsDropdown.querySelectorAll('.waypoint-color-dot').forEach(d => {
+          const isSelected = d === dot;
+          d.classList.toggle('active', isSelected);
+          d.setAttribute('aria-pressed', String(isSelected));
+        });
         dot.classList.add('active');
+        settingsDropdown.querySelector('.waypoint-pin-color-name').textContent = getBadgeColorLabel(badgeColor);
         applyBadgeColor(badgeColor);
         await WaypointAPI.saveBadgeColor(badgeColor);
       });
@@ -560,17 +592,17 @@ var WaypointToolbar = (() => {
     settingsDropdown.addEventListener('click', (e) => {
       e.stopPropagation();
     });
+    settingsDropdown.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      closeSettings({ restoreFocus: true });
+    });
 
     // Close on outside click (next tick to avoid immediate close)
     setTimeout(() => {
       document.addEventListener('click', onOutsideClick);
     }, 0);
-  }
-
-  function updateAnnotationExperienceSummary() {
-    const summary = settingsDropdown?.querySelector('.waypoint-annotation-experience-count');
-    if (!summary) return;
-    summary.textContent = `${[screenshotEnabled, showTargetControls, showDesignActions].filter(Boolean).length} enabled`;
   }
 
   function formatStorageBytes(bytes) {
@@ -1007,12 +1039,15 @@ var WaypointToolbar = (() => {
     });
   }
 
-  function closeSettings() {
+  function closeSettings({ restoreFocus = false } = {}) {
     if (activeRecordingCleanup) { activeRecordingCleanup(); activeRecordingCleanup = null; }
     if (settingsDropdown) {
       settingsDropdown.remove();
       settingsDropdown = null;
     }
+    const settingsButton = toolbarEl?.querySelector('.waypoint-tb-settings');
+    settingsButton?.setAttribute('aria-expanded', 'false');
+    if (restoreFocus) settingsButton?.focus();
     document.removeEventListener('click', onOutsideClick);
   }
 

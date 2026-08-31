@@ -83,18 +83,26 @@ test('settings help links use a readable text role across themes', async () => {
 test('settings popover gives controls a slightly wider responsive measure', async () => {
   const contentStyles = await readFile(contentStylesUrl, 'utf8');
 
-  assert.match(contentStyles, /\.waypoint-settings-dropdown\s*{[^}]*width:\s*min\(336px, calc\(100vw - 24px\)\)/s);
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\s*{[^}]*width:\s*min\(380px, calc\(100vw - 24px\)\)/s);
 });
 
 test('data storage view gets a wider responsive layout with inline breathing room', async () => {
   const contentStyles = await readFile(contentStylesUrl, 'utf8');
 
-  assert.match(contentStyles, /\.waypoint-settings-dropdown\.data-storage-open\s*{[^}]*width:\s*min\(360px, calc\(100vw - 24px\)\)/s);
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\.data-storage-open\s*{[^}]*width:\s*min\(380px, calc\(100vw - 24px\)\)/s);
   assert.match(contentStyles, /\.waypoint-data-storage-view\s*{[^}]*padding:\s*10px/s);
 });
 
 test('instructional settings views get a wider responsive reading measure', async () => {
   const contentStyles = await readFile(contentStylesUrl, 'utf8');
 
-  assert.match(contentStyles, /\.waypoint-settings-dropdown\.guidance-open\s*{[^}]*width:\s*min\(340px, calc\(100vw - 24px\)\)/s);
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\.guidance-open\s*{[^}]*width:\s*min\(380px, calc\(100vw - 24px\)\)/s);
+});
+
+test('pin colors form a compact single-line cluster without shrinking their vertical target', async () => {
+  const contentStyles = await readFile(contentStylesUrl, 'utf8');
+
+  assert.match(contentStyles, /\.waypoint-color-dot\s*{[^}]*width:\s*30px;[^}]*height:\s*44px;/s);
+  assert.match(contentStyles, /\.waypoint-settings-item:has\(\.waypoint-color-picker\)\s*{[^}]*flex-direction:\s*row;/s);
+  assert.match(contentStyles, /\.waypoint-settings-item:has\(\.waypoint-color-picker\) \.waypoint-color-picker\s*{[^}]*justify-content:\s*flex-end;/s);
 });
