@@ -2,7 +2,7 @@
 
 **Production home:** `docs/specs/waypoint-ink-route/production/`
 
-**Current stage:** Preproduction. The Ink Route treatment is approved; preproduction coverage and tracer implementation are not greenlit.
+**Current stage:** Preproduction review. The Ink Route treatment is approved; the proposed shot plan, technical scout, storyboard, and tracer boundary await greenlight.
 
 **Approved production boundary:** Preserve the approved treatment and prepare its next creative gate. Do not implement the tracer or expand the production without an explicit greenlight.
 
@@ -46,6 +46,8 @@
 - The authoritative animation driver, route rendering mechanism, warm path, budgets, and whether an animation dependency is warranted.
 - The exact tracer shot boundary and the rendered evidence required for its greenlight.
 
+The proposed preproduction package answers these questions for review without locking them. Approval or revision belongs to the next greenlight.
+
 ## Rejected directions and reasons
 
 - **Reuse or refine the currently built homepage:** rejected by the director's explicit restart; retain only durable product, identity, typography, stack, and accessibility facts.
@@ -73,12 +75,17 @@
 - Native scrolling is the approved input spine after the activation transition. Exact progress ownership remains a technical-scout decision.
 - SVG stroke geometry is a plausible route mechanism, but no rendering or animation implementation has been greenlit.
 - Semantic content, product actions, and destination meaning must remain complete without motion, sound, or enhanced rendering.
+- The proposed scout uses normalized native-scroll progress as the visual authority, CSS for contact states, a bounded animation-frame projection for SVG route geometry, and Web Audio for render-anchored sound. No dependency change is approved.
+- The proposed entrance uses positional causality: the CTA disappears with the hero and the later ink impact lands at its remembered screen-space origin, preserving a truly blank paper hold.
 
 ## Artifact index
 
 - [Approved treatment](./treatment.md)
 - Director's notebook: this file
-- Shot plan / storyboard: not created; next proposed gate artifact
+- [Proposed shot plan](./shot-plan.md)
+- [Proposed technical scout](./technical-scout.md)
+- [Editable storyboard](./storyboard.svg)
+- [Rendered storyboard](./storyboard.png)
 - Tracer: not greenlit and not created
 - Production cards, asset ledger, screenings, motion spec: not yet earned
 
@@ -88,19 +95,20 @@
 
 ## Next co-directing decision
 
-Approve or revise preproduction coverage for the hero-to-Ink Route signature shot: its shot sequence, responsive and reduced-motion coverage, sound behavior, technical scout, tracer boundary, and required dailies.
+Approve or revise the proposed hero-to-Ink Route shot sequence, positional-causality blocking, timing comparison, sound behavior, responsive and reduced-motion coverage, technical scout, tracer boundary, and required dailies.
 
 ## Current production slate
 
-- **Recorded:** The Ink Route treatment greenlight, its approved boundary, reference evidence, rejected directions, and unresolved production questions.
-- **Current gate and approved boundary:** Preproduction. Treatment is locked; planning the signature shot is allowed, but implementation is not.
-- **Recommended production move:** **Keep directing** — create one bounded shot plan/storyboard and technical scout for the hero-to-ink transition.
-- **Why this move fits now:** The creative direction is settled, but timing, framing, sound activation, responsive coverage, and tracer acceptance still need one inspectable preproduction artifact before real code can serve as evidence.
-- **Approved production frontier:** Preproduction artifact only.
-- **Still unresolved in the Director's Room:** The questions listed above, especially exact shot blocking and tracer boundary.
+- **Recorded:** The approved Ink Route treatment plus an unapproved preproduction package containing the shot plan, technical scout, editable storyboard, rendered board, tracer boundary, and dailies matrix.
+- **Current gate and approved boundary:** Preproduction review. Treatment is locked; the new package is a proposal, and no implementation is authorized.
+- **Recommended production move:** **Shoot a tracer** — only after the director approves or revises this preproduction package and explicitly opens the bounded tracer.
+- **Why this move fits now:** One signature uncertainty remains: whether the hero-clear, blank hold, ink impact, sound, and scroll handoff feel causal and cinematic in motion. A live tracer will answer it more honestly than additional documents or tickets.
+- **Approved production frontier:** Treatment only until the preproduction greenlight. If approved, the frontier becomes the seven-item tracer boundary in `shot-plan.md`.
+- **Still unresolved in the Director's Room:** Approval of positional causality, Take A / Take B timing coverage, reverse-scroll silence, exact tracer boundary, and its evidence matrix.
 - **Venue for the director to choose:** Current room, handoff/fresh task, or a bounded production unit. Tickets are premature.
-- **Next evidence or greenlight:** Approve the preproduction shot plan and explicitly greenlight the tracer boundary.
+- **Next evidence or greenlight:** Preproduction greenlight or revision notes. A greenlight must explicitly authorize the tracer before code changes begin.
 
 ## Continuity log
 
 - **2026-08-31 / treatment greenlight** — Recorded The Ink Route as the selected treatment. Advanced the production to the preproduction gate. No implementation authority was inferred from the director's agreement.
+- **2026-08-31 / preproduction prepared** — Added the proposed shot plan, technical scout, storyboard SVG/PNG, tracer boundary, and dailies matrix. Status remains unapproved pending director review.
