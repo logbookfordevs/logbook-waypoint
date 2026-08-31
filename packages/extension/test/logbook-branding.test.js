@@ -66,7 +66,7 @@ test('floating toolbar uses Atlantic Chartroom roles without legacy palette colo
   assert.match(toolbarStyles, /background:\s*#bd9348/i);
   assert.doesNotMatch(toolbarStyles, /:host\(\[data-lfd-theme="night"\]\) \.waypoint-tb-settings/);
   assert.doesNotMatch(toolbarStyles, /rgb\(244 239 222 \/ 12%\)/);
-  assert.match(toolbarStyles, /drop-shadow\(0 0 1px rgb\(244 239 222 \/ 90%\)\)/);
+  assert.doesNotMatch(toolbarStyles, /drop-shadow/);
   assert.doesNotMatch(toolbarStyles, /#fbf4e3|#cfb881|#efe2c5|#bd4d29|#a9894f|#10b981|#ef4444|#ec4899/i);
 });
 
@@ -83,18 +83,26 @@ test('settings help links use a readable text role across themes', async () => {
 test('settings popover gives controls a slightly wider responsive measure', async () => {
   const contentStyles = await readFile(contentStylesUrl, 'utf8');
 
-  assert.match(contentStyles, /\.waypoint-settings-dropdown\s*{[^}]*width:\s*min\(336px, calc\(100vw - 24px\)\)/s);
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\s*{[^}]*width:\s*min\(380px, calc\(100vw - 24px\)\)/s);
 });
 
 test('data storage view gets a wider responsive layout with inline breathing room', async () => {
   const contentStyles = await readFile(contentStylesUrl, 'utf8');
 
-  assert.match(contentStyles, /\.waypoint-settings-dropdown\.data-storage-open\s*{[^}]*width:\s*min\(360px, calc\(100vw - 24px\)\)/s);
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\.data-storage-open\s*{[^}]*width:\s*min\(380px, calc\(100vw - 24px\)\)/s);
   assert.match(contentStyles, /\.waypoint-data-storage-view\s*{[^}]*padding:\s*10px/s);
 });
 
 test('instructional settings views get a wider responsive reading measure', async () => {
   const contentStyles = await readFile(contentStylesUrl, 'utf8');
 
-  assert.match(contentStyles, /\.waypoint-settings-dropdown\.guidance-open\s*{[^}]*width:\s*min\(340px, calc\(100vw - 24px\)\)/s);
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\.guidance-open\s*{[^}]*width:\s*min\(380px, calc\(100vw - 24px\)\)/s);
+});
+
+test('pin colors form a compact single-line cluster without shrinking their vertical target', async () => {
+  const contentStyles = await readFile(contentStylesUrl, 'utf8');
+
+  assert.match(contentStyles, /\.waypoint-color-dot\s*{[^}]*width:\s*30px;[^}]*height:\s*44px;/s);
+  assert.match(contentStyles, /\.waypoint-settings-item:has\(\.waypoint-color-picker\)\s*{[^}]*flex-direction:\s*row;/s);
+  assert.match(contentStyles, /\.waypoint-settings-item:has\(\.waypoint-color-picker\) \.waypoint-color-picker\s*{[^}]*justify-content:\s*flex-end;/s);
 });

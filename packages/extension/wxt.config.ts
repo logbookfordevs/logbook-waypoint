@@ -89,7 +89,12 @@ export default defineConfig({
     },
     web_accessible_resources: [
       {
-        resources: ['assets/fonts/InterVariable.woff2', 'assets/thelu/thelu-settings.png', 'assets/thelu/thelu-waypoint-collapsed.png'],
+        resources: [
+          'assets/fonts/InterVariable.woff2',
+          'assets/thelu/thelu-settings-day-smooth.png',
+          'assets/thelu/thelu-settings-night.png',
+          'assets/thelu/thelu-waypoint-collapsed.png',
+        ],
         matches: ['<all_urls>'],
       },
     ],

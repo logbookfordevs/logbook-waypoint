@@ -121,25 +121,24 @@ test('toolbar exposes synchronized theme, pin color, and clear-on-copy settings'
 test('screenshot settings distinguish automatic MCP context from manual attachments', async () => {
   const toolbar = await readFile(new URL('../public/content/modules/floating-toolbar.js', import.meta.url), 'utf8');
 
-  assert.match(toolbar, /Automatically capture the selected Target for MCP context/);
-  assert.match(toolbar, /Manual reference images stay available/);
+  assert.match(toolbar, /Add selected Targets to agent context/);
+  assert.match(toolbar, /Capture screenshots for agent context/);
 });
 
 test('settings can hide mouse target controls without presenting keyboard targeting as disabled', async () => {
   const toolbar = await readFile(toolbarUrl, 'utf8');
 
-  assert.match(toolbar, /Show target controls/);
-  assert.match(toolbar, /Show mouse controls while inspecting\. Arrow keys always work\./);
+  assert.match(toolbar, /Inspection controls/);
+  assert.match(toolbar, /Show mouse controls; arrow keys always work/);
   assert.match(toolbar, /saveShowTargetControls/);
 });
 
-test('annotation experience switches share an expanded-by-default disclosure with a live summary', async () => {
+test('settings keep capture and workflow controls visible in Route Logbook sections', async () => {
   const toolbar = await readFile(toolbarUrl, 'utf8');
 
-  assert.match(toolbar, /Annotation experience/);
-  assert.match(toolbar, /aria-expanded="\$\{annotationExperienceExpanded\}"/);
-  assert.match(toolbar, /waypoint-annotation-experience-count/);
-  assert.match(toolbar, /saveAnnotationExperienceExpanded/);
+  assert.match(toolbar, /waypoint-settings-section-title">Capture/);
+  assert.match(toolbar, /waypoint-settings-section-title">Workflow/);
+  assert.doesNotMatch(toolbar, /waypoint-settings-accordion-trigger/);
 });
 
 test('toolbar exposes the global Design Actions preference with Impeccable guidance', async () => {
