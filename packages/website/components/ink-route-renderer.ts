@@ -147,13 +147,21 @@ const FRAGMENT_SHADER = `
 
     float routeWidth = mix(0.0047, 0.0076, broadNoise);
     float routeEdge = 1.0 - smoothstep(routeWidth * 0.48, routeWidth * 1.32, distanceToRoute);
+    float dashPhase = fract(nearestProgress * 11.0);
+    float dashVariation = valueNoise(vec2(floor(nearestProgress * 11.0), 17.0));
+    float dashEnd = mix(0.58, 0.72, dashVariation);
+    float dashBody = smoothstep(0.035, 0.095, dashPhase)
+      * (1.0 - smoothstep(dashEnd - 0.08, dashEnd, dashPhase));
+    float originJoin = 1.0 - smoothstep(0.018, 0.052, nearestProgress);
+    float arrivalJoin = smoothstep(0.91, 0.975, nearestProgress) * smoothstep(0.84, 0.98, u_route);
+    float routePattern = max(dashBody, max(originJoin, arrivalJoin));
     float dryBrush = smoothstep(0.17, 0.84, broadNoise + fineNoise * 0.34);
-    float routeAlpha = routeEdge * passedByHead * routeExists * mix(0.52, 1.0, dryBrush);
+    float routeAlpha = routeEdge * routePattern * passedByHead * routeExists * mix(0.52, 1.0, dryBrush);
     vec3 wetInk = mix(vec3(0.055, 0.043, 0.035), vec3(0.12, 0.076, 0.047), broadNoise * 0.46);
     color = mix(color, wetInk, clamp(max(impactAlpha, routeAlpha), 0.0, 0.97));
 
     float stain = (1.0 - smoothstep(routeWidth * 1.4, routeWidth * 3.8, distanceToRoute))
-      * passedByHead * routeExists * 0.14;
+      * routePattern * passedByHead * routeExists * 0.14;
     color = mix(color, vec3(0.22, 0.17, 0.12), stain);
 
     float vignette = smoothstep(0.82, 0.25, length((v_uv - 0.5) * vec2(0.78, 1.0)));
