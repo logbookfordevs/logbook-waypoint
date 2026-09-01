@@ -2,9 +2,9 @@
 
 **Production home:** `docs/specs/waypoint-ink-route/production/`
 
-**Current stage:** Fresh tracer reshoot completed at `2e111a9`; production is paused at the unapproved Take A / Take B screening gate.
+**Current stage:** Preproduction reopened at the unapproved medium-strategy gate. The SVG tracer at `2e111a9` is retained as blocking and engineering evidence, not cinematic approval.
 
-**Approved production boundary:** Implement only the responsive hero-to-Ink Route tracer defined in `shot-plan.md`: journey activation; hero clear; genuinely empty Driftwood Paper; ink impact and first dashed route; scroll continuation to one simplified Annotation checkpoint; user-unlocked, mutable route foley; reduced-motion and muted paths; and Take A / Take B timing comparison. Queue, Agent, Resolution, final assets, full navigation, final install routing, and postproduction polish remain outside the frontier.
+**Approved production boundary:** The Ink Route treatment and the hero-through-first-Annotation narrative boundary remain approved. No replacement implementation, renderer, dependency, or production asset batch is approved until the corrected medium scout is greenlit. Queue, Agent, Resolution, the full page, final install routing, and postproduction remain outside the frontier.
 
 ## Creative battery
 
@@ -14,8 +14,8 @@
 - **Conflict → change:** An unstructured observation becomes a visible route through Annotation, Queue, Agent, and Resolution.
 - **Primary feeling:** Setting out with purpose: storybook wonder held inside a trustworthy developer instrument.
 - **Irresistible actions:** Get Waypoint immediately, or deliberately enter the cinematic journey.
-- **Reference qualities:** Sparse ink drawing, material paper, authored travel montage, causal route motion, and sound synchronized to the route's visible creation.
-- **Non-negotiables:** Preserve Waypoint's identity and typography; keep an immediate product action; retain native scrolling and complete keyboard, muted, reduced-motion, and mobile paths; never require sound to understand the story.
+- **Reference bar:** `The Boat` sets the ambition for a full-frame authored illustrated world, layered depth, camera-led continuity, environmental motion, and synchronized audiovisual finish. The local map-tracer video sets the specific bar for material ink bloom, route-led travel, environmental emergence, and destination discovery. ZERO supplies engineering lineage for an ambitious GPU-backed narrative system; none is a literal design to copy.
+- **Non-negotiables:** Preserve Waypoint's identity and typography; keep an immediate product action; preserve one deterministic narrative spine plus complete keyboard, muted, reduced-motion, mobile, deep-link, and enhancement-failure paths; never require sound to understand the story; do not let the compatibility floor define the creative master.
 
 ## Locked choices
 
@@ -27,28 +27,30 @@
 - Journey activation receives a tactile press. The hero then clears until only the paper remains.
 - The journey starts from a brief blank-paper hold followed by a black ink impact and organic bloom that becomes the first dashed route segment.
 - The route creates the map rather than traveling across a fully completed map.
-- Native scroll carries the travel montage after the short journey-activation transition.
+- One deterministic normalized progress spine carries the travel montage. Native scroll remains preferred for ordinary document navigation; the exact native or virtual adapter is reopened if the approved camera and gate continuity require it.
 - The product route follows **Annotation → Queue → Agent → Resolution**.
 - Copy carries the story. Narration is not part of the approved treatment.
 - The signature sound is responsive ink-on-paper foley synchronized to visible route drawing. Sound begins only from intentional user action, remains mutable, and carries no required meaning.
 - A visible literal pen is not required; the approved origin image is the ink drop and spreading route.
 - Waypoint's established Poppins, Literata, and IBM Plex Mono roles remain the production typography. The condensed concept headline is not production typography.
 - The CTA disappears with the hero; the blank-paper hold is genuinely empty; and the ink impact lands at the remembered CTA-arrow position to preserve positional causality.
-- A single normalized native-scroll entrance range is the visual authority. Journey activation may advance that same range after unlocking sound; manual scroll follows the same visuals silently.
-- Reverse scroll reverses the tracer visuals without replaying sound. Haptics are not part of this tracer.
-- The tracer compares Take A (900–1050 ms exit, 160–200 ms blank hold) with Take B (1200–1350 ms exit, 280–340 ms blank hold).
+- A single normalized entrance range remains the behavioral authority. Journey activation, manual traversal, render state, camera, sound, and direct entry must converge on it regardless of the final input adapter.
+- Reverse traversal reconstructs visuals without replaying sound. A brief supported-device haptic may be screened as supplemental feedback; it carries no required meaning.
+- Take B's held-breath rhythm is the director's current starting preference. Its exact `1280 ms` edit is not locked and must be re-screened with representative picture and sound.
 
 ## Open questions
 
 - Exact hero promise, CTA labels, and final public installation destination at launch.
 - Thelu's precise framing in the hero and whether Thelu reappears during the route.
-- Final production timing after the tracer comparison.
-- Final route-foley recording and mix after the procedural or locally produced tracer cue proves the interaction.
+- Final production timing after representative material, camera, world, and sound are screened.
+- Final route-foley recording and mix after representative picture and sound are screened together.
 - The exact map vocabulary and evidence shown at each product destination.
 - Exact production device floor and lowest fidelity tier after the 375 px tracer coverage.
-- Whether tracer evidence justifies changing the proposed CSS, animation-frame, SVG, and Web Audio implementation approach.
+- Whether PixiJS, Three.js, custom Canvas 2D, or an authored/hybrid runtime owns the creative master after the corrected medium scout.
+- Which paper, ink, cartography, atmosphere, product-evidence, sound, and optional haptic assets are authored, generated and finished, acquired, recorded, or performed live.
+- Whether the full sequence earns a virtual progress adapter after the representative camera and gate study.
 
-These remaining questions belong to the tracer screening or later production gates. The approved tracer must not silently answer them for the full page.
+These remaining questions belong to the corrected medium gate, replacement tracer screening, or later production gates. No bounded tracer may silently answer them for the full page.
 
 ## Rejected directions and reasons
 
@@ -61,11 +63,14 @@ These remaining questions belong to the tracer screening or later production gat
 - **Treat the generated concept as a pixel-exact layout or typography target:** rejected; it is art-direction and composition evidence only.
 - **Convert the uncertain signature interaction into tickets now:** rejected by the production topology; one unresolved signature shot should be directed and traced before scheduling.
 - **First geometric tracer take:** discarded before creative screening. Its overlapping opaque blot shapes, isolated dashed Bézier, large empty field, and section-like Annotation arrival proved plumbing but could not prove the intended cinematic travel language. A failed ADF invocation at task start also makes its production process unreliable as evidence. Do not refine or reuse that implementation.
+- **SVG as the creative-master medium:** rejected after the fresh tracer screening. Layered SVG paths and a masked route remain valid engineering proxies or hidden guide data, but they do not meet the approved material, authored-world, camera, depth, or finish bar.
+- **Drop in a CanvasUI, Rive, Lottie, or other named effect as the direction:** rejected. Curated tools may contribute production techniques or assets only after the shot and reference bar choose their job.
+- **Escalate to full 3D merely to signal ambition:** rejected. A GPU-backed 2D/2.5D world may meet the bar more faithfully; full spatial rendering must earn itself through the shot.
 
 ## References and anti-references
 
 - [Chartroom Wonder concept](../../../references/waypoint-storybook-chart/chartroom-wonder-concept.png) — art-direction evidence for an immediate hero, Thelu, paper material, route, and product destinations; not a literal production frame.
-- [SBS — *The Boat*](https://www.sbs.com.au/theboat/) — reference for authored scroll-led illustration, spatial continuity, layered emergence, and synchronized audiovisual atmosphere; study its principles rather than copying its story, imagery, or exact interaction.
+- [SBS — *The Boat*](https://www.sbs.com.au/theboat/) — creative-quality bar for full-frame authored illustration, spatial continuity, layered environmental emergence, camera-led scroll, and synchronized audiovisual atmosphere; study its level of authorship without copying its story, imagery, or exact interaction.
 - Local reference video `/Users/leonardo/Downloads/Map_tracer_route_animation_202609010125.mp4` — motion-quality target for material ink bloom, camera-led map travel, environmental marks emerging around the route, and destinations discovered inside one continuous world. Its full Annotation → Queue → Agent → Resolution coverage is not the tracer scope.
 - [Concept reference notes](../../../references/waypoint-storybook-chart/README.md) — historical visual-direction context, superseded where this notebook records the hero-first Ink Route transition.
 - [`DESIGN.md`](../../../../DESIGN.md) — durable Waypoint identity, color roles, and typography; prior homepage composition is not carried forward.
@@ -77,10 +82,10 @@ These remaining questions belong to the tracer screening or later production gat
 
 - The website stack is Next.js 16, React 19, TypeScript, Tailwind CSS 4, Vitest, and pnpm.
 - Browser audio requires an intentional user gesture. The journey action can unlock the audio context without making the journey mandatory.
-- Native scrolling is the approved input spine after the activation transition. Exact progress ownership remains a technical-scout decision.
-- SVG stroke geometry is a plausible route mechanism, but no rendering or animation implementation has been greenlit.
+- The completed tracer validates one deterministic normalized progress model and native-scroll reconstruction, but the final native or virtual adapter is reopened if the creative master materially requires it.
+- SVG route geometry remains plausible as hidden guide or mask data, not as the production-visible material strategy.
 - Semantic content, product actions, and destination meaning must remain complete without motion, sound, or enhanced rendering.
-- The proposed scout uses normalized native-scroll progress as the visual authority, CSS for contact states, a bounded animation-frame projection for SVG route geometry, and Web Audio for render-anchored sound. No dependency change is approved.
+- The corrected scout recommends authored 2D/2.5D plates with a GPU compositor, with PixiJS as the leading 2D candidate and Three.js as the deeper render-graph alternative. CanvasUI is a technique source; authored animation or video may contribute plates. No dependency change is approved.
 - The proposed entrance uses positional causality: the CTA disappears with the hero and the later ink impact lands at its remembered screen-space origin, preserving a truly blank paper hold.
 - The reshoot uses native scroll as visual authority, bounded SVG/style projection, and procedural Web Audio. Final samples remain below the `4 ms` per-frame work budget at desktop and 375 px touch sizes.
 - Chromium audio-output initialization can create one long pointer-down task before click; focus/pointer-down preparation now keeps the visual timeline independent from audio resume. Safari variance remains unverified because no Safari or iOS simulator is available here.
@@ -89,11 +94,12 @@ These remaining questions belong to the tracer screening or later production gat
 
 - [Approved treatment](./treatment.md)
 - Director's notebook: this file
-- [Proposed shot plan](./shot-plan.md)
-- [Proposed technical scout](./technical-scout.md)
+- [Approved blocking shot plan; medium/evidence revised](./shot-plan.md)
+- [Superseded SVG-first technical scout](./technical-scout.md)
+- [Corrected medium scout](./medium-scout.md)
 - [Editable storyboard](./storyboard.svg)
 - [Rendered storyboard](./storyboard.png)
-- Tracer: clean reshoot implemented at `2e111a9`; Take A / Take B remain unapproved
+- Behavioral/engineering tracer: clean reshoot implemented at `2e111a9`; no visual take is approved
 - [Tracer screening note and dailies](./screenings.md)
 - Production cards, asset ledger, motion spec: not yet earned
 
@@ -101,20 +107,22 @@ These remaining questions belong to the tracer screening or later production gat
 
 **2026-08-31 — Preproduction and tracer boundary approved.** The director explicitly greenlit the proposed shot plan, positional-causality blocking, Take A / Take B timing comparison, responsive sound behavior, technical scout, seven-item tracer boundary, and required dailies. This authorizes the bounded tracer only, not expansion into the full page.
 
+**2026-09-01 — Cinematic revision requested.** The director accepted the behavioral foundation and preferred Take B's slower rhythm as a starting point, but rejected SVG blobs and route strokes as the likely production medium. `The Boat` is clarified as the creative-ambition bar, not merely a layered-scroll reference. The visual medium, asset source, camera/world strategy, sound, and production-representative tracer are reopened.
+
 ## Next co-directing decision
 
-Screen a fresh high-fidelity signature passage from ink impact through the first Annotation arrival, choose Take A or Take B (or request a specific revision), and decide whether it finally proves the cinematic direction.
+Approve, revise, or reject [`medium-scout.md`](./medium-scout.md): the recommended authored 2D/2.5D GPU-composite creative master, credible alternatives and exclusions, asset-production path, and representative evidence contract.
 
 ## Current production slate
 
-- **Recorded:** The Ink Route treatment and preproduction package remain approved. The first implementation take was explicitly discarded and is now an anti-reference; none of its code belongs on the epic branch.
-- **Current gate and approved boundary:** Tracer screening. The fresh reshoot ends at the first simplified Annotation checkpoint and includes the required A/B, responsive, accessibility, sound, and performance evidence.
-- **Recommended production move:** **Screen the fresh tracer.** Choose Take A, choose Take B, or request a bounded revision.
-- **Why this move fits now:** The implementation and dailies exist at the approved frontier. Expansion would pre-empt the unresolved creative decision this tracer was built to answer.
-- **Approved production frontier:** Hero through the first simplified Annotation checkpoint, including the A/B timing comparison and required accessibility, sound, responsive, and performance dailies.
-- **Still unresolved in the Director's Room:** Which timing take wins; whether the ink reads as material rather than geometry; whether framing, environmental emergence, and sound create travel; whether Annotation feels discovered in one continuous world; and what performance or Safari evidence requires revision.
-- **Selected venue:** Current Director's Room or ordinary handoff using the persisted screening note. This single tracer still does not require tickets.
-- **Next evidence or greenlight:** Director selects or revises a timing take and states whether the tracer proves the cinematic direction. Expansion stops until that decision.
+- **Recorded:** The SVG reshoot is reclassified as behavioral and engineering evidence. Its cinematic claims and visible medium are unapproved. Take B survives only as a rhythm hypothesis.
+- **Current gate and approved boundary:** Corrected medium strategy for the existing hero-through-Annotation shot. No new renderer, dependency, asset batch, or implementation is approved.
+- **Recommended production move:** **Keep directing at the medium greenlight**, then shoot one production-representative tracer if the recommended route is approved.
+- **Why this move fits now:** The reference bar, asset source, compositor, and evidence contract must be agreed before more code can provide honest cinematic evidence.
+- **Approved production frontier:** Treatment plus the bounded hero-through-Annotation story and parity requirements; behavioral findings from `2e111a9` may be reused.
+- **Still unresolved in the Director's Room:** Medium route; asset producer and return package; PixiJS versus Three.js ownership after a material proof; final input adapter; production sound and optional haptics; creative-master hardware and fidelity cuts.
+- **Selected venue:** Current Director's Room. This remains one coherent signature-shot decision and does not need tickets.
+- **Next evidence or greenlight:** Director approves, revises, or rejects the corrected medium scout and representative tracer contract.
 
 ## Continuity log
 
@@ -123,3 +131,4 @@ Screen a fresh high-fidelity signature passage from ink impact through the first
 - **2026-08-31 / tracer greenlight** — Director explicitly greenlit the preproduction package and requested a fresh worktree production unit. Locked the seven-item tracer boundary, recorded the next screening gate, and kept the rest of the page outside production authority.
 - **2026-09-01 / first tracer discarded** — Director rejected the first implementation take in full before screening after comparing it with the intended map-travel motion bar. Recorded its geometric blot, isolated route, empty field, and disconnected Annotation arrival as anti-references; noted the failed governing-skill invocation; and reset production to a clean reshoot without expanding scope.
 - **2026-09-01 / fresh tracer reshoot completed** — Built the clean hero-to-Annotation tracer at `2e111a9`, preserved Take A / Take B and all parity paths, captured responsive and performance dailies, and recorded [`screenings.md`](./screenings.md). Status is an unapproved pause; no take or expanded production boundary was selected.
+- **2026-09-01 / cinematic medium reopened** — Director accepted the useful behavior, named Take B as the starting rhythm, and clarified that `The Boat` sets the level of creativity for the experience. Reclassified the SVG cut as blocking/engineering evidence, superseded the SVG-first technical recommendation, added [`medium-scout.md`](./medium-scout.md), and paused before any replacement build or dependency decision.

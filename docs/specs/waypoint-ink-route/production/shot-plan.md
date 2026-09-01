@@ -1,6 +1,6 @@
 # Waypoint Ink Route — Preproduction Shot Plan
 
-**Status:** Proposed for preproduction greenlight. No shot or tracer implementation is approved.
+**Status:** Narrative blocking and the original tracer boundary were approved on 2026-08-31. The SVG-first medium and original creative-evidence contract were superseded on 2026-09-01 by [`medium-scout.md`](./medium-scout.md); preserve this plan as the governing shot sequence, not the active render strategy.
 
 **Approved source:** [Ink Route treatment](./treatment.md)
 

@@ -1,10 +1,10 @@
 # Ink Route Tracer — Screening Note
 
-**Status:** Unapproved pause at tracer screening. No take is selected here.
+**Status:** Revision requested at cinematic screening on 2026-09-01. The build is retained as blocking and engineering evidence only; it is not an approved visual take.
 
-**Cut / scene / tracer:** Responsive hero → blank Driftwood Paper → material ink impact → dashed-route travel → first simplified Annotation checkpoint.
+**Cut / scene / tracer:** Responsive hero → blank Driftwood Paper → SVG proxy impact → dashed-route travel → first simplified Annotation checkpoint.
 
-**Approved source it interprets:** [`shot-plan.md`](./shot-plan.md), [`technical-scout.md`](./technical-scout.md), and the approved Ink Route treatment.
+**Historical approved source it interprets:** [`shot-plan.md`](./shot-plan.md), the now-superseded [`technical-scout.md`](./technical-scout.md), and the approved Ink Route treatment. [`medium-scout.md`](./medium-scout.md) now governs the replacement tracer.
 
 **Live build or recording:** Local implementation at `2e111a9` (`9241c19` tracer plus the mobile label-collision repair).
 
@@ -23,6 +23,7 @@
 - Foley is procedural tracer audio, not final recorded or mastered sound.
 - The browser screen recorder emitted video-only WebMs. The actual Web Audio output was therefore captured as a separate three-second stereo foley file rather than represented as an inaudible “sound recording.”
 - The scene ends at Annotation. Queue, Agent, Resolution, full navigation, final assets, and postproduction remain absent by design.
+- The director prefers the slower held-breath rhythm represented by Take B as a starting hypothesis. The exact `1280 ms` edit is not locked because representative material, camera, environment, and sound may change its perceived timing.
 
 ## Dailies
 
@@ -46,11 +47,10 @@
 
 ## Creative observations
 
-- The genuinely blank paper beat is present, and impact lands at the remembered journey-arrow position.
-- The impact uses an irregular core, translucent washes, capillary rings, and feather lines; it is no longer a geometric badge or stack of opaque circles.
-- The route remains the traveling subject while sparse bearing marks and Annotation emerge inside one continuous paper world.
-- Annotation is discovered as the route arrives rather than appearing as a detached section.
-- The exact timing winner, material-read verdict, travel verdict, and sound verdict remain director decisions.
+- The genuinely blank paper beat and remembered journey-arrow impact position remain useful blocking evidence.
+- The A/B comparison establishes a preference for more anticipation, but the variants differ only in timing and do not constitute two visual directions.
+- Layered SVG paths, rings, feather lines, stroke reveals, sparse labels, and procedural audio are not production-representative evidence for material ink, an authored illustrated world, camera travel, or final sound.
+- The screening therefore cannot approve the cinematic direction. Its earlier material, travel, and Annotation-discovery claims are withdrawn pending a corrected medium scout and replacement tracer.
 
 ## Technical findings
 
@@ -71,12 +71,12 @@
 
 ## Director's recommendation
 
-Screen Take A and Take B against the blank hold, impact materiality, continuous-world travel, Annotation discovery, and separate foley capture. Do not expand the route until that comparison is decided.
+Preserve the behavior and engineering findings, carry Take B as a tempo hypothesis, and reopen preproduction at [`medium-scout.md`](./medium-scout.md). Do not refine the SVG visual system or expand the route.
 
 ## Decision or notes requested from the user
 
-Choose Take A, choose Take B, or request a specific revision; then state whether this bounded tracer proves the Ink Route direction strongly enough to open the next production boundary.
+Approve, revise, or reject the corrected medium strategy and the production-representative evidence contract for the replacement tracer.
 
 ## Next production boundary if approved
 
-Only after that greenlight: define the next independently screenable route passage. This note does not authorize Queue, Agent, Resolution, final assets, or postproduction.
+Only after that greenlight: produce representative assets and shoot a replacement hero-through-Annotation tracer in the approved medium. This note does not authorize Queue, Agent, Resolution, the full page, dependency installation, or final-cut production.
