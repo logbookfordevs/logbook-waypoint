@@ -2,9 +2,9 @@
 
 **Production home:** `docs/specs/waypoint-ink-route/production/`
 
-**Current stage:** Tracer production dispatched. The Ink Route treatment and bounded signature-shot tracer are approved; the next gate is a screening of the required dailies.
+**Current stage:** Full sandbox production cut completed and screened. The original tracer package remains below as historical preproduction evidence.
 
-**Approved production boundary:** Implement only the responsive hero-to-Ink Route tracer defined in `shot-plan.md`: journey activation; hero clear; genuinely empty Driftwood Paper; ink impact and first dashed route; scroll continuation to one simplified Annotation checkpoint; user-unlocked, mutable route foley; reduced-motion and muted paths; and Take A / Take B timing comparison. Queue, Agent, Resolution, final assets, full navigation, final install routing, and postproduction polish remain outside the frontier.
+**Approved production boundary:** The director later superseded the bounded tracer frontier for this disposable worktree and authorized a complete, code-led homepage cut with full creative autonomy. The production cut now covers the immediate hero, Ink Route entrance, Annotation, Queue, Agent, Resolution, closing local-first payoff, responsive layouts, reduced motion, focus handoff, direct entry, and procedural route foley. This authorization does not imply release, merge, or deployment approval.
 
 ## Creative battery
 
@@ -88,30 +88,32 @@ These remaining questions belong to the tracer screening or later production gat
 - [Proposed technical scout](./technical-scout.md)
 - [Editable storyboard](./storyboard.svg)
 - [Rendered storyboard](./storyboard.png)
-- Tracer: authorized and dispatched to a fresh worktree task; implementation and dailies are pending
-- Production cards, asset ledger, screenings, motion spec: not yet earned
+- Production cut: `packages/website/components/route-journey.tsx` and `packages/website/app/styles/route-journey.css`
+- [Motion specification](./motion-spec.md)
+- [Asset ledger](./asset-ledger.md)
+- [Screening ledger](./screenings.md)
 
 ## Last greenlight
 
-**2026-08-31 — Preproduction and tracer boundary approved.** The director explicitly greenlit the proposed shot plan, positional-causality blocking, Take A / Take B timing comparison, responsive sound behavior, technical scout, seven-item tracer boundary, and required dailies. This authorizes the bounded tracer only, not expansion into the full page.
+**2026-08-31 — Full disposable-worktree production approved.** After the tracer gate, the director explicitly authorized a complete high-quality website cut with autonomous creative decisions and permission to generate image, sound, or video assets when justified. The production chose a code-led route rather than baked video so native scroll, reverse travel, responsive reblocking, reduced motion, and semantic product truth remain intact.
 
 ## Next co-directing decision
 
-Screen the tracer dailies, choose Take A or Take B (or request a specific revision), and decide whether the signature shot is ready to expand into production.
+Director experience review of the completed cut. Optional post-production remains limited to replacing procedural ink scratch with recorded nib-on-paper foley if the synthesized texture does not survive subjective listening.
 
 ## Current production slate
 
-- **Recorded:** The Ink Route treatment and the complete preproduction package are approved. The tracer boundary, dailies matrix, positional causality, timing comparison, reverse-scroll silence, and sound contract are locked for this shoot.
-- **Current gate and approved boundary:** Tracer production. Only the seven-item boundary in `shot-plan.md` is authorized.
-- **Recommended production move:** **Dispatch a production unit** to shoot the bounded tracer in a fresh worktree based on `feat/waypointer-website`.
-- **Why this move fits now:** The creative questions are expressed clearly enough to test in motion; the remaining uncertainty is rendered feel, not another planning artifact.
-- **Approved production frontier:** Hero through the first simplified Annotation checkpoint, including the A/B timing comparison and required accessibility, sound, responsive, and performance dailies.
-- **Still unresolved in the Director's Room:** Which timing take wins, whether the positional handoff reads clearly in the browser, whether the temporary foley feels materially synchronized, and what performance or Safari evidence requires revision.
-- **Selected venue:** Fresh worktree task as one bounded production unit. This single tracer does not require tickets.
-- **Next evidence or greenlight:** Live Take A / Take B tracer, desktop and mobile recordings, keyboard/reduced-motion/muted coverage, frame-time trace, and implementation notes. Expansion stops until the director screens that evidence.
+- **Recorded:** The full cut preserves the useful hero and makes the optional journey a four-destination travel montage: Annotation → Queue → Agent → Resolution.
+- **Current gate:** Director experience review in the disposable worktree.
+- **Implementation authority:** Native scroll plus a bounded animation-frame projection, CSS scene composition, authored SVG route geometry, Web Audio procedural foley, and semantic React state. No animation or media runtime was added.
+- **Validated evidence:** Desktop, 390 px mobile, reduced motion, direct hash entry, user-unlocked sound state, keyboard focus handoff, full website typecheck, 12 website tests, static production build, and a warmed scroll sample with no long tasks or frames over 32 ms.
+- **Still unresolved:** Subjective audio material quality and Safari-specific Web Audio/scroll behavior need human or device listening before public release.
+- **Next evidence or greenlight:** Leonardo screens the cut and either accepts it as the production direction or issues a focused revision note. Public release remains a separate decision.
 
 ## Continuity log
 
 - **2026-08-31 / treatment greenlight** — Recorded The Ink Route as the selected treatment. Advanced the production to the preproduction gate. No implementation authority was inferred from the director's agreement.
 - **2026-08-31 / preproduction prepared** — Added the proposed shot plan, technical scout, storyboard SVG/PNG, tracer boundary, and dailies matrix. Status remains unapproved pending director review.
 - **2026-08-31 / tracer greenlight** — Director explicitly greenlit the preproduction package and requested a fresh worktree production unit. Locked the seven-item tracer boundary, recorded the next screening gate, and kept the rest of the page outside production authority.
+- **2026-08-31 / production supersession** — Director explicitly widened the disposable-worktree boundary to a complete autonomous website cut, named The Boat, Pixel Space, and Active Theory as experience references, and authorized generated media only where code could not preserve the intended quality.
+- **2026-08-31 / complete cut** — Finished and screened the responsive code-led route. Kept video and music out because they would weaken reversible native-scroll authorship; reserved recorded nib-on-paper foley as the only plausible post-production upgrade.

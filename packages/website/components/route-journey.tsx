@@ -1,169 +1,511 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { Check, Crosshair, Radio, Route } from 'lucide-react';
+import Image from 'next/image';
+import {
+  ArrowRight,
+  BookOpen,
+  Check,
+  Crosshair,
+  GitFork,
+  LockKeyhole,
+  Radio,
+  Route,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-const journeyBeats = [
+const chapters = [
   {
-    number: '01',
-    label: 'Annotate',
-    title: 'Mark the rendered target.',
-    copy: 'Pin the exact element. Waypoint keeps its route, selector, screenshot, and your requested change together.',
-    evidence: 'Target · route · visual context',
-    icon: Crosshair,
+    label: 'Annotation',
+    bearing: '01 · Fix the point',
+    title: 'The route begins exactly where the thought happened.',
+    copy: 'Select the rendered Target. Waypoint keeps the route, selector, viewport, screenshot, and brief together—before context can drift.',
   },
   {
-    number: '02',
     label: 'Queue',
-    title: 'Keep the field note intact.',
-    copy: 'The local Queue preserves lifecycle and context, so feedback does not dissolve into a screenshot or another chat message.',
-    evidence: 'Pending · Claimed · Resolved',
-    icon: Route,
+    bearing: '02 · Keep the context',
+    title: 'A field note becomes retained work.',
+    copy: 'The local Queue preserves identity and lifecycle. Watch can deliver the work without silently Claiming, resolving, or removing it.',
   },
   {
-    number: '03',
     label: 'Agent',
-    title: 'Turn context into action.',
-    copy: 'Through MCP, an agent can Watch and Claim the Annotation before changing the source. Waypoint remains the authority.',
-    evidence: 'Watch · Claim · implement',
-    icon: Radio,
+    bearing: '03 · Hand off with trust',
+    title: 'Your agent receives a route, not a riddle.',
+    copy: 'Through MCP, the agent reads the Target and brief, Claims the Annotation, changes the source, and reports through Waypoint’s lifecycle.',
   },
   {
-    number: '04',
-    label: 'Verify',
-    title: 'Return with evidence.',
-    copy: 'The result comes back to the original point with a Resolution Record, ready for a human to inspect and continue.',
-    evidence: 'Change · checks · resolution',
-    icon: Check,
+    label: 'Resolution',
+    bearing: '04 · Return with evidence',
+    title: 'The route closes where it began.',
+    copy: 'A Resolution Record brings the change, checks, and implementation note back to the original point—ready for your judgment.',
   },
 ] as const;
 
+const routePath = 'M122 574 C92 474 172 404 288 420 C430 442 450 306 354 250 C286 210 324 102 468 112 C608 122 660 240 620 338 C580 436 706 500 812 442 C918 384 946 238 850 176 C768 124 694 174 716 262 C742 368 878 362 920 272';
+
+export function clampProgress(value: number) {
+  return Math.min(Math.max(value, 0), 1);
+}
+
+export function getChapterIndex(progress: number, count = chapters.length) {
+  return Math.min(Math.floor(clampProgress(progress) * count), count - 1);
+}
+
+export function getChapterVisibility(progress: number, index: number, count = chapters.length) {
+  const localProgress = clampProgress((clampProgress(progress) - index / count) * count);
+  const enters = index === 0 ? 1 : clampProgress(localProgress / 0.14);
+  const exits = index === count - 1 ? 1 : clampProgress((1 - localProgress) / 0.18);
+  return Math.min(enters, exits);
+}
+
+class InkAudioBus {
+  private context: AudioContext | null = null;
+  private scratchGain: GainNode | null = null;
+  private scratchSource: AudioBufferSourceNode | null = null;
+
+  async enable() {
+    if (!this.context) {
+      this.context = new AudioContext();
+      this.createScratchTexture();
+    }
+
+    if (this.context.state === 'suspended') {
+      await this.context.resume();
+    }
+  }
+
+  setScratch(intensity: number) {
+    if (!this.context || !this.scratchGain) {
+      return;
+    }
+
+    const now = this.context.currentTime;
+    const target = Math.min(Math.max(intensity, 0), 0.052);
+    this.scratchGain.gain.cancelScheduledValues(now);
+    this.scratchGain.gain.setTargetAtTime(target, now, target > 0 ? 0.025 : 0.055);
+  }
+
+  impact() {
+    if (!this.context) {
+      return;
+    }
+
+    const now = this.context.currentTime;
+    const oscillator = this.context.createOscillator();
+    const gain = this.context.createGain();
+    const filter = this.context.createBiquadFilter();
+
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(118, now);
+    oscillator.frequency.exponentialRampToValueAtTime(54, now + 0.28);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(720, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.13, now + 0.018);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.34);
+
+    oscillator.connect(filter).connect(gain).connect(this.context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.36);
+  }
+
+  destroy() {
+    this.setScratch(0);
+    this.scratchSource?.stop();
+    void this.context?.close();
+    this.context = null;
+    this.scratchGain = null;
+    this.scratchSource = null;
+  }
+
+  private createScratchTexture() {
+    if (!this.context) {
+      return;
+    }
+
+    const duration = 1.8;
+    const frameCount = Math.floor(this.context.sampleRate * duration);
+    const buffer = this.context.createBuffer(1, frameCount, this.context.sampleRate);
+    const channel = buffer.getChannelData(0);
+    let previous = 0;
+
+    for (let index = 0; index < frameCount; index += 1) {
+      const white = Math.random() * 2 - 1;
+      previous = previous * 0.88 + white * 0.12;
+      channel[index] = previous * (0.62 + Math.sin(index * 0.009) * 0.12);
+    }
+
+    const source = this.context.createBufferSource();
+    const highpass = this.context.createBiquadFilter();
+    const lowpass = this.context.createBiquadFilter();
+    const gain = this.context.createGain();
+
+    source.buffer = buffer;
+    source.loop = true;
+    highpass.type = 'highpass';
+    highpass.frequency.value = 680;
+    lowpass.type = 'lowpass';
+    lowpass.frequency.value = 3600;
+    gain.gain.value = 0;
+
+    source.connect(highpass).connect(lowpass).connect(gain).connect(this.context.destination);
+    source.start();
+    this.scratchSource = source;
+    this.scratchGain = gain;
+  }
+}
+
 export function RouteJourney() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const prologueRef = useRef<HTMLElement>(null);
   const journeyRef = useRef<HTMLElement>(null);
   const routePathRef = useRef<SVGPathElement>(null);
   const tracerRef = useRef<SVGCircleElement>(null);
+  const sceneRefs = useRef<Array<HTMLElement | null>>([]);
+  const audioBusRef = useRef<InkAudioBus | null>(null);
+  const soundIntentRef = useRef(false);
+  const impactPlayedRef = useRef(false);
+  const lastJourneyProgressRef = useRef(0);
+  const lastFrameTimeRef = useRef(0);
+  const activeChapterRef = useRef(0);
+  const [activeChapter, setActiveChapter] = useState(0);
+  const [soundOn, setSoundOn] = useState(false);
+
+  const enableSound = useCallback(async () => {
+    audioBusRef.current ??= new InkAudioBus();
+    await audioBusRef.current.enable();
+    soundIntentRef.current = true;
+    setSoundOn(true);
+  }, []);
+
+  const activateJourney = useCallback(() => {
+    const reducesMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reducesMotion) {
+      void enableSound();
+    }
+    journeyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const focusDelay = reducesMotion ? 0 : 900;
+    window.setTimeout(() => journeyRef.current?.focus({ preventScroll: true }), focusDelay);
+  }, [enableSound]);
+
+  const toggleSound = useCallback(() => {
+    if (soundOn) {
+      soundIntentRef.current = false;
+      audioBusRef.current?.setScratch(0);
+      setSoundOn(false);
+      return;
+    }
+
+    void enableSound();
+  }, [enableSound, soundOn]);
+
+  const returnToHero = useCallback(() => {
+    prologueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   useEffect(() => {
+    const root = rootRef.current;
+    const prologue = prologueRef.current;
     const journey = journeyRef.current;
     const path = routePathRef.current;
     const tracer = tracerRef.current;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    if (!journey || !path || !tracer) {
+    if (!root || !prologue || !journey || !path || !tracer) {
       return;
     }
 
-    const checkpoints = Array.from(journey.querySelectorAll<HTMLElement>('[data-route-beat]'));
+    const pathLength = path.getTotalLength();
+    path.style.strokeDasharray = `${pathLength}`;
     let animationFrame = 0;
-    let latestProgress = -1;
-    let latestActiveBeat = -1;
 
-    const render = () => {
+    const render = (frameTime: number) => {
       animationFrame = 0;
+      const prologueBounds = prologue.getBoundingClientRect();
+      const prologueTravel = Math.max(prologueBounds.height - window.innerHeight, 1);
+      const prologueProgress = reducedMotion.matches ? 1 : clampProgress(-prologueBounds.top / prologueTravel);
+      const journeyBounds = journey.getBoundingClientRect();
+      const journeyTravel = Math.max(journeyBounds.height - window.innerHeight, 1);
+      const journeyProgress = reducedMotion.matches ? 1 : clampProgress(-journeyBounds.top / journeyTravel);
 
-      if (reducedMotion.matches) {
-        journey.style.setProperty('--route-progress', '1');
-        path.style.opacity = '0';
-        return;
-      }
+      root.style.setProperty('--prologue-progress', prologueProgress.toFixed(4));
+      root.style.setProperty('--journey-progress', journeyProgress.toFixed(4));
 
-      const bounds = journey.getBoundingClientRect();
-      const travel = Math.max(bounds.height - window.innerHeight, 1);
-      const progress = Math.min(Math.max(-bounds.top / travel, 0), 1);
+      const phase = prologueProgress < 0.18
+        ? 'hero'
+        : prologueProgress < 0.46
+          ? 'clearing'
+          : prologueProgress < 0.6
+            ? 'silence'
+            : prologueProgress < 0.78
+              ? 'impact'
+              : 'route';
+      root.dataset.phase = phase;
 
-      if (Math.abs(progress - latestProgress) < 0.0005) {
-        return;
-      }
+      const drawnProgress = clampProgress((prologueProgress - 0.62) / 0.38);
+      const fullRouteProgress = clampProgress(drawnProgress * 0.08 + journeyProgress * 0.92);
+      path.style.strokeDashoffset = `${pathLength * (1 - fullRouteProgress)}`;
 
-      latestProgress = progress;
-      journey.style.setProperty('--route-progress', progress.toFixed(4));
-
-      const pathLength = path.getTotalLength();
-      path.style.strokeDasharray = `${pathLength}`;
-      path.style.strokeDashoffset = `${pathLength * (1 - progress)}`;
-      path.style.opacity = '1';
-      const point = path.getPointAtLength(pathLength * progress);
+      const point = path.getPointAtLength(pathLength * fullRouteProgress);
       tracer.setAttribute('cx', point.x.toFixed(2));
       tracer.setAttribute('cy', point.y.toFixed(2));
 
-      const activeBeat = Math.min(Math.floor(progress * journeyBeats.length), journeyBeats.length - 1);
-      if (activeBeat !== latestActiveBeat) {
-        latestActiveBeat = activeBeat;
-        checkpoints.forEach((checkpoint, index) => {
-          checkpoint.toggleAttribute('data-route-active', index === activeBeat);
-          checkpoint.toggleAttribute('data-route-visited', index < activeBeat);
-        });
+      const nextChapter = getChapterIndex(journeyProgress);
+      root.dataset.chapter = `${nextChapter}`;
+      if (nextChapter !== activeChapterRef.current) {
+        activeChapterRef.current = nextChapter;
+        setActiveChapter(nextChapter);
       }
+
+      sceneRefs.current.forEach((scene, index) => {
+        if (!scene) {
+          return;
+        }
+
+        const visibility = getChapterVisibility(journeyProgress, index);
+        scene.style.setProperty('--scene-visibility', visibility.toFixed(4));
+        scene.toggleAttribute('data-current', index === nextChapter);
+      });
+
+      const deltaSeconds = lastFrameTimeRef.current
+        ? Math.max((frameTime - lastFrameTimeRef.current) / 1000, 0.016)
+        : 0.016;
+      const velocity = Math.max((journeyProgress - lastJourneyProgressRef.current) / deltaSeconds, 0);
+      const canPlaySound = soundIntentRef.current && !reducedMotion.matches && document.visibilityState === 'visible';
+      audioBusRef.current?.setScratch(canPlaySound ? Math.min(velocity * 0.012, 0.052) : 0);
+
+      const crossedImpact = prologueProgress >= 0.62 && !impactPlayedRef.current;
+      if (crossedImpact && soundIntentRef.current && !reducedMotion.matches) {
+        impactPlayedRef.current = true;
+        audioBusRef.current?.impact();
+      }
+
+      if (prologueProgress < 0.42) {
+        impactPlayedRef.current = false;
+      }
+
+      lastJourneyProgressRef.current = journeyProgress;
+      lastFrameTimeRef.current = frameTime;
     };
 
     const scheduleRender = () => {
-      if (!reducedMotion.matches && !animationFrame) {
+      if (!animationFrame) {
         animationFrame = window.requestAnimationFrame(render);
       }
     };
 
-    const handleMotionPreference = () => {
-      latestProgress = -1;
-      latestActiveBeat = -1;
-      render();
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') {
+        audioBusRef.current?.setScratch(0);
+      }
+      scheduleRender();
     };
 
-    render();
+    const handleMotionPreference = () => {
+      root.toggleAttribute('data-reduced-motion', reducedMotion.matches);
+      scheduleRender();
+    };
+
+    root.toggleAttribute('data-reduced-motion', reducedMotion.matches);
+    scheduleRender();
     window.addEventListener('scroll', scheduleRender, { passive: true });
     window.addEventListener('resize', scheduleRender);
+    document.addEventListener('visibilitychange', handleVisibility);
     reducedMotion.addEventListener('change', handleMotionPreference);
 
     return () => {
       window.removeEventListener('scroll', scheduleRender);
       window.removeEventListener('resize', scheduleRender);
+      document.removeEventListener('visibilitychange', handleVisibility);
       reducedMotion.removeEventListener('change', handleMotionPreference);
       window.cancelAnimationFrame(animationFrame);
+      audioBusRef.current?.destroy();
     };
   }, []);
 
   return (
-    <section ref={journeyRef} id="journey" className="route-journey" aria-labelledby="journey-title">
-      <header className="route-journey__heading">
-        <p className="route-kicker">The working route</p>
-        <h2 id="journey-title">A field note your agent can follow.</h2>
-        <p>
-          Waypoint carries one precise observation from the rendered page to implementation—and brings the evidence back.
-        </p>
-      </header>
+    <div
+      ref={rootRef}
+      className="ink-route-home"
+      data-sound={soundOn ? 'on' : 'off'}
+    >
+      <section ref={prologueRef} className="ink-prologue" aria-labelledby="ink-hero-title">
+        <div className="ink-prologue__sticky">
+          <div className="ink-paper-grain" aria-hidden="true" />
+          <header className="ink-masthead">
+            <a className="ink-brand" href="/" aria-label="Logbook Waypoint home">
+              <img src="/brand/waypoint-mark.svg" alt="" width="48" height="48" />
+              <span><b>Logbook</b><strong>Waypoint</strong></span>
+            </a>
+            <nav aria-label="Homepage">
+              <a href="/docs">Docs</a>
+              <a href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noreferrer">Source</a>
+              <button type="button" onClick={toggleSound} aria-pressed={soundOn}>
+                {soundOn && <Volume2 aria-hidden="true" />}
+                {!soundOn && <VolumeX aria-hidden="true" />}
+                <span>{soundOn ? 'Sound on' : 'Sound off'}</span>
+              </button>
+            </nav>
+          </header>
 
-      <div className="route-journey__chart">
-        <div className="route-journey__mobile-line" aria-hidden="true"><span /></div>
-        <svg
-          className="route-journey__line"
-          viewBox="0 0 1000 1760"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <path className="route-journey__line-base" d="M500 20 C500 150 218 170 218 390 S782 620 782 820 S218 1060 218 1280 S500 1480 500 1740" />
-          <path ref={routePathRef} className="route-journey__line-progress" pathLength="1" d="M500 20 C500 150 218 170 218 390 S782 620 782 820 S218 1060 218 1280 S500 1480 500 1740" />
-          <circle ref={tracerRef} className="route-journey__tracer" r="12" cx="500" cy="20" />
-        </svg>
+          <div className="ink-hero">
+            <div className="ink-hero__copy">
+              <p className="ink-kicker">Local-first visual feedback</p>
+              <h1 id="ink-hero-title"><span>Chartroom</span>{' '}<strong>Wonder.</strong></h1>
+              <p className="ink-hero__promise">Precise visual feedback.<br />Trustworthy agent work.</p>
+              <p className="ink-hero__body">
+                Mark what you see on a running interface. Waypoint keeps the context together, gives your coding agent a route through the work, and brings the evidence back.
+              </p>
+              <div className="ink-hero__actions">
+                <a className="ink-button ink-button--primary" href="/docs/installation">
+                  Get Waypoint <ArrowRight aria-hidden="true" />
+                </a>
+                <button type="button" className="ink-journey-gate" onClick={activateJourney}>
+                  <Route aria-hidden="true" /> See the journey <ArrowRight aria-hidden="true" />
+                </button>
+                <a className="ink-text-link" href="/docs"><BookOpen aria-hidden="true" /> Field guide</a>
+              </div>
+              <p className="ink-hero__availability">Development preview · source installation today</p>
+            </div>
 
-        <ol className="route-journey__beats">
-          {journeyBeats.map((beat, index) => {
-            const Icon = beat.icon;
-            return (
-              <li key={beat.label} data-route-beat data-route-active={index === 0 ? '' : undefined}>
-                <article>
-                  <div className="route-beat__meta">
-                    <span>{beat.number}</span>
-                    <span>{beat.label}</span>
-                  </div>
-                  <span className="route-beat__icon" aria-hidden="true"><Icon /></span>
-                  <h3>{beat.title}</h3>
-                  <p>{beat.copy}</p>
-                  <code>{beat.evidence}</code>
-                </article>
+            <div className="ink-hero__thelu" aria-label="Thelu holding the Waypoint logbook">
+              <div className="ink-hero__coordinates" aria-hidden="true">37° 47.20′ N&nbsp;&nbsp;122° 24.80′ W</div>
+              <Image
+                src="/brand/thelu-ink-route-hero.webp"
+                alt="Thelu, a tabby cat in a rust scarf, holding a green logbook"
+                width={1122}
+                height={1402}
+                priority
+                sizes="(max-width: 760px) 78vw, 46vw"
+              />
+              <svg viewBox="0 0 620 720" aria-hidden="true">
+                <path d="M66 610 C136 526 156 420 114 328 C76 244 132 142 254 118 C376 94 514 162 548 290" />
+                <path d="M456 78 l14 32 l32 14 l-32 14 l-14 32 l-14-32 l-32-14 l32-14z" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="ink-empty-frame" aria-hidden="true">
+            <div className="ink-impact-origin"><span /><i /><b /></div>
+            <svg viewBox="0 0 1000 700" preserveAspectRatio="none"><path d="M180 548 C218 522 238 480 214 446 C186 408 206 360 274 346" /></svg>
+          </div>
+
+          <div className="ink-scroll-cue" aria-hidden="true"><span>Scroll to chart the route</span><i /></div>
+        </div>
+      </section>
+
+      <section ref={journeyRef} id="journey" className="ink-journey" aria-labelledby="journey-heading" tabIndex={-1}>
+        <h2 id="journey-heading" className="sr-only">The Waypoint journey from Annotation to Resolution</h2>
+        <div className="ink-journey__sticky">
+          <div className="ink-paper-grain" aria-hidden="true" />
+          <div className="ink-journey__topline">
+            <button type="button" onClick={returnToHero}>← Chartroom</button>
+            <p aria-live="polite"><span>Now charting</span>{chapters[activeChapter].label}</p>
+            <button type="button" onClick={toggleSound} aria-pressed={soundOn}>
+              {soundOn && <Volume2 aria-hidden="true" />}
+              {!soundOn && <VolumeX aria-hidden="true" />}
+              <span>{soundOn ? 'Sound on' : 'Sound off'}</span>
+            </button>
+          </div>
+
+          <svg className="ink-route-map" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <defs>
+              <filter id="ink-soften" x="-20%" y="-20%" width="140%" height="140%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.024" numOctaves="2" seed="8" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" />
+              </filter>
+            </defs>
+            <path className="ink-route-map__ghost" d={routePath} />
+            <path ref={routePathRef} className="ink-route-map__ink" d={routePath} filter="url(#ink-soften)" />
+            <circle ref={tracerRef} className="ink-route-map__tracer" cx="122" cy="574" r="7" />
+          </svg>
+
+          <ol className="ink-chapter-index" aria-label="Journey chapters">
+            {chapters.map((chapter, index) => (
+              <li key={chapter.label} data-active={index === activeChapter ? '' : undefined}>
+                <span>0{index + 1}</span><b>{chapter.label}</b>
               </li>
-            );
-          })}
-        </ol>
-      </div>
-    </section>
+            ))}
+          </ol>
+
+          <div className="ink-scenes">
+            <article ref={(node) => { sceneRefs.current[0] = node; }} className="ink-scene ink-scene--annotation" data-current>
+              <div className="ink-scene__copy"><p>{chapters[0].bearing}</p><h3>{chapters[0].title}</h3><blockquote>{chapters[0].copy}</blockquote></div>
+              <div className="annotation-shot" aria-label="A precise annotation on a running interface">
+                <div className="annotation-shot__browser">
+                  <div className="annotation-shot__chrome"><i /><i /><i /><code>localhost:3000/onboarding</code></div>
+                  <div className="annotation-shot__page"><span /><span /><strong><b>1</b></strong><span /></div>
+                </div>
+                <div className="annotation-shot__note"><Crosshair aria-hidden="true" /><p><small>Target retained</small><b>Tighten this empty state.</b><code>section.empty-state</code></p></div>
+                <span className="annotation-shot__ink" aria-hidden="true" />
+              </div>
+            </article>
+
+            <article ref={(node) => { sceneRefs.current[1] = node; }} className="ink-scene ink-scene--queue">
+              <div className="ink-scene__copy"><p>{chapters[1].bearing}</p><h3>{chapters[1].title}</h3><blockquote>{chapters[1].copy}</blockquote></div>
+              <div className="queue-shot" aria-label="The annotation retained in the local Queue">
+                <div className="queue-shot__heading"><Route aria-hidden="true" /><span><small>Local Queue</small><b>One clear thing to change</b></span><code>01 pending</code></div>
+                <div className="queue-shot__row"><span>1</span><p><b>Tighten this empty state.</b><small>Target · screenshot · viewport · source lead</small></p><strong>Pending</strong></div>
+                <div className="queue-shot__ledger"><span>Watch</span><i /><span>Claim</span><i /><span>Resolve</span></div>
+                <p className="queue-shot__boundary"><LockKeyhole aria-hidden="true" /> 127.0.0.1 · retained locally</p>
+              </div>
+            </article>
+
+            <article ref={(node) => { sceneRefs.current[2] = node; }} className="ink-scene ink-scene--agent">
+              <div className="ink-scene__copy ink-scene__copy--light"><p>{chapters[2].bearing}</p><h3>{chapters[2].title}</h3><blockquote>{chapters[2].copy}</blockquote></div>
+              <div className="agent-shot" aria-label="A coding agent reading and claiming the annotation through MCP">
+                <div className="agent-shot__radar" aria-hidden="true"><i /><i /><i /><b /></div>
+                <div className="agent-shot__terminal">
+                  <p><span>waypoint_mcp</span><code>watch_annotations</code></p>
+                  <pre><b>→</b> Annotation wp_1842{`\n`}  status  <em>Pending</em>{`\n`}  target  section.empty-state{`\n`}  brief   “Tighten this empty state.”</pre>
+                  <p><span>agent</span><code>claim_annotation</code></p>
+                  <div><Radio aria-hidden="true" /><b>Claimed</b><small>Implementation in progress</small></div>
+                </div>
+              </div>
+            </article>
+
+            <article ref={(node) => { sceneRefs.current[3] = node; }} className="ink-scene ink-scene--resolution">
+              <div className="ink-scene__copy"><p>{chapters[3].bearing}</p><h3>{chapters[3].title}</h3><blockquote>{chapters[3].copy}</blockquote></div>
+              <div className="resolution-shot" aria-label="A resolved annotation with implementation evidence">
+                <svg viewBox="0 0 460 310" aria-hidden="true"><path d="M40 250 C76 166 146 222 182 148 S286 50 346 94 S402 190 376 230" /><circle cx="40" cy="250" r="6" /><circle cx="182" cy="148" r="6" /><circle cx="376" cy="230" r="6" /></svg>
+                <div className="resolution-shot__record">
+                  <div><Check aria-hidden="true" /><span><small>Resolution Record</small><b>Empty state tightened</b></span><strong>Resolved</strong></div>
+                  <dl><div><dt>Change</dt><dd>Balanced measure and spacing</dd></div><div><dt>Checks</dt><dd>Typecheck · component tests</dd></div><div><dt>Returned to</dt><dd>section.empty-state</dd></div></dl>
+                </div>
+                <p><span>Human judgment returns</span><b>Inspect it. Keep it. Continue.</b></p>
+              </div>
+            </article>
+          </div>
+
+          <div className="ink-journey__progress" aria-hidden="true"><span /></div>
+        </div>
+      </section>
+
+      <section id="local-first" className="ink-payoff" aria-labelledby="ink-payoff-title">
+        <div className="ink-paper-grain" aria-hidden="true" />
+        <div className="ink-payoff__route" aria-hidden="true">
+          <svg viewBox="0 0 620 440"><path d="M42 362 C128 244 228 394 304 238 S466 50 570 112" /><circle cx="42" cy="362" r="8" /><circle cx="304" cy="238" r="8" /><circle cx="570" cy="112" r="8" /></svg>
+          <Image src="/brand/thelu-profile.webp" alt="" width={260} height={260} />
+        </div>
+        <div className="ink-payoff__copy">
+          <p className="ink-kicker">The route stays yours</p>
+          <h2 id="ink-payoff-title">Local by default. <br />Useful after the work.</h2>
+          <p>Waypoint keeps Annotation history inspectable on your machine. Your agent gets a narrow working channel—not a public browser control surface.</p>
+          <ul>
+            <li><LockKeyhole aria-hidden="true" /><span><b>Loopback-first</b><small>Supported server boundary on IPv4 loopback</small></span></li>
+            <li><Radio aria-hidden="true" /><span><b>Non-destructive Watch</b><small>Delivery never silently Claims or removes feedback</small></span></li>
+            <li><Check aria-hidden="true" /><span><b>Retained evidence</b><small>Resolution remains inspectable until explicit Deletion</small></span></li>
+          </ul>
+          <div className="ink-payoff__actions">
+            <a className="ink-button ink-button--primary" href="/docs/installation">Get Waypoint <ArrowRight aria-hidden="true" /></a>
+            <a className="ink-button" href="/docs">Read the field guide <BookOpen aria-hidden="true" /></a>
+            <a className="ink-text-link" href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noreferrer"><GitFork aria-hidden="true" /> View source</a>
+          </div>
+          <p className="ink-payoff__note">Development preview. The extension and server are built from source while public distribution takes shape.</p>
+        </div>
+      </section>
+    </div>
   );
 }
