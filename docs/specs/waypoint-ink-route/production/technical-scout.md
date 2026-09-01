@@ -1,6 +1,8 @@
 # Waypoint Ink Route — Technical Scout
 
-**Status:** Proposed preproduction finding. It constrains a possible tracer but does not authorize implementation or dependency changes.
+**Status:** Superseded as a rendering recommendation on 2026-09-01. Preserve this document as historical engineering evidence only; use [`medium-scout.md`](./medium-scout.md) for the current production-media decision.
+
+> The SVG-first route and the prohibition on Canvas, WebGL, shaders, and richer authored media below are no longer active constraints. The completed SVG build proved behavior, input parity, deterministic reconstruction, audio synchronization, and a low-cost frame loop, but its medium was not production-representative for the cinematic qualities it asked the director to judge.
 
 **Scope:** Hero-to-Ink Route entrance and first Annotation destination only.
 

@@ -18,6 +18,7 @@ import '@/app/styles/hero.css';
 import '@/app/styles/workflow.css';
 import '@/app/styles/route-journey.css';
 import '@/app/styles/journey-home.css';
+import '@/app/styles/ink-route.css';
 import '@/app/styles/marketing.css';
 import '@/app/styles/docs.css';
 import '@/app/styles/motion-and-responsive.css';
