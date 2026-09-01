@@ -5,8 +5,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, BookOpen, Crosshair, Volume2, VolumeX
 import { useEffect, useRef, useState } from 'react';
 
 import { InkRouteAudio } from '@/components/ink-route-audio';
-
-type Take = 'a' | 'b';
+import { InkRouteRenderer } from '@/components/ink-route-renderer';
 
 type TimingSpec = {
   total: number;
@@ -28,10 +27,7 @@ declare global {
   }
 }
 
-const TAKE_TIMINGS: Record<Take, TimingSpec> = {
-  a: { total: 980, phases: [360, 180, 170, 270] },
-  b: { total: 1280, phases: [480, 310, 250, 240] },
-};
+const HELD_BREATH_TIMING: TimingSpec = { total: 1280, phases: [480, 310, 250, 240] };
 
 const VISUAL_PHASES = [0, 0.28, 0.42, 0.56, 1] as const;
 const MUTE_STORAGE_KEY = 'waypoint-ink-route-muted';
@@ -69,49 +65,35 @@ function timelineProgress(elapsed: number, timing: TimingSpec) {
   return 1;
 }
 
-function routeGeometry(width: number, height: number, origin: { x: number; y: number }) {
+function routeGeometry(width: number, height: number) {
   const isMobile = width < 720;
   const end = isMobile
     ? { x: width * 0.56, y: height * 0.72 }
     : { x: width * 0.73, y: height * 0.59 };
-  const firstControl = isMobile
-    ? { x: origin.x - width * 0.13, y: origin.y + height * 0.13 }
-    : { x: origin.x + width * 0.1, y: origin.y + height * 0.08 };
-  const secondControl = isMobile
-    ? { x: end.x + width * 0.14, y: end.y - height * 0.13 }
-    : { x: end.x - width * 0.18, y: end.y - height * 0.16 };
 
   return {
     end,
-    path: `M ${origin.x} ${origin.y} C ${firstControl.x} ${firstControl.y}, ${secondControl.x} ${secondControl.y}, ${end.x} ${end.y}`,
   };
 }
 
 export function InkRouteTracer() {
   const rootRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const journeyButtonRef = useRef<HTMLButtonElement>(null);
   const journeyHeadingRef = useRef<HTMLHeadingElement>(null);
-  const routePathRef = useRef<SVGPathElement>(null);
-  const routeRevealRef = useRef<SVGPathElement>(null);
-  const routeShadowRef = useRef<SVGPathElement>(null);
   const originRef = useRef({ x: 0, y: 0 });
   const audioRef = useRef<InkRouteAudio | null>(null);
   const intentionalJourneyRef = useRef(false);
   const impactPlayedRef = useRef(false);
   const checkpointPlayedRef = useRef(false);
   const programmaticScrollRef = useRef(0);
-  const takeRef = useRef<Take>('a');
   const mutedRef = useRef(false);
   const latestRouteProgressRef = useRef(0);
   const latestFrameTimeRef = useRef(0);
-  const [take, setTake] = useState<Take>('a');
   const [isMuted, setIsMuted] = useState(false);
+  const [isMotionReduced, setIsMotionReduced] = useState(false);
   const [showsJourneyControls, setShowsJourneyControls] = useState(false);
-
-  useEffect(() => {
-    takeRef.current = take;
-  }, [take]);
 
   useEffect(() => {
     const storedMute = window.localStorage.getItem(MUTE_STORAGE_KEY) === 'true';
@@ -122,26 +104,26 @@ export function InkRouteTracer() {
   useEffect(() => {
     const root = rootRef.current;
     const stage = stageRef.current;
-    const routePath = routePathRef.current;
-    const routeReveal = routeRevealRef.current;
-    const routeShadow = routeShadowRef.current;
+    const canvas = canvasRef.current;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    if (!root || !stage || !routePath || !routeReveal || !routeShadow) {
+    if (!root || !stage || !canvas) {
       return;
     }
 
     audioRef.current = new InkRouteAudio();
     audioRef.current.setMuted(mutedRef.current);
+    setIsMotionReduced(reducedMotion.matches);
 
     let rootTop = 0;
     let entranceRange = 1;
     let annotationRange = 1;
-    let routeLength = 1;
     let animationFrame = 0;
     let latestProgress = -1;
     let latestAnnotationProgress = -1;
     let latestControlsVisible = false;
+    let renderer: InkRouteRenderer | null = null;
+    let target = { x: 0.73, y: 0.59 };
     const trace: InkRouteTrace = {
       samples: 0,
       maxWorkMs: 0,
@@ -157,16 +139,8 @@ export function InkRouteTracer() {
         ? { x: bounds.width * 0.78, y: bounds.height * 0.38 }
         : { x: bounds.width * 0.39, y: bounds.height * 0.68 };
       const origin = originRef.current.x > 0 ? originRef.current : fallbackOrigin;
-      const geometry = routeGeometry(bounds.width, bounds.height, origin);
-
-      for (const path of [routePath, routeReveal, routeShadow]) {
-        path.setAttribute('d', geometry.path);
-      }
-      routeLength = typeof routePath.getTotalLength === 'function'
-        ? Math.max(routePath.getTotalLength(), 1)
-        : 1;
-      routeReveal.style.strokeDasharray = `${routeLength}`;
-      routeShadow.style.strokeDasharray = `${routeLength}`;
+      const geometry = routeGeometry(bounds.width, bounds.height);
+      target = { x: geometry.end.x / bounds.width, y: geometry.end.y / bounds.height };
       stage.style.setProperty('--ink-origin-x', `${origin.x}px`);
       stage.style.setProperty('--ink-origin-y', `${origin.y}px`);
       stage.style.setProperty('--annotation-x', `${geometry.end.x}px`);
@@ -180,6 +154,7 @@ export function InkRouteTracer() {
       root.style.setProperty('--ink-route-height', `${window.innerHeight + entranceRange + annotationRange}px`);
       trace.viewport = { width: window.innerWidth, height: window.innerHeight };
       setRouteGeometry();
+      renderer?.resize(stage.clientWidth, stage.clientHeight);
     };
 
     const render = () => {
@@ -227,8 +202,22 @@ export function InkRouteTracer() {
       stage.style.setProperty('--camera-y', `${-window.innerHeight * 0.035 * cameraProgress}px`);
       stage.style.setProperty('--camera-scale', (1 + cameraProgress * 0.075).toFixed(4));
       stage.toggleAttribute('data-hero-hidden', progress >= 0.28);
-      routeReveal.style.strokeDashoffset = `${routeLength * (1 - routeProgress)}`;
-      routeShadow.style.strokeDashoffset = `${routeLength * (1 - routeProgress)}`;
+      const stageBounds = stage.getBoundingClientRect();
+      const origin = originRef.current.x > 0
+        ? originRef.current
+        : {
+            x: stageBounds.width < 720 ? stageBounds.width * 0.78 : stageBounds.width * 0.39,
+            y: stageBounds.height * (stageBounds.width < 720 ? 0.38 : 0.68),
+          };
+      renderer?.render({
+        annotationProgress,
+        cameraProgress,
+        heroProgress,
+        impactProgress,
+        origin: { x: origin.x / stageBounds.width, y: origin.y / stageBounds.height },
+        routeProgress,
+        target,
+      });
 
       const movedForward = routeProgress > latestRouteProgressRef.current;
       const crossedImpact = latestProgress < 0.42 && progress >= 0.42;
@@ -281,10 +270,17 @@ export function InkRouteTracer() {
 
     const handleMotionPreference = () => {
       audioRef.current?.setScratchVelocity(0);
+      audioRef.current?.setMuted(mutedRef.current || reducedMotion.matches);
+      setIsMotionReduced(reducedMotion.matches);
       latestProgress = -1;
       latestAnnotationProgress = -1;
       scheduleRender();
     };
+
+    renderer = InkRouteRenderer.create(canvas, (status) => {
+      stage.setAttribute('data-renderer', status);
+      scheduleRender();
+    });
 
     measure();
     if (window.location.hash === '#annotation') {
@@ -311,6 +307,8 @@ export function InkRouteTracer() {
       window.cancelAnimationFrame(programmaticScrollRef.current);
       audioRef.current?.dispose();
       audioRef.current = null;
+      renderer?.dispose();
+      renderer = null;
       delete window.__waypointInkRouteTrace;
     };
   }, []);
@@ -359,7 +357,7 @@ export function InkRouteTracer() {
       return;
     }
 
-    const timing = TAKE_TIMINGS[takeRef.current];
+    const timing = HELD_BREATH_TIMING;
     const startTime = performance.now();
     const animateScroll = (now: number) => {
       const elapsed = now - startTime;
@@ -379,6 +377,9 @@ export function InkRouteTracer() {
   };
 
   const toggleMute = () => {
+    if (isMotionReduced) {
+      return;
+    }
     const nextMuted = !mutedRef.current;
     mutedRef.current = nextMuted;
     setIsMuted(nextMuted);
@@ -402,10 +403,12 @@ export function InkRouteTracer() {
     window.setTimeout(() => journeyButtonRef.current?.focus({ preventScroll: true }), 520);
   };
 
-  const muteIcon = isMuted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />;
+  const soundIsOff = isMuted || isMotionReduced;
+  const muteIcon = soundIsOff ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />;
+  const soundLabel = isMotionReduced ? 'Sound paused' : isMuted ? 'Sound off' : 'Sound on';
 
   return (
-    <main ref={rootRef} id="main-content" className="ink-route" data-take={take}>
+    <main ref={rootRef} id="main-content" className="ink-route" data-rhythm="held-breath">
       <div ref={stageRef} className="ink-route__stage">
         <div className="ink-route__paper" aria-hidden="true" />
 
@@ -440,11 +443,7 @@ export function InkRouteTracer() {
                 <a className="ink-route__docs-action" href="/docs"><BookOpen aria-hidden="true" /> Docs</a>
               </div>
 
-              <fieldset className="ink-route__takes">
-                <legend>Tracer edit</legend>
-                <label><input type="radio" name="ink-route-take" checked={take === 'a'} onChange={() => setTake('a')} /> Take A · Quiet cut</label>
-                <label><input type="radio" name="ink-route-take" checked={take === 'b'} onChange={() => setTake('b')} /> Take B · Held breath</label>
-              </fieldset>
+              <p className="ink-route__rhythm-note">DIRECTOR'S RHYTHM · HELD BREATH</p>
             </div>
 
             <div className="ink-route__thelu" aria-label="Thelu holds the field notebook, ready to set out">
@@ -457,46 +456,11 @@ export function InkRouteTracer() {
         </section>
 
         <div className="ink-route__world">
-          <svg className="ink-route__map" focusable="false" aria-hidden="true">
-            <defs>
-              <mask id="ink-route-reveal" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
-                <path ref={routeRevealRef} className="ink-route__reveal-path" />
-              </mask>
-            </defs>
-
-            <g className="ink-route__cartography">
-              <path className="ink-route__coast ink-route__coast--one" d="M72 170 C180 92 255 146 318 100 S472 48 558 124" />
-              <path className="ink-route__coast ink-route__coast--two" d="M884 80 C970 160 1060 122 1136 208 S1282 284 1392 248" />
-              <path className="ink-route__coast ink-route__coast--three" d="M870 706 C974 632 1064 692 1130 620 S1280 566 1394 634" />
-              <path className="ink-route__contour" d="M930 214c56-46 142-26 174 32s-11 133-82 140-125-49-110-104 84-83 132-48 31 104-21 120-98-29-82-72 73-57 96-19" />
-              <path className="ink-route__bearing" d="M236 704v-88m-44 44h88m-75-31 62 62m0-62-62 62" />
-              <path className="ink-route__survey" d="M412 198h170m-145-28v57m88-41v29m31-50v82" />
-              <g className="ink-route__ticks">
-                <path d="M80 450h74m-37-37v74M1180 458h92m-46-46v92" />
-                <path d="M746 112l24 13m-35 7 13-24M682 714l24 13m-35 7 13-24" />
-              </g>
-              <g className="ink-route__map-copy">
-                <text x="102" y="142">SOUNDING 28</text>
-                <text x="1004" y="414">DRIFTWOOD PASSAGE</text>
-                <text x="202" y="752">N</text>
-                <text x="1138" y="654">31° 14.200′</text>
-              </g>
-            </g>
-
-            <g className="ink-route__impact">
-              <path className="ink-route__impact-wash ink-route__impact-wash--one" d="M-8-52c19-5 29 8 41 5 18-4 31 8 29 24 19 7 25 23 15 37 15 14 6 36-10 39-4 21-25 27-39 17-16 15-39 7-42-10-22 1-34-18-23-34-14-12-8-31 8-35 4-13 17-22 29-17 8-9 19-15 29-13Z" />
-              <path className="ink-route__impact-wash ink-route__impact-wash--two" d="M-18-35c15-20 40-24 57-10 20 1 34 19 27 37 12 15 3 35-15 39-8 17-31 19-42 5-18 8-37-5-35-24-14-13-8-35 8-39 8-5 18-7 26-8Z" />
-              <path className="ink-route__impact-core" d="M-9-21c8-12 20-7 27-12 13-8 24 2 23 14 15 1 20 15 12 24 8 12-3 25-15 23-5 14-23 14-30 4-13 6-25-5-21-17-11-7-8-24 5-29 1-7 7-11 14-7Z" />
-              <path className="ink-route__impact-ring ink-route__impact-ring--one" d="M-45-16c17-28 52-37 80-20 29 18 38 55 18 82-21 28-61 33-87 11-24-20-29-51-11-73Z" />
-              <path className="ink-route__impact-ring ink-route__impact-ring--two" d="M-67-24c27-43 87-57 130-27 45 31 55 92 21 134-35 43-100 48-140 9-35-34-40-81-11-116Z" />
-              <path className="ink-route__impact-feathers" d="M-18-38c-7-12-8-22-11-34M10-38c3-15 8-25 9-40M36-21c12-8 21-17 31-26M43 8c16 0 29-4 44-4M34 38c13 8 22 18 35 30M0 47c-1 15-6 27-5 40M-28 34c-11 10-20 20-33 32M-42 3c-15-2-28-8-45-9M-7-10c-18-4-28 5-40 2M21 17c14 4 25 2 38 11" />
-            </g>
-
-            <path ref={routeShadowRef} className="ink-route__route-shadow" />
-            <g mask="url(#ink-route-reveal)">
-              <path ref={routePathRef} className="ink-route__route" />
-            </g>
-          </svg>
+          <canvas ref={canvasRef} className="ink-route__canvas" aria-hidden="true" />
+          <picture className="ink-route__fallback-world" aria-hidden="true">
+            <source media="(max-width: 44.99rem)" srcSet="/ink-route/chart-world-mobile-v1.webp" />
+            <img src="/ink-route/chart-world-desktop-v1.webp" alt="" />
+          </picture>
 
           <div className="ink-route__checkpoint">
             <div className="ink-route__checkpoint-mark"><Crosshair aria-hidden="true" /></div>
@@ -518,14 +482,7 @@ export function InkRouteTracer() {
         <div className="ink-route__persistent-controls" hidden={!showsJourneyControls}>
           <button type="button" onClick={returnToHero}><ArrowLeft aria-hidden="true" /> Back to hero</button>
           <span aria-hidden="true" />
-          <button type="button" onClick={toggleMute}>{muteIcon} {isMuted ? 'Sound off' : 'Sound on'}</button>
-          <label>
-            <span className="sr-only">Tracer edit</span>
-            <select value={take} onChange={(event) => setTake(event.target.value as Take)}>
-              <option value="a">Take A · Quiet cut</option>
-              <option value="b">Take B · Held breath</option>
-            </select>
-          </label>
+          <button type="button" onClick={toggleMute} disabled={isMotionReduced}>{muteIcon} {soundLabel}</button>
         </div>
 
         <a id="annotation" className="ink-route__annotation-anchor" href="#annotation" tabIndex={-1}>Annotation checkpoint</a>

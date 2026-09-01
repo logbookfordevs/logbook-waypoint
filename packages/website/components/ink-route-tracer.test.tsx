@@ -37,7 +37,9 @@ function mockMotionPreference(reduced: boolean) {
 
 describe('Ink Route signature tracer', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     window.history.replaceState(null, '', '/');
     mockMotionPreference(false);
     vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
@@ -60,13 +62,12 @@ describe('Ink Route signature tracer', () => {
     expect(screen.queryByRole('heading', { name: /Resolution/i })).not.toBeInTheDocument();
   });
 
-  it('makes both approved timing takes selectable without code changes', () => {
+  it('carries the director-selected held-breath rhythm into the replacement tracer', () => {
     const { container } = render(<InkRouteTracer />);
 
-    fireEvent.click(screen.getByRole('radio', { name: /Take B/i }));
-
-    expect(container.querySelector('.ink-route')).toHaveAttribute('data-take', 'b');
-    expect(screen.getByRole('radio', { name: /Take B/i })).toBeChecked();
+    expect(container.querySelector('.ink-route')).toHaveAttribute('data-rhythm', 'held-breath');
+    expect(screen.getByText(/Director's rhythm · held breath/i)).toBeVisible();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
   });
 
   it('prepares audio on contact before journey activation', () => {

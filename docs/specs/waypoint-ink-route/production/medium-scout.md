@@ -1,6 +1,6 @@
 # Waypoint Ink Route — Corrected Medium Scout
 
-**Status:** Proposed for creative greenlight. No renderer, dependency, production asset, or replacement tracer is approved by this document.
+**Status:** Route A and its production-representative tracer boundary were approved by the director on 2026-09-01. This approval opens the representative asset batch and replacement tracer only; renderer dependency installation remains a separate gate.
 
 **Decision this scout prepares:** Choose the production medium and asset strategy capable of carrying the Ink Route reference bar from the hero through the first Annotation arrival.
 
@@ -154,6 +154,8 @@ Approve **Route A: authored 2D plates with a GPU compositor** as the creative-ma
 
 Do not select PixiJS versus Three.js as a taste decision. After the medium greenlight, run a bounded material/render-graph proof using the selected representative assets; choose the owner that reaches the same picture with the cleanest deterministic lifecycle and mobile budget.
 
-## Greenlight requested
+## Greenlight recorded
 
-Approve, revise, or reject the recommended production medium and the representative tracer evidence contract. This greenlight would authorize the medium/material tracer and its asset-production batch only. It would not authorize Queue, Agent, Resolution, the full page, dependency installation, or final-cut production.
+**2026-09-01 — Route A approved.** The director approved the authored 2D/2.5D GPU-composite direction and authorized one production-representative hero-through-Annotation tracer plus its bounded asset-production batch. Take B remains the starting rhythm hypothesis, not picture lock.
+
+Queue, Agent, Resolution, the full page, dependency installation, production expansion, and final-cut work remain outside this greenlight. The next creative gate is the replacement tracer screening with representative picture, camera, material, and sound.

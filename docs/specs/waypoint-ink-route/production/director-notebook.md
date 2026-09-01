@@ -2,9 +2,9 @@
 
 **Production home:** `docs/specs/waypoint-ink-route/production/`
 
-**Current stage:** Preproduction reopened at the unapproved medium-strategy gate. The SVG tracer at `2e111a9` is retained as blocking and engineering evidence, not cinematic approval.
+**Current stage:** The Route A replacement tracer is shot and awaiting director screening. The SVG tracer at `2e111a9` remains blocking and engineering evidence only.
 
-**Approved production boundary:** The Ink Route treatment and the hero-through-first-Annotation narrative boundary remain approved. No replacement implementation, renderer, dependency, or production asset batch is approved until the corrected medium scout is greenlit. Queue, Agent, Resolution, the full page, final install routing, and postproduction remain outside the frontier.
+**Approved production boundary:** Route A authorizes an authored 2D/2.5D GPU-composite creative-master study, the bounded representative asset batch, and one replacement hero-through-first-Annotation tracer. It does not authorize Queue, Agent, Resolution, the full page, dependency installation, final install routing, production expansion, or postproduction.
 
 ## Creative battery
 
@@ -25,7 +25,7 @@
 - The initial hero is immediately useful and contains a public product action, a journey action, and a documentation path.
 - **See the journey** is an optional, intentional gate into the cinematic sequence; the primary product action remains available without completing the journey.
 - Journey activation receives a tactile press. The hero then clears until only the paper remains.
-- The journey starts from a brief blank-paper hold followed by a black ink impact and organic bloom that becomes the first dashed route segment.
+- The journey starts from a brief blank-paper hold followed by a black ink impact and organic bloom that becomes the first material route segment.
 - The route creates the map rather than traveling across a fully completed map.
 - One deterministic normalized progress spine carries the travel montage. Native scroll remains preferred for ordinary document navigation; the exact native or virtual adapter is reopened if the approved camera and gate continuity require it.
 - The product route follows **Annotation → Queue → Agent → Resolution**.
@@ -37,6 +37,8 @@
 - A single normalized entrance range remains the behavioral authority. Journey activation, manual traversal, render state, camera, sound, and direct entry must converge on it regardless of the final input adapter.
 - Reverse traversal reconstructs visuals without replaying sound. A brief supported-device haptic may be screened as supplemental feedback; it carries no required meaning.
 - Take B's held-breath rhythm is the director's current starting preference. Its exact `1280 ms` edit is not locked and must be re-screened with representative picture and sound.
+- Route A — authored 2D/2.5D plates with a GPU compositor — is the approved creative-master medium for the replacement tracer.
+- The replacement tracer must prove real paper/ink material, authored environmental layers, camera travel, depth, Annotation discovery, and synchronized sound before any visible direction can be preserved into production.
 
 ## Open questions
 
@@ -46,7 +48,7 @@
 - Final route-foley recording and mix after representative picture and sound are screened together.
 - The exact map vocabulary and evidence shown at each product destination.
 - Exact production device floor and lowest fidelity tier after the 375 px tracer coverage.
-- Whether PixiJS, Three.js, custom Canvas 2D, or an authored/hybrid runtime owns the creative master after the corrected medium scout.
+- Whether PixiJS, Three.js, custom Canvas 2D, or an authored/hybrid runtime best owns the approved creative master after the bounded material/render-graph proof and dependency gate.
 - Which paper, ink, cartography, atmosphere, product-evidence, sound, and optional haptic assets are authored, generated and finished, acquired, recorded, or performed live.
 - Whether the full sequence earns a virtual progress adapter after the representative camera and gate study.
 
@@ -85,9 +87,12 @@ These remaining questions belong to the corrected medium gate, replacement trace
 - The completed tracer validates one deterministic normalized progress model and native-scroll reconstruction, but the final native or virtual adapter is reopened if the creative master materially requires it.
 - SVG route geometry remains plausible as hidden guide or mask data, not as the production-visible material strategy.
 - Semantic content, product actions, and destination meaning must remain complete without motion, sound, or enhanced rendering.
-- The corrected scout recommends authored 2D/2.5D plates with a GPU compositor, with PixiJS as the leading 2D candidate and Three.js as the deeper render-graph alternative. CanvasUI is a technique source; authored animation or video may contribute plates. No dependency change is approved.
+- The director approved the corrected scout's authored 2D/2.5D plates with a GPU compositor. The replacement tracer now proves the bounded picture with a custom WebGL compositor and no added package; PixiJS and Three.js remain credible production owners if later scene complexity earns them. No dependency change is approved.
 - The proposed entrance uses positional causality: the CTA disappears with the hero and the later ink impact lands at its remembered screen-space origin, preserving a truly blank paper hold.
-- The reshoot uses native scroll as visual authority, bounded SVG/style projection, and procedural Web Audio. Final samples remain below the `4 ms` per-frame work budget at desktop and 375 px touch sizes.
+- The historical SVG reshoot used native scroll as visual authority and procedural Web Audio. Its behavioral model remains useful, but its visible medium is superseded.
+- The Route A tracer uses original generated-and-finished desktop/mobile chart boards, a luminance-derived ink-density plate, a custom WebGL route/world compositor, and live DOM product evidence. SVG is absent from the visible impact and route.
+- The browser sessions observed `3.0 ms` maximum route work on desktop and `1.3 ms` at `375 × 812`, with `0.7 ms` and `0.5 ms` respectively at impact. Physical mobile GPU profiling remains unverified.
+- Direct `#annotation`, reduced motion, and deliberate WebGL context loss converge on stable semantic content. The context-loss tier swaps to the authored static plate.
 - Chromium audio-output initialization can create one long pointer-down task before click; focus/pointer-down preparation now keeps the visual timeline independent from audio resume. Safari variance remains unverified because no Safari or iOS simulator is available here.
 
 ## Artifact index
@@ -99,30 +104,35 @@ These remaining questions belong to the corrected medium gate, replacement trace
 - [Corrected medium scout](./medium-scout.md)
 - [Editable storyboard](./storyboard.svg)
 - [Rendered storyboard](./storyboard.png)
-- Behavioral/engineering tracer: clean reshoot implemented at `2e111a9`; no visual take is approved
-- [Tracer screening note and dailies](./screenings.md)
-- Production cards, asset ledger, motion spec: not yet earned
+- Behavioral/engineering tracer: clean SVG reshoot implemented at `2e111a9`; no visual take is approved
+- [Historical SVG tracer screening note](./screenings.md)
+- [Route A replacement tracer screening](./screenings-route-a.md)
+- [Route A production cards](./production-cards.md)
+- [Route A asset ledger and prompt lineage](./asset-ledger.md)
+- Motion spec: not yet earned
 
 ## Last greenlight
 
 **2026-08-31 — Preproduction and tracer boundary approved.** The director explicitly greenlit the proposed shot plan, positional-causality blocking, Take A / Take B timing comparison, responsive sound behavior, technical scout, seven-item tracer boundary, and required dailies. This authorizes the bounded tracer only, not expansion into the full page.
 
-**2026-09-01 — Cinematic revision requested.** The director accepted the behavioral foundation and preferred Take B's slower rhythm as a starting point, but rejected SVG blobs and route strokes as the likely production medium. `The Boat` is clarified as the creative-ambition bar, not merely a layered-scroll reference. The visual medium, asset source, camera/world strategy, sound, and production-representative tracer are reopened.
+**2026-09-01 — Cinematic revision requested.** The director accepted the behavioral foundation and preferred Take B's slower rhythm as a starting point, but rejected SVG blobs and route strokes as the likely production medium. `The Boat` is clarified as the creative-ambition bar, not merely a layered-scroll reference. The visual medium, asset source, camera/world strategy, sound, and production-representative tracer were reopened.
+
+**2026-09-01 — Route A and replacement tracer approved.** The director approved the authored 2D/2.5D GPU-composite medium and authorized its representative asset batch plus one replacement hero-through-Annotation tracer. Take B is the first rhythm hypothesis. No dependency install, page expansion, production batch, or final cut is approved.
 
 ## Next co-directing decision
 
-Approve, revise, or reject [`medium-scout.md`](./medium-scout.md): the recommended authored 2D/2.5D GPU-composite creative master, credible alternatives and exclusions, asset-production path, and representative evidence contract.
+Screen the replacement hero-through-Annotation tracer and approve it, request revisions, or reject the visual direction. The screening must lead with material, world, camera, rhythm, continuity, sound, and feeling before engineering evidence.
 
 ## Current production slate
 
-- **Recorded:** The SVG reshoot is reclassified as behavioral and engineering evidence. Its cinematic claims and visible medium are unapproved. Take B survives only as a rhythm hypothesis.
-- **Current gate and approved boundary:** Corrected medium strategy for the existing hero-through-Annotation shot. No new renderer, dependency, asset batch, or implementation is approved.
-- **Recommended production move:** **Keep directing at the medium greenlight**, then shoot one production-representative tracer if the recommended route is approved.
-- **Why this move fits now:** The reference bar, asset source, compositor, and evidence contract must be agreed before more code can provide honest cinematic evidence.
-- **Approved production frontier:** Treatment plus the bounded hero-through-Annotation story and parity requirements; behavioral findings from `2e111a9` may be reused.
-- **Still unresolved in the Director's Room:** Medium route; asset producer and return package; PixiJS versus Three.js ownership after a material proof; final input adapter; production sound and optional haptics; creative-master hardware and fidelity cuts.
+- **Recorded:** Route A and one production-representative replacement tracer were greenlit. The tracer is now shot; the SVG reshoot remains behavior/engineering evidence, and Take B remains the starting rhythm hypothesis.
+- **Current gate and approved boundary:** Screen the authored 2D/2.5D GPU-composite hero-through-Annotation tracer. Dependency installation, final assets/foley, and every later route destination remain unapproved.
+- **Recommended production move:** **Screen the tracer.** Judge material, world authorship, camera, continuity, Annotation discovery, and held-breath rhythm before opening another batch.
+- **Why this move fits now:** The signature visual risk has rendered evidence on desktop and mobile plus reduced-motion, direct-entry, and renderer-failure cuts. More production would outrun the current creative authority.
+- **Approved production frontier:** The completed tracer and its representative source batch only.
+- **Still unresolved in the Director's Room:** Visual-direction approval; final layered asset authoring; production foley; custom WebGL versus PixiJS/Three.js ownership if the frontier expands; physical mobile GPU evidence; exact final timing; final input adapter; optional haptics.
 - **Selected venue:** Current Director's Room. This remains one coherent signature-shot decision and does not need tickets.
-- **Next evidence or greenlight:** Director approves, revises, or rejects the corrected medium scout and representative tracer contract.
+- **Next evidence or greenlight:** Director screens the production-representative tracer and approves the visual direction, requests revisions, or rejects it. Production does not expand before that decision.
 
 ## Continuity log
 
@@ -132,3 +142,5 @@ Approve, revise, or reject [`medium-scout.md`](./medium-scout.md): the recommend
 - **2026-09-01 / first tracer discarded** — Director rejected the first implementation take in full before screening after comparing it with the intended map-travel motion bar. Recorded its geometric blot, isolated route, empty field, and disconnected Annotation arrival as anti-references; noted the failed governing-skill invocation; and reset production to a clean reshoot without expanding scope.
 - **2026-09-01 / fresh tracer reshoot completed** — Built the clean hero-to-Annotation tracer at `2e111a9`, preserved Take A / Take B and all parity paths, captured responsive and performance dailies, and recorded [`screenings.md`](./screenings.md). Status is an unapproved pause; no take or expanded production boundary was selected.
 - **2026-09-01 / cinematic medium reopened** — Director accepted the useful behavior, named Take B as the starting rhythm, and clarified that `The Boat` sets the level of creativity for the experience. Reclassified the SVG cut as blocking/engineering evidence, superseded the SVG-first technical recommendation, added [`medium-scout.md`](./medium-scout.md), and paused before any replacement build or dependency decision.
+- **2026-09-01 / Route A greenlight** — Director approved the authored 2D/2.5D GPU-composite route and authorized the representative asset batch plus one replacement hero-through-Annotation tracer. Recorded the SVG cut as engineering evidence only, preserved Take B as a rhythm hypothesis, and held dependency installation and all production expansion outside the boundary.
+- **2026-09-01 / Route A tracer shot** — Produced original desktop/mobile chart boards and an ink-density plate, built the custom WebGL material/world compositor without installing a renderer package, removed the visible SVG route/impact and redundant A/B selector, captured desktop/mobile/direct/reduced/failure dailies, and recorded [`screenings-route-a.md`](./screenings-route-a.md). Status is an unapproved screening pause; production does not expand before the director's decision.

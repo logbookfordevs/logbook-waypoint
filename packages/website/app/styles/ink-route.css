@@ -186,8 +186,7 @@
 
 .ink-route__actions a,
 .ink-route__actions button,
-.ink-route__persistent-controls button,
-.ink-route__persistent-controls select {
+.ink-route__persistent-controls button {
   min-height: 3rem;
   display: inline-flex;
   align-items: center;
@@ -226,37 +225,12 @@
   transition: transform 160ms ease;
 }
 
-.ink-route__takes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
+.ink-route__rhythm-note {
   margin: 1.25rem 0 0;
-  padding: 0;
-  border: 0;
-}
-
-.ink-route__takes legend {
-  width: 100%;
   color: var(--ink-soft);
   font: 600 0.58rem/1.2 "IBM Plex Mono", monospace;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-.ink-route__takes label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.42rem;
-  padding: 0.42rem 0.58rem;
-  border: 1px solid rgba(81, 68, 54, 0.25);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  color: #574b3e;
-  font: 500 0.66rem/1.1 "IBM Plex Mono", monospace;
-}
-
-.ink-route__takes input {
-  accent-color: var(--ink-rust);
 }
 
 .ink-route__thelu {
@@ -326,143 +300,32 @@
   pointer-events: none;
 }
 
-.ink-route__map {
+.ink-route__canvas,
+.ink-route__fallback-world,
+.ink-route__fallback-world img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  overflow: visible;
+  display: block;
+  object-fit: cover;
 }
 
-.ink-route__cartography {
+.ink-route__canvas {
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.ink-route__stage[data-renderer="ready"] .ink-route__canvas {
+  opacity: 1;
+}
+
+.ink-route__fallback-world {
+  opacity: 0;
+}
+
+.ink-route__stage[data-renderer="unavailable"] .ink-route__fallback-world {
   opacity: var(--map-progress);
-}
-
-.ink-route__cartography path {
-  fill: none;
-  stroke: #6f6253;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.ink-route__coast {
-  opacity: 0.46;
-  stroke-width: 1.35;
-  stroke-dasharray: 620;
-  stroke-dashoffset: var(--map-dash-offset);
-}
-
-.ink-route__coast--two { opacity: 0.3; }
-.ink-route__coast--three { opacity: 0.34; }
-
-.ink-route__contour {
-  opacity: 0.28;
-  stroke-width: 1;
-  stroke-dasharray: 900;
-  stroke-dashoffset: var(--map-contour-offset);
-}
-
-.ink-route__bearing,
-.ink-route__survey,
-.ink-route__ticks {
-  opacity: var(--map-progress);
-  stroke-width: 1;
-}
-
-.ink-route__survey {
-  stroke-dasharray: 8 12;
-}
-
-.ink-route__map-copy {
-  opacity: var(--map-progress);
-  fill: var(--ink-soft);
-  font: 500 10px "IBM Plex Mono", monospace;
-  letter-spacing: 1.4px;
-}
-
-.ink-route__impact {
-  opacity: var(--impact-progress);
-  transform: translate(var(--ink-origin-x), var(--ink-origin-y)) scale(var(--impact-scale));
-  transform-origin: 0 0;
-}
-
-.ink-route__impact-core {
-  fill: var(--ink-black);
-  opacity: 0.92;
-}
-
-.ink-route__impact-wash {
-  fill: var(--ink-black);
-  mix-blend-mode: multiply;
-}
-
-.ink-route__impact-wash--one {
-  opacity: 0.13;
-  transform: rotate(-8deg) scale(1.12, 0.94);
-}
-
-.ink-route__impact-wash--two {
-  opacity: 0.22;
-  transform: rotate(11deg) scale(1.02, 1.16);
-}
-
-.ink-route__impact-ring {
-  fill: none;
-  stroke: var(--ink-black);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.ink-route__impact-ring--one {
-  opacity: 0.3;
-  stroke-width: 1.4;
-}
-
-.ink-route__impact-ring--two {
-  opacity: 0.17;
-  stroke-width: 0.9;
-}
-
-.ink-route__impact-feathers {
-  fill: none;
-  opacity: 0.34;
-  stroke: var(--ink-black);
-  stroke-linecap: round;
-  stroke-width: 1.4;
-  vector-effect: non-scaling-stroke;
-}
-
-.ink-route__reveal-path {
-  fill: none;
-  stroke: white;
-  stroke-linecap: round;
-  stroke-width: 44;
-}
-
-.ink-route__route,
-.ink-route__route-shadow {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.ink-route__route {
-  stroke: var(--ink-black);
-  stroke-width: 5.5;
-  stroke-dasharray: 18 17 7 19 14 24;
-}
-
-.ink-route__route-shadow {
-  opacity: 0.13;
-  stroke: var(--ink-black);
-  stroke-width: 13;
-}
-
-.ink-route__route-fiber {
-  display: none;
 }
 
 .ink-route__checkpoint {
@@ -599,18 +462,12 @@
   display: none;
 }
 
-.ink-route__persistent-controls button,
-.ink-route__persistent-controls select {
+.ink-route__persistent-controls button {
   min-height: 2.65rem;
   border-color: rgba(33, 27, 23, 0.34);
   background: rgba(241, 234, 223, 0.9);
   box-shadow: 0 9px 24px rgba(45, 36, 26, 0.08);
   backdrop-filter: blur(10px);
-}
-
-.ink-route__persistent-controls select {
-  appearance: auto;
-  padding-right: 2rem;
 }
 
 .ink-route__annotation-anchor {
@@ -694,14 +551,9 @@
     font-size: 0.7rem;
   }
 
-  .ink-route__takes {
-    gap: 0.4rem;
+  .ink-route__rhythm-note {
     margin-top: 0.75rem;
-  }
-
-  .ink-route__takes label {
-    padding: 0.32rem 0.45rem;
-    font-size: 0.54rem;
+    font-size: 0.52rem;
   }
 
   .ink-route__thelu {
@@ -719,17 +571,6 @@
     bottom: -0.75rem;
     font-size: 0.42rem;
   }
-
-  .ink-route__cartography .ink-route__coast--two,
-  .ink-route__cartography .ink-route__coast--three,
-  .ink-route__cartography .ink-route__contour,
-  .ink-route__cartography .ink-route__survey,
-  .ink-route__map-copy {
-    display: none;
-  }
-
-  .ink-route__route { stroke-width: 4.5; }
-  .ink-route__route-shadow { stroke-width: 10; }
 
   .ink-route__journey-copy {
     top: 1.35rem;
@@ -770,35 +611,22 @@
     display: none;
   }
 
-  .ink-route__persistent-controls button,
-  .ink-route__persistent-controls select {
+  .ink-route__persistent-controls button {
     min-height: 2.35rem;
     padding: 0.48rem 0.6rem;
     font-size: 0.62rem;
-  }
-
-  .ink-route__persistent-controls label {
-    grid-column: 1 / -1;
-  }
-
-  .ink-route__persistent-controls select {
-    width: 100%;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ink-route__hero,
+  .ink-route__canvas,
   .ink-route__world,
   .ink-route__checkpoint {
     transition: none;
     will-change: auto;
   }
 
-  .ink-route__impact {
-    display: none;
-  }
-
-  .ink-route__cartography,
   .ink-route__checkpoint {
     opacity: 1;
   }
@@ -807,8 +635,7 @@
     transform: none;
   }
 
-  .ink-route__route,
-  .ink-route__route-shadow {
-    stroke-dashoffset: 0;
+  .ink-route__stage[data-renderer="unavailable"] .ink-route__fallback-world {
+    opacity: var(--route-progress);
   }
 }
