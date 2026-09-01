@@ -723,7 +723,8 @@
   .ink-route__cartography .ink-route__coast--two,
   .ink-route__cartography .ink-route__coast--three,
   .ink-route__cartography .ink-route__contour,
-  .ink-route__cartography .ink-route__survey {
+  .ink-route__cartography .ink-route__survey,
+  .ink-route__map-copy {
     display: none;
   }
 
