@@ -28,4 +28,27 @@ test('tagged release workflow publishes npm and GitHub assets from one validatio
   assert.doesNotMatch(workflow, /uses: [^\n]+@v\d/);
   assert.match(workflow, /id-token: write/);
   assert.doesNotMatch(workflow, /NPM_TOKEN/);
+  assert.match(workflow, /persist-credentials: false/);
+  assert.match(workflow, /gitleaks git/);
+  assert.match(workflow, /zizmor --offline/);
+  assert.match(workflow, /pnpm audit --prod --audit-level high/);
+});
+
+test('every workflow uses immutable actions and least-privilege checkout', async () => {
+  const workflowDirectory = path.join(repositoryRoot, '.github/workflows');
+  const workflowNames = ['ci.yml', 'publish.yml', 'security.yml'];
+
+  for (const workflowName of workflowNames) {
+    const workflow = await readFile(path.join(workflowDirectory, workflowName), 'utf8');
+    const actionReferences = [...workflow.matchAll(/uses:\s+[^@\s]+@([^\s#]+)/g)];
+
+    assert.ok(actionReferences.length > 0, `${workflowName} must use at least one action`);
+    for (const [, reference] of actionReferences) {
+      assert.match(reference, /^[0-9a-f]{40}$/, `${workflowName} must pin every action to a full commit SHA`);
+    }
+
+    if (workflow.includes('actions/checkout@')) {
+      assert.match(workflow, /persist-credentials: false/, `${workflowName} must disable persisted checkout credentials`);
+    }
+  }
 });
