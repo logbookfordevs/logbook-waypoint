@@ -2,7 +2,7 @@
 
 **Production home:** `docs/specs/waypoint-ink-route/production/`
 
-**Current stage:** Tracer production dispatched. The Ink Route treatment and bounded signature-shot tracer are approved; the next gate is a screening of the required dailies.
+**Current stage:** Tracer reset. The first implementation take was discarded before screening; a fresh production unit must reshoot the same approved signature-shot boundary from the clean epic branch.
 
 **Approved production boundary:** Implement only the responsive hero-to-Ink Route tracer defined in `shot-plan.md`: journey activation; hero clear; genuinely empty Driftwood Paper; ink impact and first dashed route; scroll continuation to one simplified Annotation checkpoint; user-unlocked, mutable route foley; reduced-motion and muted paths; and Take A / Take B timing comparison. Queue, Agent, Resolution, final assets, full navigation, final install routing, and postproduction polish remain outside the frontier.
 
@@ -60,10 +60,13 @@ These remaining questions belong to the tracer screening or later production gat
 - **Visible pen as a required character:** replaced by the more elemental black-ink impact and bloom.
 - **Treat the generated concept as a pixel-exact layout or typography target:** rejected; it is art-direction and composition evidence only.
 - **Convert the uncertain signature interaction into tickets now:** rejected by the production topology; one unresolved signature shot should be directed and traced before scheduling.
+- **First geometric tracer take:** discarded before creative screening. Its overlapping opaque blot shapes, isolated dashed Bézier, large empty field, and section-like Annotation arrival proved plumbing but could not prove the intended cinematic travel language. A failed ADF invocation at task start also makes its production process unreliable as evidence. Do not refine or reuse that implementation.
 
 ## References and anti-references
 
 - [Chartroom Wonder concept](../../../references/waypoint-storybook-chart/chartroom-wonder-concept.png) — art-direction evidence for an immediate hero, Thelu, paper material, route, and product destinations; not a literal production frame.
+- [SBS — *The Boat*](https://www.sbs.com.au/theboat/) — reference for authored scroll-led illustration, spatial continuity, layered emergence, and synchronized audiovisual atmosphere; study its principles rather than copying its story, imagery, or exact interaction.
+- Local reference video `/Users/leonardo/Downloads/Map_tracer_route_animation_202609010125.mp4` — motion-quality target for material ink bloom, camera-led map travel, environmental marks emerging around the route, and destinations discovered inside one continuous world. Its full Annotation → Queue → Agent → Resolution coverage is not the tracer scope.
 - [Concept reference notes](../../../references/waypoint-storybook-chart/README.md) — historical visual-direction context, superseded where this notebook records the hero-first Ink Route transition.
 - [`DESIGN.md`](../../../../DESIGN.md) — durable Waypoint identity, color roles, and typography; prior homepage composition is not carried forward.
 - [`CONTEXT.md`](../../../../CONTEXT.md) — canonical product vocabulary.
@@ -88,7 +91,7 @@ These remaining questions belong to the tracer screening or later production gat
 - [Proposed technical scout](./technical-scout.md)
 - [Editable storyboard](./storyboard.svg)
 - [Rendered storyboard](./storyboard.png)
-- Tracer: authorized and dispatched to a fresh worktree task; implementation and dailies are pending
+- Tracer: authorized; first take discarded; clean reshoot and dailies pending
 - Production cards, asset ledger, screenings, motion spec: not yet earned
 
 ## Last greenlight
@@ -97,17 +100,17 @@ These remaining questions belong to the tracer screening or later production gat
 
 ## Next co-directing decision
 
-Screen the tracer dailies, choose Take A or Take B (or request a specific revision), and decide whether the signature shot is ready to expand into production.
+Screen a fresh high-fidelity signature passage from ink impact through the first Annotation arrival, choose Take A or Take B (or request a specific revision), and decide whether it finally proves the cinematic direction.
 
 ## Current production slate
 
-- **Recorded:** The Ink Route treatment and the complete preproduction package are approved. The tracer boundary, dailies matrix, positional causality, timing comparison, reverse-scroll silence, and sound contract are locked for this shoot.
-- **Current gate and approved boundary:** Tracer production. Only the seven-item boundary in `shot-plan.md` is authorized.
-- **Recommended production move:** **Dispatch a production unit** to shoot the bounded tracer in a fresh worktree based on `feat/waypointer-website`.
-- **Why this move fits now:** The creative questions are expressed clearly enough to test in motion; the remaining uncertainty is rendered feel, not another planning artifact.
+- **Recorded:** The Ink Route treatment and preproduction package remain approved. The first implementation take was explicitly discarded and is now an anti-reference; none of its code belongs on the epic branch.
+- **Current gate and approved boundary:** Tracer production reset. Only the seven-item boundary in `shot-plan.md` is authorized, ending at the first simplified Annotation checkpoint.
+- **Recommended production move:** **Dispatch a fresh production unit** from clean `feat/waypointer-website`, with ADF successfully loaded before it interprets the binder.
+- **Why this move fits now:** The discarded take validated only basic plumbing. A new tracer must concentrate production-level motion fidelity into the three-to-five-second ink-impact → route-travel → Annotation passage so the creative direction can actually be judged.
 - **Approved production frontier:** Hero through the first simplified Annotation checkpoint, including the A/B timing comparison and required accessibility, sound, responsive, and performance dailies.
-- **Still unresolved in the Director's Room:** Which timing take wins, whether the positional handoff reads clearly in the browser, whether the temporary foley feels materially synchronized, and what performance or Safari evidence requires revision.
-- **Selected venue:** Fresh worktree task as one bounded production unit. This single tracer does not require tickets.
+- **Still unresolved in the Director's Room:** Which timing take wins; whether the ink reads as material rather than geometry; whether framing, environmental emergence, and sound create travel; whether Annotation feels discovered in one continuous world; and what performance or Safari evidence requires revision.
+- **Selected venue:** New worktree task as one bounded production unit. This single reshoot still does not require tickets.
 - **Next evidence or greenlight:** Live Take A / Take B tracer, desktop and mobile recordings, keyboard/reduced-motion/muted coverage, frame-time trace, and implementation notes. Expansion stops until the director screens that evidence.
 
 ## Continuity log
@@ -115,3 +118,4 @@ Screen the tracer dailies, choose Take A or Take B (or request a specific revisi
 - **2026-08-31 / treatment greenlight** — Recorded The Ink Route as the selected treatment. Advanced the production to the preproduction gate. No implementation authority was inferred from the director's agreement.
 - **2026-08-31 / preproduction prepared** — Added the proposed shot plan, technical scout, storyboard SVG/PNG, tracer boundary, and dailies matrix. Status remains unapproved pending director review.
 - **2026-08-31 / tracer greenlight** — Director explicitly greenlit the preproduction package and requested a fresh worktree production unit. Locked the seven-item tracer boundary, recorded the next screening gate, and kept the rest of the page outside production authority.
+- **2026-09-01 / first tracer discarded** — Director rejected the first implementation take in full before screening after comparing it with the intended map-travel motion bar. Recorded its geometric blot, isolated route, empty field, and disconnected Annotation arrival as anti-references; noted the failed governing-skill invocation; and reset production to a clean reshoot without expanding scope.
