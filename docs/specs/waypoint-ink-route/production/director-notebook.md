@@ -2,9 +2,9 @@
 
 **Production home:** `docs/specs/waypoint-ink-route/production/`
 
-**Current stage:** Preproduction review. The Ink Route treatment is approved; the proposed shot plan, technical scout, storyboard, and tracer boundary await greenlight.
+**Current stage:** Tracer production dispatched. The Ink Route treatment and bounded signature-shot tracer are approved; the next gate is a screening of the required dailies.
 
-**Approved production boundary:** Preserve the approved treatment and prepare its next creative gate. Do not implement the tracer or expand the production without an explicit greenlight.
+**Approved production boundary:** Implement only the responsive hero-to-Ink Route tracer defined in `shot-plan.md`: journey activation; hero clear; genuinely empty Driftwood Paper; ink impact and first dashed route; scroll continuation to one simplified Annotation checkpoint; user-unlocked, mutable route foley; reduced-motion and muted paths; and Take A / Take B timing comparison. Queue, Agent, Resolution, final assets, full navigation, final install routing, and postproduction polish remain outside the frontier.
 
 ## Creative battery
 
@@ -33,20 +33,22 @@
 - The signature sound is responsive ink-on-paper foley synchronized to visible route drawing. Sound begins only from intentional user action, remains mutable, and carries no required meaning.
 - A visible literal pen is not required; the approved origin image is the ink drop and spreading route.
 - Waypoint's established Poppins, Literata, and IBM Plex Mono roles remain the production typography. The condensed concept headline is not production typography.
+- The CTA disappears with the hero; the blank-paper hold is genuinely empty; and the ink impact lands at the remembered CTA-arrow position to preserve positional causality.
+- A single normalized native-scroll entrance range is the visual authority. Journey activation may advance that same range after unlocking sound; manual scroll follows the same visuals silently.
+- Reverse scroll reverses the tracer visuals without replaying sound. Haptics are not part of this tracer.
+- The tracer compares Take A (900–1050 ms exit, 160–200 ms blank hold) with Take B (1200–1350 ms exit, 280–340 ms blank hold).
 
 ## Open questions
 
 - Exact hero promise, CTA labels, and final public installation destination at launch.
 - Thelu's precise framing in the hero and whether Thelu reappears during the route.
-- Exact blocking and timing for CTA contraction, hero exit, blank-paper hold, ink impact, and the first route reveal.
-- Whether the CTA becomes the route's origin mark literally or only establishes its causal position.
-- Journey-sound invitation, default preference, persistent mute control, replay behavior, reverse-scroll behavior, and final sound assets.
+- Final production timing after the tracer comparison.
+- Final route-foley recording and mix after the procedural or locally produced tracer cue proves the interaction.
 - The exact map vocabulary and evidence shown at each product destination.
-- Mobile shot coverage, exact device floor, reduced-motion composition, and the lowest fidelity tier.
-- The authoritative animation driver, route rendering mechanism, warm path, budgets, and whether an animation dependency is warranted.
-- The exact tracer shot boundary and the rendered evidence required for its greenlight.
+- Exact production device floor and lowest fidelity tier after the 375 px tracer coverage.
+- Whether tracer evidence justifies changing the proposed CSS, animation-frame, SVG, and Web Audio implementation approach.
 
-The proposed preproduction package answers these questions for review without locking them. Approval or revision belongs to the next greenlight.
+These remaining questions belong to the tracer screening or later production gates. The approved tracer must not silently answer them for the full page.
 
 ## Rejected directions and reasons
 
@@ -86,29 +88,30 @@ The proposed preproduction package answers these questions for review without lo
 - [Proposed technical scout](./technical-scout.md)
 - [Editable storyboard](./storyboard.svg)
 - [Rendered storyboard](./storyboard.png)
-- Tracer: not greenlit and not created
+- Tracer: authorized and dispatched to a fresh worktree task; implementation and dailies are pending
 - Production cards, asset ledger, screenings, motion spec: not yet earned
 
 ## Last greenlight
 
-**2026-08-31 — Treatment direction approved.** The director approved The Ink Route: a minimalist map travel sequence on Driftwood Paper in which the journey action clears the hero, an ink drop begins the dashed route, and native scroll carries the product journey. This approval did not greenlight tracer implementation.
+**2026-08-31 — Preproduction and tracer boundary approved.** The director explicitly greenlit the proposed shot plan, positional-causality blocking, Take A / Take B timing comparison, responsive sound behavior, technical scout, seven-item tracer boundary, and required dailies. This authorizes the bounded tracer only, not expansion into the full page.
 
 ## Next co-directing decision
 
-Approve or revise the proposed hero-to-Ink Route shot sequence, positional-causality blocking, timing comparison, sound behavior, responsive and reduced-motion coverage, technical scout, tracer boundary, and required dailies.
+Screen the tracer dailies, choose Take A or Take B (or request a specific revision), and decide whether the signature shot is ready to expand into production.
 
 ## Current production slate
 
-- **Recorded:** The approved Ink Route treatment plus an unapproved preproduction package containing the shot plan, technical scout, editable storyboard, rendered board, tracer boundary, and dailies matrix.
-- **Current gate and approved boundary:** Preproduction review. Treatment is locked; the new package is a proposal, and no implementation is authorized.
-- **Recommended production move:** **Shoot a tracer** — only after the director approves or revises this preproduction package and explicitly opens the bounded tracer.
-- **Why this move fits now:** One signature uncertainty remains: whether the hero-clear, blank hold, ink impact, sound, and scroll handoff feel causal and cinematic in motion. A live tracer will answer it more honestly than additional documents or tickets.
-- **Approved production frontier:** Treatment only until the preproduction greenlight. If approved, the frontier becomes the seven-item tracer boundary in `shot-plan.md`.
-- **Still unresolved in the Director's Room:** Approval of positional causality, Take A / Take B timing coverage, reverse-scroll silence, exact tracer boundary, and its evidence matrix.
-- **Venue for the director to choose:** Current room, handoff/fresh task, or a bounded production unit. Tickets are premature.
-- **Next evidence or greenlight:** Preproduction greenlight or revision notes. A greenlight must explicitly authorize the tracer before code changes begin.
+- **Recorded:** The Ink Route treatment and the complete preproduction package are approved. The tracer boundary, dailies matrix, positional causality, timing comparison, reverse-scroll silence, and sound contract are locked for this shoot.
+- **Current gate and approved boundary:** Tracer production. Only the seven-item boundary in `shot-plan.md` is authorized.
+- **Recommended production move:** **Dispatch a production unit** to shoot the bounded tracer in a fresh worktree based on `feat/waypointer-website`.
+- **Why this move fits now:** The creative questions are expressed clearly enough to test in motion; the remaining uncertainty is rendered feel, not another planning artifact.
+- **Approved production frontier:** Hero through the first simplified Annotation checkpoint, including the A/B timing comparison and required accessibility, sound, responsive, and performance dailies.
+- **Still unresolved in the Director's Room:** Which timing take wins, whether the positional handoff reads clearly in the browser, whether the temporary foley feels materially synchronized, and what performance or Safari evidence requires revision.
+- **Selected venue:** Fresh worktree task as one bounded production unit. This single tracer does not require tickets.
+- **Next evidence or greenlight:** Live Take A / Take B tracer, desktop and mobile recordings, keyboard/reduced-motion/muted coverage, frame-time trace, and implementation notes. Expansion stops until the director screens that evidence.
 
 ## Continuity log
 
 - **2026-08-31 / treatment greenlight** — Recorded The Ink Route as the selected treatment. Advanced the production to the preproduction gate. No implementation authority was inferred from the director's agreement.
 - **2026-08-31 / preproduction prepared** — Added the proposed shot plan, technical scout, storyboard SVG/PNG, tracer boundary, and dailies matrix. Status remains unapproved pending director review.
+- **2026-08-31 / tracer greenlight** — Director explicitly greenlit the preproduction package and requested a fresh worktree production unit. Locked the seven-item tracer boundary, recorded the next screening gate, and kept the rest of the page outside production authority.
