@@ -1,6 +1,6 @@
 # Route A Replacement Tracer — Screening Note
 
-**Status:** Awaiting director screening. The picture/material/camera tracer is ready to judge; full production, final art, final foley, and renderer architecture remain unapproved.
+**Status:** Visual direction approved at tracer screening on 2026-09-01. The accepted picture/material/camera tracer and its dashed-route revision are integrated as production evidence; this is not picture lock, final art, final foley, renderer lock, or authorization for the next route segment.
 
 **Approved source:** [`medium-scout.md`](./medium-scout.md), [`shot-plan.md`](./shot-plan.md), and the Route A greenlight recorded in [`director-notebook.md`](./director-notebook.md).
 
@@ -31,6 +31,7 @@ The recordings are VP8 video-only captures; they do not embed browser audio. The
 - The world appears only where the route has earned it. Context at the destination resolves from the authored chart into exact DOM copy rather than being flattened into the image.
 - Two failed shader looks were rejected during dailies: discrete curve samples read as beads, and quantized noise read as rectangular blocks. The screened revision uses continuous segment distance plus interpolated material noise.
 - The static renderer-failure cut is richer but less causal: it sacrifices live ink and camera motion while preserving the world, Annotation meaning, controls, focus, and useful document.
+- The director's screening response was strongly positive. The only concrete visual revision requested after that response was a more map-like dashed route; commit `3399ea0` supplied eleven irregular dash periods with continuous origin/arrival joins and was accepted as “amazing.” This later approval supersedes the earlier three-to-five-dash blocking note without expanding the scene.
 
 ## Engineering evidence
 
@@ -50,11 +51,16 @@ The recordings are VP8 video-only captures; they do not embed browser audio. The
 - Browser captures are silent; the synchronized procedural mix must be heard in the live build. Final authored/recorded foley remains unapproved.
 - Mobile evidence uses a real mobile composition at a `375 × 812` emulated viewport, not physical Adreno/Mali hardware. A real-device GPU session remains required before production expansion.
 - Take B is still a rhythm hypothesis. This cut did not manufacture a second timing variant because the representative picture did not expose a useful binary choice yet.
+- Background/foreground recovery suspends Web Audio but does not yet explicitly resume it when the page becomes visible.
+- Texture decode/upload begins eagerly but journey activation does not yet wait for renderer readiness, so an unusually fast activation on a slow device can outrun the creative-master warm path.
+- Focused component tests cover semantic content, activation, audio preparation, and reduced motion, but the shader and Web Audio graph remain covered by live dailies rather than deterministic unit tests.
+- The custom animation-frame projection is a deliberate tracer exception to the general Motion-library preference: it is the WebGL render cadence approved by the medium scout, and adding an animation dependency was outside this production boundary.
+- On local Node `26.7.0`, Vitest requires `--localstorage-file` for the mute-persistence tests; with that environment flag the complete `7`-file, `14`-test suite passes.
 
-## Director's recommendation
+## Director's decision
 
-Screen this cut for the visual direction: material, authored world, camera, continuity, Annotation discovery, and the held-breath rhythm. If that direction is approved, keep the current implementation as tracer evidence and open only the next named production batch. Do not picture-lock the generated plates, procedural foley, or custom renderer architecture from this screening alone.
+Approve the Route A visual direction and retain the integrated tracer as evidence for material ink, authored-world emergence, camera continuity, Annotation discovery, held-breath rhythm, and the dashed-map route. Do not picture-lock the generated plates, procedural foley, or custom renderer architecture. Resolve the documented warm-path and audio-resume conditions before promoting this tracer into a production-ready batch.
 
-## Decision requested
+## Next decision requested
 
-Approve the Route A tracer direction, request specific visual revisions, or reject it. If approved, separately name whether the next frontier is final asset authoring for this hero-through-Annotation cut or expansion to the next journey segment.
+Choose the next frontier: final asset authoring and engineering hardening for the approved hero-through-Annotation cut, or preproduction for the next Queue journey segment. Neither frontier is opened by this screening record.

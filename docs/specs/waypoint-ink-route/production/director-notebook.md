@@ -2,9 +2,9 @@
 
 **Production home:** `docs/specs/waypoint-ink-route/production/`
 
-**Current stage:** The Route A replacement tracer is shot and awaiting director screening. The SVG tracer at `2e111a9` remains blocking and engineering evidence only.
+**Current stage:** Route A's hero-through-Annotation visual direction is approved and integrated as tracer evidence. Production expansion is paused while the director chooses whether the next frontier hardens this cut or pre-produces the Queue segment.
 
-**Approved production boundary:** Route A authorizes an authored 2D/2.5D GPU-composite creative-master study, the bounded representative asset batch, and one replacement hero-through-first-Annotation tracer. It does not authorize Queue, Agent, Resolution, the full page, dependency installation, final install routing, production expansion, or postproduction.
+**Approved production boundary:** Preserve the accepted Route A tracer direction, representative asset batch, held-breath rhythm, and dashed map route through first Annotation. This approval integrates tracer evidence only; it does not authorize Queue, Agent, Resolution, final asset authoring, renderer lock, dependency installation, full-page production, final install routing, or postproduction.
 
 ## Creative battery
 
@@ -39,6 +39,8 @@
 - Take B's held-breath rhythm is the director's current starting preference. Its exact `1280 ms` edit is not locked and must be re-screened with representative picture and sound.
 - Route A — authored 2D/2.5D plates with a GPU compositor — is the approved creative-master medium for the replacement tracer.
 - The replacement tracer must prove real paper/ink material, authored environmental layers, camera travel, depth, Annotation discovery, and synchronized sound before any visible direction can be preserved into production.
+- Route A's material ink, authored chart world, camera-led continuity, Annotation discovery, and held-breath rhythm clear the visual-direction tracer gate.
+- The accepted first route leg uses eleven irregular map-dash periods with continuous origin and arrival joins. This screened result supersedes the earlier three-to-five-dash blocking estimate.
 
 ## Open questions
 
@@ -51,6 +53,7 @@
 - Whether PixiJS, Three.js, custom Canvas 2D, or an authored/hybrid runtime best owns the approved creative master after the bounded material/render-graph proof and dependency gate.
 - Which paper, ink, cartography, atmosphere, product-evidence, sound, and optional haptic assets are authored, generated and finished, acquired, recorded, or performed live.
 - Whether the full sequence earns a virtual progress adapter after the representative camera and gate study.
+- Whether the next approved frontier is final asset authoring and engineering hardening for hero-through-Annotation or preproduction for Queue.
 
 These remaining questions belong to the corrected medium gate, replacement tracer screening, or later production gates. No bounded tracer may silently answer them for the full page.
 
@@ -94,6 +97,10 @@ These remaining questions belong to the corrected medium gate, replacement trace
 - The browser sessions observed `3.0 ms` maximum route work on desktop and `1.3 ms` at `375 × 812`, with `0.7 ms` and `0.5 ms` respectively at impact. Physical mobile GPU profiling remains unverified.
 - Direct `#annotation`, reduced motion, and deliberate WebGL context loss converge on stable semantic content. The context-loss tier swaps to the authored static plate.
 - Chromium audio-output initialization can create one long pointer-down task before click; focus/pointer-down preparation now keeps the visual timeline independent from audio resume. Safari variance remains unverified because no Safari or iOS simulator is available here.
+- Director's Room replay confirmed the integrated dashed route on desktop and 375 px mobile with no browser-console or page errors. TypeScript passed; all `14` website tests passed when local Node `26.7.0` was given its required `--localstorage-file` backing path.
+- Before production hardening, explicitly resume previously unlocked Web Audio after foreground return and gate journey playback on renderer readiness so slow texture decode/upload cannot miss the first impact.
+- The tracer's custom `requestAnimationFrame` projection is an approved WebGL render-cadence exception to the general Motion-library preference; the production boundary explicitly prohibited adding a renderer/animation dependency without a new gate.
+- Focused shader and Web Audio graph regression coverage remains to be earned when the tracer is promoted beyond creative evidence.
 
 ## Artifact index
 
@@ -104,11 +111,12 @@ These remaining questions belong to the corrected medium gate, replacement trace
 - [Corrected medium scout](./medium-scout.md)
 - [Editable storyboard](./storyboard.svg)
 - [Rendered storyboard](./storyboard.png)
-- Behavioral/engineering tracer: clean SVG reshoot implemented at `2e111a9`; no visual take is approved
+- Behavioral/engineering tracer: clean SVG reshoot implemented at `2e111a9`; retained as non-visual evidence
 - [Historical SVG tracer screening note](./screenings.md)
 - [Route A replacement tracer screening](./screenings-route-a.md)
 - [Route A production cards](./production-cards.md)
 - [Route A asset ledger and prompt lineage](./asset-ledger.md)
+- Accepted integrated tracer: commits `74c9f68` and `3399ea0`, merged into `feat/waypointer-website`
 - Motion spec: not yet earned
 
 ## Last greenlight
@@ -119,20 +127,22 @@ These remaining questions belong to the corrected medium gate, replacement trace
 
 **2026-09-01 — Route A and replacement tracer approved.** The director approved the authored 2D/2.5D GPU-composite medium and authorized its representative asset batch plus one replacement hero-through-Annotation tracer. Take B is the first rhythm hypothesis. No dependency install, page expansion, production batch, or final cut is approved.
 
+**2026-09-01 — Route A tracer visual direction approved.** After a strongly positive live screening, the director requested only a more map-like dashed route. The completed revision was accepted as “amazing.” Route A's material, world, camera continuity, Annotation discovery, held-breath rhythm, and eleven-period dashed route now clear the tracer's visual-direction gate. This is not picture lock or authorization for the next batch.
+
 ## Next co-directing decision
 
-Screen the replacement hero-through-Annotation tracer and approve it, request revisions, or reject the visual direction. The screening must lead with material, world, camera, rhythm, continuity, sound, and feeling before engineering evidence.
+Choose whether the next production frontier is final asset authoring plus engineering hardening for the approved hero-through-Annotation cut, or preproduction for the Queue journey segment.
 
 ## Current production slate
 
-- **Recorded:** Route A and one production-representative replacement tracer were greenlit. The tracer is now shot; the SVG reshoot remains behavior/engineering evidence, and Take B remains the starting rhythm hypothesis.
-- **Current gate and approved boundary:** Screen the authored 2D/2.5D GPU-composite hero-through-Annotation tracer. Dependency installation, final assets/foley, and every later route destination remain unapproved.
-- **Recommended production move:** **Screen the tracer.** Judge material, world authorship, camera, continuity, Annotation discovery, and held-breath rhythm before opening another batch.
-- **Why this move fits now:** The signature visual risk has rendered evidence on desktop and mobile plus reduced-motion, direct-entry, and renderer-failure cuts. More production would outrun the current creative authority.
-- **Approved production frontier:** The completed tracer and its representative source batch only.
-- **Still unresolved in the Director's Room:** Visual-direction approval; final layered asset authoring; production foley; custom WebGL versus PixiJS/Three.js ownership if the frontier expands; physical mobile GPU evidence; exact final timing; final input adapter; optional haptics.
+- **Recorded:** Route A's replacement tracer direction and completed dashed-map revision are approved and integrated. The SVG reshoot remains behavioral evidence; Take B remains the rhythm hypothesis rather than a locked final edit.
+- **Current gate and approved boundary:** The visual-direction tracer gate is closed. No next production batch is open.
+- **Recommended production move:** **Keep directing.** Choose between hardening/final asset authoring for the approved hero-through-Annotation cut and pre-producing the Queue segment before dispatching more implementation.
+- **Why this move fits now:** The signature visual risk is resolved, but the two possible next frontiers spend effort differently and the director has not selected one.
+- **Approved production frontier:** Preserve the merged tracer and its representative source batch only.
+- **Still unresolved in the Director's Room:** Next-frontier selection; final layered assets and foley; Web Audio foreground resume; renderer warm-path gate; custom WebGL versus PixiJS/Three.js ownership if complexity expands; physical mobile GPU evidence; final timing/input adapter; optional haptics.
 - **Selected venue:** Current Director's Room. This remains one coherent signature-shot decision and does not need tickets.
-- **Next evidence or greenlight:** Director screens the production-representative tracer and approves the visual direction, requests revisions, or rejects it. Production does not expand before that decision.
+- **Next evidence or greenlight:** Director selects and greenlights one named production frontier. Production does not expand merely because the tracer direction is approved.
 
 ## Continuity log
 
@@ -144,3 +154,4 @@ Screen the replacement hero-through-Annotation tracer and approve it, request re
 - **2026-09-01 / cinematic medium reopened** — Director accepted the useful behavior, named Take B as the starting rhythm, and clarified that `The Boat` sets the level of creativity for the experience. Reclassified the SVG cut as blocking/engineering evidence, superseded the SVG-first technical recommendation, added [`medium-scout.md`](./medium-scout.md), and paused before any replacement build or dependency decision.
 - **2026-09-01 / Route A greenlight** — Director approved the authored 2D/2.5D GPU-composite route and authorized the representative asset batch plus one replacement hero-through-Annotation tracer. Recorded the SVG cut as engineering evidence only, preserved Take B as a rhythm hypothesis, and held dependency installation and all production expansion outside the boundary.
 - **2026-09-01 / Route A tracer shot** — Produced original desktop/mobile chart boards and an ink-density plate, built the custom WebGL material/world compositor without installing a renderer package, removed the visible SVG route/impact and redundant A/B selector, captured desktop/mobile/direct/reduced/failure dailies, and recorded [`screenings-route-a.md`](./screenings-route-a.md). Status is an unapproved screening pause; production does not expand before the director's decision.
+- **2026-09-01 / Route A tracer approved and integrated** — Preserved the director's strongly positive screening, accepted the requested dashed-map revision at `3399ea0`, replayed desktop/mobile dailies, reviewed standards and binder fidelity, and merged the local tracer branch. Recorded warm-path, background-audio, physical-mobile, Safari, and focused test-coverage conditions for the next production gate; no push or production expansion followed.
