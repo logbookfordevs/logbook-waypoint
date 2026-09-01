@@ -2,7 +2,7 @@
 
 **Production home:** `docs/specs/waypoint-ink-route/production/`
 
-**Current stage:** Tracer reset. The first implementation take was discarded before screening; a fresh production unit must reshoot the same approved signature-shot boundary from the clean epic branch.
+**Current stage:** Fresh tracer reshoot completed at `2e111a9`; production is paused at the unapproved Take A / Take B screening gate.
 
 **Approved production boundary:** Implement only the responsive hero-to-Ink Route tracer defined in `shot-plan.md`: journey activation; hero clear; genuinely empty Driftwood Paper; ink impact and first dashed route; scroll continuation to one simplified Annotation checkpoint; user-unlocked, mutable route foley; reduced-motion and muted paths; and Take A / Take B timing comparison. Queue, Agent, Resolution, final assets, full navigation, final install routing, and postproduction polish remain outside the frontier.
 
@@ -82,6 +82,8 @@ These remaining questions belong to the tracer screening or later production gat
 - Semantic content, product actions, and destination meaning must remain complete without motion, sound, or enhanced rendering.
 - The proposed scout uses normalized native-scroll progress as the visual authority, CSS for contact states, a bounded animation-frame projection for SVG route geometry, and Web Audio for render-anchored sound. No dependency change is approved.
 - The proposed entrance uses positional causality: the CTA disappears with the hero and the later ink impact lands at its remembered screen-space origin, preserving a truly blank paper hold.
+- The reshoot uses native scroll as visual authority, bounded SVG/style projection, and procedural Web Audio. Final samples remain below the `4 ms` per-frame work budget at desktop and 375 px touch sizes.
+- Chromium audio-output initialization can create one long pointer-down task before click; focus/pointer-down preparation now keeps the visual timeline independent from audio resume. Safari variance remains unverified because no Safari or iOS simulator is available here.
 
 ## Artifact index
 
@@ -91,8 +93,9 @@ These remaining questions belong to the tracer screening or later production gat
 - [Proposed technical scout](./technical-scout.md)
 - [Editable storyboard](./storyboard.svg)
 - [Rendered storyboard](./storyboard.png)
-- Tracer: authorized; first take discarded; clean reshoot and dailies pending
-- Production cards, asset ledger, screenings, motion spec: not yet earned
+- Tracer: clean reshoot implemented at `2e111a9`; Take A / Take B remain unapproved
+- [Tracer screening note and dailies](./screenings.md)
+- Production cards, asset ledger, motion spec: not yet earned
 
 ## Last greenlight
 
@@ -105,13 +108,13 @@ Screen a fresh high-fidelity signature passage from ink impact through the first
 ## Current production slate
 
 - **Recorded:** The Ink Route treatment and preproduction package remain approved. The first implementation take was explicitly discarded and is now an anti-reference; none of its code belongs on the epic branch.
-- **Current gate and approved boundary:** Tracer production reset. Only the seven-item boundary in `shot-plan.md` is authorized, ending at the first simplified Annotation checkpoint.
-- **Recommended production move:** **Dispatch a fresh production unit** from clean `feat/waypointer-website`, with ADF successfully loaded before it interprets the binder.
-- **Why this move fits now:** The discarded take validated only basic plumbing. A new tracer must concentrate production-level motion fidelity into the three-to-five-second ink-impact → route-travel → Annotation passage so the creative direction can actually be judged.
+- **Current gate and approved boundary:** Tracer screening. The fresh reshoot ends at the first simplified Annotation checkpoint and includes the required A/B, responsive, accessibility, sound, and performance evidence.
+- **Recommended production move:** **Screen the fresh tracer.** Choose Take A, choose Take B, or request a bounded revision.
+- **Why this move fits now:** The implementation and dailies exist at the approved frontier. Expansion would pre-empt the unresolved creative decision this tracer was built to answer.
 - **Approved production frontier:** Hero through the first simplified Annotation checkpoint, including the A/B timing comparison and required accessibility, sound, responsive, and performance dailies.
 - **Still unresolved in the Director's Room:** Which timing take wins; whether the ink reads as material rather than geometry; whether framing, environmental emergence, and sound create travel; whether Annotation feels discovered in one continuous world; and what performance or Safari evidence requires revision.
-- **Selected venue:** New worktree task as one bounded production unit. This single reshoot still does not require tickets.
-- **Next evidence or greenlight:** Live Take A / Take B tracer, desktop and mobile recordings, keyboard/reduced-motion/muted coverage, frame-time trace, and implementation notes. Expansion stops until the director screens that evidence.
+- **Selected venue:** Current Director's Room or ordinary handoff using the persisted screening note. This single tracer still does not require tickets.
+- **Next evidence or greenlight:** Director selects or revises a timing take and states whether the tracer proves the cinematic direction. Expansion stops until that decision.
 
 ## Continuity log
 
@@ -119,3 +122,4 @@ Screen a fresh high-fidelity signature passage from ink impact through the first
 - **2026-08-31 / preproduction prepared** — Added the proposed shot plan, technical scout, storyboard SVG/PNG, tracer boundary, and dailies matrix. Status remains unapproved pending director review.
 - **2026-08-31 / tracer greenlight** — Director explicitly greenlit the preproduction package and requested a fresh worktree production unit. Locked the seven-item tracer boundary, recorded the next screening gate, and kept the rest of the page outside production authority.
 - **2026-09-01 / first tracer discarded** — Director rejected the first implementation take in full before screening after comparing it with the intended map-travel motion bar. Recorded its geometric blot, isolated route, empty field, and disconnected Annotation arrival as anti-references; noted the failed governing-skill invocation; and reset production to a clean reshoot without expanding scope.
+- **2026-09-01 / fresh tracer reshoot completed** — Built the clean hero-to-Annotation tracer at `2e111a9`, preserved Take A / Take B and all parity paths, captured responsive and performance dailies, and recorded [`screenings.md`](./screenings.md). Status is an unapproved pause; no take or expanded production boundary was selected.
