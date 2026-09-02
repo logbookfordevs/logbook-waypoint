@@ -1,16 +1,16 @@
 .ink-route-home {
-  --ink-paper: #e9e1d3;
-  --ink-paper-raised: #f4eee2;
-  --ink-paper-shadow: #d7ccba;
+  --ink-paper: #e9e5d8;
+  --ink-paper-raised: #f3f0e7;
+  --ink-paper-shadow: #d3ccbd;
   --ink-black: #17201e;
-  --ink-muted: #6b655c;
-  --ink-rule: #b9a98f;
-  --ink-ocean: #0d302f;
-  --ink-ocean-raised: #153c39;
-  --ink-verdigris: #2f7f77;
-  --ink-rust: #b94828;
-  --ink-brass: #ae823b;
-  --ink-lantern: #f8f0df;
+  --ink-muted: #5f655f;
+  --ink-rule: #b8beb4;
+  --ink-ocean: #102c2c;
+  --ink-ocean-raised: #132f31;
+  --ink-verdigris: #3f8580;
+  --ink-rust: #c94f35;
+  --ink-brass: #bd9348;
+  --ink-lantern: #f3f0e7;
   --ink-display: "Poppins", "Avenir Next", "Segoe UI", sans-serif;
   --ink-reading: "Literata", Georgia, serif;
   --ink-mono: "IBM Plex Mono", Consolas, monospace;
@@ -584,55 +584,6 @@ body:has(.ink-route-home) {
   color: rgba(248, 240, 223, 0.58);
 }
 
-.ink-route-map {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.ink-route-map path {
-  fill: none;
-  vector-effect: non-scaling-stroke;
-}
-
-.ink-route-map__ghost {
-  stroke: color-mix(in srgb, var(--ink-rule) 44%, transparent);
-  stroke-dasharray: 3 15;
-  stroke-linecap: round;
-  stroke-width: 1.15;
-}
-
-.ink-route-map__ink {
-  stroke: var(--ink-black);
-  stroke-dasharray: 8 12;
-  stroke-linecap: round;
-  stroke-width: 3;
-}
-
-.ink-route-map__tracer {
-  fill: var(--ink-black);
-  stroke: var(--ink-paper);
-  stroke-width: 5;
-  vector-effect: non-scaling-stroke;
-}
-
-.ink-route-home[data-chapter="2"] .ink-route-map__ghost {
-  stroke: rgba(248, 240, 223, 0.13);
-}
-
-.ink-route-home[data-chapter="2"] .ink-route-map__ink {
-  stroke: var(--ink-lantern);
-}
-
-.ink-route-home[data-chapter="2"] .ink-route-map__tracer {
-  fill: var(--ink-rust);
-  stroke: var(--ink-ocean);
-}
-
 .ink-chapter-index {
   position: absolute;
   z-index: 18;
@@ -1037,7 +988,18 @@ body:has(.ink-route-home) {
 .agent-shot__radar i:nth-child(1) { width: 34%; aspect-ratio: 1; }
 .agent-shot__radar i:nth-child(2) { width: 1px; height: 88%; border: 0; border-left: 1px solid rgba(248, 240, 223, 0.15); border-radius: 0; }
 .agent-shot__radar i:nth-child(3) { width: 88%; height: 1px; border: 0; border-top: 1px solid rgba(248, 240, 223, 0.15); border-radius: 0; }
-.agent-shot__radar b { position: absolute; width: 42%; height: 42%; border-radius: 50% 100% 0 100%; background: conic-gradient(from 180deg, transparent, rgba(47, 127, 119, 0.33)); transform-origin: 100% 100%; animation: ink-radar-sweep 7s linear infinite; }
+.agent-shot__radar b {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42%;
+  height: 42%;
+  border-radius: 50% 100% 0 100%;
+  background: conic-gradient(from 180deg, transparent, rgba(47, 127, 119, 0.33));
+  transform: translate(-100%, -100%);
+  transform-origin: 100% 100%;
+  animation: ink-radar-sweep 7s linear infinite;
+}
 
 .agent-shot__terminal {
   position: relative;
@@ -1353,7 +1315,7 @@ body:has(.ink-route-home) {
 }
 
 @keyframes ink-radar-sweep {
-  to { transform: rotate(1turn); }
+  to { transform: translate(-100%, -100%) rotate(1turn); }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1534,12 +1496,6 @@ body:has(.ink-route-home) {
     display: none;
   }
 
-  .ink-route-map {
-    width: 170%;
-    left: -38%;
-    opacity: 0.48;
-  }
-
   .ink-scene {
     inset: 4.5rem 1.1rem 5.2rem;
     grid-template-columns: 1fr;
@@ -1715,7 +1671,6 @@ body:has(.ink-route-home) {
 
   .ink-empty-frame,
   .ink-scroll-cue,
-  .ink-route-map,
   .ink-chapter-index,
   .ink-journey__progress,
   .ink-masthead nav button,

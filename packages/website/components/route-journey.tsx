@@ -42,8 +42,6 @@ const chapters = [
   },
 ] as const;
 
-const routePath = 'M122 574 C92 474 172 404 288 420 C430 442 450 306 354 250 C286 210 324 102 468 112 C608 122 660 240 620 338 C580 436 706 500 812 442 C918 384 946 238 850 176 C768 124 694 174 716 262 C742 368 878 362 920 272';
-
 export function clampProgress(value: number) {
   return Math.min(Math.max(value, 0), 1);
 }
@@ -61,29 +59,15 @@ export function getChapterVisibility(progress: number, index: number, count = ch
 
 class InkAudioBus {
   private context: AudioContext | null = null;
-  private scratchGain: GainNode | null = null;
-  private scratchSource: AudioBufferSourceNode | null = null;
 
   async enable() {
     if (!this.context) {
       this.context = new AudioContext();
-      this.createScratchTexture();
     }
 
     if (this.context.state === 'suspended') {
       await this.context.resume();
     }
-  }
-
-  setScratch(intensity: number) {
-    if (!this.context || !this.scratchGain) {
-      return;
-    }
-
-    const now = this.context.currentTime;
-    const target = Math.min(Math.max(intensity, 0), 0.052);
-    this.scratchGain.gain.cancelScheduledValues(now);
-    this.scratchGain.gain.setTargetAtTime(target, now, target > 0 ? 0.025 : 0.055);
   }
 
   impact() {
@@ -111,48 +95,8 @@ class InkAudioBus {
   }
 
   destroy() {
-    this.setScratch(0);
-    this.scratchSource?.stop();
     void this.context?.close();
     this.context = null;
-    this.scratchGain = null;
-    this.scratchSource = null;
-  }
-
-  private createScratchTexture() {
-    if (!this.context) {
-      return;
-    }
-
-    const duration = 1.8;
-    const frameCount = Math.floor(this.context.sampleRate * duration);
-    const buffer = this.context.createBuffer(1, frameCount, this.context.sampleRate);
-    const channel = buffer.getChannelData(0);
-    let previous = 0;
-
-    for (let index = 0; index < frameCount; index += 1) {
-      const white = Math.random() * 2 - 1;
-      previous = previous * 0.88 + white * 0.12;
-      channel[index] = previous * (0.62 + Math.sin(index * 0.009) * 0.12);
-    }
-
-    const source = this.context.createBufferSource();
-    const highpass = this.context.createBiquadFilter();
-    const lowpass = this.context.createBiquadFilter();
-    const gain = this.context.createGain();
-
-    source.buffer = buffer;
-    source.loop = true;
-    highpass.type = 'highpass';
-    highpass.frequency.value = 680;
-    lowpass.type = 'lowpass';
-    lowpass.frequency.value = 3600;
-    gain.gain.value = 0;
-
-    source.connect(highpass).connect(lowpass).connect(gain).connect(this.context.destination);
-    source.start();
-    this.scratchSource = source;
-    this.scratchGain = gain;
   }
 }
 
@@ -160,14 +104,10 @@ export function RouteJourney() {
   const rootRef = useRef<HTMLDivElement>(null);
   const prologueRef = useRef<HTMLElement>(null);
   const journeyRef = useRef<HTMLElement>(null);
-  const routePathRef = useRef<SVGPathElement>(null);
-  const tracerRef = useRef<SVGCircleElement>(null);
   const sceneRefs = useRef<Array<HTMLElement | null>>([]);
   const audioBusRef = useRef<InkAudioBus | null>(null);
   const soundIntentRef = useRef(false);
   const impactPlayedRef = useRef(false);
-  const lastJourneyProgressRef = useRef(0);
-  const lastFrameTimeRef = useRef(0);
   const activeChapterRef = useRef(0);
   const [activeChapter, setActiveChapter] = useState(0);
   const [soundOn, setSoundOn] = useState(false);
@@ -193,7 +133,6 @@ export function RouteJourney() {
   const toggleSound = useCallback(() => {
     if (soundOn) {
       soundIntentRef.current = false;
-      audioBusRef.current?.setScratch(0);
       setSoundOn(false);
       return;
     }
@@ -209,19 +148,15 @@ export function RouteJourney() {
     const root = rootRef.current;
     const prologue = prologueRef.current;
     const journey = journeyRef.current;
-    const path = routePathRef.current;
-    const tracer = tracerRef.current;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    if (!root || !prologue || !journey || !path || !tracer) {
+    if (!root || !prologue || !journey) {
       return;
     }
 
-    const pathLength = path.getTotalLength();
-    path.style.strokeDasharray = `${pathLength}`;
     let animationFrame = 0;
 
-    const render = (frameTime: number) => {
+    const render = () => {
       animationFrame = 0;
       const prologueBounds = prologue.getBoundingClientRect();
       const prologueTravel = Math.max(prologueBounds.height - window.innerHeight, 1);
@@ -244,14 +179,6 @@ export function RouteJourney() {
               : 'route';
       root.dataset.phase = phase;
 
-      const drawnProgress = clampProgress((prologueProgress - 0.62) / 0.38);
-      const fullRouteProgress = clampProgress(drawnProgress * 0.08 + journeyProgress * 0.92);
-      path.style.strokeDashoffset = `${pathLength * (1 - fullRouteProgress)}`;
-
-      const point = path.getPointAtLength(pathLength * fullRouteProgress);
-      tracer.setAttribute('cx', point.x.toFixed(2));
-      tracer.setAttribute('cy', point.y.toFixed(2));
-
       const nextChapter = getChapterIndex(journeyProgress);
       root.dataset.chapter = `${nextChapter}`;
       if (nextChapter !== activeChapterRef.current) {
@@ -269,13 +196,6 @@ export function RouteJourney() {
         scene.toggleAttribute('data-current', index === nextChapter);
       });
 
-      const deltaSeconds = lastFrameTimeRef.current
-        ? Math.max((frameTime - lastFrameTimeRef.current) / 1000, 0.016)
-        : 0.016;
-      const velocity = Math.max((journeyProgress - lastJourneyProgressRef.current) / deltaSeconds, 0);
-      const canPlaySound = soundIntentRef.current && !reducedMotion.matches && document.visibilityState === 'visible';
-      audioBusRef.current?.setScratch(canPlaySound ? Math.min(velocity * 0.012, 0.052) : 0);
-
       const crossedImpact = prologueProgress >= 0.62 && !impactPlayedRef.current;
       if (crossedImpact && soundIntentRef.current && !reducedMotion.matches) {
         impactPlayedRef.current = true;
@@ -286,21 +206,12 @@ export function RouteJourney() {
         impactPlayedRef.current = false;
       }
 
-      lastJourneyProgressRef.current = journeyProgress;
-      lastFrameTimeRef.current = frameTime;
     };
 
     const scheduleRender = () => {
       if (!animationFrame) {
         animationFrame = window.requestAnimationFrame(render);
       }
-    };
-
-    const handleVisibility = () => {
-      if (document.visibilityState !== 'visible') {
-        audioBusRef.current?.setScratch(0);
-      }
-      scheduleRender();
     };
 
     const handleMotionPreference = () => {
@@ -312,13 +223,11 @@ export function RouteJourney() {
     scheduleRender();
     window.addEventListener('scroll', scheduleRender, { passive: true });
     window.addEventListener('resize', scheduleRender);
-    document.addEventListener('visibilitychange', handleVisibility);
     reducedMotion.addEventListener('change', handleMotionPreference);
 
     return () => {
       window.removeEventListener('scroll', scheduleRender);
       window.removeEventListener('resize', scheduleRender);
-      document.removeEventListener('visibilitychange', handleVisibility);
       reducedMotion.removeEventListener('change', handleMotionPreference);
       window.cancelAnimationFrame(animationFrame);
       audioBusRef.current?.destroy();
@@ -353,7 +262,7 @@ export function RouteJourney() {
           <div className="ink-hero">
             <div className="ink-hero__copy">
               <p className="ink-kicker">Local-first visual feedback</p>
-              <h1 id="ink-hero-title"><span>Chartroom</span>{' '}<strong>Wonder.</strong></h1>
+              <h1 id="ink-hero-title"><span>Pin the point.</span>{' '}<strong>Chart the change.</strong></h1>
               <p className="ink-hero__promise">Precise visual feedback.<br />Trustworthy agent work.</p>
               <p className="ink-hero__body">
                 Mark what you see on a running interface. Waypoint keeps the context together, gives your coding agent a route through the work, and brings the evidence back.
@@ -401,7 +310,7 @@ export function RouteJourney() {
         <div className="ink-journey__sticky">
           <div className="ink-paper-grain" aria-hidden="true" />
           <div className="ink-journey__topline">
-            <button type="button" onClick={returnToHero}>← Chartroom</button>
+            <button type="button" onClick={returnToHero}>← Waypoint</button>
             <p aria-live="polite"><span>Now charting</span>{chapters[activeChapter].label}</p>
             <button type="button" onClick={toggleSound} aria-pressed={soundOn}>
               {soundOn && <Volume2 aria-hidden="true" />}
@@ -409,18 +318,6 @@ export function RouteJourney() {
               <span>{soundOn ? 'Sound on' : 'Sound off'}</span>
             </button>
           </div>
-
-          <svg className="ink-route-map" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-            <defs>
-              <filter id="ink-soften" x="-20%" y="-20%" width="140%" height="140%">
-                <feTurbulence type="fractalNoise" baseFrequency="0.024" numOctaves="2" seed="8" result="noise" />
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" />
-              </filter>
-            </defs>
-            <path className="ink-route-map__ghost" d={routePath} />
-            <path ref={routePathRef} className="ink-route-map__ink" d={routePath} filter="url(#ink-soften)" />
-            <circle ref={tracerRef} className="ink-route-map__tracer" cx="122" cy="574" r="7" />
-          </svg>
 
           <ol className="ink-chapter-index" aria-label="Journey chapters">
             {chapters.map((chapter, index) => (

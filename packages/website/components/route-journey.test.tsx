@@ -15,14 +15,6 @@ describe('Waypoint route journey', () => {
       return 1;
     }));
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
-    Object.defineProperty(window.SVGElement.prototype, 'getTotalLength', {
-      configurable: true,
-      value: () => 100,
-    });
-    Object.defineProperty(window.SVGElement.prototype, 'getPointAtLength', {
-      configurable: true,
-      value: () => ({ x: 122, y: 574 }),
-    });
     Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
       configurable: true,
       value: vi.fn(),
@@ -43,7 +35,7 @@ describe('Waypoint route journey', () => {
 
     render(<RouteJourney />);
 
-    expect(screen.getByRole('heading', { name: 'Chartroom Wonder.' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Pin the point. Chart the change.' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'The route begins exactly where the thought happened.' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'A field note becomes retained work.' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Your agent receives a route, not a riddle.' })).toBeVisible();

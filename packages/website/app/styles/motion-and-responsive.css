@@ -331,10 +331,13 @@
   }
 
   .docs-navigation {
-    position: relative;
     min-height: auto;
-    padding: 2rem 1.5rem;
     border-right: 0;
+  }
+
+  .docs-navigation__inner {
+    position: relative;
+    padding: 2rem 1.5rem;
   }
 
   .docs-navigation nav {

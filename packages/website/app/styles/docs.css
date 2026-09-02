@@ -7,14 +7,17 @@
 }
 
 .docs-navigation {
-  position: sticky;
-  top: 0;
-  align-self: start;
-  min-height: 100vh;
-  padding: 3rem 2rem;
+  align-self: stretch;
+  min-height: 100%;
   border-right: 1px solid #3e5b5e;
   background: var(--ocean);
   color: var(--ocean-ink);
+}
+
+.docs-navigation__inner {
+  position: sticky;
+  top: 0;
+  padding: 3rem 2rem;
 }
 
 .docs-navigation__home {
@@ -53,7 +56,7 @@
   padding-left: 0.75rem;
 }
 
-.docs-navigation > a:last-child {
+.docs-navigation__inner > a:last-child {
   color: #9dc9c2;
   font-size: 0.76rem;
 }
@@ -61,6 +64,7 @@
 .docs-reading-surface {
   min-width: 0;
   padding: clamp(3rem, 7vw, 7rem) clamp(1.5rem, 7vw, 7rem);
+  font-family: var(--font-reading);
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--walnut-line) 35%, transparent) 1px, transparent 1px) 0 0 / 4rem 100%,
     var(--walnut);
