@@ -1,8 +1,14 @@
+import { signalChartUrl } from '@/lib/site-config';
+
 export interface DocumentationSection {
   heading: string;
   paragraphs: string[];
   code?: string;
   note?: string;
+  resource?: {
+    href: string;
+    label: string;
+  };
 }
 
 export interface DocumentationPage {
@@ -106,6 +112,16 @@ export const documentationPages: DocumentationPage[] = [
         ],
         code: '{\n  "mcpServers": {\n    "logbook-waypoint": {\n      "url": "http://127.0.0.1:3846/mcp"\n    }\n  }\n}',
         note: 'Use http://127.0.0.1:3846/mcp for streamable HTTP. The legacy SSE endpoint remains available at http://127.0.0.1:3846/sse.',
+      },
+      {
+        heading: 'Explore the MCP tool surface',
+        paragraphs: [
+          'Open the Signal Chart for a visual explanation of how work travels from Annotation → Queue → MCP → agent, including lifecycle transitions and all 19 Waypoint MCP tools.',
+        ],
+        resource: {
+          href: signalChartUrl,
+          label: 'Open the Waypoint Signal Chart',
+        },
       },
     ],
   },

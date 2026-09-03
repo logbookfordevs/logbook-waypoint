@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, CircleAlert } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, CircleAlert } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
 import { CodeBlock } from '@/components/code-block';
@@ -63,6 +63,12 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
           <h2>{section.heading}</h2>
           {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           {section.code && <CodeBlock code={section.code} />}
+          {section.resource && (
+            <a className="docs-resource-link" href={section.resource.href} target="_blank" rel="noreferrer">
+              {section.resource.label}
+              <ArrowUpRight aria-hidden="true" />
+            </a>
+          )}
           {section.note && (
             <aside className="field-note">
               <CircleAlert aria-hidden="true" />
