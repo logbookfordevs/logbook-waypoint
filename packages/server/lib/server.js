@@ -21,6 +21,7 @@ import {
 } from './security.js';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertValidAnnotation } from './annotation-validation.js';
+import { normalizeAnnotationTargets } from './annotation-targets.js';
 import {
   applyDesignIntentUpdate,
   assertAnnotationDesignIntent,
@@ -41,6 +42,8 @@ import {
 } from './annotation-lifecycle.js';
 import { ALLOWED_IMAGE_MIME_TYPES, AttachmentStore } from './attachment-store.js';
 import { encodeAnnotationsExport } from './export-codec.js';
+import { inspectAnnotation } from './annotation-inspection.js';
+import { summarizeAnnotation } from './annotation-summary.js';
 import { createProjectScope, matchesProjectScope } from './project-scope.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
 import { PersistentWatchQueue, toReadAnnotation, toWatchAnnotation } from './watch-queue.js';
@@ -180,7 +183,7 @@ export class LocalAnnotationsServer {
     this.mcpServer = new Server(
       {
         name: PRODUCT_IDENTITY.mcpConfigKey,
-        version: '0.1.0',
+        version: packageJson.version,
       },
       {
         capabilities: {
@@ -617,7 +620,7 @@ export class LocalAnnotationsServer {
     const server = new Server(
       {
         name: PRODUCT_IDENTITY.mcpConfigKey,
-        version: '0.1.0',
+        version: packageJson.version,
       },
       {
         capabilities: {
@@ -641,7 +644,7 @@ export class LocalAnnotationsServer {
         tools: [
           {
             name: 'watch_annotations',
-            description: 'Waits for new or changed Queue activity without changing lifecycle state or creating a Claim. Returns an opaque continuation cursor and untrusted annotation content. Reuse only the cursor from the last successful response to resume after reconnecting. Delivery is at least once: deduplicate changes by annotation id and revision.',
+            description: 'Monitor the annotation Queue for new or changed requests without changing lifecycle state or creating a Claim. Each change contains the same compact, actionable Survey context as read_annotations plus revision metadata. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Resume with only the opaque cursor from the last successful response. Delivery is at least once: deduplicate changes by Annotation ID and revision.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -662,7 +665,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'read_annotations',
-            description: 'Retrieves user-created visual annotations with pagination support. Returns annotation data with has_screenshot flag instead of full screenshot data for token efficiency. Use url parameter to filter by project. MULTI-PROJECT SAFETY: This tool detects when annotations exist across multiple localhost projects and provides warnings with specific URL filtering guidance. CRITICAL WORKFLOW: (1) First call WITHOUT url parameter to see all projects, (2) Use get_project_context tool to determine current project, (3) Call again WITH url parameter (e.g., "http://localhost:3000/*") to filter for current project only. This prevents cross-project contamination where you might implement changes in wrong codebase. DESIGN CHANGES: Annotations may include pending_changes with original→new values for CSS properties. When implementing these changes, map values to the project design system (Tailwind classes, CSS variables, or design tokens) rather than using raw values. Use limit and offset parameters for pagination when handling large annotation sets. Use this tool when users mention: annotations, comments, feedback, suggestions, notes, marked changes, or visual issues they\'ve identified.',
+            description: 'Intake requests from the annotation Queue. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Unfiltered calls discover projects without returning Annotation bodies; repeat with an explicit url filter for one project. Scoped calls return focused implementation context. Authored pending_changes and css are original-to-value instructions to map onto the project design system. Read is side-effect-free.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -687,15 +690,36 @@ export class LocalAnnotationsServer {
                 },
                 url: {
                   type: 'string',
-                  description: 'Filter by specific localhost URL. Supports exact match (e.g., "http://localhost:3000/dashboard") or pattern match with base URL (e.g., "http://localhost:3000/" or "http://localhost:3000/*" to get all annotations from that project)'
+                  description: 'Filter by localhost scope. A Page URL without query or hash includes every View State on that pathname (e.g., "http://localhost:3000/account"). A complete Captured URL filters one exact View State. Use a project root or wildcard (e.g., "http://localhost:3000/" or "http://localhost:3000/*") for the entire project.'
                 }
               },
               additionalProperties: false
             }
           },
           {
+            name: 'inspect_annotations',
+            description: 'Diagnose one or more selected annotations using their complete captured context. Use multiple IDs for annotations being understood or implemented together. Useful when focused implementation context leaves layout, cascade, placement, source identity, or target relationships ambiguous.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                ids: {
+                  type: 'array',
+                  minItems: 1,
+                  uniqueItems: true,
+                  items: {
+                    type: 'string',
+                    description: 'Canonical Annotation ID',
+                  },
+                  description: 'Selected Annotation IDs to inspect together',
+                },
+              },
+              required: ['ids'],
+              additionalProperties: false,
+            },
+          },
+          {
             name: 'claim_annotation',
-            description: 'Claims one Pending Annotation for an owner. Competing active Claims are rejected; the same owner refreshes expiry. Reading and Watch never claim or refresh.',
+            description: 'Claims one Pending Annotation for an owner immediately before implementation begins. Competing active Claims are rejected; the same owner refreshes expiry. Read, Inspect, and Watch calls are side-effect-free, so agents explicitly call this tool before changing the project.',
             inputSchema: lifecycleToolSchema({ owner: true }),
           },
           {
@@ -871,7 +895,13 @@ export class LocalAnnotationsServer {
                 id: {
                   type: 'string',
                   description: 'Annotation ID to get screenshot for'
-                }
+                },
+                target_index: {
+                  type: 'integer',
+                  minimum: 0,
+                  maximum: 7,
+                  description: 'Zero-based Target index; defaults to the first Target'
+                },
               },
               required: ['id'],
               additionalProperties: false
@@ -898,7 +928,7 @@ export class LocalAnnotationsServer {
 
           case 'read_annotations': {
             const result = await this.readAnnotations(args || {});
-            const { annotations, projectInfo, multiProjectWarning } = result;
+            const { annotations, projectInfo, projectSelection, multiProjectWarning } = result;
 
             return {
               content: [
@@ -908,11 +938,26 @@ export class LocalAnnotationsServer {
                     annotations,
                     count: annotations.length,
                     projects: projectInfo,
+                    project_selection: projectSelection,
                     multi_project_warning: multiProjectWarning,
                     filter_applied: args?.url || 'none'
                   }), null, 2)
                 }
               ]
+            };
+          }
+
+          case 'inspect_annotations': {
+            const result = await this.inspectAnnotations(args || {});
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify(createToolPayload('inspect_annotations', {
+                  annotations: result.annotations,
+                  count: result.annotations.length,
+                  missing_ids: result.missingIds,
+                }), null, 2),
+              }],
             };
           }
 
@@ -1076,7 +1121,9 @@ export class LocalAnnotationsServer {
         return [];
       }
       if (!Array.isArray(annotations)) return [];
-      const validAnnotations = annotations.filter(annotation => isValidAnnotationId(annotation?.id));
+      const validAnnotations = annotations
+        .filter(annotation => isValidAnnotationId(annotation?.id))
+        .map(normalizeAnnotationTargets);
       validAnnotations.forEach(assertAnnotationLifecycleState);
       validAnnotations.forEach(assertAnnotationDesignIntent);
       validAnnotations.forEach(assertAnnotationResolutionRecord);
@@ -1096,6 +1143,7 @@ export class LocalAnnotationsServer {
     if (!Array.isArray(annotations) || annotations.some(annotation => !isValidAnnotationId(annotation?.id))) {
       throw new TypeError('Invalid Waypoint annotation ID');
     }
+    annotations = annotations.map(normalizeAnnotationTargets);
     annotations.forEach(assertAnnotationLifecycleState);
     annotations.forEach(assertAnnotationDesignIntent);
     annotations.forEach(assertAnnotationResolutionRecord);
@@ -1224,7 +1272,7 @@ export class LocalAnnotationsServer {
     );
     return {
       changes: result.changes.map(change => ({
-        annotation: change.annotation,
+        annotation: summarizeAnnotation(change.annotation),
         revision: change.revision,
         dedupe_key: `${change.annotation.id}:${change.revision}`,
       })),
@@ -1270,6 +1318,7 @@ export class LocalAnnotationsServer {
       throw new TypeError('Annotation must be an object');
     }
     if (!isValidAnnotationId(annotation.id)) throw new Error('Invalid annotation ID');
+    annotation = normalizeAnnotationTargets(annotation);
 
     const createdAttachments = stagedAttachments ?? [];
     const ownsStagedAttachments = stagedAttachments === undefined;
@@ -1333,38 +1382,40 @@ export class LocalAnnotationsServer {
         }
       }
 
-      if (annotation.screenshot?.data_url) {
-        const { data_url: dataUrl, attachment_id: ignoredAttachmentId, ...screenshot } = annotation.screenshot;
-        const mimeType = /^data:(image\/(?:png|jpeg|webp|gif));base64,/.exec(dataUrl)?.[1];
-        if (!mimeType) throw new TypeError('Screenshot must be a supported image data URL');
-        const saved = await saveAttachment({
-          annotationId: annotation.id,
-          kind: 'screenshot',
-          mimeType,
-          content: dataUrl,
-          name: 'screenshot',
-        });
-        normalized.screenshot = {
-          ...screenshot,
-          attachment_id: saved.id,
-          mime_type: saved.mime_type,
-          size_bytes: saved.byte_size,
-        };
-        normalized.has_screenshot = true;
-      } else if (annotation.screenshot?.attachment_id) {
-        const stored = await this.attachmentStore.get({
-          annotationId: annotation.id,
-          attachmentId: annotation.screenshot.attachment_id,
-        });
-        if (!stored || stored.kind !== 'screenshot') {
-          throw new TypeError('Screenshot reference does not exist for this Annotation');
+      normalized.targets = [];
+      for (const [targetIndex, target] of annotation.targets.entries()) {
+        const normalizedTarget = { ...target };
+        if (target.screenshot?.data_url) {
+          const { data_url: dataUrl, attachment_id: ignoredAttachmentId, ...screenshot } = target.screenshot;
+          const mimeType = /^data:(image\/(?:png|jpeg|webp|gif));base64,/.exec(dataUrl)?.[1];
+          if (!mimeType) throw new TypeError('Screenshot must be a supported image data URL');
+          const saved = await saveAttachment({
+            annotationId: annotation.id,
+            kind: 'screenshot',
+            mimeType,
+            content: dataUrl,
+            name: `screenshot-${targetIndex + 1}`,
+          });
+          normalizedTarget.screenshot = {
+            ...screenshot,
+            attachment_id: saved.id,
+            mime_type: saved.mime_type,
+            size_bytes: saved.byte_size,
+          };
+          normalized.has_screenshot = true;
+        } else if (target.screenshot?.attachment_id) {
+          const stored = await this.attachmentStore.get({
+            annotationId: annotation.id,
+            attachmentId: target.screenshot.attachment_id,
+          });
+          if (!stored || stored.kind !== 'screenshot') {
+            throw new TypeError('Screenshot reference does not exist for this Annotation');
+          }
+          if (stored.mime_type !== target.screenshot.mime_type || stored.byte_size !== target.screenshot.size_bytes) {
+            throw new TypeError('Screenshot reference metadata does not match stored media');
+          }
         }
-        if (
-          stored.mime_type !== annotation.screenshot.mime_type
-          || stored.byte_size !== annotation.screenshot.size_bytes
-        ) {
-          throw new TypeError('Screenshot reference metadata does not match stored media');
-        }
+        normalized.targets.push(normalizedTarget);
       }
 
       return normalized;
@@ -1376,8 +1427,10 @@ export class LocalAnnotationsServer {
 
   attachmentReferences(annotation) {
     const references = [];
-    if (annotation?.screenshot?.attachment_id) {
-      references.push({ annotationId: annotation.id, attachmentId: annotation.screenshot.attachment_id });
+    for (const target of annotation ? normalizeAnnotationTargets(annotation).targets : []) {
+      if (target.screenshot?.attachment_id) {
+        references.push({ annotationId: annotation.id, attachmentId: target.screenshot.attachment_id });
+      }
     }
     for (const attachment of annotation?.attachments ?? []) {
       if (attachment?.id) references.push({ annotationId: annotation.id, attachmentId: attachment.id });
@@ -1460,6 +1513,13 @@ export class LocalAnnotationsServer {
 
     // Add project context to response
     const projectCount = Object.keys(groupedByProject).length;
+    const projectSelection = !url && projectCount > 0
+      ? {
+          required: true,
+          recommendation: 'Repeat read_annotations with one project URL filter to read annotation bodies.',
+          suggested_filters: Object.keys(groupedByProject).map(baseUrl => `${baseUrl}/*`),
+        }
+      : null;
     let multiProjectWarning = null;
 
     if (projectCount > 1 && !url) {
@@ -1487,7 +1547,10 @@ export class LocalAnnotationsServer {
 
     // Apply pagination with offset
     const total = filtered.length;
-    const paginatedResults = filtered.slice(offset, offset + limit);
+    const requiresProjectFilter = projectCount > 0 && !url;
+    const paginatedResults = requiresProjectFilter
+      ? []
+      : filtered.slice(offset, offset + limit);
 
     // Calculate pagination metadata
     const pagination = {
@@ -1497,14 +1560,31 @@ export class LocalAnnotationsServer {
       has_more: (offset + limit) < total
     };
 
-    // Transform annotations to strip screenshot data and add has_screenshot flag
-    const annotationsWithScreenshotFlag = paginatedResults.map(annotation => toReadAnnotation(annotation));
+    const annotationSummaries = paginatedResults.map(annotation => summarizeAnnotation(annotation));
 
     return {
-      annotations: annotationsWithScreenshotFlag,
+      annotations: annotationSummaries,
       pagination: pagination,
       projectInfo: projectInfo,
+      projectSelection: projectSelection,
       multiProjectWarning: multiProjectWarning
+    };
+  }
+
+  async inspectAnnotations(args) {
+    const ids = args?.ids;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new TypeError('inspect_annotations requires at least one Annotation ID');
+    }
+    if (ids.some(id => !isValidAnnotationId(id))) {
+      throw new TypeError('Invalid annotation ID');
+    }
+
+    const annotations = await this.loadCurrentAnnotations();
+    const byId = new Map(annotations.map(annotation => [annotation.id, annotation]));
+    return {
+      annotations: ids.flatMap(id => byId.has(id) ? [inspectAnnotation(byId.get(id))] : []),
+      missingIds: ids.filter(id => !byId.has(id)),
     };
   }
 
@@ -1585,6 +1665,7 @@ export class LocalAnnotationsServer {
    */
   async getAnnotationScreenshot(args) {
     const id = args?.id;
+    const targetIndex = args?.target_index ?? 0;
 
     // Validate input
     if (!isValidAnnotationId(id)) {
@@ -1606,8 +1687,8 @@ export class LocalAnnotationsServer {
         };
       }
 
-      // Check if annotation has screenshot data
-      if (!annotation.screenshot) {
+      const target = normalizeAnnotationTargets(annotation).targets[targetIndex];
+      if (!target?.screenshot) {
         return {
           annotation_id: id,
           screenshot: null,
@@ -1615,11 +1696,11 @@ export class LocalAnnotationsServer {
         };
       }
 
-      let dataUrl = annotation.screenshot.data_url;
-      if (!dataUrl && annotation.screenshot.attachment_id) {
+      let dataUrl = target.screenshot.data_url;
+      if (!dataUrl && target.screenshot.attachment_id) {
         const attachment = await this.attachmentStore.get({
           annotationId: id,
-          attachmentId: annotation.screenshot.attachment_id,
+          attachmentId: target.screenshot.attachment_id,
           includeContent: true,
         });
         if (attachment) dataUrl = `data:${attachment.mime_type};base64,${attachment.content}`;
@@ -1635,13 +1716,14 @@ export class LocalAnnotationsServer {
       // Return screenshot data in the contract format
       return {
         annotation_id: id,
+        target_index: targetIndex,
         screenshot: {
           data_url: dataUrl,
-          compression: annotation.screenshot.compression,
-          crop_area: annotation.screenshot.crop_area,
-          element_bounds: annotation.screenshot.element_bounds,
-          timestamp: annotation.screenshot.timestamp,
-          viewport: annotation.viewport || null
+          compression: target.screenshot.compression,
+          crop_area: target.screenshot.crop_area,
+          element_bounds: target.screenshot.element_bounds,
+          timestamp: target.screenshot.timestamp,
+          viewport: target.viewport || null
         },
         message: 'Screenshot retrieved successfully'
       };

@@ -43,6 +43,7 @@ console.log('[Waypoint] content.js loaded');
     annotations = await WaypointAPI.loadAnnotations();
 
     // 4. Initialize modules
+    WaypointMultiTargetSelection.init();
     WaypointBadgeManager.init();
     WaypointInspectionMode.init();
     WaypointAnnotationPopover.init();
@@ -145,6 +146,7 @@ console.log('[Waypoint] content.js loaded');
     function onRouteChange() {
       const newURL = window.location.href;
       if (newURL === currentURL) return;
+      WaypointMultiTargetSelection.handleRouteChange(newURL);
       currentURL = newURL;
       console.log('[Waypoint] SPA route change detected:', newURL);
       reloadAnnotationsForCurrentRoute();
@@ -186,7 +188,7 @@ console.log('[Waypoint] content.js loaded');
         localSaveCount--;
         return;
       }
-      annotations = (allAnnotations || []).filter(a => a.url === window.location.href);
+      annotations = (allAnnotations || []).filter(a => WaypointAnnotationPage.matches(a.url, window.location.href));
       // Don't re-render if overlay is closed (styles should stay stripped)
       if (WaypointShadowHost.isVisible()) {
         WaypointEvents.emit('annotations:render', annotations);
@@ -213,6 +215,8 @@ console.log('[Waypoint] content.js loaded');
 
       // ESC — stop annotation mode
       if (e.key === 'Escape' && WaypointInspectionMode.isActive()) {
+        if (WaypointMultiTargetSelection.isComposing()) return;
+        if (WaypointMultiTargetSelection.handleEscape()) return;
         WaypointEvents.emit('inspection:stop');
         return;
       }

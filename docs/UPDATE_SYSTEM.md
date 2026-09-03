@@ -9,7 +9,7 @@ The server exposes local version information from `GET http://127.0.0.1:3846/hea
 ```json
 {
   "status": "ok",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minExtensionVersion": "0.1.0",
   "timestamp": "2026-08-11T00:00:00.000Z"
 }

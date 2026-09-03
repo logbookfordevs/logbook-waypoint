@@ -5,15 +5,17 @@ import vm from 'node:vm';
 
 const codecUrl = new URL('../public/export-codec.js', import.meta.url);
 const statusUrl = new URL('../public/annotation-status.js', import.meta.url);
+const targetsUrl = new URL('../public/annotation-targets.js', import.meta.url);
 
 async function loadCodec() {
-  const [source, statusSource] = await Promise.all([readFile(codecUrl, 'utf8'), readFile(statusUrl, 'utf8')]);
+  const [source, statusSource, targetsSource] = await Promise.all([readFile(codecUrl, 'utf8'), readFile(statusUrl, 'utf8'), readFile(targetsUrl, 'utf8')]);
   const context = vm.createContext({
     URL,
     window: { location: new URL('http://localhost:3000/current?view=queue#open') },
   });
   context.globalThis = context;
   vm.runInContext(statusSource, context, { filename: 'annotation-status.js' });
+  vm.runInContext(targetsSource, context, { filename: 'annotation-targets.js' });
   vm.runInContext(source, context, { filename: 'export-codec.js' });
   return context.WaypointExportCodec;
 }
@@ -53,6 +55,7 @@ test('codec creates the portable v1.0 envelope with status-filtered full route g
       url: 'http://localhost:3000/app?tab=open#feedback',
       status: 'pending',
       comment: 'Align the heading',
+      targets: [{ has_screenshot: false }],
       url_path: '/app?tab=open#feedback',
       has_screenshot: false,
       has_attachments: false,
@@ -66,6 +69,7 @@ test('codec creates the portable v1.0 envelope with status-filtered full route g
         url: 'http://localhost:3000/app?tab=open#feedback',
         status: 'pending',
         comment: 'Align the heading',
+        targets: [{ has_screenshot: false }],
         url_path: '/app?tab=open#feedback',
         has_screenshot: false,
         has_attachments: false,

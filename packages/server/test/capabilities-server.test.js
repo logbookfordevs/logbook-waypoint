@@ -207,6 +207,55 @@ test('server shares strict loopback project scope across read, context, deletion
   await assert.rejects(server.deleteProjectAnnotations({ url_pattern: 'https://example.com/*' }), /loopback/i);
 });
 
+test('unfiltered reads discover projects without returning annotation bodies', async () => {
+  const server = new LocalAnnotationsServer();
+  const annotations = [
+    { id, url: 'http://localhost:3000/', comment: 'Waypoint feedback', status: 'pending' },
+    {
+      id: 'waypoint_1750000000001_abcdefghi',
+      url: 'http://127.0.0.1:3001/firm',
+      comment: 'Firm feedback',
+      status: 'pending',
+    },
+  ];
+  server.loadAnnotations = async () => structuredClone(annotations);
+
+  const discovery = await server.readAnnotations({ status: 'pending' });
+
+  assert.deepEqual(discovery.annotations, []);
+  assert.deepEqual(
+    discovery.projectInfo.map(project => project.recommended_filter),
+    ['http://localhost:3000/*', 'http://127.0.0.1:3001/*'],
+  );
+  assert.match(discovery.multiProjectWarning.recommendation, /url.*filter/i);
+
+  const filtered = await server.readAnnotations({
+    status: 'pending',
+    url: 'http://localhost:3000/*',
+  });
+
+  assert.deepEqual(filtered.annotations.map(annotation => annotation.id), [id]);
+  assert.equal(filtered.multiProjectWarning, null);
+});
+
+test('unfiltered reads require project selection even when only one project exists', async () => {
+  const server = new LocalAnnotationsServer();
+  server.loadAnnotations = async () => [{
+    id,
+    url: 'http://localhost:3000/settings',
+    comment: 'Old project feedback',
+    status: 'pending',
+  }];
+
+  const discovery = await server.readAnnotations({ status: 'pending' });
+
+  assert.deepEqual(discovery.annotations, []);
+  assert.equal(discovery.projectInfo.length, 1);
+  assert.equal(discovery.projectInfo[0].recommended_filter, 'http://localhost:3000/*');
+  assert.equal(discovery.multiProjectWarning, null);
+  assert.match(discovery.projectSelection.recommendation, /url.*filter/i);
+});
+
 test('server file-backs screenshots and extension attachments while explicit retrieval controls bytes', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-capabilities-'));
   const annotationsFile = path.join(directory, 'annotations.json');
@@ -223,7 +272,13 @@ test('server file-backs screenshots and extension attachments while explicit ret
         url: 'http://localhost:3000/app',
         comment: 'Check visual hierarchy',
         status: 'pending',
-        screenshot: { data_url: 'data:image/png;base64,c2NyZWVuc2hvdA==', compression: 'png' },
+        targets: [{
+          selector: '#primary',
+          screenshot: { data_url: 'data:image/png;base64,c2NyZWVuc2hvdA==', compression: 'png' },
+        }, {
+          selector: '#secondary',
+          screenshot: { data_url: 'data:image/png;base64,c2Vjb25k', compression: 'png' },
+        }],
         attachments: [{
           name: 'detail.png',
           mime_type: 'image/png',
@@ -237,16 +292,19 @@ test('server file-backs screenshots and extension attachments while explicit ret
     const persisted = JSON.parse(await readFile(annotationsFile, 'utf8'))[0];
     const attachmentId = saved.attachments[0].id;
 
-    assert.equal('data_url' in persisted.screenshot, false);
+    assert.equal('data_url' in persisted.targets[0].screenshot, false);
     assert.equal('data_url' in persisted.attachments[0], false);
-    assert.match(persisted.screenshot.attachment_id, /^[a-f0-9-]{36}$/);
+    assert.match(persisted.targets[0].screenshot.attachment_id, /^[a-f0-9-]{36}$/);
     const metadata = await server.getAnnotationAttachment({ id, attachment_id: attachmentId });
     const content = await server.getAnnotationAttachment({ id, attachment_id: attachmentId, include_content: true });
     const screenshot = await server.getAnnotationScreenshot({ id });
+    const secondScreenshot = await server.getAnnotationScreenshot({ id, target_index: 1 });
 
     assert.equal(metadata.attachment.content, undefined);
     assert.equal(content.attachment.content, 'ZGV0YWls');
     assert.equal(screenshot.screenshot.data_url, 'data:image/png;base64,c2NyZWVuc2hvdA==');
+    assert.equal(secondScreenshot.target_index, 1);
+    assert.equal(secondScreenshot.screenshot.data_url, 'data:image/png;base64,c2Vjb25k');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

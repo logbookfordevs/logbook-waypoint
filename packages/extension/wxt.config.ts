@@ -21,10 +21,13 @@ const LOCAL_MATCHES = [
 const CONTENT_MODULES = [
   'annotation-id.js',
   'annotation-status.js',
+  'annotation-targets.js',
   'annotation-collection.js',
+  'annotation-page.js',
   'design-intent.js',
   'variant-intent.js',
   'annotation-validation.js',
+  'data-management.js',
   'export-codec.js',
   'agent-setup-config.js',
   'content/modules/event-bus.js',
@@ -37,6 +40,7 @@ const CONTENT_MODULES = [
   'content/modules/source-identity.js',
   'content/modules/screenshot-capture.js',
   'content/modules/element-context.js',
+  'content/modules/multi-target-selection.js',
   'content/modules/badge-manager.js',
   'content/modules/inspection-mode.js',
   'content/modules/keyboard-target.js',
@@ -85,7 +89,12 @@ export default defineConfig({
     },
     web_accessible_resources: [
       {
-        resources: ['assets/fonts/InterVariable.woff2', 'assets/thelu/thelu-settings.png', 'assets/thelu/thelu-waypoint-collapsed.png'],
+        resources: [
+          'assets/fonts/InterVariable.woff2',
+          'assets/thelu/thelu-settings-day-smooth.png',
+          'assets/thelu/thelu-settings-night.png',
+          'assets/thelu/thelu-waypoint-collapsed.png',
+        ],
         matches: ['<all_urls>'],
       },
     ],

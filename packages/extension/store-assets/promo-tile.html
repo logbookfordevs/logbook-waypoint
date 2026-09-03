@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logbook Waypoint promo tile</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 440px; height: 280px; margin: 0; overflow: hidden; }
+    body { background:#132421; color:#f6efe2; font-family:"Trebuchet MS",sans-serif; }
+    main { position:relative; display:grid; grid-template-columns:1fr 166px; width:100%; height:100%; padding:28px 26px 24px 30px; }
+    .identity { position:relative; z-index:2; display:flex; flex-direction:column; align-items:flex-start; }
+    img { width:62px; height:62px; margin-bottom:24px; border-radius:14px; }
+    h1 { margin:0; font-size:38px; line-height:.9; letter-spacing:-.04em; }
+    p { max-width:205px; margin:12px 0 0; color:#e3c58f; font-size:15px; line-height:1.15; font-weight:700; }
+    .demo { position:relative; align-self:center; height:190px; border-radius:14px; background:#efe8da; box-shadow:0 10px 24px rgba(0,0,0,.24); }
+    .demo-bar { height:26px; border-radius:14px 14px 0 0; background:#d7cec0; }
+    .demo-line { width:94px; height:8px; margin:22px 0 0 18px; border-radius:4px; background:#173d39; box-shadow:0 18px 0 #c7bcab, 0 36px 0 #c7bcab; }
+    .target { position:absolute; left:12px; right:18px; bottom:14px; height:66px; border:2px dashed #b9502f; border-radius:10px; background:#f5dcae; }
+    .pin { position:absolute; top:-12px; left:48px; display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:#28746c; color:white; font-size:12px; font-weight:800; box-shadow:0 3px 9px rgba(0,0,0,.25); }
+    .note { position:absolute; right:-7px; bottom:-11px; width:78px; height:48px; padding:10px; border-radius:9px; background:#fffaf1; box-shadow:0 7px 16px rgba(33,30,25,.25); }
+    .note::before,.note::after { content:""; display:block; height:4px; border-radius:2px; background:#7c705f; }
+    .note::after { width:68%; margin-top:7px; background:#b9502f; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="identity">
+      <img src="icon-hq.png" alt="">
+      <h1>Logbook<br>Waypoint</h1>
+      <p>Visual feedback<br>for coding agents</p>
+    </section>
+    <div class="demo" aria-hidden="true">
+      <div class="demo-bar"></div><div class="demo-line"></div>
+      <div class="target"><span class="pin">1</span><span class="note"></span></div>
+    </div>
+  </main>
+</body>
+</html>

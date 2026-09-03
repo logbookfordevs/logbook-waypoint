@@ -53,7 +53,7 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
 
     const reads = await server.readAnnotations({ status: 'claimed', url: 'http://localhost:3000/*' });
     assert.equal(reads.annotations[0].claim.owner, 'agent-one');
-    assert.equal((await server.readAnnotations({ status: 'claimed' })).annotations[0].claim.expires_at, '2026-08-11T12:00:01.000Z');
+    assert.equal((await server.readAnnotations({ status: 'claimed', url: 'http://localhost:3000/*' })).annotations[0].claim.expires_at, '2026-08-11T12:00:01.000Z');
 
     let callTool;
     let listTools;
@@ -80,7 +80,7 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
     assert.equal(payload.data_trust, 'untrusted');
     assert.equal(payload.data.annotation.status, 'resolved');
 
-    const retained = await server.readAnnotations({ status: 'resolved' });
+    const retained = await server.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' });
     assert.equal(retained.annotations.length, 1);
     await assert.rejects(() => server.changeAnnotationLifecycle({ id, operation: 'discard' }), /terminal/i);
     await server.deleteAnnotation({ id });
@@ -124,7 +124,7 @@ test('HTTP release publishes and persists a recoverable Work Notice through Read
 
     const persisted = JSON.parse(await readFile(path.join(directory, 'annotations.json'), 'utf8'))[0];
     assert.deepEqual(persisted.work_notice, released.work_notice);
-    assert.deepEqual((await server.readAnnotations({ status: 'pending' })).annotations[0].work_notice, released.work_notice);
+    assert.deepEqual((await server.readAnnotations({ status: 'pending', url: 'http://localhost:3000/*' })).annotations[0].work_notice, released.work_notice);
     const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
     assert.deepEqual(watched.changes.at(-1).annotation.work_notice, released.work_notice);
   } finally {
@@ -164,7 +164,7 @@ test('MCP can dismiss a Work Notice without changing Pending status', async () =
 
     assert.equal(annotation.status, 'pending');
     assert.equal('work_notice' in annotation, false);
-    assert.equal('work_notice' in (await server.readAnnotations({ status: 'pending' })).annotations[0], false);
+    assert.equal('work_notice' in (await server.readAnnotations({ status: 'pending', url: 'http://localhost:3000/*' })).annotations[0], false);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -190,7 +190,7 @@ test('Claim locks the Design Intent and comment work contract', async () => {
 
     assert.equal(response.status, 409);
     assert.match((await response.json()).error, /Claimed.*Annotation/i);
-    const retained = (await server.readAnnotations({ status: 'claimed' })).annotations[0];
+    const retained = (await server.readAnnotations({ status: 'claimed', url: 'http://localhost:3000/*' })).annotations[0];
     assert.equal(retained.comment, 'Retain me');
     assert.equal('design_intent' in retained, false);
 
@@ -226,7 +226,7 @@ test('terminal Annotation history rejects generic comment and Design Intent upda
 
     assert.equal(response.status, 409);
     assert.match((await response.json()).error, /read-only/i);
-    assert.equal((await server.readAnnotations({ status: 'resolved' })).annotations[0].comment, 'Retain me');
+    assert.equal((await server.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' })).annotations[0].comment, 'Retain me');
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));
@@ -271,7 +271,7 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
     const persisted = JSON.parse(await readFile(annotationsFile, 'utf8'))[0];
     assert.deepEqual(persisted.resolution_record, resolutionRecord);
 
-    const read = (await server.readAnnotations({ status: 'resolved' })).annotations[0];
+    const read = (await server.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' })).annotations[0];
     assert.deepEqual(read.resolution_record, resolutionRecord);
 
     let callTool;
@@ -281,14 +281,12 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
       },
     });
     const mcpRead = await callTool({
-      params: { name: 'read_annotations', arguments: { status: 'resolved' } },
+      params: { name: 'read_annotations', arguments: { status: 'resolved', url: 'http://localhost:3000/*' } },
     });
     assert.deepEqual(JSON.parse(mcpRead.content[0].text).data.annotations[0].resolution_record, resolutionRecord);
 
     const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, {
-      summary: resolutionRecord.summary,
-    });
+    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, resolutionRecord);
 
     for (const synchronized of [
       { ...persisted, resolution_record: undefined },
@@ -304,7 +302,7 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
       });
       assert.equal(sync.status, 200);
       assert.deepEqual(
-        (await server.readAnnotations({ status: 'resolved' })).annotations[0].resolution_record,
+        (await server.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' })).annotations[0].resolution_record,
         resolutionRecord,
       );
     }
@@ -315,7 +313,7 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
       attachmentRoot: path.join(directory, 'attachments'),
     });
     assert.deepEqual(
-      (await restarted.readAnnotations({ status: 'resolved' })).annotations[0].resolution_record,
+      (await restarted.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' })).annotations[0].resolution_record,
       resolutionRecord,
     );
   } finally {
@@ -351,7 +349,7 @@ test('expired Variant work can be finalized, reclaimed, verified, and resolved w
     });
 
     now.value += 1_001;
-    const expired = (await server.readAnnotations({ status: 'pending' })).annotations[0];
+    const expired = (await server.readAnnotations({ status: 'pending', url: 'http://localhost:3000/*' })).annotations[0];
     assert.equal(expired.status, 'pending');
     assert.equal(expired.variant_request.status, 'unresolved');
     assert.deepEqual(expired.design_intent, designIntent);
@@ -374,13 +372,11 @@ test('expired Variant work can be finalized, reclaimed, verified, and resolved w
     assert.deepEqual(resolved.resolution_record, resolutionRecord);
     assert.equal(resolved.variant_request.active_variant_key, 'balanced');
     assert.equal('scaffold' in resolved.variant_request, false);
-    const read = (await server.readAnnotations({ status: 'resolved' })).annotations[0];
+    const read = (await server.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' })).annotations[0];
     assert.deepEqual(read.design_intent, designIntent);
     assert.deepEqual(read.resolution_record, resolutionRecord);
     const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, {
-      summary: resolutionRecord.summary,
-    });
+    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, resolutionRecord);
     assert.equal('variant_presentation' in watched.changes.at(-1).annotation, false);
     const persisted = JSON.parse(await readFile(path.join(directory, 'annotations.json'), 'utf8'))[0];
     assert.deepEqual(persisted.variant_request.scaffold, []);
@@ -469,7 +465,7 @@ test('legacy resolved Design Actions remain readable without fabricating evidenc
   });
 
   try {
-    const annotation = (await server.readAnnotations({ status: 'resolved' })).annotations[0];
+    const annotation = (await server.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' })).annotations[0];
     assert.equal(annotation.status, 'resolved');
     assert.equal('resolution_record' in annotation, false);
   } finally {
@@ -527,7 +523,7 @@ test('Queue synchronization cannot implicitly delete retained lifecycle history'
     });
 
     assert.equal(response.status, 200);
-    const retained = await server.readAnnotations({ status: 'resolved' });
+    const retained = await server.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' });
     assert.equal(retained.annotations.length, 1);
   } finally {
     listener.closeAllConnections();
@@ -645,7 +641,7 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
     assert.deepEqual(persisted[0].design_intent, designIntent);
     assert.equal(persisted[0].status, 'pending');
 
-    const read = await server.readAnnotations({ status: 'pending' });
+    const read = await server.readAnnotations({ status: 'pending', url: 'http://localhost:3000/*' });
     assert.deepEqual(read.annotations[0].design_intent, designIntent);
     assert.equal(read.annotations[0].comment, annotation.comment);
 
@@ -660,7 +656,7 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
       },
     });
     const mcpRead = await callTool({
-      params: { name: 'read_annotations', arguments: { status: 'pending' } },
+      params: { name: 'read_annotations', arguments: { status: 'pending', url: 'http://localhost:3000/*' } },
     });
     const payload = JSON.parse(mcpRead.content[0].text);
     assert.deepEqual(payload.data.annotations[0].design_intent, designIntent);
@@ -672,7 +668,7 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
     });
     assert.equal(ordinarySync.status, 200);
     assert.deepEqual(
-      (await server.readAnnotations({ status: 'pending' })).annotations[0].design_intent,
+      (await server.readAnnotations({ status: 'pending', url: 'http://localhost:3000/*' })).annotations[0].design_intent,
       designIntent,
     );
 
@@ -686,7 +682,7 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
     });
     assert.equal(removalResponse.status, 200);
     assert.equal(
-      'design_intent' in (await server.readAnnotations({ status: 'pending' })).annotations[0],
+      'design_intent' in (await server.readAnnotations({ status: 'pending', url: 'http://localhost:3000/*' })).annotations[0],
       false,
     );
   } finally {

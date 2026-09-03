@@ -174,3 +174,33 @@ test('sync cannot introduce Variant-owned state onto an existing ordinary Annota
     /Variant state/,
   );
 });
+
+test('generic updates and sync cannot edit saved Target Set membership or order', () => {
+  const current = {
+    ...annotation(),
+    targets: [{ selector: '#first' }, { selector: '#second' }],
+  };
+  const reversedTargets = [...current.targets].reverse();
+
+  assert.throws(
+    () => assertGenericAnnotationUpdateAllowed(current, { targets: reversedTargets }),
+    /membership is immutable/,
+  );
+  assert.throws(
+    () => assertSyncedAnnotationAllowed(current, { ...current, targets: reversedTargets }),
+    /Target Set membership/,
+  );
+  assert.doesNotThrow(
+    () => assertSyncedAnnotationAllowed(current, structuredClone(current)),
+  );
+
+  const singleTarget = { ...annotation(), targets: [{ selector: '#first' }] };
+  assert.throws(
+    () => assertGenericAnnotationUpdateAllowed(singleTarget, { targets: current.targets }),
+    /membership is immutable/,
+  );
+  assert.throws(
+    () => assertSyncedAnnotationAllowed(singleTarget, { ...singleTarget, targets: current.targets }),
+    /Target Set membership/,
+  );
+});

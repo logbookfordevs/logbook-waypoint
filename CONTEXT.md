@@ -5,16 +5,32 @@ Logbook Waypoint is a local development feedback workflow that connects annotate
 ## Feedback
 
 **Annotation**:
-A feedback item associated with one page and, optionally, one element on that page.
+A feedback item associated with one page and one or more Targets on that page.
 _Avoid_: Waypoint, comment, ticket
 
 **Target**:
 The portable identity and captured context of the page or element associated with an Annotation.
 _Avoid_: selector, node, element reference
 
+**Target Set**:
+The two or more Targets that belong to one shared Annotation.
+_Avoid_: annotation group, linked annotations, multi-pin group
+
 **Queue**:
 The collection of Annotations available to or retained from agent work.
 _Avoid_: inbox, backlog, annotation list
+
+**Page**:
+A stable annotation surface identified by its origin and pathname, independent of transient query or hash state.
+_Avoid_: exact URL, route variant, screen URL
+
+**View State**:
+Query or hash state that changes what is presented within one Page, such as an active tab or filter.
+_Avoid_: Page, route
+
+**Captured URL**:
+The exact URL retained with an Annotation to describe and revisit the View State where it was created.
+_Avoid_: Page identity, project URL
 
 ## Design workflow
 

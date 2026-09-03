@@ -10,7 +10,7 @@ The integration must not turn Waypoint into a thin wrapper around Impeccable Liv
 
 Add **Design Actions** as an optional section inside the existing Annotation editor. Developers may enable Impeccable with either their existing comment as freeform direction or exactly one named Design Action. The initial catalog is Bolder, Quieter, Distill, Polish, Typeset, Colorize, Layout, Animate, Delight, and Overdrive.
 
-Waypoint saves the request as validated Design Intent on an ordinary Annotation. The Annotation continues through Pending, Claim, Resolved, and Discarded without provider-specific lifecycle states. Read and Watch deliver the intent to agents. Agents that cannot proceed release the Annotation to Pending with a Work Notice; successful work resolves with a provider-neutral Resolution Record.
+Waypoint saves the request as validated Design Intent on an ordinary Annotation. The Annotation continues through Pending, Claim, Resolved, and Discarded without provider-specific lifecycle states. Survey, Inspect, and Watch deliver the intent to agents. Agents that cannot proceed release the Annotation to Pending with a Work Notice; successful work resolves with a provider-neutral Resolution Record.
 
 Requesting alternatives saves separate Variant Intent. After generating candidate implementations, the agent creates a server-owned Variant Set. Waypoint alone governs activation, individual discard, Finalization, cancellation, Scaffold cleanup, and the rule that unresolved Variants prevent resolution.
 
@@ -43,7 +43,7 @@ Developers who do not want this workflow may globally hide Design Actions from n
 23. As a developer, I want Design Intent and its comment locked while Claimed, so that an agent's work contract cannot change underneath it.
 24. As a developer, I want Resolved and Discarded Design Intent to remain historical and read-only, so that retained Queue history remains trustworthy.
 25. As an agent, I want Design Intent delivered through Watch, so that I can evaluate capability before performing work.
-26. As an agent, I want Design Intent delivered through explicit Read, so that inspecting an Annotation never omits its requested workflow.
+26. As an agent, I want Design Intent delivered through Survey and Inspect, so that selecting or diagnosing an Annotation never omits its requested workflow.
 27. As an agent, I want a small versioned and allowlisted contract, so that I can route Design Actions without parsing UI text.
 28. As an agent without Impeccable, I want to release the Annotation with a structured Work Notice, so that I do not silently substitute generic design work.
 29. As a developer, I want an unavailable-workflow notice shown beside the Pending Annotation, so that I understand why work did not proceed and how to recover.
@@ -126,7 +126,7 @@ Developers who do not want this workflow may globally hide Design Actions from n
 
 - **Surface Mode remains agent reasoning.** Persuade, Operate, Read, or Experience is inferred from the selected Target and surrounding surface by the executing Impeccable workflow. It is neither an editor control nor persisted Annotation state.
 
-- **Design Intent is routing-critical projection data.** Both Watch and Read include it in full. It is small, validated, and required for an agent to determine capability before execution.
+- **Design Intent is routing-critical projection data.** Watch, Survey, and Inspect include it in full. It is small, validated, and required for an agent to determine capability before execution.
 
 - **Lifecycle owns editability.** Design Intent and the comment are editable only while Pending, locked but visible while Claimed, and historical while Resolved or Discarded. Mutating intent during a Claim is rejected because it would change the work contract underneath its owner.
 
@@ -134,7 +134,7 @@ Developers who do not want this workflow may globally hide Design Actions from n
 
 - **Resolution requires provider-neutral evidence.** A Design Action resolves with a Resolution Record containing a short summary and verification checklist, or an explicit statement that verification remains manual. Provider-internal steps, stack traces, hidden prompts, and filesystem paths are rejected.
 
-- **Watch stays concise while Read is complete.** Watch includes Design Intent, lifecycle state, the latest Work Notice code and safe summary, and concise Resolution Record summary. Read additionally includes the full verification checklist. This preserves quick delivery without making explicit inspection incomplete.
+- **Watch and Survey stay concise while Inspect is complete.** Watch includes Design Intent, lifecycle state, the latest Work Notice code and safe summary, and concise Resolution Record summary. Survey keeps the full Resolution Record because it is actionable retained evidence while compacting heavy Target diagnostics. Inspect adds the complete captured Target context for selected IDs.
 
 - **Variant Intent and Variant Set are different concepts.** Variant Intent is saved with the authored Annotation before candidates exist. A Variant Set is created only after an agent has generated named implementations and Scaffold. Conflating them is rejected because candidate-owned state cannot exist atomically at authoring time.
 
@@ -165,7 +165,7 @@ Developers who do not want this workflow may globally hide Design Actions from n
 
 - **Editor behavior seam:** load the built Annotation editor in the established DOM harness and interact through rendered controls and its extension-facing save/update interface. Cover ordinary versus Freeform versus named action, exact-one selection, deselection to Freeform, dynamic explanation, accessible state, global visibility preference, saved-intent restoration, hidden-preference override for existing intent, pending editability, claimed/terminal locking, and serialized Design/Variant Intent. Prior art is the existing built-extension DOM coverage for Variant selection and the current Annotation creation tests.
 
-- **Waypoint server seam:** exercise a real local server through its public HTTP, MCP, Watch, lifecycle, persistence, and Variant interfaces. Cover Design Intent validation, Read/Watch projections, Work Notice release behavior, dismissal and clearing, required Resolution Records, candidate-count bounds, atomic Variant Set creation, whole-set cancellation, edit/resolution locks, Claim expiry during evaluation, and persistence-failure rollback. Prior art is the retained lifecycle integration suite and the server Variant integration suite.
+- **Waypoint server seam:** exercise a real local server through its public HTTP, MCP, Watch, lifecycle, persistence, and Variant interfaces. Cover Design Intent validation, Survey/Inspect/Watch projections, Work Notice release behavior, dismissal and clearing, required Resolution Records, candidate-count bounds, atomic Variant Set creation, whole-set cancellation, edit/resolution locks, Claim expiry during evaluation, and persistence-failure rollback. Prior art is the retained lifecycle integration suite and the server Variant integration suite.
 
 - Use TDD in vertical slices: one failing public-behavior test, the smallest implementation to satisfy it, then the next behavior. Do not write the entire imagined suite before implementation teaches the actual module shape.
 

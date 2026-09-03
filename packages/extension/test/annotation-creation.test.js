@@ -9,6 +9,9 @@ const requireFromWxt = createRequire(wxtPackage);
 const { parseHTML } = requireFromWxt('linkedom');
 
 async function loadScript(context, relativePath) {
+  if (['annotation-collection.js', 'annotation-validation.js', 'export-codec.js', 'content/modules/api-bridge.js'].includes(relativePath) && !context.WaypointAnnotationTargets) {
+    await loadScript(context, 'annotation-targets.js');
+  }
   if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationStatus) {
     await loadScript(context, 'annotation-status.js');
     await loadScript(context, 'annotation-collection.js');
@@ -66,6 +69,16 @@ function createEditorTestContext(markup, { width = 1280, emit = () => {} } = {})
     }),
   };
   context.WaypointAnnotationId = { create: () => 'waypoint_1750000000000_abc123xyz' };
+  context.WaypointMultiTargetSelection = { shouldHandle: () => false };
+  context.WaypointAnnotationTargets = {
+    get(annotation) {
+      return annotation.targets || [{
+        selector: annotation.selector,
+        element_context: annotation.element_context,
+        badge_offset: annotation.badge_offset,
+      }];
+    },
+  };
 
   return { context, handlers, computedStyle, window };
 }
@@ -95,6 +108,28 @@ test('content can request the current site permission through the background bou
   }]);
 });
 
+test('content can read whether the current site already has persistent access', async () => {
+  const messages = [];
+  const context = vm.createContext({
+    window: { location: { protocol: 'https:', origin: 'https://example.test' } },
+    URL,
+    chrome: {
+      runtime: {
+        sendMessage: async message => {
+          messages.push(message);
+          return { success: true, granted: true };
+        },
+      },
+    },
+  });
+  context.globalThis = context;
+
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  assert.equal(await context.WaypointAPI.hasCurrentSiteAccess(), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(messages)), [{ action: 'getCurrentSiteAccess' }]);
+});
+
 test('Design Actions visibility defaults on and persists through the extension preference boundary', async () => {
   const writes = [];
   let stored = {};
@@ -120,6 +155,60 @@ test('Design Actions visibility defaults on and persists through the extension p
   await context.WaypointAPI.saveShowDesignActions(false);
   assert.equal(await context.WaypointAPI.getShowDesignActions(), false);
   assert.deepEqual(JSON.parse(JSON.stringify(writes)), [{ waypointShowDesignActions: false }]);
+});
+
+test('target controls default on and persist independently from keyboard targeting', async () => {
+  const writes = [];
+  let stored = {};
+  const context = vm.createContext({
+    window: { location: { protocol: 'https:' } },
+    chrome: {
+      runtime: { sendMessage: async () => ({ success: true }) },
+      storage: {
+        local: {
+          get: async () => stored,
+          set: async update => {
+            stored = { ...stored, ...update };
+            writes.push(update);
+          },
+        },
+      },
+    },
+  });
+  context.globalThis = context;
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  assert.equal(await context.WaypointAPI.getShowTargetControls(), true);
+  await context.WaypointAPI.saveShowTargetControls(false);
+  assert.equal(await context.WaypointAPI.getShowTargetControls(), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(writes)), [{ waypointShowTargetControls: false }]);
+});
+
+test('annotation experience disclosure defaults open and persists the user choice', async () => {
+  const writes = [];
+  let stored = {};
+  const context = vm.createContext({
+    window: { location: { protocol: 'https:' } },
+    chrome: {
+      runtime: { sendMessage: async () => ({ success: true }) },
+      storage: {
+        local: {
+          get: async () => stored,
+          set: async update => {
+            stored = { ...stored, ...update };
+            writes.push(update);
+          },
+        },
+      },
+    },
+  });
+  context.globalThis = context;
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  assert.equal(await context.WaypointAPI.getAnnotationExperienceExpanded(), true);
+  await context.WaypointAPI.saveAnnotationExperienceExpanded(false);
+  assert.equal(await context.WaypointAPI.getAnnotationExperienceExpanded(), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(writes)), [{ waypointAnnotationExperienceExpanded: false }]);
 });
 
 test('content rejects non-image or oversized attachment payloads before they reach the background', async () => {
@@ -155,6 +244,10 @@ test('background validates attachment payloads before forwarding an annotation t
 
   assert.match(source, /case 'requestOptionalSitePermission'/);
   assert.match(source, /requestOptionalSitePermission\(originPattern/);
+  assert.match(source, /case 'getCurrentSiteAccess'/);
+  assert.match(source, /hasCurrentSiteAccess\(senderUrl\)/);
+  assert.match(source, /WaypointSiteAccess\.hasCurrentSiteAccess/);
+  assert.match(source, /chrome\.permissions\.contains\(\{ origins: \[originPattern\] \}\)/);
   assert.match(source, /chrome\.permissions\.request\(\{ origins: \[originPattern\] \}\)/);
   assert.match(source, /validateAnnotationAttachments\(annotation\)/);
   assert.match(source, /apiServerUrl}\/api\/annotations/);
@@ -211,6 +304,13 @@ test('shared extension validation rejects URL-less and empty imported Annotation
     comment: '',
     pending_changes: { color: { value: '#201a16' } },
   }));
+  assert.throws(() => context.WaypointAnnotationValidation.assertAnnotation({
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/app',
+    comment: 'Shared feedback',
+    targets: [{ selector: '#first' }, { selector: '#second' }],
+    pending_changes: { color: { value: '#201a16' } },
+  }), /cannot include Element edits/);
   assert.throws(() => context.WaypointAnnotationValidation.assertAnnotation({
     id: 'waypoint_1750000000000_abc123xyz',
     url: 'http://localhost:3000/app',
@@ -782,6 +882,65 @@ test('rendered editor selects one named Design Action, explains it, and returns 
   assert.equal(restoredPolish.getAttribute('aria-pressed'), 'false');
   assert.equal(context.document.querySelector('.waypoint-design-action-state').textContent, 'Design Actions · Freeform');
   assert.equal(context.document.querySelector('.waypoint-design-action-description').textContent, '');
+});
+
+test('shared composer saves one feedback-only Annotation with ordered Targets', async () => {
+  const emitted = [];
+  const { context, handlers, computedStyle } = createEditorTestContext(
+    '<html><body><div id="root"></div><button id="first">First</button><button id="second">Second</button></body></html>',
+    { emit: (name, payload) => emitted.push({ name, payload }) },
+  );
+  let saved;
+  context.WaypointAPI = {
+    isFileProtocol: () => false,
+    getShowDesignActions: async () => false,
+    saveAnnotation: async annotation => { saved = annotation; },
+  };
+  const first = context.document.querySelector('#first');
+  const second = context.document.querySelector('#second');
+  first.getBoundingClientRect = () => ({ left: 10, top: 20, width: 100, height: 40 });
+  second.getBoundingClientRect = () => ({ left: 210, top: 20, width: 100, height: 40 });
+  const makeContext = (selector, text) => ({
+    selector,
+    tag: 'button',
+    classes: [],
+    text,
+    styles: computedStyle,
+    position: { x: 0, y: 0, width: 100, height: 40 },
+    viewport: { width: 1280, height: 800 },
+    screenshot: { data_url: `data:image/png;base64,${text}` },
+  });
+
+  const source = await readFile(new URL('../public/content/modules/annotation-popover.js', import.meta.url), 'utf8');
+  vm.runInContext(source, context);
+  context.WaypointAnnotationPopover.init();
+  await handlers.get('multi-target:compose')({
+    selections: [
+      { element: first, context: makeContext('#first', 'First'), clientX: 20, clientY: 30 },
+      { element: second, context: makeContext('#second', 'Second'), clientX: 230, clientY: 30 },
+    ],
+    draft: null,
+  });
+
+  const popover = context.document.querySelector('.waypoint-popover');
+  assert.ok(popover.classList.contains('waypoint-popover-multi-target'));
+  assert.equal(popover.querySelector('.waypoint-element-edits') !== null, true);
+  assert.equal(popover.querySelectorAll('.waypoint-textarea').length, 1);
+  assert.match(popover.querySelector('.waypoint-target-navigator').textContent, /Preview Targets/);
+  assert.match(popover.querySelector('.waypoint-shared-annotation-note').textContent, /One annotation applies to all 2 Targets/);
+  popover.querySelector('.waypoint-target-next').click();
+  assert.equal(popover.style.top, 'auto');
+  assert.equal(popover.style.bottom, '84px');
+  popover.querySelector('.waypoint-textarea').value = 'Align both actions';
+  popover.querySelector('.waypoint-textarea').dispatchEvent(new context.window.Event('input'));
+  popover.querySelector('.waypoint-save-btn').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(saved.comment, 'Align both actions');
+  assert.deepEqual(JSON.parse(JSON.stringify(saved.targets.map(target => target.selector))), ['#first', '#second']);
+  assert.equal('selector' in saved, false);
+  assert.equal('pending_changes' in saved, false);
+  assert.equal(emitted.some(event => event.name === 'multi-target:saved'), true);
 });
 
 test('live Annotation consumers retain Design Intent and Variant Intent after editor updates', async () => {

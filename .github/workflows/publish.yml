@@ -1,0 +1,161 @@
+name: Publish CLI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository == 'logbookfordevs/logbook-waypoint'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify release tag
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          package_version="$(node -p "require('./packages/server/package.json').version")"
+          [[ "$tag" = "v$package_version" ]] || { echo "Tag $tag does not match package version $package_version."; exit 1; }
+          git fetch https://github.com/logbookfordevs/logbook-waypoint.git main --depth=1
+          [[ "$(git rev-list -n 1 "$tag")" = "$(git rev-parse FETCH_HEAD)" ]] || { echo "Release tag must point at main."; exit 1; }
+
+      - name: Typecheck, build, and test
+        run: |
+          pnpm check
+          pnpm test
+          pnpm build
+
+      - name: Check npm package contents
+        run: pnpm --dir packages/server pack --dry-run
+
+      - name: Package GitHub release asset
+        run: ./scripts/package-waypoint-release.sh
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: waypoint-release-assets
+          path: |
+            .release/waypoint-cli.tar.gz
+            .release/waypoint-cli.tar.gz.sha256
+          if-no-files-found: error
+
+  publish-npm:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install pinned scanners
+        shell: bash
+        run: |
+          tool_dir="${RUNNER_TEMP}/waypoint-security-tools"
+          ./scripts/install-security-tools.sh "$tool_dir"
+          echo "$tool_dir" >> "$GITHUB_PATH"
+
+      - name: Typecheck, build, and test
+        run: |
+          pnpm check
+          pnpm test
+          pnpm build
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level high
+
+      - name: Prove scanners reject unsafe fixtures
+        run: ./scripts/verify-security-tools.sh
+
+      - name: Scan Git history for secrets
+        run: gitleaks git . --no-banner --redact
+
+      - name: Validate GitHub Actions syntax
+        run: actionlint
+
+      - name: Audit GitHub Actions security
+        run: zizmor --offline .
+
+      - name: Check npm package contents
+        run: pnpm --dir packages/server pack --dry-run
+
+      - name: Publish npm package with trusted publishing
+        working-directory: packages/server
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          if npm view "@logbookfordevs/waypoint@$package_version" version >/dev/null 2>&1; then
+            echo "@logbookfordevs/waypoint@$package_version is already published; continuing bootstrap recovery."
+          else
+            npm publish --access public --ignore-scripts
+          fi
+
+  publish-github:
+    needs:
+      - prepare
+      - publish-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: waypoint-release-assets
+          path: .release
+
+      - name: Publish GitHub release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+          fi
+          gh release upload "$GITHUB_REF_NAME" .release/waypoint-cli.tar.gz .release/waypoint-cli.tar.gz.sha256 --clobber

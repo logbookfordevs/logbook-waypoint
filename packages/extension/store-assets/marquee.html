@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logbook Waypoint marquee</title>
+  <style>
+    * { box-sizing:border-box; }
+    html,body { width:1400px; height:560px; margin:0; overflow:hidden; }
+    body { background:#132421; color:#f6efe2; font-family:"Trebuchet MS",sans-serif; }
+    main { position:relative; display:grid; grid-template-columns:560px 1fr; height:100%; padding:64px 76px; }
+    .identity { position:relative; z-index:2; display:flex; flex-direction:column; align-items:flex-start; }
+    .mark { width:84px; height:84px; margin-bottom:38px; border-radius:20px; }
+    h1 { margin:0; font-size:74px; line-height:.88; letter-spacing:-.04em; }
+    p { margin:25px 0 0; color:#e3c58f; font-size:25px; line-height:1.18; font-weight:700; }
+    .promise { margin-top:auto; color:#8fbab0; font-size:14px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+    .stage { position:relative; align-self:center; width:630px; height:410px; margin-left:52px; border-radius:24px; background:#edf1f3; box-shadow:0 26px 55px rgba(0,0,0,.3); overflow:hidden; }
+    .browser { height:54px; background:#0f2032; }
+    .browser::before { content:"PATCHBAY / REVIEW"; position:absolute; top:18px; left:24px; color:#dce7ea; font-size:13px; font-weight:800; letter-spacing:.06em; }
+    .canvas { position:absolute; inset:54px 0 0; padding:34px; }
+    .headline { width:340px; height:22px; border-radius:5px; background:#183133; box-shadow:0 38px 0 #b9c4c8, 0 57px 0 #b9c4c8; }
+    .target { position:absolute; right:34px; top:34px; width:220px; height:210px; border:3px dashed #b9502f; border-radius:18px; background:#f4dba9; }
+    .target::before { content:""; position:absolute; left:24px; right:24px; top:42px; height:13px; border-radius:7px; background:#7e32a8; box-shadow:0 38px 0 #d2aabd; }
+    .pin { position:absolute; left:91px; top:102px; display:grid; place-items:center; width:38px; height:38px; border-radius:50%; background:#28746c; color:#fff; font-size:18px; font-weight:800; box-shadow:0 7px 16px rgba(0,0,0,.25); }
+    .annotation { position:absolute; right:52px; bottom:34px; width:304px; height:178px; padding:28px; border-radius:17px; background:#fffaf1; box-shadow:0 18px 34px rgba(42,37,29,.28); }
+    .annotation strong { display:block; color:#21302e; font-size:17px; }
+    .annotation span { display:block; height:8px; margin-top:18px; border-radius:4px; background:#a89d8c; box-shadow:0 18px 0 #d0c6b7,0 36px 0 #b9502f; }
+    .route { position:absolute; left:574px; right:-80px; top:78px; height:2px; background:#b9502f; transform:rotate(-7deg); opacity:.8; }
+    .route::before,.route::after { content:""; position:absolute; width:12px; height:12px; top:-5px; border-radius:50%; background:#e3c58f; }
+    .route::before { left:72px; } .route::after { right:120px; background:#b9502f; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="route"></div>
+    <section class="identity">
+      <img class="mark" src="icon-hq.png" alt="">
+      <h1>Logbook<br>Waypoint</h1>
+      <p>Visual feedback<br>for coding agents</p>
+      <span class="promise">Local-first · open source</span>
+    </section>
+    <section class="stage" aria-label="Waypoint annotation demonstration">
+      <div class="browser"></div>
+      <div class="canvas"><div class="headline"></div><div class="target"><span class="pin">1</span></div><div class="annotation"><strong>Pin the point.<br>Chart the change.</strong><span></span></div></div>
+    </section>
+  </main>
+</body>
+</html>

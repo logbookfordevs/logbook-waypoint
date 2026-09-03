@@ -1,6 +1,6 @@
 {
   "name": "logbook-waypoint",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Local-first visual feedback for developers and coding agents",
   "author": "Leonardo Reis Dias",
@@ -20,6 +20,7 @@
   "scripts": {
     "build": "pnpm --filter @logbookfordevs/waypoint-extension build && pnpm --filter @logbookfordevs/waypoint-website build",
     "check": "pnpm --filter @logbookfordevs/waypoint-extension check && pnpm --filter @logbookfordevs/waypoint-website check",
-    "test": "pnpm -r test"
+    "package:extension": "pnpm --filter @logbookfordevs/waypoint-extension zip",
+    "test": "pnpm -r test && ./scripts/install.test.sh"
   }
 }

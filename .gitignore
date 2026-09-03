@@ -13,6 +13,7 @@ packages/website/.next/
 packages/extension/.output/
 packages/extension/.wxt/
 packages/extension/*.zip
+.release/
 
 # MCP Server
 mcp-server/logs/

@@ -8,7 +8,9 @@ The Watch module accepts an optional continuation cursor and returns Queue chang
 
 ## Behavior
 
-- Watch returns new or changed Annotations relevant to agent work.
+- Watch returns new or changed user requests relevant to agent work.
+- Each change carries the same compact Survey-grade Annotation context as a scoped `read_annotations` response, plus revision metadata for reactive delivery and deduplication.
+- Complete diagnostic context remains behind `inspect_annotations`; Watch does not create a third context tier between Survey and Inspect.
 - Delivery is non-destructive and never creates a Claim.
 - Delivery is at least once; clients deduplicate by Annotation identity and revision.
 - A continuation cursor is opaque to callers and advances only through a successful response.
@@ -20,6 +22,8 @@ The Watch module accepts an optional continuation cursor and returns Queue chang
 ## Relationship to claims
 
 Watching and claiming are separate actions. An agent may observe an Annotation without owning it, and must claim it before beginning work when exclusive ownership matters. Stale Claims return to `Pending` through lifecycle expiry, not through Watch disconnection.
+
+During an active MCP workflow, delivery of a new Pending Annotation normally leads the agent to claim and handle that request. Watch remains observation-only only when the user explicitly requests no implementation.
 
 ## Test surface
 

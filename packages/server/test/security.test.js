@@ -308,7 +308,7 @@ describe('local HTTP security boundary', () => {
       await client.connect(transport);
       const result = await client.callTool({
         name: 'read_annotations',
-        arguments: { status: 'pending' }
+        arguments: { status: 'pending', url: 'http://localhost:3000/*' }
       });
       const payload = JSON.parse(result.content[0].text);
 
@@ -345,6 +345,8 @@ describe('local HTTP security boundary', () => {
       const tools = await client.listTools();
       const watchTool = tools.tools.find(tool => tool.name === 'watch_annotations');
       assert.match(watchTool.description, /deduplicate.*annotation.*id.*revision/i);
+      assert.match(watchTool.description, /Pending Annotations are actionable work/i);
+      assert.match(watchTool.description, /claim before implementation, resolve after verification, or release when blocked/i);
       const empty = await client.callTool({
         name: 'watch_annotations',
         arguments: { timeout_ms: 0 }
@@ -428,7 +430,7 @@ describe('local HTTP security boundary', () => {
       await client.connect(transport);
       const read = await client.callTool({
         name: 'read_annotations',
-        arguments: { status: 'pending' }
+        arguments: { status: 'pending', url: 'http://localhost:3000/*' }
       });
       const readPayload = JSON.parse(read.content[0].text);
       assert.equal(readPayload.data.annotations[0].has_screenshot, true);
@@ -472,7 +474,7 @@ describe('local HTTP security boundary', () => {
       await client.connect(transport);
       const read = await client.callTool({
         name: 'read_annotations',
-        arguments: { status: 'pending' }
+        arguments: { status: 'pending', url: 'http://localhost:3000/*' }
       });
       const readPayload = JSON.parse(read.content[0].text);
       assert.equal(readPayload.data.annotations.length, 1);
