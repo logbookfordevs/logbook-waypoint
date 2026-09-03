@@ -1,6 +1,6 @@
 # Logbook Waypoint Privacy Policy
 
-Last updated: September 2, 2026
+Last updated: September 3, 2026
 
 Logbook Waypoint is a local-first browser extension and coding-agent tool for
 placing structured visual annotations on interfaces under development.
@@ -9,10 +9,11 @@ placing structured visual annotations on interfaces under development.
 
 When you create an Annotation, Waypoint may process and store:
 
-- the page URL and title;
+- the annotated page URL, including its path, query, and fragment;
 - your Annotation text and selected visual changes;
 - information about the selected page element, such as its text, attributes,
-  selector, layout, and available source identity;
+  selector, computed styles, layout, parent context, and available source identity;
+- the click or pin offset used to position the Annotation on the selected element;
 - a screenshot of the selected interface when screenshot capture is enabled;
 - image attachments you explicitly add;
 - preferences, Queue state, and Annotation lifecycle history.
@@ -20,12 +21,15 @@ When you create an Annotation, Waypoint may process and store:
 Waypoint does not require a Logbook account and does not include advertising,
 analytics, or telemetry.
 
+Waypoint’s use of information received from Google APIs adheres to the Chrome
+Web Store User Data Policy, including the Limited Use requirements.
+
 ## Where data is stored and sent
 
 The browser extension stores its data in Chrome's local extension storage on
-your device. It also synchronizes Annotation data with the optional Waypoint
-server running on `127.0.0.1:3846` on the same device. The server is designed to
-listen only on the IPv4 loopback interface.
+your device. When you run the optional Waypoint server, the extension may
+synchronize Annotation data to `127.0.0.1:3846` on the same device. The server
+is designed to listen only on the IPv4 loopback interface.
 
 Waypoint does not send Annotation data, browsing activity, screenshots, or
 attachments to Logbook for Devs or another external server. Coding agents that
