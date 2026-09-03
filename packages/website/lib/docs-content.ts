@@ -16,27 +16,37 @@ export const documentationPages: DocumentationPage[] = [
   {
     slug: 'installation',
     title: 'Installation',
-    summary: 'Prepare a development build while public distribution is still coming soon.',
+    summary: 'Install the local server, build the extension, and open your first enabled route.',
     sections: [
       {
         heading: 'Current availability',
         paragraphs: [
-          'Logbook Waypoint is not yet published to the Chrome Web Store or npm. The steps below are for repository development and should not be presented as a supported public installer.',
-          'When a supported channel exists, this page will keep the same route and distinguish store installation from source development.',
+          'The Waypoint CLI is published through npm and as a checksummed GitHub Release. Both channels install the same waypoint command and local MCP server.',
+          'The browser extension is not yet published to a browser store. Build it from the repository and load the generated Chromium extension as unpacked.',
         ],
-        note: 'Early-development path: expect to rebuild and reload the unpacked extension as the project changes.',
+        note: 'Waypoint requires Node.js 18 or newer. The GitHub installer writes its launcher to ~/.local/bin by default and reports when that directory is not on PATH.',
       },
       {
-        heading: 'Build from source',
-        paragraphs: ['Clone the repository, install the pnpm workspace, and build the extension.'],
-        code: 'git clone https://github.com/logbookfordevs/logbook-waypoint.git\ncd logbook-waypoint\npnpm install\npnpm build',
+        heading: 'Install from a GitHub Release',
+        paragraphs: ['Run the public installer to download and verify the latest Waypoint CLI release.'],
+        code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\nwaypoint start',
       },
       {
-        heading: 'Load the extension',
+        heading: 'Install through npm',
         paragraphs: [
-          'Open chrome://extensions, enable Developer mode, choose Load unpacked, and select packages/extension/.output/chrome-mv3.',
-          'Start the local server separately before expecting an MCP-compatible agent to see the Queue.',
+          'Install the published package globally, or use npx for a temporary first look. Start runs the local server in the background by default.',
         ],
+        code: 'npm install --global @logbookfordevs/waypoint\nwaypoint start',
+        note: 'Use waypoint status to check the server, waypoint logs to inspect it, waypoint stop when finished, or waypoint start --foreground for a terminal-attached session.',
+      },
+      {
+        heading: 'Build and load the extension',
+        paragraphs: [
+          'Clone the repository, install the workspace, and build the browser extension with pnpm.',
+          'Open chrome://extensions, enable Developer mode, choose Load unpacked, and select packages/extension/.output/chrome-mv3.',
+        ],
+        code: 'git clone https://github.com/logbookfordevs/logbook-waypoint.git\ncd logbook-waypoint\npnpm install\npnpm build',
+        note: 'Rebuild and reload the unpacked extension after pulling extension changes. The extension can annotate and copy without MCP; keep the server running for Queue synchronization and agent workflows.',
       },
     ],
   },
@@ -71,9 +81,16 @@ export const documentationPages: DocumentationPage[] = [
     summary: 'Connect the development server to Codex or another MCP-compatible coding agent.',
     sections: [
       {
-        heading: 'Start the development server',
-        paragraphs: ['Run the local Waypoint server from the workspace while public npm distribution remains unavailable.'],
-        code: 'pnpm --filter @logbookfordevs/waypoint start',
+        heading: 'Start the installed server',
+        paragraphs: ['Start Waypoint after installing it from a GitHub Release or npm. The local server listens on IPv4 loopback.'],
+        code: 'waypoint start',
+      },
+      {
+        heading: 'Add Waypoint to supported agents',
+        paragraphs: [
+          'Add MCP can detect supported coding agents and guide you through the configuration it will update. It configures the connection but does not install or start Waypoint.',
+        ],
+        code: 'npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global',
       },
       {
         heading: 'Connect Codex',
@@ -200,19 +217,23 @@ export const documentationPages: DocumentationPage[] = [
   {
     slug: 'releases',
     title: 'Releases',
-    summary: 'Track availability without mistaking source development for a published channel.',
+    summary: 'Choose a supported CLI channel and track the extension’s current source-build availability.',
     sections: [
       {
-        heading: 'Coming soon',
+        heading: 'CLI releases',
         paragraphs: [
-          'Waypoint has no supported public extension or npm release yet. Repository history is development evidence, not a store availability claim.',
-          'This page will become the canonical release index when signed extension builds and a supported server package are available.',
+          'Tagged Waypoint releases publish the local server and CLI through npm and as a checksummed GitHub Release archive. The public install script resolves and verifies the latest archive before installing it.',
+          'Use npm when you prefer registry-managed global packages. Use the GitHub installer when you prefer the release archive under ~/.local/share/logbook-waypoint with a launcher in ~/.local/bin.',
         ],
+        code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\n# or\nnpm install --global @logbookfordevs/waypoint',
       },
       {
-        heading: 'Follow development',
-        paragraphs: ['Use the repository to inspect current work, licenses, and source-level setup.'],
-        code: 'https://github.com/logbookfordevs/logbook-waypoint',
+        heading: 'Browser extension availability',
+        paragraphs: [
+          'The browser extension is currently distributed as source rather than through a browser store. Build it with pnpm, then load packages/extension/.output/chrome-mv3 from chrome://extensions in Developer mode.',
+          'Follow GitHub Releases for CLI versions and the repository documentation for extension build changes.',
+        ],
+        code: 'https://github.com/logbookfordevs/logbook-waypoint/releases',
       },
     ],
   },

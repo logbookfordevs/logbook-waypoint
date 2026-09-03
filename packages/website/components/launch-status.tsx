@@ -10,7 +10,7 @@ export function LaunchStatus() {
     <div id="launch" className="launch-status">
       <button type="button" onClick={() => setIsExplaining((isOpen) => !isOpen)}>
         <BellRing aria-hidden="true" />
-        Coming soon
+        Available now
       </button>
       <p
         className="launch-status__message"
@@ -18,7 +18,7 @@ export function LaunchStatus() {
         aria-hidden={!isExplaining}
         data-visible={isExplaining}
       >
-        The extension and npm package are not published yet. Follow development in the{' '}
+        Install the CLI from npm or a checksummed GitHub Release. Build the browser extension from the{' '}
         <a href="https://github.com/logbookfordevs/logbook-waypoint">
           <GitFork aria-hidden="true" /> repository
         </a>.

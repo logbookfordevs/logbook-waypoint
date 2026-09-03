@@ -11,8 +11,8 @@
 
 Logbook Waypoint is a local-first visual feedback tool for developers and coding agents. Place annotations directly on a development interface, preserve the surrounding element context, and let an MCP-compatible agent read and resolve the resulting queue.
 
-> [!IMPORTANT]
-> Logbook Waypoint is at the beginning of its independent development. The npm package and browser extension are not published yet. Use the development setup below.
+> [!NOTE]
+> The Waypoint CLI is available through npm and checksummed GitHub Releases. The browser extension is currently installed as an unpacked build from this repository.
 
 ## Current foundation
 
@@ -72,13 +72,37 @@ pnpm --filter @logbookfordevs/waypoint-website check
 pnpm --filter @logbookfordevs/waypoint-website build
 ```
 
-### Local server
+## CLI installation
+
+Install the latest checksummed GitHub Release:
+
+```bash
+curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
+```
+
+Or install the published npm package:
+
+```bash
+npm install --global @logbookfordevs/waypoint
+```
+
+For a first look without a permanent npm installation:
+
+```bash
+npx @logbookfordevs/waypoint --help
+```
+
+Start the installed local server with `waypoint start`. It runs in the background by default; use `waypoint status`, `waypoint logs`, and `waypoint stop` to manage it. Use `waypoint start --foreground` for a terminal-attached session.
+
+### Local server development
 
 ```bash
 pnpm --filter @logbookfordevs/waypoint start
 ```
 
 ### Browser extension
+
+Build the extension from the repository first with `pnpm build`, then:
 
 1. Open `chrome://extensions` in a Chromium browser.
 2. Enable **Developer mode**.

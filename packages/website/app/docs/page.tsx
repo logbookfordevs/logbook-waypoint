@@ -21,7 +21,7 @@ export default function DocumentationIndex() {
       </p>
       <div className="docs-notice">
         <Compass aria-hidden="true" />
-        <div><strong>Early-development documentation</strong><p>Public installation is coming soon. Source setup is available for contributors.</p></div>
+        <div><strong>CLI available now</strong><p>Install the local server from npm or a checksummed GitHub Release. Build and load the browser extension from source.</p></div>
       </div>
       <div className="docs-index__routes">
         {documentationPages.map((page) => (

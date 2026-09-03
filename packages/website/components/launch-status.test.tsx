@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { LaunchStatus } from '@/components/launch-status';
 
 describe('launch posture', () => {
-  it('explains unavailable distribution without presenting a fake installer', () => {
+  it('distinguishes the available CLI from the source-built extension', () => {
     render(<LaunchStatus />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Coming soon' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Available now' }));
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'The extension and npm package are not published yet.',
+      'Install the CLI from npm or a checksummed GitHub Release.',
     );
     expect(screen.queryByRole('link', { name: /install/i })).not.toBeInTheDocument();
   });

@@ -116,7 +116,7 @@ export function SiteHeader() {
           >
             {appearanceIcon}
           </button>
-          <a className="launch-action" href="/#launch">Coming soon</a>
+          <a className="launch-action" href="/docs/installation">Install</a>
         </nav>
       </div>
     </header>

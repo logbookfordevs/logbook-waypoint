@@ -276,7 +276,7 @@ export function RouteJourney() {
                 </button>
                 <a className="ink-text-link" href="/docs"><BookOpen aria-hidden="true" /> Field guide</a>
               </div>
-              <p className="ink-hero__availability">Development preview · source installation today</p>
+              <p className="ink-hero__availability">CLI on npm + GitHub Releases · extension from source</p>
             </div>
 
             <div className="ink-hero__thelu" aria-label="Thelu holding the Waypoint logbook">
@@ -400,7 +400,7 @@ export function RouteJourney() {
             <a className="ink-button" href="/docs">Read the field guide <BookOpen aria-hidden="true" /></a>
             <a className="ink-text-link" href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noreferrer"><GitFork aria-hidden="true" /> View source</a>
           </div>
-          <p className="ink-payoff__note">Development preview. The extension and server are built from source while public distribution takes shape.</p>
+          <p className="ink-payoff__note">Install the server from npm or a verified GitHub Release. Build and load the browser extension from source.</p>
         </div>
       </section>
     </div>
