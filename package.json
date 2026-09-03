@@ -20,6 +20,7 @@
   "scripts": {
     "build": "pnpm --filter @logbookfordevs/waypoint-extension build",
     "check": "pnpm --filter @logbookfordevs/waypoint-extension check",
+    "package:extension": "pnpm --filter @logbookfordevs/waypoint-extension zip",
     "test": "pnpm -r test && ./scripts/install.test.sh"
   }
 }

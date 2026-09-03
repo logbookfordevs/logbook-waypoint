@@ -46,6 +46,7 @@ The extension, server, package, CLI, MCP configuration, storage keys, and Annota
 - [Documentation map](docs/README.md) — guides, contracts, specifications, architectural decisions, package docs, and release notes
 - [User guide](docs/USER_GUIDE.md) — first Annotation, Queue management, copy/export, MCP setup, Design Actions, and settings
 - [MCP guide](docs/MCP_GUIDE.md) — normal agent workflow, compact Survey, diagnostic Inspect, examples, and all 19 tools
+- [Privacy policy](PRIVACY.md) — local data handling, permissions, retention, and disclosure
 - [Domain language](CONTEXT.md)
 - [Architectural decisions](docs/adr/)
 - [Behavioral contracts](docs/contracts/)

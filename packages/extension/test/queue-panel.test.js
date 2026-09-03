@@ -348,6 +348,20 @@ test('settings expose disclosure state, semantic context, and named pin colors',
   assert.equal(swatches.filter(swatch => swatch.getAttribute('aria-pressed') === 'true').length, 1);
 });
 
+test('settings use the larger available side of the viewport as their height boundary', async () => {
+  const { root } = await openQueue([]);
+  root.querySelector('.waypoint-queue-close').click();
+  const toolbar = root.querySelector('.waypoint-toolbar');
+  toolbar.getBoundingClientRect = () => ({ top: 700, bottom: 754 });
+
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const dropdown = root.querySelector('.waypoint-settings-dropdown');
+  assert.equal(dropdown.classList.contains('above'), true);
+  assert.equal(dropdown.style.getPropertyValue('--waypoint-settings-available-height'), '678px');
+});
+
 test('Escape closes settings and resets the trigger disclosure state', async () => {
   const { context, root } = await openQueue([]);
   root.querySelector('.waypoint-queue-close').click();

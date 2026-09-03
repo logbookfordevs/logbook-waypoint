@@ -20,6 +20,7 @@ Choose the shortest route for what you need to understand or change.
 - [Annotation Context](contracts/annotation-context.md) — Survey versus Inspect, project discovery, Target compatibility, media, and trust boundaries.
 - [Annotation Lifecycle](contracts/annotation-lifecycle.md) — Pending, Claim, release, resolution, discard, expiry, and deletion ownership.
 - [Product Identifiers](contracts/product-identifiers.md) — canonical repository, package, MCP, storage, and Annotation identifiers.
+- [Chrome Web Store submission](CHROME_WEB_STORE.md) — extension packaging, listing copy, privacy disclosures, reviewer instructions, assets, and delivery gates.
 - [Source Identity](contracts/source-identity.md) — bounded framework and source hints captured for a Target.
 - [Variants](contracts/variants.md) — candidate creation, activation, discard, cancellation, Finalization, and Scaffold cleanup.
 - [Watch Mode](contracts/watch-mode.md) — side-effect-free at-least-once request delivery, cursors, reconnection, and Claim separation.

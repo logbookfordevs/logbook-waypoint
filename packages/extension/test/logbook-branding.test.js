@@ -86,6 +86,13 @@ test('settings popover gives controls a slightly wider responsive measure', asyn
   assert.match(contentStyles, /\.waypoint-settings-dropdown\s*{[^}]*width:\s*min\(380px, calc\(100vw - 24px\)\)/s);
 });
 
+test('settings constrain the complete panel while keeping only the body scrollable', async () => {
+  const contentStyles = await readFile(contentStylesUrl, 'utf8');
+
+  assert.match(contentStyles, /\.waypoint-settings-dropdown\s*{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*max-height:\s*min\(var\(--waypoint-settings-available-height\), calc\(100dvh - 24px\)\)/s);
+  assert.match(contentStyles, /\.waypoint-settings-body\s*{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;[^}]*max-height:\s*none;[^}]*overflow-y:\s*auto;/s);
+});
+
 test('data storage view gets a wider responsive layout with inline breathing room', async () => {
   const contentStyles = await readFile(contentStylesUrl, 'utf8');
 

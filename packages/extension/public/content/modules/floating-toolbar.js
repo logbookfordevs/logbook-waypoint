@@ -255,8 +255,15 @@ var WaypointToolbar = (() => {
     const route = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     settingsDropdown = document.createElement('div');
     const rect = toolbarEl.getBoundingClientRect();
-    const inLowerHalf = rect.top > window.innerHeight / 2;
-    settingsDropdown.className = 'waypoint-settings-dropdown' + (inLowerHalf ? ' above' : '');
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    const viewportInset = 12;
+    const dropdownGap = 10;
+    const spaceAbove = Math.max(0, rect.top - dropdownGap - viewportInset);
+    const spaceBelow = Math.max(0, viewportHeight - rect.bottom - dropdownGap - viewportInset);
+    const opensAbove = spaceAbove > spaceBelow;
+    const availableHeight = opensAbove ? spaceAbove : spaceBelow;
+    settingsDropdown.className = 'waypoint-settings-dropdown' + (opensAbove ? ' above' : '');
+    settingsDropdown.style.setProperty('--waypoint-settings-available-height', `${Math.floor(availableHeight)}px`);
     settingsDropdown.id = 'waypoint-settings-dropdown';
     settingsDropdown.setAttribute('role', 'region');
     settingsDropdown.setAttribute('aria-label', 'Logbook Waypoint settings');

@@ -1543,7 +1543,10 @@ var WAYPOINT_STYLES = `
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
+  display: flex;
+  flex-direction: column;
   width: min(380px, calc(100vw - 24px));
+  max-height: min(var(--waypoint-settings-available-height), calc(100dvh - 24px));
   background: var(--waypoint-surface-1);
   border: 1px solid var(--waypoint-outline);
   border-radius: 6px 6px var(--waypoint-radius-md) var(--waypoint-radius-md);
@@ -1570,6 +1573,7 @@ var WAYPOINT_STYLES = `
 
 .waypoint-settings-header {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   min-height: 58px;
@@ -1623,6 +1627,7 @@ var WAYPOINT_STYLES = `
 
 .waypoint-settings-route {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -1681,8 +1686,10 @@ var WAYPOINT_STYLES = `
 }
 
 .waypoint-settings-body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 0;
-  max-height: min(calc(100vh - 120px), 680px);
+  max-height: none;
   overflow-y: auto;
 }
 

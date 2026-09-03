@@ -10,7 +10,8 @@
     "build": "wxt build",
     "check": "wxt prepare && tsc --noEmit",
     "postinstall": "wxt prepare",
-    "test": "wxt build && node --test"
+    "test": "wxt build && node --test",
+    "zip": "wxt zip --browser chrome"
   },
   "dependencies": {
     "@logbookfordevs/waypoint": "workspace:*"
