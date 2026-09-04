@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { useThemeBoundary } from '@/components/theme-boundary';
+import { chromeWebStoreUrl } from '@/lib/site-config';
 import { useMediaQuery } from '@/lib/use-media-query';
 
 const navigationItems = [
@@ -116,7 +117,7 @@ export function SiteHeader() {
           >
             {appearanceIcon}
           </button>
-          <a className="launch-action" href="/docs/installation">Install</a>
+          <a className="launch-action" href={chromeWebStoreUrl} target="_blank" rel="noreferrer">Install</a>
         </nav>
       </div>
     </header>

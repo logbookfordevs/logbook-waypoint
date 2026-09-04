@@ -39,7 +39,7 @@ Waypoint turns precise visual feedback into a local, lifecycle-aware Queue that 
 - Annotations support targets, comments, screenshots, attachments, element-edit context, lifecycle state, Watch delivery, Design Actions, and named Variants.
 - Design Actions depend on Impeccable but remain inside Waypoint's Queue and lifecycle model.
 - Waypoint begins with fresh storage and does not migrate data from predecessor products.
-- The browser extension and npm package are not yet published. The initial website must present release availability honestly; its primary launch action is Coming soon until a supported installation channel exists.
+- The browser extension is published in the Chrome Web Store. The CLI and local MCP server are published through npm and checksummed GitHub Releases; the website keeps these installation paths distinct.
 - The planned first website scope is a Persuade landing page plus a coherent documentation shell. A project-progress-led homepage remains a future variation, not the initial conversion thesis.
 
 ## Brand Commitments

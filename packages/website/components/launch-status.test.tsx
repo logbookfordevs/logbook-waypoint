@@ -4,14 +4,17 @@ import { describe, expect, it } from 'vitest';
 import { LaunchStatus } from '@/components/launch-status';
 
 describe('launch posture', () => {
-  it('distinguishes the available CLI from the source-built extension', () => {
+  it('links the available extension to its official store listing', () => {
     render(<LaunchStatus />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Available now' }));
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Install the CLI from npm or a checksummed GitHub Release.',
+      'Install the browser extension from the Chrome Web Store.',
     );
-    expect(screen.queryByRole('link', { name: /install/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Chrome Web Store/i })).toHaveAttribute(
+      'href',
+      'https://chromewebstore.google.com/detail/logbook-waypoint/fgondknhkpekdhbbkgodokmpnpadfedo',
+    );
   });
 });

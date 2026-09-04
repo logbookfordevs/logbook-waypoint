@@ -1,4 +1,4 @@
-import { signalChartUrl } from '@/lib/site-config';
+import { chromeWebStoreUrl, signalChartUrl } from '@/lib/site-config';
 
 export interface DocumentationSection {
   heading: string;
@@ -22,15 +22,19 @@ export const documentationPages: DocumentationPage[] = [
   {
     slug: 'installation',
     title: 'Installation',
-    summary: 'Install the local server, build the extension, and open your first enabled route.',
+    summary: 'Install the extension, add the optional local server, and open your first enabled route.',
     sections: [
       {
         heading: 'Current availability',
         paragraphs: [
-          'The Waypoint CLI is published through npm and as a checksummed GitHub Release. Both channels install the same waypoint command and local MCP server.',
-          'The browser extension is not yet published to a browser store. Build it from the repository and load the generated Chromium extension as unpacked.',
+          'Install Logbook Waypoint from the Chrome Web Store for the supported browser-extension experience.',
+          'The separate Waypoint CLI is published through npm and as a checksummed GitHub Release. Both CLI channels install the same waypoint command and optional local MCP server.',
         ],
         note: 'Waypoint requires Node.js 18 or newer. The GitHub installer writes its launcher to ~/.local/bin by default and reports when that directory is not on PATH.',
+        resource: {
+          href: chromeWebStoreUrl,
+          label: 'Install Logbook Waypoint from the Chrome Web Store',
+        },
       },
       {
         heading: 'Install from a GitHub Release',
@@ -46,13 +50,13 @@ export const documentationPages: DocumentationPage[] = [
         note: 'Use waypoint status to check the server, waypoint logs to inspect it, waypoint stop when finished, or waypoint start --foreground for a terminal-attached session.',
       },
       {
-        heading: 'Build and load the extension',
+        heading: 'Build the extension from source',
         paragraphs: [
           'Clone the repository, install the workspace, and build the browser extension with pnpm.',
           'Open chrome://extensions, enable Developer mode, choose Load unpacked, and select packages/extension/.output/chrome-mv3.',
         ],
         code: 'git clone https://github.com/logbookfordevs/logbook-waypoint.git\ncd logbook-waypoint\npnpm install\npnpm build',
-        note: 'Rebuild and reload the unpacked extension after pulling extension changes. The extension can annotate and copy without MCP; keep the server running for Queue synchronization and agent workflows.',
+        note: 'This developer route is optional. For ordinary use, install the supported release from the Chrome Web Store. The extension can annotate and copy without MCP; keep the server running for Queue synchronization and agent workflows.',
       },
     ],
   },
@@ -233,7 +237,7 @@ export const documentationPages: DocumentationPage[] = [
   {
     slug: 'releases',
     title: 'Releases',
-    summary: 'Choose a supported CLI channel and track the extension’s current source-build availability.',
+    summary: 'Choose the supported extension and CLI channels that fit your workflow.',
     sections: [
       {
         heading: 'CLI releases',
@@ -246,10 +250,13 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'Browser extension availability',
         paragraphs: [
-          'The browser extension is currently distributed as source rather than through a browser store. Build it with pnpm, then load packages/extension/.output/chrome-mv3 from chrome://extensions in Developer mode.',
-          'Follow GitHub Releases for CLI versions and the repository documentation for extension build changes.',
+          'The supported browser extension is available from the Chrome Web Store. Source builds remain available for contributors and local extension development.',
+          'Follow GitHub Releases for CLI versions and the repository documentation for development builds.',
         ],
-        code: 'https://github.com/logbookfordevs/logbook-waypoint/releases',
+        resource: {
+          href: chromeWebStoreUrl,
+          label: 'Open Logbook Waypoint in the Chrome Web Store',
+        },
       },
     ],
   },

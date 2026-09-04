@@ -1,7 +1,9 @@
 'use client';
 
-import { BellRing, GitFork } from 'lucide-react';
+import { BellRing, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+
+import { chromeWebStoreUrl } from '@/lib/site-config';
 
 export function LaunchStatus() {
   const [isExplaining, setIsExplaining] = useState(false);
@@ -18,9 +20,9 @@ export function LaunchStatus() {
         aria-hidden={!isExplaining}
         data-visible={isExplaining}
       >
-        Install the CLI from npm or a checksummed GitHub Release. Build the browser extension from the{' '}
-        <a href="https://github.com/logbookfordevs/logbook-waypoint">
-          <GitFork aria-hidden="true" /> repository
+        Install the browser extension from the{' '}
+        <a href={chromeWebStoreUrl} target="_blank" rel="noreferrer">
+          <ExternalLink aria-hidden="true" /> Chrome Web Store
         </a>.
       </p>
     </div>

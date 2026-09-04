@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { chromeWebStoreUrl } from '@/lib/site-config';
+
 const chapters = [
   {
     label: 'Annotation',
@@ -268,7 +270,7 @@ export function RouteJourney() {
                 Mark what you see on a running interface. Waypoint keeps the context together, gives your coding agent a route through the work, and brings the evidence back.
               </p>
               <div className="ink-hero__actions">
-                <a className="ink-button ink-button--primary" href="/docs/installation">
+                <a className="ink-button ink-button--primary" href={chromeWebStoreUrl} target="_blank" rel="noreferrer">
                   Get Waypoint <ArrowRight aria-hidden="true" />
                 </a>
                 <button type="button" className="ink-journey-gate" onClick={activateJourney}>
@@ -276,7 +278,7 @@ export function RouteJourney() {
                 </button>
                 <a className="ink-text-link" href="/docs"><BookOpen aria-hidden="true" /> Field guide</a>
               </div>
-              <p className="ink-hero__availability">CLI on npm + GitHub Releases · extension from source</p>
+              <p className="ink-hero__availability">Extension on the Chrome Web Store · CLI on npm + GitHub Releases</p>
             </div>
 
             <div className="ink-hero__thelu" aria-label="Thelu holding the Waypoint logbook">
@@ -396,11 +398,11 @@ export function RouteJourney() {
             <li><Check aria-hidden="true" /><span><b>Retained evidence</b><small>Resolution remains inspectable until explicit Deletion</small></span></li>
           </ul>
           <div className="ink-payoff__actions">
-            <a className="ink-button ink-button--primary" href="/docs/installation">Get Waypoint <ArrowRight aria-hidden="true" /></a>
+            <a className="ink-button ink-button--primary" href={chromeWebStoreUrl} target="_blank" rel="noreferrer">Get Waypoint <ArrowRight aria-hidden="true" /></a>
             <a className="ink-button" href="/docs">Read the field guide <BookOpen aria-hidden="true" /></a>
             <a className="ink-text-link" href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noreferrer"><GitFork aria-hidden="true" /> View source</a>
           </div>
-          <p className="ink-payoff__note">Install the server from npm or a verified GitHub Release. Build and load the browser extension from source.</p>
+          <p className="ink-payoff__note">Install the extension from the Chrome Web Store. Add the local server separately from npm or a verified GitHub Release when you want Queue synchronization and agent workflows.</p>
         </div>
       </section>
     </div>
