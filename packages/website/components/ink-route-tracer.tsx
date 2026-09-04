@@ -5,7 +5,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, BookOpen, Crosshair, Volume2, VolumeX
 import { useEffect, useRef, useState } from 'react';
 
 import { InkRouteAudio } from '@/components/ink-route-audio';
-import { InkRouteRenderer } from '@/components/ink-route-renderer';
+import { InkRouteRenderer, type RendererStatus } from '@/components/ink-route-renderer';
 
 type TimingSpec = {
   total: number;
@@ -31,6 +31,17 @@ const HELD_BREATH_TIMING: TimingSpec = { total: 1280, phases: [480, 310, 250, 24
 
 const VISUAL_PHASES = [0, 0.28, 0.42, 0.56, 1] as const;
 const MUTE_STORAGE_KEY = 'waypoint-ink-route-muted';
+const RENDERER_WARM_PATH_TIMEOUT_MS = 2500;
+
+function waitForRendererWarmPath(readiness: Promise<RendererStatus>) {
+  return new Promise<RendererStatus>((resolve) => {
+    const timeout = window.setTimeout(() => resolve('unavailable'), RENDERER_WARM_PATH_TIMEOUT_MS);
+    void readiness.then((status) => {
+      window.clearTimeout(timeout);
+      resolve(status);
+    });
+  });
+}
 
 function clamp(value: number, minimum = 0, maximum = 1) {
   return Math.min(Math.max(value, minimum), maximum);
@@ -84,7 +95,10 @@ export function InkRouteTracer() {
   const journeyHeadingRef = useRef<HTMLHeadingElement>(null);
   const originRef = useRef({ x: 0, y: 0 });
   const audioRef = useRef<InkRouteAudio | null>(null);
+  const rendererReadinessRef = useRef<Promise<RendererStatus>>(Promise.resolve('unavailable'));
   const intentionalJourneyRef = useRef(false);
+  const journeyStartingRef = useRef(false);
+  const mountedRef = useRef(true);
   const impactPlayedRef = useRef(false);
   const checkpointPlayedRef = useRef(false);
   const programmaticScrollRef = useRef(0);
@@ -96,6 +110,7 @@ export function InkRouteTracer() {
   const [showsJourneyControls, setShowsJourneyControls] = useState(false);
 
   useEffect(() => {
+    mountedRef.current = true;
     const storedMute = window.localStorage.getItem(MUTE_STORAGE_KEY) === 'true';
     mutedRef.current = storedMute;
     setIsMuted(storedMute);
@@ -264,6 +279,8 @@ export function InkRouteTracer() {
     const handleVisibility = () => {
       if (document.hidden) {
         void audioRef.current?.suspend();
+      } else if (intentionalJourneyRef.current && !reducedMotion.matches) {
+        void audioRef.current?.resume().catch(disableAudio);
       }
       scheduleRender();
     };
@@ -281,6 +298,7 @@ export function InkRouteTracer() {
       stage.setAttribute('data-renderer', status);
       scheduleRender();
     });
+    rendererReadinessRef.current = renderer?.whenReady() ?? Promise.resolve('unavailable');
 
     measure();
     if (window.location.hash === '#annotation') {
@@ -299,6 +317,8 @@ export function InkRouteTracer() {
     reducedMotion.addEventListener('change', handleMotionPreference);
 
     return () => {
+      mountedRef.current = false;
+      journeyStartingRef.current = false;
       window.removeEventListener('scroll', scheduleRender);
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibility);
@@ -331,7 +351,7 @@ export function InkRouteTracer() {
     const stage = stageRef.current;
     const button = journeyButtonRef.current;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!root || !stage || !button || programmaticScrollRef.current) {
+    if (!root || !stage || !button || programmaticScrollRef.current || journeyStartingRef.current) {
       return;
     }
 
@@ -347,33 +367,43 @@ export function InkRouteTracer() {
     void audioRef.current?.unlock().catch(disableAudio);
     audioRef.current?.setMuted(mutedRef.current || reducedMotion);
 
-    const rootTop = root.getBoundingClientRect().top + window.scrollY;
-    const entranceRange = Math.max(window.innerHeight * 0.92, 620);
-    window.history.replaceState(null, '', '#journey');
-
-    if (reducedMotion) {
-      window.scrollTo(0, rootTop + entranceRange);
-      journeyHeadingRef.current?.focus({ preventScroll: true });
-      return;
-    }
-
-    const timing = HELD_BREATH_TIMING;
-    const startTime = performance.now();
-    const animateScroll = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = timelineProgress(elapsed, timing);
-      window.scrollTo(0, rootTop + entranceRange * progress);
-      if (elapsed < timing.total) {
-        programmaticScrollRef.current = window.requestAnimationFrame(animateScroll);
+    journeyStartingRef.current = true;
+    void waitForRendererWarmPath(rendererReadinessRef.current).then(() => {
+      if (!mountedRef.current) {
+        journeyStartingRef.current = false;
         return;
       }
 
-      programmaticScrollRef.current = 0;
-      window.scrollTo(0, rootTop + entranceRange);
-      journeyHeadingRef.current?.focus({ preventScroll: true });
-    };
+      const rootTop = root.getBoundingClientRect().top + window.scrollY;
+      const entranceRange = Math.max(window.innerHeight * 0.92, 620);
+      window.history.replaceState(null, '', '#journey');
 
-    programmaticScrollRef.current = window.requestAnimationFrame(animateScroll);
+      if (reducedMotion) {
+        journeyStartingRef.current = false;
+        window.scrollTo(0, rootTop + entranceRange);
+        journeyHeadingRef.current?.focus({ preventScroll: true });
+        return;
+      }
+
+      const timing = HELD_BREATH_TIMING;
+      const startTime = performance.now();
+      const animateScroll = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = timelineProgress(elapsed, timing);
+        window.scrollTo(0, rootTop + entranceRange * progress);
+        if (elapsed < timing.total) {
+          programmaticScrollRef.current = window.requestAnimationFrame(animateScroll);
+          return;
+        }
+
+        programmaticScrollRef.current = 0;
+        journeyStartingRef.current = false;
+        window.scrollTo(0, rootTop + entranceRange);
+        journeyHeadingRef.current?.focus({ preventScroll: true });
+      };
+
+      programmaticScrollRef.current = window.requestAnimationFrame(animateScroll);
+    });
   };
 
   const toggleMute = () => {

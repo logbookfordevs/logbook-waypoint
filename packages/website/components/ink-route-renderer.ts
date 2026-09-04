@@ -8,7 +8,7 @@ export type InkRouteRenderFrame = {
   target: { x: number; y: number };
 };
 
-type RendererStatus = 'ready' | 'unavailable';
+export type RendererStatus = 'ready' | 'unavailable';
 
 type TextureAsset = {
   height: number;
@@ -230,6 +230,7 @@ export class InkRouteRenderer {
   private mobileScene: TextureAsset | null = null;
   private destroyed = false;
   private ready = false;
+  private readonly readiness: Promise<RendererStatus>;
 
   static create(canvas: HTMLCanvasElement, onStatus: (status: RendererStatus) => void) {
     try {
@@ -279,7 +280,11 @@ export class InkRouteRenderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
     canvas.addEventListener('webglcontextlost', this.handleContextLost);
-    void this.loadAssets();
+    this.readiness = this.loadAssets();
+  }
+
+  whenReady() {
+    return this.readiness;
   }
 
   resize(width: number, height: number) {
@@ -346,7 +351,7 @@ export class InkRouteRenderer {
     this.onStatus('unavailable');
   };
 
-  private async loadAssets() {
+  private async loadAssets(): Promise<RendererStatus> {
     try {
       const [desktopScene, mobileScene, inkDensity] = await Promise.all([
         this.loadTexture('/ink-route/chart-world-desktop-v1.webp'),
@@ -357,15 +362,17 @@ export class InkRouteRenderer {
         for (const asset of [desktopScene, mobileScene, inkDensity]) {
           this.gl.deleteTexture(asset.texture);
         }
-        return;
+        return 'unavailable';
       }
       this.desktopScene = desktopScene;
       this.mobileScene = mobileScene;
       this.inkDensity = inkDensity;
       this.ready = true;
       this.onStatus('ready');
+      return 'ready';
     } catch {
       this.onStatus('unavailable');
+      return 'unavailable';
     }
   }
 

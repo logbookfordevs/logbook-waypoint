@@ -51,11 +51,11 @@ The recordings are VP8 video-only captures; they do not embed browser audio. The
 - Browser captures are silent; the synchronized procedural mix must be heard in the live build. Final authored/recorded foley remains unapproved.
 - Mobile evidence uses a real mobile composition at a `375 × 812` emulated viewport, not physical Adreno/Mali hardware. A real-device GPU session remains required before production expansion.
 - Take B is still a rhythm hypothesis. This cut did not manufacture a second timing variant because the representative picture did not expose a useful binary choice yet.
-- Background/foreground recovery suspends Web Audio but does not yet explicitly resume it when the page becomes visible.
-- Texture decode/upload begins eagerly but journey activation does not yet wait for renderer readiness, so an unusually fast activation on a slow device can outrun the creative-master warm path.
-- Focused component tests cover semantic content, activation, audio preparation, and reduced motion, but the shader and Web Audio graph remain covered by live dailies rather than deterministic unit tests.
+- Background/foreground recovery now explicitly resumes the previously user-initiated Web Audio graph when the page becomes visible.
+- Journey activation now waits for eager texture decode/upload readiness. A `2.5 s` ceiling releases slow or failed enhancement to the existing authored static fallback rather than trapping the interaction.
+- Focused deterministic tests now cover semantic content, activation, renderer warm-path gating and fallback, audio preparation, foreground recovery, Web Audio graph suspension/disposal, and reduced motion. Shader appearance remains judged through live dailies rather than snapshotting implementation details.
 - The custom animation-frame projection is a deliberate tracer exception to the general Motion-library preference: it is the WebGL render cadence approved by the medium scout, and adding an animation dependency was outside this production boundary.
-- On local Node `26.7.0`, Vitest requires `--localstorage-file` for the mute-persistence tests; with that environment flag the complete `7`-file, `14`-test suite passes.
+- On local Node `26.7.0`, the raw test command now passes without `--localstorage-file`; test-local browser storage is isolated and reset between cases. The complete suite is now `9` files and `19` tests.
 
 ## Director's decision
 

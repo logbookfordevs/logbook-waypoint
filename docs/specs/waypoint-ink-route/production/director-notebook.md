@@ -98,9 +98,11 @@ These remaining questions belong to the corrected medium gate, replacement trace
 - Direct `#annotation`, reduced motion, and deliberate WebGL context loss converge on stable semantic content. The context-loss tier swaps to the authored static plate.
 - Chromium audio-output initialization can create one long pointer-down task before click; focus/pointer-down preparation now keeps the visual timeline independent from audio resume. Safari variance remains unverified because no Safari or iOS simulator is available here.
 - Director's Room replay confirmed the integrated dashed route on desktop and 375 px mobile with no browser-console or page errors. TypeScript passed; all `14` website tests passed when local Node `26.7.0` was given its required `--localstorage-file` backing path.
-- Before production hardening, explicitly resume previously unlocked Web Audio after foreground return and gate journey playback on renderer readiness so slow texture decode/upload cannot miss the first impact.
+- The approved production-hardening pass now exposes renderer readiness to the journey gate, waits for decoded and uploaded textures before movement, and deliberately releases to the existing static fallback after `2.5 s` rather than trapping the CTA.
+- Previously initiated Web Audio now suspends in the background and resumes from the same graph on foreground return. It never creates or starts audio without the original intentional journey action.
+- Raw Node `26.7.0` Vitest no longer needs `--localstorage-file`; the test environment supplies isolated in-memory browser storage when the runtime does not.
 - The tracer's custom `requestAnimationFrame` projection is an approved WebGL render-cadence exception to the general Motion-library preference; the production boundary explicitly prohibited adding a renderer/animation dependency without a new gate.
-- Focused shader and Web Audio graph regression coverage remains to be earned when the tracer is promoted beyond creative evidence.
+- Focused deterministic coverage now protects renderer fallback, renderer warm-path gating, foreground audio recovery, and Web Audio graph suspension/disposal. Physical GPU and Safari audio evidence remain delivery conditions.
 
 ## Artifact index
 
@@ -129,18 +131,20 @@ These remaining questions belong to the corrected medium gate, replacement trace
 
 **2026-09-01 — Route A tracer visual direction approved.** After a strongly positive live screening, the director requested only a more map-like dashed route. The completed revision was accepted as “amazing.” Route A's material, world, camera continuity, Annotation discovery, held-breath rhythm, and eleven-period dashed route now clear the tracer's visual-direction gate. This is not picture lock or authorization for the next batch.
 
+**2026-09-04 — Route A engineering hardening approved and completed.** The director selected the previously recorded warm-path, foreground-audio, deterministic-test, and Node 26 test-runtime conditions before further production. The pass changes no approved visual, route, copy, or timing direction.
+
 ## Next co-directing decision
 
-Choose whether the next production frontier is final asset authoring plus engineering hardening for the approved hero-through-Annotation cut, or preproduction for the Queue journey segment.
+Choose whether the next production frontier is final asset authoring for the approved hero-through-Annotation cut or preproduction for the Queue journey segment.
 
 ## Current production slate
 
-- **Recorded:** Route A's replacement tracer direction and completed dashed-map revision are approved and integrated. The SVG reshoot remains behavioral evidence; Take B remains the rhythm hypothesis rather than a locked final edit.
+- **Recorded:** Route A's replacement tracer direction, completed dashed-map revision, and bounded engineering-hardening pass are integrated. The SVG reshoot remains behavioral evidence; Take B remains the rhythm hypothesis rather than a locked final edit.
 - **Current gate and approved boundary:** The visual-direction tracer gate is closed. No next production batch is open.
-- **Recommended production move:** **Keep directing.** Choose between hardening/final asset authoring for the approved hero-through-Annotation cut and pre-producing the Queue segment before dispatching more implementation.
+- **Recommended production move:** **Keep directing.** Choose between final asset authoring for the approved hero-through-Annotation cut and pre-producing the Queue segment before dispatching more implementation.
 - **Why this move fits now:** The signature visual risk is resolved, but the two possible next frontiers spend effort differently and the director has not selected one.
-- **Approved production frontier:** Preserve the merged tracer and its representative source batch only.
-- **Still unresolved in the Director's Room:** Next-frontier selection; final layered assets and foley; Web Audio foreground resume; renderer warm-path gate; custom WebGL versus PixiJS/Three.js ownership if complexity expands; physical mobile GPU evidence; final timing/input adapter; optional haptics.
+- **Approved production frontier:** Preserve the merged tracer, its representative source batch, and its completed warm-path/audio/test hardening only.
+- **Still unresolved in the Director's Room:** Next-frontier selection; final layered assets and foley; custom WebGL versus PixiJS/Three.js ownership if complexity expands; physical mobile GPU evidence; Safari audio evidence; final timing/input adapter; optional haptics.
 - **Selected venue:** Current Director's Room. This remains one coherent signature-shot decision and does not need tickets.
 - **Next evidence or greenlight:** Director selects and greenlights one named production frontier. Production does not expand merely because the tracer direction is approved.
 
@@ -155,3 +159,4 @@ Choose whether the next production frontier is final asset authoring plus engine
 - **2026-09-01 / Route A greenlight** — Director approved the authored 2D/2.5D GPU-composite route and authorized the representative asset batch plus one replacement hero-through-Annotation tracer. Recorded the SVG cut as engineering evidence only, preserved Take B as a rhythm hypothesis, and held dependency installation and all production expansion outside the boundary.
 - **2026-09-01 / Route A tracer shot** — Produced original desktop/mobile chart boards and an ink-density plate, built the custom WebGL material/world compositor without installing a renderer package, removed the visible SVG route/impact and redundant A/B selector, captured desktop/mobile/direct/reduced/failure dailies, and recorded [`screenings-route-a.md`](./screenings-route-a.md). Status is an unapproved screening pause; production does not expand before the director's decision.
 - **2026-09-01 / Route A tracer approved and integrated** — Preserved the director's strongly positive screening, accepted the requested dashed-map revision at `3399ea0`, replayed desktop/mobile dailies, reviewed standards and binder fidelity, and merged the local tracer branch. Recorded warm-path, background-audio, physical-mobile, Safari, and focused test-coverage conditions for the next production gate; no push or production expansion followed.
+- **2026-09-04 / Route A engineering hardening completed** — Added a renderer-readiness contract with a bounded static-fallback release, restored previously initiated Web Audio after foreground return, added deterministic renderer/audio/integration coverage, and removed the Node 26 localStorage flag requirement. Raw website TypeScript, `19` tests, and the Next production build pass. No visual direction or later route segment was changed.

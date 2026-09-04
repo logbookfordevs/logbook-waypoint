@@ -8,10 +8,20 @@ const audioSpies = vi.hoisted(() => ({
   playCheckpoint: vi.fn(),
   playImpact: vi.fn(),
   prepare: vi.fn(),
+  resume: vi.fn().mockResolvedValue(undefined),
   setMuted: vi.fn(),
   setScratchVelocity: vi.fn(),
   suspend: vi.fn(),
   unlock: vi.fn().mockResolvedValue(undefined),
+}));
+
+const rendererSpies = vi.hoisted(() => ({
+  dispose: vi.fn(),
+  render: vi.fn(),
+  resize: vi.fn(),
+  readiness: Promise.resolve<'ready' | 'unavailable'>('ready'),
+  statusListener: null as ((status: 'ready' | 'unavailable') => void) | null,
+  whenReady: vi.fn(() => rendererSpies.readiness),
 }));
 
 vi.mock('@/components/ink-route-audio', () => ({
@@ -20,10 +30,25 @@ vi.mock('@/components/ink-route-audio', () => ({
     playCheckpoint = audioSpies.playCheckpoint;
     playImpact = audioSpies.playImpact;
     prepare = audioSpies.prepare;
+    resume = audioSpies.resume;
     setMuted = audioSpies.setMuted;
     setScratchVelocity = audioSpies.setScratchVelocity;
     suspend = audioSpies.suspend;
     unlock = audioSpies.unlock;
+  },
+}));
+
+vi.mock('@/components/ink-route-renderer', () => ({
+  InkRouteRenderer: class {
+    static create(_canvas: HTMLCanvasElement, onStatus: (status: 'ready' | 'unavailable') => void) {
+      rendererSpies.statusListener = onStatus;
+      return new this();
+    }
+
+    dispose = rendererSpies.dispose;
+    render = rendererSpies.render;
+    resize = rendererSpies.resize;
+    whenReady = rendererSpies.whenReady;
   },
 }));
 
@@ -39,7 +64,7 @@ describe('Ink Route signature tracer', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    rendererSpies.readiness = Promise.resolve('ready');
     window.history.replaceState(null, '', '/');
     mockMotionPreference(false);
     vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
@@ -94,5 +119,40 @@ describe('Ink Route signature tracer', () => {
     const journeyHeading = screen.getByRole('heading', { name: 'The route authors the world.' });
     await waitFor(() => expect(journeyHeading).toHaveFocus());
     expect(window.scrollTo).toHaveBeenCalled();
+  });
+
+  it('waits for renderer texture readiness before starting the journey', async () => {
+    let finishWarmup: (status: 'ready') => void = () => undefined;
+    rendererSpies.readiness = new Promise((resolve) => {
+      finishWarmup = resolve;
+    });
+    mockMotionPreference(true);
+    render(<InkRouteTracer />);
+
+    fireEvent.click(screen.getByRole('button', { name: /See the journey/i }));
+    expect(audioSpies.unlock).toHaveBeenCalledOnce();
+    expect(window.scrollTo).not.toHaveBeenCalled();
+
+    finishWarmup('ready');
+
+    await waitFor(() => expect(window.scrollTo).toHaveBeenCalled());
+  });
+
+  it('suspends while hidden and resumes initiated audio on foreground return', async () => {
+    let pageIsHidden = false;
+    vi.spyOn(document, 'hidden', 'get').mockImplementation(() => pageIsHidden);
+    vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+    const { unmount } = render(<InkRouteTracer />);
+    fireEvent.click(screen.getByRole('button', { name: /See the journey/i }));
+    await waitFor(() => expect(audioSpies.unlock).toHaveBeenCalledOnce());
+
+    pageIsHidden = true;
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(audioSpies.suspend).toHaveBeenCalledOnce();
+
+    pageIsHidden = false;
+    document.dispatchEvent(new Event('visibilitychange'));
+    await waitFor(() => expect(audioSpies.resume).toHaveBeenCalledOnce());
+    unmount();
   });
 });

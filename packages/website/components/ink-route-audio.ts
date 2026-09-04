@@ -42,6 +42,12 @@ export class InkRouteAudio {
     }
   }
 
+  async resume() {
+    if (this.context?.state === 'suspended') {
+      await this.context.resume();
+    }
+  }
+
   setMuted(muted: boolean) {
     this.muted = muted;
     if (!this.context || !this.master) {
