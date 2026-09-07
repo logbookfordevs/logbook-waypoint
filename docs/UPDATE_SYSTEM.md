@@ -27,10 +27,18 @@ The extension reads this endpoint only from the fixed loopback server URL. It co
 - The extension action badge remains reserved for the current route's Annotation count.
 - The popup and in-page toolbar do not contain release announcements or release-note controls.
 - The server performs no automatic registry, release, or changelog request.
-- Waypoint does not download, install, schedule, or publish updates.
+- Waypoint does not automatically download, install, schedule, or publish updates.
 
 Updating the extension or server remains an explicit user-controlled installation operation outside this compatibility contract. Refer to the project's release channel or package installation instructions when an update is intentionally requested.
 
 ## Verification
 
 The active documentation and runtime regressions are hermetic. They use no live registry, release API, external network call, or user data fixture, and guard against promotional release UI and automatic remote update checking.
+
+## Explicit CLI updates
+
+Run `waypoint update` to update the CLI and server to the latest release. npm global installs update through npm using the detected global prefix. GitHub installer installs reuse the checksum-verifying installer, preserving the recorded install root, launcher directory, repository, and asset name.
+
+Older GitHub installs need one rerun of their original installer command to record this metadata. Source checkouts and unrecognized installations are left untouched; update them using their original source or package manager.
+
+After updating, run `waypoint restart` for a background server, or reconnect the agent for a directly launched MCP server. The command does not update the browser extension.

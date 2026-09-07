@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Added
+- Added `waypoint update` for npm global and GitHub installer installations, preserving the installation location and channel. Older GitHub installs need one rerun of their original installer to enable detection; restart the server or reconnect the MCP agent after updating.
+
+### Changed
+- Clarified agent guidance to clean up temporary Variant code when the user cancels a set.
+
 ## [0.1.2] - 2026-09-07
 
 ### Fixed
