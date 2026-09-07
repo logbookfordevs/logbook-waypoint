@@ -40,6 +40,12 @@ var WaypointBadgeManager = (() => {
   let lastTotal = 0; // total annotations (including unanchored)
   const savedTargets = new Map();
 
+  function findAnnotationTarget(annotation, target) {
+    const hasCopyPreview = WaypointAnnotationTargets.get(annotation).length === 1;
+    const matchContext = hasCopyPreview ? { ...target, pending_changes: annotation.pending_changes } : target;
+    return WaypointElementContext.findElementBySelector(matchContext);
+  }
+
   function annotationLabel(annotation) {
     const comment = typeof annotation.comment === 'string' ? annotation.comment.trim() : '';
     if (comment) return comment;
@@ -106,7 +112,7 @@ var WaypointBadgeManager = (() => {
     let changed = false;
     for (const entry of badges) {
       if (!entry.targetElement.isConnected) {
-        const newTarget = WaypointElementContext.findElementBySelector(entry.target);
+        const newTarget = findAnnotationTarget(entry.annotation, entry.target);
         if (newTarget && newTarget !== entry.targetElement) {
           entry.targetElement = newTarget;
           entry.el.style.display = '';
@@ -173,7 +179,7 @@ var WaypointBadgeManager = (() => {
         const savedTarget = targetIndex === 0 ? savedTargets.get(annotation.id) : null;
         const target = savedTarget?.isConnected
           ? savedTarget
-          : WaypointElementContext.findElementBySelector(targetData);
+          : findAnnotationTarget(annotation, targetData);
         if (!target) return;
         // Rehydrate pending design changes
         const rpc = annotationTargets.length === 1 ? annotation.pending_changes : null;
@@ -281,7 +287,7 @@ var WaypointBadgeManager = (() => {
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
       const targetElements = WaypointAnnotationTargets.get(entry.annotation)
-        .map(candidate => WaypointElementContext.findElementBySelector(candidate));
+        .map(candidate => findAnnotationTarget(entry.annotation, candidate));
       WaypointEvents.emit('annotation:edit', {
         annotation: entry.annotation,
         element: entry.targetElement,
@@ -448,7 +454,7 @@ var WaypointBadgeManager = (() => {
 
   function highlightElement(annotation) {
     const firstTarget = WaypointAnnotationTargets.get(annotation)[0];
-    const el = WaypointElementContext.findElementBySelector(firstTarget);
+    const el = findAnnotationTarget(annotation, firstTarget);
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     el.style.outline = '3px solid #3f8580';
