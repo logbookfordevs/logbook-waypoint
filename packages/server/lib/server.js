@@ -821,7 +821,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'request_variants',
-            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active.',
+            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active. If the user later cancels, clean up temporary variant code before considering the work complete.',
             inputSchema: {
               type: 'object',
               properties: {
