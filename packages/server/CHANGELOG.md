@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.1.2] - 2026-09-07
+
 ### Fixed
 - `waypoint restart` starts the background server instead of failing with an unknown `node` command.
 - MCP project discovery includes only usable loopback scopes and never returns Annotation bodies when no supported projects remain.
