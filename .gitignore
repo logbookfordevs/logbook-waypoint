@@ -2,7 +2,12 @@
 node_modules/
 npm-debug.log*
 .pnpm-store/
-.impeccable/
+.impeccable/*
+!.impeccable/design.json
+
+# Website build artifacts
+packages/website/.next/
+*.tsbuildinfo
 
 # Extension build artifacts
 packages/extension/.output/

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/logbook-waypoint-banner.png" alt="Thelu charts visual annotations from a luminous waypoint across an Atlantic navigation map toward a coding agent's field instrument">
+  <img src="docs/images/logbook-waypoint-banner-handoff.png" alt="A Waypoint annotation moves through a local queue to a coding agent while Thelu observes the workflow">
 </p>
 
 # Logbook Waypoint
@@ -10,6 +10,9 @@
 **Pin the point. Chart the change.**
 
 Logbook Waypoint is a local-first visual feedback tool for developers and coding agents. Place annotations directly on a development interface, preserve the surrounding element context, and let an MCP-compatible agent read and resolve the resulting queue.
+
+> [!NOTE]
+> The Waypoint CLI is available through npm and checksummed GitHub Releases. The browser extension is currently installed as an unpacked build from this repository.
 
 > [!TIP]
 > **Prefer a visual tour?** Open the interactive [Waypoint Signal Chart](https://tot.page/I3pC-z9cCejNITMc7Mk96Q/index.html@b5f1d9e0955ce3411ccf9709e3d05bd89415a8bd) to trace the extension → Queue → MCP → agent workflow, explore every journey, and inspect all 19 MCP tools.
@@ -34,10 +37,11 @@ The Queue shows whether local changes are up to date, waiting to sync, or blocke
 
 ## Architecture
 
-Logbook Waypoint currently has two parts:
+Logbook Waypoint currently has three parts:
 
 1. **Browser extension** (`packages/extension/`) — captures and manages visual annotations and builds with WXT.
 2. **Local MCP server** ([package guide](packages/server/README.md)) — persists annotations and exposes them to coding agents on `127.0.0.1:3846`.
+3. **Marketing and documentation website** (`packages/website/`) — explains the workflow and hosts the development-stage product guides.
 
 The extension, server, package, CLI, MCP configuration, storage keys, and Annotation IDs use the canonical identifiers defined in [the product identifier contract](docs/contracts/product-identifiers.md). Waypoint starts with its own empty storage and does not import settings or Annotations from predecessor products.
 
@@ -60,12 +64,22 @@ Install the pnpm workspace once from the repository root:
 pnpm install
 ```
 
-Build and verify both packages:
+Build and verify the workspace packages:
 
 ```bash
 pnpm check
 pnpm test
 pnpm build
+```
+
+### Marketing and documentation website
+
+The website is part of the pnpm workspace and remains unpublished while Waypoint is in development. Its package-level checks are:
+
+```bash
+pnpm --filter @logbookfordevs/waypoint-website test
+pnpm --filter @logbookfordevs/waypoint-website check
+pnpm --filter @logbookfordevs/waypoint-website build
 ```
 
 ## CLI installation
@@ -113,6 +127,8 @@ pnpm --filter @logbookfordevs/waypoint start
 ```
 
 ### Browser extension
+
+Build the extension from the repository first with `pnpm build`, then:
 
 1. Open `chrome://extensions` in a Chromium browser.
 2. Enable **Developer mode**.

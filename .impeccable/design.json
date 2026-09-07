@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-26T00:00:00-03:00",
+  "title": "Design System: Logbook Waypoint",
+  "extensions": {
+    "colorMeta": {
+      "page": { "role": "neutral", "displayName": "Day Chart", "canonical": "#f1f4f0", "tonalRamp": ["oklch(15% 0.014 190)", "oklch(27% 0.014 190)", "oklch(39% 0.014 190)", "oklch(51% 0.014 190)", "oklch(63% 0.014 190)", "oklch(75% 0.014 190)", "oklch(87% 0.014 190)", "oklch(95% 0.014 190)"] },
+      "page-raised": { "role": "neutral", "displayName": "Raised Chart Paper", "canonical": "#f8faf7", "tonalRamp": ["oklch(15% 0.01 170)", "oklch(27% 0.01 170)", "oklch(39% 0.01 170)", "oklch(51% 0.01 170)", "oklch(63% 0.01 170)", "oklch(75% 0.01 170)", "oklch(87% 0.01 170)", "oklch(97% 0.01 170)"] },
+      "ink": { "role": "neutral", "displayName": "Chart Ink", "canonical": "#102c34", "tonalRamp": ["oklch(15% 0.035 210)", "oklch(27% 0.035 210)", "oklch(39% 0.035 210)", "oklch(51% 0.035 210)", "oklch(63% 0.035 210)", "oklch(75% 0.035 210)", "oklch(87% 0.035 210)", "oklch(95% 0.035 210)"] },
+      "ocean": { "role": "primary", "displayName": "Deep Ocean", "canonical": "#071f25", "tonalRamp": ["oklch(15% 0.03 210)", "oklch(27% 0.03 210)", "oklch(39% 0.03 210)", "oklch(51% 0.03 210)", "oklch(63% 0.03 210)", "oklch(75% 0.03 210)", "oklch(87% 0.03 210)", "oklch(95% 0.03 210)"] },
+      "ocean-raised": { "role": "primary", "displayName": "Raised Ocean", "canonical": "#0b2a30", "tonalRamp": ["oklch(15% 0.028 205)", "oklch(27% 0.028 205)", "oklch(39% 0.028 205)", "oklch(51% 0.028 205)", "oklch(63% 0.028 205)", "oklch(75% 0.028 205)", "oklch(87% 0.028 205)", "oklch(95% 0.028 205)"] },
+      "verdigris": { "role": "secondary", "displayName": "Verdigris Bearings", "canonical": "#167b78", "tonalRamp": ["oklch(15% 0.075 190)", "oklch(27% 0.075 190)", "oklch(39% 0.075 190)", "oklch(51% 0.075 190)", "oklch(63% 0.075 190)", "oklch(75% 0.075 190)", "oklch(87% 0.075 190)", "oklch(95% 0.075 190)"] },
+      "rust": { "role": "secondary", "displayName": "Signal Rust", "canonical": "#b5482e", "tonalRamp": ["oklch(15% 0.1 35)", "oklch(27% 0.1 35)", "oklch(39% 0.1 35)", "oklch(51% 0.1 35)", "oklch(63% 0.1 35)", "oklch(75% 0.1 35)", "oklch(87% 0.1 35)", "oklch(95% 0.1 35)"] },
+      "brass": { "role": "tertiary", "displayName": "Brass Coordinates", "canonical": "#b99247", "tonalRamp": ["oklch(15% 0.06 80)", "oklch(27% 0.06 80)", "oklch(39% 0.06 80)", "oklch(51% 0.06 80)", "oklch(63% 0.06 80)", "oklch(75% 0.06 80)", "oklch(87% 0.06 80)", "oklch(95% 0.06 80)"] },
+      "walnut": { "role": "neutral", "displayName": "Walnut Paper", "canonical": "#eee6d7", "tonalRamp": ["oklch(15% 0.02 75)", "oklch(27% 0.02 75)", "oklch(39% 0.02 75)", "oklch(51% 0.02 75)", "oklch(63% 0.02 75)", "oklch(75% 0.02 75)", "oklch(87% 0.02 75)", "oklch(95% 0.02 75)"] },
+      "walnut-raised": { "role": "neutral", "displayName": "Raised Walnut Paper", "canonical": "#f8f2e7", "tonalRamp": ["oklch(15% 0.018 75)", "oklch(27% 0.018 75)", "oklch(39% 0.018 75)", "oklch(51% 0.018 75)", "oklch(63% 0.018 75)", "oklch(75% 0.018 75)", "oklch(87% 0.018 75)", "oklch(97% 0.018 75)"] },
+      "focus": { "role": "secondary", "displayName": "Signal Focus", "canonical": "#e5913a", "tonalRamp": ["oklch(15% 0.11 60)", "oklch(27% 0.11 60)", "oklch(39% 0.11 60)", "oklch(51% 0.11 60)", "oklch(63% 0.11 60)", "oklch(75% 0.11 60)", "oklch(87% 0.11 60)", "oklch(95% 0.11 60)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Route Display", "purpose": "Hero and document titles; the narrative voice." },
+      "headline": { "displayName": "Chartroom Headline", "purpose": "Major paper and instrument section headings." },
+      "title": { "displayName": "Instrument Title", "purpose": "Ledgers, routes, and contained feature surfaces." },
+      "body": { "displayName": "Waypoint Sans", "purpose": "Reading copy, navigation, and controls." },
+      "label": { "displayName": "Operational Mono", "purpose": "Coordinates, lifecycle evidence, URLs, and code." }
+    },
+    "shadows": [
+      { "name": "raised-paper", "value": "0 16px 42px rgba(7, 31, 37, 0.12), 0 3px 10px rgba(7, 31, 37, 0.08)", "purpose": "Temporary raised paper surfaces such as navigation and launch context." },
+      { "name": "instrument", "value": "0 20px 54px rgba(0, 12, 15, 0.3), 0 4px 12px rgba(0, 12, 15, 0.18)", "purpose": "Browser, Queue, and agent surfaces in the workflow field." }
+    ],
+    "motion": [
+      { "name": "waypoint-out", "value": "cubic-bezier(0.23, 1, 0.32, 1)", "purpose": "Short menu, message, and action state transitions." },
+      { "name": "route-drift", "value": "7s linear infinite", "purpose": "Dashed route movement; removed under reduced-motion preferences." },
+      { "name": "agent-spin", "value": "0.9s linear infinite", "purpose": "Visible resolving feedback in the agent surface." }
+    ],
+    "breakpoints": [
+      { "name": "wide-route", "value": "72.01rem" },
+      { "name": "staged-route", "value": "72rem" },
+      { "name": "mobile-navigation", "value": "52rem" },
+      { "name": "narrow-route", "value": "38rem" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Route Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The primary paper-to-route action.",
+      "html": "<button class=\"ds-primary-action\">See how it works <span aria-hidden=\"true\">→</span></button>",
+      "css": ".ds-primary-action { min-height: 2.85rem; display: inline-flex; align-items: center; justify-content: center; gap: .55rem; padding: .8rem 1.15rem; border: 0; border-radius: .5rem; background: var(--ocean); color: var(--page-raised); font-family: Waypoint Sans, ui-sans-serif, system-ui, sans-serif; font-weight: 760; transition: transform 140ms cubic-bezier(.23,1,.32,1), box-shadow 140ms cubic-bezier(.23,1,.32,1); } .ds-primary-action:hover { transform: translateY(-2px); box-shadow: 0 11px 25px color-mix(in srgb, var(--rust) 32%, transparent); } .ds-primary-action:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; } .ds-primary-action:active { transform: translateY(0); }"
+    },
+    {
+      "name": "Coming Soon Action",
+      "kind": "button",
+      "refersTo": "button-launch",
+      "description": "An honest availability action, not an installation CTA.",
+      "html": "<button class=\"ds-launch-action\"><span aria-hidden=\"true\">◌</span> Coming soon</button>",
+      "css": ".ds-launch-action { min-height: 2.85rem; display: inline-flex; align-items: center; justify-content: center; gap: .55rem; padding: .65rem 1rem; border: 0; border-radius: .5rem; background: var(--rust); color: var(--page-raised); font-family: Waypoint Sans, ui-sans-serif, system-ui, sans-serif; font-weight: 760; box-shadow: 0 7px 18px color-mix(in srgb, var(--rust) 24%, transparent); transition: transform 140ms cubic-bezier(.23,1,.32,1), box-shadow 140ms cubic-bezier(.23,1,.32,1); } .ds-launch-action:hover { transform: translateY(-2px); box-shadow: 0 11px 25px color-mix(in srgb, var(--rust) 32%, transparent); } .ds-launch-action:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; } .ds-launch-action:active { transform: translateY(0); }"
+    },
+    {
+      "name": "Primary Navigation",
+      "kind": "nav",
+      "refersTo": "site-navigation",
+      "description": "Quiet paper navigation with a Verdigris route indicator.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Primary\"><a href=\"#\">Workflow</a><a href=\"#\">Docs</a><button aria-label=\"Switch appearance\">◐</button></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 1.4rem; padding: .65rem 0; font-family: Waypoint Sans, ui-sans-serif, system-ui, sans-serif; } .ds-nav a { position: relative; color: var(--ink); font-size: .88rem; font-weight: 650; text-decoration: none; } .ds-nav a::after { content: ''; position: absolute; right: 0; bottom: -.45rem; left: 0; height: 2px; background: var(--verdigris); transform: scaleX(0); transform-origin: left; transition: transform 160ms cubic-bezier(.23,1,.32,1); } .ds-nav a:hover::after { transform: scaleX(1); } .ds-nav button { width: 2.45rem; height: 2.45rem; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--ink); } .ds-nav :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    },
+    {
+      "name": "Queue Filter",
+      "kind": "input",
+      "refersTo": "queue-filter",
+      "description": "Lifecycle filter inside the Deep Ocean Queue instrument.",
+      "html": "<label class=\"ds-queue-filter\">Filter Queue by lifecycle<select><option>All</option><option>Pending</option><option>Resolved</option></select></label>",
+      "css": ".ds-queue-filter { display: grid; gap: .45rem; color: var(--ocean-muted); font-family: SFMono-Regular, Consolas, 'Liberation Mono', monospace; font-size: .65rem; } .ds-queue-filter select { min-height: 2.55rem; width: 100%; padding: 0 .75rem; border: 1px solid color-mix(in srgb, var(--ocean-muted) 48%, var(--ocean)); border-radius: .45rem; background: var(--ocean-soft); color: var(--ocean-ink); font-family: Waypoint Sans, ui-sans-serif, system-ui, sans-serif; font-size: .78rem; } .ds-queue-filter select:hover { border-color: var(--verdigris); } .ds-queue-filter select:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    },
+    {
+      "name": "Queue Record",
+      "kind": "card",
+      "refersTo": "workflow-instrument",
+      "description": "A retained Annotation record with legible lifecycle evidence.",
+      "html": "<article class=\"ds-queue-record\"><div><span class=\"ds-status\">Pending</span><code>#1842</code></div><h3>Tighten the empty state</h3><p>Keep the guidance close to the primary action.</p><code>section.empty-state</code></article>",
+      "css": ".ds-queue-record { padding: .95rem; border: 1px solid var(--brass); border-radius: .55rem; background: var(--ocean-raised); box-shadow: inset 3px 0 var(--rust); color: var(--ocean-ink); } .ds-queue-record > div { display: flex; align-items: center; justify-content: space-between; gap: .7rem; color: var(--ocean-muted); font: .62rem SFMono-Regular, Consolas, 'Liberation Mono', monospace; } .ds-status { color: var(--brass); font: 700 .65rem SFMono-Regular, Consolas, 'Liberation Mono', monospace; } .ds-status::before { content: ''; display: inline-block; width: .5rem; height: .5rem; margin-right: .35rem; border: 1px solid currentColor; border-radius: 50%; background: currentColor; } .ds-queue-record h3 { margin: .8rem 0 0; font-family: 'Besley Variable', Besley, serif; font-size: 1rem; } .ds-queue-record p { margin: .4rem 0 .7rem; color: var(--ocean-muted); font-size: .72rem; line-height: 1.45; } .ds-queue-record > code { color: var(--verdigris); font: .63rem SFMono-Regular, Consolas, 'Liberation Mono', monospace; }"
+    },
+    {
+      "name": "Documentation Code Block",
+      "kind": "custom",
+      "refersTo": "docs-code-block",
+      "description": "Dark command surface on a Walnut reading page.",
+      "html": "<div class=\"ds-code-block\"><pre><code>pnpm --filter @logbookfordevs/waypoint start</code></pre><button aria-label=\"Copy code\">Copy</button></div>",
+      "css": ".ds-code-block { position: relative; overflow: hidden; border-radius: .875rem; background: var(--ocean); color: var(--ocean-ink); } .ds-code-block pre { margin: 0; padding: 1.5rem 5.5rem 1.5rem 1.5rem; overflow-x: auto; color: var(--ocean-muted); font: .78rem/1.75 SFMono-Regular, Consolas, 'Liberation Mono', monospace; } .ds-code-block button { position: absolute; top: .8rem; right: .8rem; padding: .45rem .55rem; border: 1px solid color-mix(in srgb, var(--ocean-muted) 48%, var(--ocean)); border-radius: .4rem; background: var(--ocean-soft); color: var(--ocean-ink); font: .68rem Waypoint Sans, ui-sans-serif, system-ui, sans-serif; } .ds-code-block button:hover { border-color: var(--verdigris); } .ds-code-block button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Living Route",
+    "overview": "Waypoint is Atlantic Chartroom made operational: cool chart paper supports Day Chart marketing, Deep Ocean holds the working mechanism, and Walnut turns documentation into a sustained reading surface. The page should feel like a calibrated instrument and field guide, not a generic developer-tool landing page.\n\nThe product story remains visible as a route: Annotation, Queue, then Resolve. Thelu closes or guides the passage after the mechanism is understood; the mascot never substitutes for product proof. Night Watch is a complete semantic appearance, not a separate visual identity.",
+    "keyCharacteristics": ["Ocean marketing frame with a distinct Walnut documentation recipe.", "Authored dashed routes, checkpoints, radar geometry, and ledger structure.", "Restrained brass coordinates; Verdigris bearings; Signal Rust annotations and launch attention."],
+    "rules": [
+      { "name": "The Chartroom Roles Rule", "body": "Brass stays a fine-detail material and Rust stays a signal; neither becomes an all-purpose brand fill. Night Watch changes semantic surface and ink tokens together so the same roles remain legible.", "section": "colors" },
+      { "name": "The Three Jobs Rule", "body": "Use serif for narrative hierarchy, sans for human-facing interface copy, and mono only when content is operational evidence.", "section": "typography" },
+      { "name": "The Route Before Ornament Rule", "body": "The Annotation-to-Queue-to-Resolve mechanism is the dominant first-viewport proof. Geometry and mascot support comprehension; they do not displace it.", "section": "layout" }
+    ],
+    "dos": ["Do keep the Ocean and Walnut recipes on one stable themed boundary with Day Chart or Night Watch appearance tokens.", "Do use authored SVG route geometry, ruled ledgers, and compact metadata to make workflow state inspectable.", "Do keep focus visible, preserve non-color status cues, and remove positional motion under reduced-motion preferences."],
+    "donts": ["Don't replace the operational sequence with a detached screenshot, conventional centered hero, or generic same-size feature-card grid.", "Don't use brass as a broad fill or mono merely to make ordinary copy look technical.", "Don't turn Thelu or illustrative workflow records into customer proof, availability claims, or a replacement for the mechanism."]
+  }
+}

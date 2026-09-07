@@ -177,7 +177,7 @@ program
     }
     
     // Start with the default background behavior
-    program.parse(['node', 'cli.js', 'start'], { from: 'user' });
+    await program.parseAsync(['start'], { from: 'user' });
   });
 
 program

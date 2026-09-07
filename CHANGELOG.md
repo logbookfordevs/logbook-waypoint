@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Fixed
+- Queue discovery no longer recommends production URLs that scoped MCP reads cannot accept.
+
 ## [0.1.1] - 2026-08-28
 
 ### Added
@@ -19,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Design Actions for freeform or guided Impeccable workflows, with resolution records and optional Variant Intent
 - Element screenshots, image attachments, and refined floating-toolbar controls
 - Optional JSON import/export, project context, bulk cleanup, keyboard inspection, and annotation appearance settings
+- A responsive Waypoint marketing and documentation website with interactive workflow examples, complete product guides, Day Chart and Night Watch appearances, and honest pre-release status
 - Batched MCP inspection for selected Annotations and complete diagnostic Target context
 - Multi-Target Annotations for one shared feedback request across two to eight ordered Targets on the same page
 - Queue sync status with manual retry for local changes awaiting the server

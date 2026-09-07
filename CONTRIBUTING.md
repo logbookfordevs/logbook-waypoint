@@ -12,6 +12,7 @@ Keep changes focused. A pull request should solve one coherent problem and avoid
 
 - `packages/extension/` contains the WXT browser extension and its tests.
 - `packages/server/` contains the local MCP server, HTTP API, persistence, and tests.
+- `packages/website/` contains the Next.js marketing and documentation site.
 - `docs/contracts/` records behavior that extension and server consumers may rely on.
 - `docs/adr/` records architectural decisions and their trade-offs.
 - `docs/specs/` contains accepted product specifications.
@@ -39,6 +40,13 @@ pnpm --filter @logbookfordevs/waypoint start
 ```
 
 The MCP endpoint is `http://127.0.0.1:3846/mcp`.
+
+### Website Development
+
+1. Install dependencies from the repository root with `pnpm install`.
+2. Run the website package through your preferred Next.js development workflow.
+3. Run `pnpm --filter @logbookfordevs/waypoint-website test` for rendered-DOM behavior.
+4. Run `pnpm --filter @logbookfordevs/waypoint-website check` and `pnpm --filter @logbookfordevs/waypoint-website build` before handoff.
 
 ### Load the extension
 

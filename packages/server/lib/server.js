@@ -1500,8 +1500,9 @@ export class LocalAnnotationsServer {
     const groupedByProject = {};
     filtered.forEach(annotation => {
       try {
-        const urlObj = new URL(annotation.url);
-        const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+        const baseUrl = new URL(annotation.url).origin;
+        const projectScope = createProjectScope(`${baseUrl}/*`);
+        if (!annotationMatchesProjectScope(annotation, projectScope)) return;
         if (!groupedByProject[baseUrl]) {
           groupedByProject[baseUrl] = [];
         }
@@ -1547,7 +1548,7 @@ export class LocalAnnotationsServer {
 
     // Apply pagination with offset
     const total = filtered.length;
-    const requiresProjectFilter = projectCount > 0 && !url;
+    const requiresProjectFilter = !url;
     const paginatedResults = requiresProjectFilter
       ? []
       : filtered.slice(offset, offset + limit);
