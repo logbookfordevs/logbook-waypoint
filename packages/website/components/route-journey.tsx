@@ -271,14 +271,16 @@ export function RouteJourney() {
               </p>
               <div className="ink-hero__actions">
                 <a className="ink-button ink-button--primary" href={chromeWebStoreUrl} target="_blank" rel="noreferrer">
-                  Get Waypoint <ArrowRight aria-hidden="true" />
+                  Get the extension <ArrowRight aria-hidden="true" />
+                </a>
+                <a className="ink-button" href="/docs/agent-setup">
+                  <Radio aria-hidden="true" /> Connect your agent
                 </a>
                 <button type="button" className="ink-journey-gate" onClick={activateJourney}>
                   <Route aria-hidden="true" /> See the journey <ArrowRight aria-hidden="true" />
                 </button>
-                <a className="ink-text-link" href="/docs"><BookOpen aria-hidden="true" /> Field guide</a>
               </div>
-              <p className="ink-hero__availability">Extension on the Chrome Web Store · CLI on npm + GitHub Releases</p>
+              <p className="ink-hero__availability">The extension captures the context. The local CLI connects it to your coding agent.</p>
             </div>
 
             <div className="ink-hero__thelu" aria-label="Thelu holding the Waypoint logbook">
@@ -398,7 +400,8 @@ export function RouteJourney() {
             <li><Check aria-hidden="true" /><span><b>Retained evidence</b><small>Resolution remains inspectable until explicit Deletion</small></span></li>
           </ul>
           <div className="ink-payoff__actions">
-            <a className="ink-button ink-button--primary" href={chromeWebStoreUrl} target="_blank" rel="noreferrer">Get Waypoint <ArrowRight aria-hidden="true" /></a>
+            <a className="ink-button ink-button--primary" href={chromeWebStoreUrl} target="_blank" rel="noreferrer">Get the extension <ArrowRight aria-hidden="true" /></a>
+            <a className="ink-button" href="/docs/agent-setup"><Radio aria-hidden="true" /> Connect your agent</a>
             <a className="ink-button" href="/docs">Read the field guide <BookOpen aria-hidden="true" /></a>
             <a className="ink-text-link" href="https://github.com/logbookfordevs/logbook-waypoint" target="_blank" rel="noreferrer"><GitFork aria-hidden="true" /> View source</a>
           </div>

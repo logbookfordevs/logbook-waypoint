@@ -40,9 +40,13 @@ describe('Waypoint route journey', () => {
     expect(screen.getByRole('heading', { name: 'A field note becomes retained work.' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Your agent receives a route, not a riddle.' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'The route closes where it began.' })).toBeVisible();
-    expect(screen.getAllByRole('link', { name: /Get Waypoint/i })[0]).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: /Get the extension/i })[0]).toHaveAttribute(
       'href',
       'https://chromewebstore.google.com/detail/logbook-waypoint/fgondknhkpekdhbbkgodokmpnpadfedo',
+    );
+    expect(screen.getAllByRole('link', { name: /Connect your agent/i })[0]).toHaveAttribute(
+      'href',
+      '/docs/agent-setup',
     );
   });
 
