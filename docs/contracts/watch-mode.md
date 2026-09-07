@@ -4,11 +4,14 @@ Status: Implemented.
 
 ## Interface
 
-The Watch module accepts an optional continuation cursor and returns Queue changes after that cursor. It delivers activity only; lifecycle changes go through the annotation lifecycle interface.
+The MCP Watch interface requires a loopback `url` on the first call. Subsequent calls use its scope-bound continuation cursor and return matching Queue changes after that cursor. It delivers activity only; lifecycle changes go through the annotation lifecycle interface.
 
 ## Behavior
 
-- Watch returns new or changed user requests relevant to agent work.
+- Watch returns new or changed user requests within the selected URL scope, using the same matcher as scoped reads.
+- `localhost` and `127.0.0.1` are equivalent for scope matching; protocol, port, and Page/View State boundaries remain distinct.
+- Cursors are signed with a private key retained in the local journal and retain their scope across restarts. A conflicting URL, modified cursor, or older unscoped cursor is rejected; start a new Watch with `url` to select a scope.
+- Unrelated changes advance the scan position without being delivered or ending a wait early.
 - Each change carries the same compact Survey-grade Annotation context as a scoped `read_annotations` response, plus revision metadata for reactive delivery and deduplication.
 - Complete diagnostic context remains behind `inspect_annotations`; Watch does not create a third context tier between Survey and Inspect.
 - Delivery is non-destructive and never creates a Claim.

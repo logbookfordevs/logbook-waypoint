@@ -432,7 +432,7 @@ test('committed Variant mutations publish safe Watch activity and survive Watch 
   const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
 
   try {
-    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     await server.requestVariants({ id: initial[0].id, variants: candidates });
     const activity = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
 
@@ -460,7 +460,7 @@ test('Variant Set cancellation publishes Pending state through Watch without can
 
   try {
     await server.requestVariants({ id: initial[0].id, variants: candidates });
-    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     await server.cancelVariantRequest({ id: initial[0].id });
     const cancellation = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
 

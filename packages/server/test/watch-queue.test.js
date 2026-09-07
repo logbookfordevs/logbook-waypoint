@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { appendFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -147,7 +148,9 @@ test('persistent Watch initialization is single-flight for concurrent first watc
     assert.equal(loads, 1);
     assert.equal(new Set(results.map(result => result.cursor)).size, 1);
     const records = (await readFile(historyFile, 'utf8')).trim().split('\n').map(JSON.parse);
-    assert.deepEqual(records, [{ type: 'header', initial_cursor: results[0].cursor }]);
+    assert.equal(records.length, 1);
+    assert.equal(records[0].type, 'header');
+    assert.equal(records[0].initial_cursor, results[0].cursor);
   } finally {
     await rm(directory, { recursive: true });
   }
@@ -485,5 +488,92 @@ test('persistent Watch delivers an identical Annotation re-created after deletio
     assert.notEqual(recreated.changes[0].revision, observed.changes.at(-1).revision);
   } finally {
     await rm(directory, { recursive: true });
+  }
+});
+
+test('scoped Watch filters history and retains scope and duplicate delivery after restart', async () => {
+  const queue = new WatchQueue();
+  queue.recordChanges([], [annotation(), annotation({ id: 'waypoint_1750000000001_abc123xyz', url: 'http://localhost:5173/' })]);
+  const first = await queue.watch({ scoped: true, url: 'http://127.0.0.1:3000/', timeoutMs: 0 });
+  assert.deepEqual(first.changes.map(change => change.annotation.id), [annotation().id]);
+  queue.recordChanges([annotation()], [annotation({ status: 'resolved' })]);
+  const restored = new WatchQueue(queue.toJSON());
+  const next = await restored.watch({ scoped: true, cursor: first.cursor, timeoutMs: 0 });
+  assert.equal(next.changes[0].annotation.status, 'resolved');
+  assert.deepEqual(await restored.watch({ scoped: true, cursor: first.cursor, timeoutMs: 0 }), next);
+  await assert.rejects(restored.watch({ scoped: true, cursor: first.cursor, url: 'http://localhost:5173/', timeoutMs: 0 }), /different URL scope/);
+  await assert.rejects(restored.watch({ scoped: true, cursor: `${first.cursor}x`, timeoutMs: 0 }), /Invalid scoped Watch cursor/);
+  await assert.rejects(restored.watch({ scoped: true, cursor: queue.cursor, timeoutMs: 0 }), /Start a new Watch with url/);
+  await assert.rejects(restored.watch({ scoped: true, timeoutMs: 0 }), /Project URL/);
+  await assert.rejects(restored.watch({ scoped: true, url: 'https://example.com/', timeoutMs: 0 }), /loopback/);
+});
+
+test('unrelated activity does not end a scoped wait and its cursor advances on timeout', async () => {
+  const queue = new WatchQueue();
+  const first = await queue.watch({ scoped: true, url: 'http://localhost:3000/', timeoutMs: 0 });
+  let delivered = false;
+  const waiting = queue.watch({ scoped: true, cursor: first.cursor, timeoutMs: 1000 }).then(result => { delivered = true; return result; });
+  queue.recordChanges([], [annotation({ url: 'http://localhost:5173/' })]);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(delivered, false);
+  queue.recordChanges([], [annotation({ id: 'waypoint_1750000000002_abc123xyz', url: 'http://127.0.0.1:3000/' })]);
+  const result = await waiting;
+  assert.equal(result.changes.length, 1);
+  assert.equal(result.changes[0].annotation.url, 'http://127.0.0.1:3000/');
+  queue.recordChanges([], [annotation({ url: 'http://localhost:5173/' })]);
+  const empty = await queue.watch({ scoped: true, cursor: result.cursor, timeoutMs: 1 });
+  assert.deepEqual(empty.changes, []);
+  assert.notEqual(empty.cursor, result.cursor);
+});
+
+test('persistent scoped Watch resumes independently for different projects', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-scoped-watch-'));
+  const historyFile = path.join(directory, 'watch.json');
+  let current = [annotation(), annotation({ id: 'waypoint_1750000000003_abc123xyz', url: 'http://localhost:5173/' })];
+  const load = async () => current;
+  try {
+    const queue = new PersistentWatchQueue({ historyFile });
+    const [a, b] = await Promise.all([
+      queue.watch({ scoped: true, url: 'http://localhost:3000/', timeoutMs: 0 }, load),
+      queue.watch({ scoped: true, url: 'http://localhost:5173/', timeoutMs: 0 }, load),
+    ]);
+    current = current.map(item => ({ ...item, status: 'resolved' }));
+    const restored = new PersistentWatchQueue({ historyFile });
+    const nextA = await restored.watch({ scoped: true, cursor: a.cursor, timeoutMs: 0 }, load);
+    const nextB = await restored.watch({ scoped: true, cursor: b.cursor, timeoutMs: 0 }, load);
+    assert.deepEqual(nextA.changes.map(change => change.annotation.id), [current[0].id]);
+    assert.deepEqual(nextB.changes.map(change => change.annotation.id), [current[1].id]);
+    assert.equal(nextA.changes[0].annotation.status, 'resolved');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('scoped cursors cannot be re-signed using the exposed initial cursor or revision', async () => {
+  const queue = new WatchQueue();
+  const first = await queue.watch({ scoped: true, url: 'http://localhost:3000/', timeoutMs: 0 });
+  const decoded = JSON.parse(Buffer.from(first.cursor.split('.')[0], 'base64url').toString());
+  decoded.scope.origin = 'http://127.0.0.1:5173';
+  const payload = Buffer.from(JSON.stringify(decoded)).toString('base64url');
+  const signature = createHmac('sha256', decoded.cursor).update(payload).digest('base64url');
+  queue.recordChanges([], [annotation({ url: 'http://localhost:5173/' })]);
+  await assert.rejects(queue.watch({ scoped: true, cursor: `${payload}.${signature}`, timeoutMs: 0 }), /Invalid scoped Watch cursor/);
+});
+
+test('legacy journals gain a durable private signing key without losing history', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-key-'));
+  const historyFile = path.join(directory, 'watch.json');
+  try {
+    await writeFile(historyFile, JSON.stringify({ type: 'header', initial_cursor: 'old-public-cursor' }) + '\n');
+    const load = async () => [annotation()];
+    const queue = new PersistentWatchQueue({ historyFile });
+    const first = await queue.watch({ scoped: true, url: 'http://localhost:3000/', timeoutMs: 0 }, load);
+    assert.equal(first.changes.length, 1);
+    const restored = new PersistentWatchQueue({ historyFile });
+    const resumed = await restored.watch({ scoped: true, cursor: first.cursor, timeoutMs: 0 }, load);
+    assert.deepEqual(resumed.changes, []);
+    assert.equal(resumed.cursor, first.cursor);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });

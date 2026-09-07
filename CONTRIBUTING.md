@@ -43,6 +43,8 @@ The MCP endpoint is `http://127.0.0.1:3846/mcp`.
 
 ### Website Development
 
+Maintain the installer only in `scripts/install.sh`. Next.js generates the ignored `packages/website/public/install.sh` asset during development startup and production builds. The CLI downloads this published installer when updating a GitHub installation.
+
 1. Install dependencies from the repository root with `pnpm install`.
 2. Run the website package through your preferred Next.js development workflow.
 3. Run `pnpm --filter @logbookfordevs/waypoint-website test` for rendered-DOM behavior.

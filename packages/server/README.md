@@ -241,3 +241,12 @@ pnpm --filter @logbookfordevs/waypoint start
 ## License
 
 MIT
+
+### Update your installation
+
+```bash
+waypoint update
+waypoint restart
+```
+
+The update command detects npm global installations and GitHub installer installations and updates through the same channel. Older GitHub installs need one rerun of their original installer command to enable detection. Source checkouts and other package managers should use their original update workflow. Reconnect your agent if it launches the MCP server directly. Browser extension updates are separate.

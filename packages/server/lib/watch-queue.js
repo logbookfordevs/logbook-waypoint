@@ -1,8 +1,9 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, open, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { createProjectScope, matchesProjectScope } from './project-scope.js';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertAnnotationLifecycleState } from './annotation-lifecycle.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
@@ -124,7 +125,10 @@ function validateSavedQueue(saved) {
     assertAnnotationVariantIntent(annotation);
     return { ...change, annotation };
   });
-  return { initialCursor: saved.initialCursor, history };
+  if (saved.signingKey !== undefined && (typeof saved.signingKey !== 'string' || !/^[a-f0-9]{64}$/.test(saved.signingKey))) {
+    throw new Error('Invalid Watch signing key');
+  }
+  return { initialCursor: saved.initialCursor, signingKey: saved.signingKey, history };
 }
 
 export class WatchQueue {
@@ -132,6 +136,7 @@ export class WatchQueue {
     const initialCursor = saved.initialCursor ?? randomUUID();
     const history = saved.history ?? [];
     this.initialCursor = initialCursor;
+    this.signingKey = saved.signingKey ?? randomBytes(32).toString('hex');
     this.history = history;
     this.waiters = new Set();
     this.rebuildIndexes();
@@ -150,6 +155,7 @@ export class WatchQueue {
   toJSON() {
     return {
       initialCursor: this.initialCursor,
+      signingKey: this.signingKey,
       history: this.history,
     };
   }
@@ -218,6 +224,7 @@ export class WatchQueue {
     const changed = candidate.sequence > this.sequence;
     const latestById = candidate.latestById;
     this.initialCursor = candidate.initialCursor;
+    this.signingKey = candidate.signingKey;
     this.history = candidate.history;
     this.rebuildIndexes();
     this.latestById = new Map(latestById);
@@ -238,28 +245,63 @@ export class WatchQueue {
     return this.history.slice(afterSequence);
   }
 
-  async watch({ cursor, timeoutMs = 25_000 } = {}) {
-    let changes = this.changesAfter(cursor);
-    if (changes.length === 0 && timeoutMs > 0) {
+  scopedCursor(cursor, scope) {
+    const payload = Buffer.from(JSON.stringify({ cursor, scope })).toString('base64url');
+    const signature = createHmac('sha256', this.signingKey).update(payload).digest('base64url');
+    return `${payload}.${signature}`;
+  }
+
+  readScopedCursor(token) {
+    try {
+      if (typeof token !== 'string' || token.length > 16384) throw new Error();
+      const [payload, signature, extra] = token.split('.');
+      const expected = createHmac('sha256', this.signingKey).update(payload).digest('base64url');
+      if (extra !== undefined || typeof signature !== 'string' || signature.length !== expected.length
+        || !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) throw new Error();
+      return JSON.parse(Buffer.from(payload, 'base64url').toString());
+    } catch {
+      throw new Error('Invalid scoped Watch cursor. Start a new Watch with url.');
+    }
+  }
+
+  async watch({ cursor, timeoutMs = 25_000, url, scoped = false } = {}) {
+    let scope;
+    if (scoped) {
+      if (cursor !== undefined) {
+        const saved = this.readScopedCursor(cursor);
+        scope = saved.scope;
+        cursor = saved.cursor;
+        if (url !== undefined && JSON.stringify(createProjectScope(url)) !== JSON.stringify(scope)) {
+          throw new Error('Watch cursor belongs to a different URL scope. Start a new Watch with url.');
+        }
+      } else {
+        scope = createProjectScope(url);
+      }
+    }
+    const deadline = Date.now() + timeoutMs;
+    let changes;
+    do {
+      const available = this.changesAfter(cursor);
+      cursor = available.at(-1)?.cursor ?? cursor ?? this.initialCursor;
+      changes = scope ? available.filter(change => matchesProjectScope(change.annotation.url, scope)) : available;
+      const remaining = deadline - Date.now();
+      if (changes.length > 0 || remaining <= 0) break;
       await new Promise(resolve => {
         const timer = setTimeout(() => {
           this.waiters.delete(notify);
           resolve();
-        }, timeoutMs);
+        }, remaining);
         const notify = () => {
           clearTimeout(timer);
           resolve();
         };
         this.waiters.add(notify);
       });
-      changes = this.changesAfter(cursor);
-    }
+    } while (true);
 
-    return {
-      changes,
-      cursor: changes.at(-1)?.cursor ?? cursor ?? this.initialCursor,
-    };
+    return { changes, cursor: scoped ? this.scopedCursor(cursor, scope) : cursor };
   }
+
 }
 
 export class PersistentWatchQueue {
@@ -318,7 +360,7 @@ export class PersistentWatchQueue {
       try {
         const loaded = await this.loadJournal();
         queue = new WatchQueue(validateSavedQueue(loaded.saved));
-        replaceJournal = loaded.replaceJournal;
+        replaceJournal = loaded.replaceJournal || !loaded.saved.signingKey;
       } catch (error) {
         const corruptedFile = `${this.historyFile}.corrupted.${randomUUID()}`;
         await rename(this.historyFile, corruptedFile);
@@ -370,6 +412,7 @@ export class PersistentWatchQueue {
     return {
       saved: {
         initialCursor: header.initial_cursor,
+        signingKey: header.signing_key,
         history: changes.map(({ type, ...change }) => change),
       },
       replaceJournal,
@@ -397,7 +440,7 @@ export class PersistentWatchQueue {
     await mkdir(path.dirname(this.historyFile), { recursive: true });
     if (replace || !existsSync(this.historyFile)) {
       const records = [
-        JSON.stringify({ type: 'header', initial_cursor: queue.initialCursor }),
+        JSON.stringify({ type: 'header', initial_cursor: queue.initialCursor, signing_key: queue.signingKey }),
         ...queue.history.map(change => JSON.stringify({ type: 'change', ...change })),
       ];
       const tempFile = `${this.historyFile}.tmp`;

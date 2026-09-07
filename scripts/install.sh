@@ -200,3 +200,11 @@ rm -rf "$release_dir"
 mkdir -p "$release_dir"
 tar -xzf "$archive_path" -C "$release_dir"
 write_launcher "$release_dir/bin/cli.js"
+node --input-type=module - "$release_dir" "$INSTALL_ROOT" "$BIN_DIR" "$REPO" "$ASSET_NAME" <<'METADATA'
+import { writeFileSync } from 'node:fs';
+import { resolve, join } from 'node:path';
+const [releaseDir, root, bin, repo, asset] = process.argv.slice(2);
+writeFileSync(join(releaseDir, '.waypoint-install.json'), JSON.stringify({
+  channel: 'github', installRoot: resolve(root), binDir: resolve(bin), repo, asset
+}));
+METADATA

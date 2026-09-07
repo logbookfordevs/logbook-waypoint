@@ -153,15 +153,18 @@ The supported Work Notice codes are `workflow_unavailable` and `execution_failed
 
 ## Watch for incoming requests
 
-`watch_annotations` waits for new or changed requests without creating a Claim by itself:
+`watch_annotations` requires a loopback URL scope on its first call and waits for matching new or changed requests without creating a Claim by itself:
 
 ```json
 {
+  "url": "http://localhost:3000/",
   "timeout_ms": 25000
 }
 ```
 
-Reuse only the cursor from the last successful response:
+The same scope rules as `read_annotations` apply: a project root watches the whole project, a Page watches its pathname across View States, and a URL with query or hash matches that View State. `localhost` and `127.0.0.1` are aliases; ports and protocols remain distinct.
+
+Reuse only the cursor from the last successful response; it retains the scope across server restarts. To change scope, start a new Watch with `url` and no cursor. Older unscoped cursors must also be replaced this way:
 
 ```json
 {
@@ -202,7 +205,7 @@ Annotation comments, captured page text, selectors, Source Identity, and related
 | `read_annotations` | `status?`, `limit?`, `offset?`, `url?` | Discover projects and survey compact Queue summaries. | No |
 | `inspect_annotations` | `ids` | Diagnose one or more selected Annotations with complete captured context. | No |
 | `get_project_context` | `url` | Infer likely framework and project context for a loopback development URL. | No |
-| `watch_annotations` | `cursor?`, `timeout_ms?` | Wait for Queue changes with resumable, at-least-once delivery. | No |
+| `watch_annotations` | `url` on first call; `cursor` on resume; `timeout_ms?` | Wait for scoped Queue changes with resumable, at-least-once delivery. | No |
 
 `status` accepts `pending`, `claimed`, `resolved`, `discarded`, or `all`. Survey defaults to Pending, a limit of 50, and an offset of 0. Limits may range from 1 to 200. Watch timeouts may range from 0 to 30,000 milliseconds.
 

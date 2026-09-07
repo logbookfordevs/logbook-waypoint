@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- Redesigned the Variant picker with a draggable panel, compact wheel navigation, a View all list, and clearer comparison and confirmation controls.
+
+### Fixed
+- Kept the Variant picker within the viewport, corrected clipped selection and hover styling, and added Escape navigation and dismissal.
+- Prevented periodic Queue refreshes from alternating between original and preview text or making annotation pins disappear.
+
 ## [0.1.2] - 2026-09-07
 
 ### Added
