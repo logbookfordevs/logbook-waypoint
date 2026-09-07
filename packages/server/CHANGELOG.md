@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `waypoint update` for npm global and GitHub installer installations, preserving the installation location and channel. Older GitHub installs need one rerun of their original installer to enable detection; restart the server or reconnect the MCP agent after updating.
 
 ### Changed
+- Watch now requires a URL scope on the first call and retains it in continuation cursors, avoiding unrelated project activity. Start a new scoped Watch to replace older cursors.
+- Scoped annotation operations treat `localhost` and `127.0.0.1` as aliases while preserving protocol, port, and path boundaries.
 - Clarified agent guidance to clean up temporary Variant code when the user cancels a set.
 
 ## [0.1.2] - 2026-09-07

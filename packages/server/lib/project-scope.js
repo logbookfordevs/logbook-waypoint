@@ -21,6 +21,7 @@ function parseLoopbackUrl(value, label) {
     throw new TypeError(`${label} must be a loopback URL`);
   }
 
+  if (url.hostname === 'localhost') url.hostname = '127.0.0.1';
   return url;
 }
 

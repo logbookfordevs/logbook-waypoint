@@ -1,8 +1,9 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHmac } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, open, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { createProjectScope, matchesProjectScope } from './project-scope.js';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertAnnotationLifecycleState } from './annotation-lifecycle.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
@@ -238,28 +239,62 @@ export class WatchQueue {
     return this.history.slice(afterSequence);
   }
 
-  async watch({ cursor, timeoutMs = 25_000 } = {}) {
-    let changes = this.changesAfter(cursor);
-    if (changes.length === 0 && timeoutMs > 0) {
+  scopedCursor(cursor, scope) {
+    const payload = Buffer.from(JSON.stringify({ cursor, scope })).toString('base64url');
+    const signature = createHmac('sha256', this.initialCursor).update(payload).digest('base64url');
+    return `${payload}.${signature}`;
+  }
+
+  readScopedCursor(token) {
+    try {
+      if (typeof token !== 'string' || token.length > 16384) throw new Error();
+      const [payload, signature, extra] = token.split('.');
+      const expected = createHmac('sha256', this.initialCursor).update(payload).digest('base64url');
+      if (extra !== undefined || signature !== expected) throw new Error();
+      return JSON.parse(Buffer.from(payload, 'base64url').toString());
+    } catch {
+      throw new Error('Invalid scoped Watch cursor. Start a new Watch with url.');
+    }
+  }
+
+  async watch({ cursor, timeoutMs = 25_000, url, scoped = false } = {}) {
+    let scope;
+    if (scoped) {
+      if (cursor !== undefined) {
+        const saved = this.readScopedCursor(cursor);
+        scope = saved.scope;
+        cursor = saved.cursor;
+        if (url !== undefined && JSON.stringify(createProjectScope(url)) !== JSON.stringify(scope)) {
+          throw new Error('Watch cursor belongs to a different URL scope. Start a new Watch with url.');
+        }
+      } else {
+        scope = createProjectScope(url);
+      }
+    }
+    const deadline = Date.now() + timeoutMs;
+    let changes;
+    do {
+      const available = this.changesAfter(cursor);
+      cursor = available.at(-1)?.cursor ?? cursor ?? this.initialCursor;
+      changes = scope ? available.filter(change => matchesProjectScope(change.annotation.url, scope)) : available;
+      const remaining = deadline - Date.now();
+      if (changes.length > 0 || remaining <= 0) break;
       await new Promise(resolve => {
         const timer = setTimeout(() => {
           this.waiters.delete(notify);
           resolve();
-        }, timeoutMs);
+        }, remaining);
         const notify = () => {
           clearTimeout(timer);
           resolve();
         };
         this.waiters.add(notify);
       });
-      changes = this.changesAfter(cursor);
-    }
+    } while (true);
 
-    return {
-      changes,
-      cursor: changes.at(-1)?.cursor ?? cursor ?? this.initialCursor,
-    };
+    return { changes, cursor: scoped ? this.scopedCursor(cursor, scope) : cursor };
   }
+
 }
 
 export class PersistentWatchQueue {
