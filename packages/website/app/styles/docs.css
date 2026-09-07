@@ -72,7 +72,7 @@
 
 .docs-index,
 .docs-article {
-  width: min(100%, 52rem);
+  width: min(100%, 60rem);
   margin-inline: auto;
 }
 
@@ -111,15 +111,15 @@
   gap: 1rem;
   margin-top: 2rem;
   padding: 1rem 1.1rem;
-  border: 1px solid color-mix(in srgb, var(--rust) 45%, var(--walnut-line));
+  border: 1px solid color-mix(in srgb, var(--verdigris) 48%, var(--walnut-line));
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--rust-soft) 55%, var(--walnut-raised));
+  background: color-mix(in srgb, var(--verdigris-soft) 42%, var(--walnut-raised));
 }
 
 .docs-notice svg,
 .field-note svg {
   width: 1.2rem;
-  color: var(--rust);
+  color: var(--verdigris);
 }
 
 .docs-notice p,
@@ -231,25 +231,35 @@
 }
 
 .article-toc {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.65rem 1.2rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
   margin-top: 2.5rem;
   padding: 1rem 0;
   border-block: 1px solid var(--walnut-line);
 }
 
 .article-toc strong {
-  margin-right: auto;
+  align-self: start;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.article-toc a {
+.article-toc__links {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.article-toc__links a {
+  width: fit-content;
   color: var(--verdigris);
-  font-size: 0.76rem;
+  font-size: clamp(0.68rem, 0.78vw, 0.76rem);
+  line-height: 1.45;
+  white-space: nowrap;
+  text-underline-offset: 0.2em;
 }
 
 .docs-article > section {
@@ -257,8 +267,26 @@
   padding-top: 3.6rem;
 }
 
+.docs-section-prerequisite {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.7rem;
+  color: var(--walnut-muted);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.docs-section-prerequisite svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: none;
+  color: var(--verdigris);
+}
+
 .docs-article h2 {
-  max-width: 22ch;
+  max-width: 28ch;
   margin: 0 0 1rem;
   font-family: var(--font-display);
   font-size: var(--type-article-heading);
@@ -270,7 +298,7 @@
 }
 
 .docs-article > section > p {
-  max-width: 70ch;
+  max-width: none;
   color: var(--walnut-muted);
   line-height: 1.75;
 }
@@ -279,15 +307,24 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  margin-top: 0.75rem;
-  color: var(--verdigris);
+  margin-top: 1rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--verdigris) 55%, var(--walnut-line));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--verdigris-soft) 42%, var(--walnut-raised));
+  color: var(--walnut-ink);
+  font-family: var(--font-sans);
   font-weight: 700;
+  line-height: 1.4;
+  text-decoration-color: var(--verdigris);
+  text-decoration-thickness: 2px;
   text-underline-offset: 0.22em;
 }
 
 .docs-resource-link svg {
   width: 0.95rem;
   height: 0.95rem;
+  color: var(--verdigris);
 }
 
 .code-block {

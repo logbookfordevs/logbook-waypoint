@@ -4,6 +4,7 @@ export interface DocumentationSection {
   heading: string;
   paragraphs: string[];
   code?: string;
+  prerequisite?: string;
   note?: string;
   resource?: {
     href: string;
@@ -30,7 +31,6 @@ export const documentationPages: DocumentationPage[] = [
           'Install Logbook Waypoint from the Chrome Web Store for the supported browser-extension experience.',
           'The separate Waypoint CLI is published through npm and as a checksummed GitHub Release. Both CLI channels install the same waypoint command and optional local MCP server.',
         ],
-        note: 'Waypoint requires Node.js 18 or newer. The GitHub installer writes its launcher to ~/.local/bin by default and reports when that directory is not on PATH.',
         resource: {
           href: chromeWebStoreUrl,
           label: 'Install Logbook Waypoint from the Chrome Web Store',
@@ -43,6 +43,7 @@ export const documentationPages: DocumentationPage[] = [
       },
       {
         heading: 'Install through npm',
+        prerequisite: 'Node.js 18+ required. GitHub installs to ~/.local/bin and flags missing PATH setup.',
         paragraphs: [
           'Install the published package globally, or use npx for a temporary first look. Start runs the local server in the background by default.',
         ],

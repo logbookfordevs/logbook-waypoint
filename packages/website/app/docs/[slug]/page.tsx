@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, ArrowUpRight, CircleAlert } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, Info } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
 import { CodeBlock } from '@/components/code-block';
@@ -53,13 +53,21 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
       <p className="docs-article__bearing">Field guide · {String(currentIndex + 1).padStart(2, '0')}</p>
       <nav className="article-toc" aria-label="On this page">
         <strong>On this page</strong>
-        {page.sections.map((section) => (
-          <a key={section.heading} href={`#${toAnchor(section.heading)}`}>{section.heading}</a>
-        ))}
+        <div className="article-toc__links">
+          {page.sections.map((section) => (
+            <a key={section.heading} href={`#${toAnchor(section.heading)}`}>{section.heading}</a>
+          ))}
+        </div>
       </nav>
 
       {page.sections.map((section) => (
         <section key={section.heading} id={toAnchor(section.heading)}>
+          {section.prerequisite && (
+            <p className="docs-section-prerequisite">
+              <Info aria-hidden="true" />
+              {section.prerequisite}
+            </p>
+          )}
           <h2>{section.heading}</h2>
           {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           {section.code && <CodeBlock code={section.code} />}
@@ -71,7 +79,7 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
           )}
           {section.note && (
             <aside className="field-note">
-              <CircleAlert aria-hidden="true" />
+              <Info aria-hidden="true" />
               <p><strong>Field note</strong>{section.note}</p>
             </aside>
           )}
