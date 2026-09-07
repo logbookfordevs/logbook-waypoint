@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { appendFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -147,7 +148,9 @@ test('persistent Watch initialization is single-flight for concurrent first watc
     assert.equal(loads, 1);
     assert.equal(new Set(results.map(result => result.cursor)).size, 1);
     const records = (await readFile(historyFile, 'utf8')).trim().split('\n').map(JSON.parse);
-    assert.deepEqual(records, [{ type: 'header', initial_cursor: results[0].cursor }]);
+    assert.equal(records.length, 1);
+    assert.equal(records[0].type, 'header');
+    assert.equal(records[0].initial_cursor, results[0].cursor);
   } finally {
     await rm(directory, { recursive: true });
   }
@@ -541,6 +544,35 @@ test('persistent scoped Watch resumes independently for different projects', asy
     assert.deepEqual(nextA.changes.map(change => change.annotation.id), [current[0].id]);
     assert.deepEqual(nextB.changes.map(change => change.annotation.id), [current[1].id]);
     assert.equal(nextA.changes[0].annotation.status, 'resolved');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('scoped cursors cannot be re-signed using the exposed initial cursor or revision', async () => {
+  const queue = new WatchQueue();
+  const first = await queue.watch({ scoped: true, url: 'http://localhost:3000/', timeoutMs: 0 });
+  const decoded = JSON.parse(Buffer.from(first.cursor.split('.')[0], 'base64url').toString());
+  decoded.scope.origin = 'http://127.0.0.1:5173';
+  const payload = Buffer.from(JSON.stringify(decoded)).toString('base64url');
+  const signature = createHmac('sha256', decoded.cursor).update(payload).digest('base64url');
+  queue.recordChanges([], [annotation({ url: 'http://localhost:5173/' })]);
+  await assert.rejects(queue.watch({ scoped: true, cursor: `${payload}.${signature}`, timeoutMs: 0 }), /Invalid scoped Watch cursor/);
+});
+
+test('legacy journals gain a durable private signing key without losing history', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-key-'));
+  const historyFile = path.join(directory, 'watch.json');
+  try {
+    await writeFile(historyFile, JSON.stringify({ type: 'header', initial_cursor: 'old-public-cursor' }) + '\n');
+    const load = async () => [annotation()];
+    const queue = new PersistentWatchQueue({ historyFile });
+    const first = await queue.watch({ scoped: true, url: 'http://localhost:3000/', timeoutMs: 0 }, load);
+    assert.equal(first.changes.length, 1);
+    const restored = new PersistentWatchQueue({ historyFile });
+    const resumed = await restored.watch({ scoped: true, cursor: first.cursor, timeoutMs: 0 }, load);
+    assert.deepEqual(resumed.changes, []);
+    assert.equal(resumed.cursor, first.cursor);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -37,7 +37,7 @@ The active documentation and runtime regressions are hermetic. They use no live 
 
 ## Explicit CLI updates
 
-Run `waypoint update` to update the CLI and server to the latest release. npm global installs update through npm using the detected global prefix. GitHub installer installs reuse the checksum-verifying installer, preserving the recorded install root, launcher directory, repository, and asset name.
+Run `waypoint update` to update the CLI and server to the latest release. npm global installs update through npm using the detected global prefix. GitHub installer installs download `https://waypoint.logbookfordevs.com/install.sh` over HTTPS and run it after the download succeeds. The installer verifies the release checksum, preserving the recorded install root, launcher directory, repository, and asset name.
 
 Older GitHub installs need one rerun of their original installer command to record this metadata. Source checkouts and unrecognized installations are left untouched; update them using their original source or package manager.
 

@@ -25,27 +25,39 @@ test('source checkout cannot update a different global installation', async t =>
   await assert.rejects(detectInstallation(root, async () => ({ stdout: join(root, 'node_modules') })), /Cannot identify/);
 });
 
-test('GitHub update preserves custom paths and runs a copy outside the replaced release', async t => {
+test('GitHub update downloads its installer and preserves custom paths', async t => {
   const root = await fixture(t);
   const pkg = join(root, 'releases/v1.0.0');
-  await mkdir(join(pkg, 'bin'), { recursive: true });
-  await writeFile(join(pkg, 'bin/install.sh'), '# fixture');
+  await mkdir(pkg, { recursive: true });
   await writeFile(join(pkg, '.waypoint-install.json'), JSON.stringify({ channel: 'github', installRoot: root, binDir: join(root, 'custom bin'), repo: 'owner/repo', asset: 'cli.tar.gz' }));
-  const plan = await detectInstallation(pkg);
-  assert.deepEqual(plan.args.slice(1), ['--install-root', root, '--bin-dir', join(root, 'custom bin'), '--repo', 'owner/repo', '--asset', 'cli.tar.gz']);
+  const calls = [];
   let temporary;
-  await assert.rejects(updateInstallation(pkg, { execute: async (command, args) => {
-    assert.equal(command, 'bash');
-    temporary = args[0];
-    assert.notEqual(temporary, plan.args[0]);
-    assert.equal(await readFile(temporary, 'utf8'), '# fixture');
-    throw new Error('simulated failure');
-  } }), /simulated failure/);
+  await updateInstallation(pkg, { execute: async (command, args) => {
+    calls.push(command);
+    if (command === 'curl') {
+      assert.equal(args.at(-1), 'https://waypoint.logbookfordevs.com/install.sh');
+      temporary = args[args.indexOf('--output') + 1];
+      await writeFile(temporary, '# downloaded installer');
+    } else {
+      assert.equal(await readFile(args[0], 'utf8'), '# downloaded installer');
+      assert.deepEqual(args.slice(1), ['--install-root', root, '--bin-dir', join(root, 'custom bin'), '--repo', 'owner/repo', '--asset', 'cli.tar.gz']);
+    }
+  } });
+  assert.deepEqual(calls, ['curl', 'bash']);
   await assert.rejects(readFile(temporary), { code: 'ENOENT' });
 });
 
-test('distributed installer copies stay identical', async () => {
-  const canonical = await readFile(new URL('../../../scripts/install.sh', import.meta.url), 'utf8');
-  assert.equal(await readFile(new URL('../bin/install.sh', import.meta.url), 'utf8'), canonical);
-  assert.equal(await readFile(new URL('../../website/public/install.sh', import.meta.url), 'utf8'), canonical);
+test('failed installer download never runs bash and removes partial download', async t => {
+  const root = await fixture(t);
+  let temporary;
+  await assert.rejects(updateInstallation(root, {
+    detect: async () => ({ command: 'bash', args: [] }),
+    execute: async (command, args) => {
+      assert.equal(command, 'curl');
+      temporary = args[args.indexOf('--output') + 1];
+      await writeFile(temporary, '# partial');
+      throw new Error('download failed');
+    },
+  }), /download failed/);
+  await assert.rejects(readFile(temporary), { code: 'ENOENT' });
 });

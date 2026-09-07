@@ -1,5 +1,5 @@
 import { execFile, spawn } from 'node:child_process';
-import { readFile, realpath, mkdtemp, copyFile, rm } from 'node:fs/promises';
+import { readFile, realpath, mkdtemp, rm } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { promisify } from 'node:util';
@@ -25,7 +25,7 @@ export async function detectInstallation(packageRoot, query = execFileAsync) {
       || !await samePath(dirname(packageRoot), join(installRoot, 'releases'))) {
       throw new Error('Invalid Waypoint installation metadata. Re-run your original installer.');
     }
-    return { command: 'bash', args: [join(packageRoot, 'bin/install.sh'), '--install-root', installRoot, '--bin-dir', binDir, '--repo', repo, '--asset', asset] };
+    return { command: 'bash', args: ['--install-root', installRoot, '--bin-dir', binDir, '--repo', repo, '--asset', asset] };
   }
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   try {
@@ -53,12 +53,11 @@ function run(command, args) {
 export async function updateInstallation(packageRoot, { detect = detectInstallation, execute = run } = {}) {
   const { command, args } = await detect(packageRoot);
   if (command !== 'bash') return execute(command, args);
-  // The installer may replace the release containing its own script.
   const temporary = await mkdtemp(join(tmpdir(), 'waypoint-update-'));
   try {
     const installer = join(temporary, 'install.sh');
-    await copyFile(args[0], installer);
-    await execute(command, [installer, ...args.slice(1)]);
+    await execute('curl', ['--fail', '--silent', '--show-error', '--location', '--proto', '=https', '--proto-redir', '=https', '--connect-timeout', '15', '--max-time', '60', '--output', installer, 'https://waypoint.logbookfordevs.com/install.sh']);
+    await execute(command, [installer, ...args]);
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }

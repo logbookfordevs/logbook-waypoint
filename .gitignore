@@ -7,6 +7,7 @@ npm-debug.log*
 
 # Website build artifacts
 packages/website/.next/
+packages/website/public/install.sh
 *.tsbuildinfo
 
 # Extension build artifacts
