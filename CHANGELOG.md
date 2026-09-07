@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Fixed
+- Queue discovery no longer recommends production URLs that scoped MCP reads cannot accept.
+
 ## [0.1.1] - 2026-08-28
 
 ### Added

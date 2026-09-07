@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Fixed
+- MCP project discovery includes only usable loopback scopes and never returns Annotation bodies when no supported projects remain.
+
 ## [0.1.1] - 2026-08-28
 
 ### Added
