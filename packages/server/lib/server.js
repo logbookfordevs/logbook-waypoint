@@ -870,7 +870,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'request_variants',
-            description: 'Registers a complete Variant Set that the Waypoint picker can visibly switch, making the first candidate Active. Use the native picker as the sole comparison control. For structural alternatives, create temporary source Scaffold controlled by each candidate presentation; after Finalization or cancellation, remove that temporary source before considering the work complete.',
+            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active. Structural alternatives must use Scaffold controlled by candidate presentation. If the user later cancels, clean up temporary variant code before considering the work complete.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -883,7 +883,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'replace_variants',
-            description: 'Atomically replaces every candidate in an unresolved Variant Set and makes the first replacement Active. Use this instead of cancelling when revising generated alternatives; failed validation leaves the current set unchanged.',
+            description: 'Replaces every candidate in an unresolved Variant Set and makes the first replacement Active.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -906,7 +906,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'discard_variant',
-            description: 'Discards an inactive Variant and removes its stored presentation and exclusive Scaffold references. The coding agent remains responsible for removing referenced temporary source.',
+            description: 'Discards an inactive Variant and removes its implementation and exclusive Scaffold.',
             inputSchema: {
               type: 'object',
               properties: { id: { type: 'string' }, key: { type: 'string' } },
@@ -916,7 +916,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'cancel_variant_request',
-            description: 'Cancels an unresolved Variant Set, removes its stored candidate presentation and Scaffold references, and preserves the Annotation as Pending. This ends comparison; use replace_variants to revise candidates without cancelling. The coding agent must then remove the referenced temporary source.',
+            description: 'Cancels an unresolved Variant Set, removes all candidate presentation and Scaffold, and preserves the Annotation as Pending.',
             inputSchema: {
               type: 'object',
               properties: { id: { type: 'string' } },
@@ -926,7 +926,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'finalize_variant',
-            description: 'Preserves one chosen presentation and removes every other stored presentation and Scaffold reference. The coding agent must then keep the chosen source and remove temporary comparison code.',
+            description: 'Preserves one chosen implementation and removes all other implementations and Scaffold.',
             inputSchema: {
               type: 'object',
               properties: { id: { type: 'string' }, key: { type: 'string' } },

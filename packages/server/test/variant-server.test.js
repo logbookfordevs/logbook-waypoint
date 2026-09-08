@@ -60,8 +60,8 @@ test('MCP requires a browser-presentable implementation for every Variant', asyn
   const replaceVariants = tools.tools.find(tool => tool.name === 'replace_variants');
   const implementation = requestVariants.inputSchema.properties.variants.items.properties.implementation;
 
-  assert.match(requestVariants.description, /native picker as the sole comparison control/i);
-  assert.match(replaceVariants.description, /instead of cancelling/i);
+  assert.match(requestVariants.description, /structural alternatives.*Scaffold.*candidate presentation/i);
+  assert.match(replaceVariants.description, /replaces every candidate.*first replacement Active/i);
   assert.deepEqual(replaceVariants.inputSchema.properties.variants, requestVariants.inputSchema.properties.variants);
   assert.deepEqual(Object.keys(implementation.properties).sort(), ['css', 'pending_changes']);
   assert.equal(implementation.additionalProperties, false);
