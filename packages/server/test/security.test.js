@@ -347,9 +347,13 @@ describe('local HTTP security boundary', () => {
       assert.match(watchTool.description, /deduplicate.*annotation.*id.*revision/i);
       assert.match(watchTool.description, /Pending Annotations are actionable work/i);
       assert.match(watchTool.description, /claim before implementation, resolve after verification, or release when blocked/i);
+      const missingScope = await client.callTool({
+        name: 'watch_annotations', arguments: { timeout_ms: 0 }
+      });
+      assert.equal(missingScope.isError, true);
       const empty = await client.callTool({
         name: 'watch_annotations',
-        arguments: { timeout_ms: 0 }
+        arguments: { url: 'http://localhost:3000/', timeout_ms: 0 }
       });
       const firstPayload = JSON.parse(empty.content[0].text);
       assert.equal(firstPayload.data_trust, 'untrusted');

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { homedir } from 'os';
 import fs from 'fs';
+import { updateInstallation } from '../lib/update.js';
 import { PRODUCT_IDENTITY } from '../lib/product-identity.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -177,7 +178,7 @@ program
     }
     
     // Start with the default background behavior
-    program.parse(['node', 'cli.js', 'start'], { from: 'user' });
+    await program.parseAsync(['start'], { from: 'user' });
   });
 
 program
@@ -225,4 +226,18 @@ program
     }
   });
 
-program.parse(process.argv);
+program
+  .command('update')
+  .description('Update this installation to the latest release')
+  .action(async () => {
+    try {
+      await updateInstallation(dirname(__dirname));
+      console.log(chalk.green('Waypoint updated. Run waypoint restart to use the new server version.'));
+      console.log(chalk.gray('Reconnect your agent if it launches the MCP server directly.'));
+    } catch (error) {
+      console.error(chalk.red(error.message));
+      process.exitCode = 1;
+    }
+  });
+
+await program.parseAsync(process.argv);

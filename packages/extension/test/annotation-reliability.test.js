@@ -885,3 +885,30 @@ test('Page annotations render pins only for Targets present in the current View 
   assert.equal(badges.length, 1);
   assert.equal(badges[0].dataset.annotationId, annotations[1].id);
 });
+
+test('copy Variant remains matched across repeated Queue refreshes with the real resolver', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><section><h3 id="target">Original heading</h3></section></body></html>');
+  const overlay = context.document.querySelector('#overlay');
+  const target = context.document.querySelector('#target');
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  await loadScript(context, 'content/modules/shadow-dom-utils.js');
+  await loadScript(context, 'content/modules/element-context.js');
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  const annotation = {
+    id: 'waypoint_1750000000001_variantrefresh', status: 'pending',
+    created_at: '2026-01-01T00:00:00.000Z',
+    targets: [{ selector: '#target', element_context: { tag: 'h3', text: 'Original heading', classes: [] } }],
+    pending_changes: { copyChange: { original: 'Original heading', value: 'Chosen variant' } },
+  };
+  context.WaypointBadgeManager.render([annotation]);
+  const pin = overlay.querySelector('.waypoint-badge');
+  for (let cycle = 0; cycle < 4; cycle++) {
+    context.WaypointBadgeManager.render([annotation]);
+    assert.equal(target.textContent, 'Chosen variant', `refresh ${cycle} preserves copy`);
+    assert.equal(overlay.querySelector('.waypoint-badge'), pin, `refresh ${cycle} preserves pin`);
+  }
+  context.WaypointBadgeManager.render([]);
+  assert.equal(target.textContent, 'Original heading');
+});

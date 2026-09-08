@@ -16,7 +16,7 @@ The Reading and Inspect operations themselves are side-effect-free. They do not 
 
 ## Survey
 
-An unfiltered `read_annotations` call discovers the available projects and returns project summaries and recommended URL filters without returning Annotation bodies. This rule also applies when only one project has matching Annotations. The caller selects one project and repeats the survey with its URL filter.
+An unfiltered `read_annotations` call discovers only projects whose stored URLs match an accepted loopback scope and returns project summaries and recommended URL filters without returning Annotation bodies. This rule also applies when only one project has matching Annotations. The caller selects one project and repeats the survey with its URL filter. Production and other unsupported origins are omitted from project metadata and recommendations. An unfiltered call returns no Annotation bodies even when no supported projects remain.
 
 A scoped survey returns compact summaries suitable for understanding, prioritizing, grouping, selecting, and usually implementing work. Compact describes response size, not an incomplete work brief: Survey is the default implementation context, while Inspect is an optional diagnostic path for remaining ambiguity. Each summary may include:
 

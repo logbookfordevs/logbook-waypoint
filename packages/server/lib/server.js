@@ -644,10 +644,11 @@ export class LocalAnnotationsServer {
         tools: [
           {
             name: 'watch_annotations',
-            description: 'Monitor the annotation Queue for new or changed requests without changing lifecycle state or creating a Claim. Each change contains the same compact, actionable Survey context as read_annotations plus revision metadata. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Resume with only the opaque cursor from the last successful response. Delivery is at least once: deduplicate changes by Annotation ID and revision.',
+            description: 'Monitor one URL-scoped annotation Queue without changing lifecycle state or creating a Claim. Start with url; localhost and 127.0.0.1 are aliases. Each change contains the same compact, actionable Survey context as read_annotations plus revision metadata. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Resume with only the opaque cursor from the last successful response. For live annotation sessions, repeat this call with the returned cursor. Watch does not require a scheduled automation. Delivery is at least once: deduplicate changes by Annotation ID and revision.',
             inputSchema: {
               type: 'object',
               properties: {
+                url: { type: 'string', description: 'Loopback URL scope, required on the first call. Uses the same project, Page, and View State matching as read_annotations.' },
                 cursor: {
                   type: 'string',
                   description: 'Opaque cursor from the last successful watch_annotations response'
@@ -660,6 +661,7 @@ export class LocalAnnotationsServer {
                   description: 'Maximum time to wait; timeout is a successful empty response'
                 }
               },
+              anyOf: [{ required: ['url'] }, { required: ['cursor'] }],
               additionalProperties: false
             }
           },
@@ -821,7 +823,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'request_variants',
-            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active.',
+            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active. If the user later cancels, clean up temporary variant code before considering the work complete.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -1265,9 +1267,10 @@ export class LocalAnnotationsServer {
       throw new Error('timeout_ms must be an integer between 0 and 30000');
     }
 
+    if (args.cursor === undefined || args.url !== undefined) createProjectScope(args.url);
     await this.loadCurrentAnnotations();
     const result = await this.watchQueue.watch(
-      { cursor: args.cursor, timeoutMs },
+      { cursor: args.cursor, timeoutMs, url: args.url, scoped: true },
       () => this.loadAnnotations(),
     );
     return {
@@ -1500,8 +1503,9 @@ export class LocalAnnotationsServer {
     const groupedByProject = {};
     filtered.forEach(annotation => {
       try {
-        const urlObj = new URL(annotation.url);
-        const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+        const baseUrl = new URL(annotation.url).origin;
+        const projectScope = createProjectScope(`${baseUrl}/*`);
+        if (!annotationMatchesProjectScope(annotation, projectScope)) return;
         if (!groupedByProject[baseUrl]) {
           groupedByProject[baseUrl] = [];
         }
@@ -1547,7 +1551,7 @@ export class LocalAnnotationsServer {
 
     // Apply pagination with offset
     const total = filtered.length;
-    const requiresProjectFilter = projectCount > 0 && !url;
+    const requiresProjectFilter = !url;
     const paginatedResults = requiresProjectFilter
       ? []
       : filtered.slice(offset, offset + limit);

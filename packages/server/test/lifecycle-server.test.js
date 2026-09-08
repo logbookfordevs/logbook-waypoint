@@ -39,7 +39,7 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
   const baseUrl = `http://127.0.0.1:${listener.address().port}`;
 
   try {
-    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     const claimResponse = await fetch(`${baseUrl}/api/annotations/${id}/claim`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -100,7 +100,7 @@ test('HTTP release publishes and persists a recoverable Work Notice through Read
 
   try {
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
-    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     const response = await fetch(`${baseUrl}/api/annotations/${id}/release`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -259,7 +259,7 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
 
   try {
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
-    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     const response = await fetch(`${baseUrl}/api/annotations/${id}/resolve`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -337,7 +337,7 @@ test('expired Variant work can be finalized, reclaimed, verified, and resolved w
     await server.applyAnnotationsUpdate(annotations => {
       Object.assign(annotations[0], { design_intent: designIntent, variant_intent: variantIntent });
     });
-    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'generator' });
     await server.requestVariants({
       id,
@@ -496,7 +496,7 @@ test('expired Claims return to Pending and publish Watch without read or Watch r
   const { directory, server } = await fixture(now);
   try {
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
-    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     now.value += 1_001;
     const changes = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
     assert.equal(changes.changes.at(-1).annotation.status, 'pending');
@@ -628,7 +628,7 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
   };
 
   try {
-    const baseline = await server.watchAnnotations({ timeout_ms: 0 });
+    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     const response = await fetch(`${baseUrl}/api/annotations`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -778,7 +778,7 @@ test('persisted malformed Design Intent is rejected before HTTP, MCP, or Watch c
 
   try {
     await assert.rejects(() => server.readAnnotations({ status: 'all' }), /Design Intent workflow/i);
-    await assert.rejects(() => server.watchAnnotations({ timeout_ms: 0 }), /Design Intent workflow/i);
+    await assert.rejects(() => server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 }), /Design Intent workflow/i);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

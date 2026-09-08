@@ -277,7 +277,7 @@ test('Watch delivers Survey-grade multi-Target context with event metadata', asy
   }];
 
   try {
-    const result = await server.watchAnnotations({ timeout_ms: 0 });
+    const result = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     const [change] = result.changes;
 
     assert.equal(change.annotation.target_count, 2);

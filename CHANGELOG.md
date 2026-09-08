@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- Redesigned the Variant picker with a draggable panel, compact wheel navigation, a View all list, and clearer comparison and confirmation controls.
+
+### Fixed
+- Kept the Variant picker within the viewport, corrected clipped selection and hover styling, and added Escape navigation and dismissal.
+- Prevented periodic Queue refreshes from alternating between original and preview text or making annotation pins disappear.
+
+## [0.1.2] - 2026-09-07
+
+### Added
+- A responsive Waypoint marketing and documentation website with interactive workflow examples, complete product guides, Day Chart and Night Watch appearances, and honest pre-release status.
+
+### Changed
+- Redesigned the extension settings as an accessible route logbook and refined toolbar behavior, themed settings artwork, and responsive layout.
+
+### Fixed
+- Preserved copy previews when annotated pages rerender through their application framework.
+- Kept the settings panel within the available viewport on constrained screens.
+- Queue discovery no longer recommends production URLs that scoped MCP reads cannot accept.
+
+### Security
+- Hardened dependency updates, continuous integration, and tagged publishing with pinned automation, production audits, secret scanning, and workflow security checks.
+
 ## [0.1.1] - 2026-08-28
 
 ### Added

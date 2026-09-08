@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -518,6 +518,48 @@ test('HTTP attachment references require matching metadata in their canonical An
       });
       assert.equal(exactReference.status, 200);
     });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+
+test('discovery recommends only usable loopback scopes from a mixed Queue', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-local-discovery-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile: path.join(directory, 'watch.json') });
+  try {
+    await writeFile(annotationsFile, JSON.stringify([
+      { id, url: 'http://localhost:3002/search?q=*#results', comment: 'Local feedback', status: 'pending' },
+      { id: 'waypoint_1750000000001_abcdefghi', url: 'https://waypoint.logbookfordevs.com/docs/installation', comment: 'Production feedback', status: 'pending' },
+      { id: 'waypoint_1750000000002_abcdefghi', url: 'http://localhost.evil.test/page', comment: 'Lookalike host', status: 'pending' },
+    ]));
+    const discovery = await server.readAnnotations({ status: 'pending' });
+    assert.deepEqual(discovery.annotations, []);
+    assert.deepEqual(discovery.projectInfo.map(project => project.recommended_filter), ['http://localhost:3002/*']);
+    assert.deepEqual(discovery.projectSelection.suggested_filters, ['http://localhost:3002/*']);
+    assert.equal(discovery.multiProjectWarning, null);
+    const scoped = await server.readAnnotations({ url: discovery.projectInfo[0].recommended_filter });
+    assert.deepEqual(scoped.annotations.map(annotation => annotation.id), [id]);
+    await assert.rejects(server.readAnnotations({ url: 'https://waypoint.logbookfordevs.com/*' }), /loopback/i);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('production-only discovery returns neither recommendations nor Annotation bodies', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-production-discovery-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile: path.join(directory, 'watch.json') });
+  try {
+    await writeFile(annotationsFile, JSON.stringify([
+      { id, url: 'https://waypoint.logbookfordevs.com/docs/installation', comment: 'Production feedback', status: 'pending' },
+    ]));
+    const discovery = await server.readAnnotations({ status: 'pending' });
+    assert.deepEqual(discovery.projectInfo, []);
+    assert.equal(discovery.projectSelection, null);
+    assert.equal(discovery.multiProjectWarning, null);
+    assert.deepEqual(discovery.annotations, []);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

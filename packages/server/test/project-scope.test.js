@@ -37,3 +37,13 @@ test('project scope wildcards respect host, port, and path boundaries', () => {
   assert.equal(matchesProjectScope('http://127.0.0.1:30000/app/settings', scope), false);
   assert.equal(matchesProjectScope('http://example.com/app/settings', scope), false);
 });
+
+test('localhost and IPv4 loopback scopes are aliases without merging ports or View States', () => {
+  for (const [host, alias] of [['localhost', '127.0.0.1'], ['127.0.0.1', 'localhost']]) {
+    const scope = createProjectScope(`http://${host}:3000/app?tab=open#note`);
+    assert.equal(matchesProjectScope(`http://${alias}:3000/app?tab=open#note`, scope), true);
+    assert.equal(matchesProjectScope(`http://${alias}:3001/app?tab=open#note`, scope), false);
+    assert.equal(matchesProjectScope(`https://${alias}:3000/app?tab=open#note`, scope), false);
+    assert.equal(matchesProjectScope(`http://${alias}:3000/app?tab=closed#note`, scope), false);
+  }
+});
