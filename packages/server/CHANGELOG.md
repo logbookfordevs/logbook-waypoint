@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- Variant requests now reject metadata-only implementations and require browser-presentable `pending_changes` or scoped CSS, while clarifying that coding agents reconcile temporary source Scaffold after Keep or Cancel.
+- Added atomic replacement for unresolved Variant Sets; cancellation now clearly ends comparison, and requesting another set without newly authored intent reports a direct error.
+
 ## [0.1.3] - 2026-09-07
 
 ### Added

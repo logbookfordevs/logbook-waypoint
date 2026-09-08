@@ -2,7 +2,7 @@
 
 Waypoint gives a coding agent a structured Queue of visual requests. The extension captures what the developer meant, the local server exposes that context through MCP, and the agent uses lifecycle tools to make ownership and outcomes visible.
 
-This guide starts with the normal path. The complete 19-tool reference is available later for advanced workflows.
+This guide starts with the normal path. The complete 20-tool reference is available later for advanced workflows.
 
 ## The normal workflow
 
@@ -237,13 +237,18 @@ Always call `delete_project_annotations` without `confirm: true` first and revie
 
 | Tool | Main inputs | Use it for | Changes state? |
 | --- | --- | --- | --- |
-| `request_variants` | `id`, `variants` | Submit a complete named candidate set and make its first candidate Active. | Yes |
+| `request_variants` | `id`, `variants` | Submit a complete browser-presentable candidate set and make its first candidate Active. | Yes |
+| `replace_variants` | `id`, `variants` | Atomically revise every candidate in an unresolved set while keeping comparison open. | Yes |
 | `activate_variant` | `id`, `key` | Make one existing candidate Active. | Yes |
-| `discard_variant` | `id`, `key` | Remove one inactive candidate and its exclusive Scaffold. | Yes |
+| `discard_variant` | `id`, `key` | Remove one inactive candidate and its exclusive Scaffold references. | Yes |
 | `cancel_variant_request` | `id` | Remove an unresolved set and return the Annotation to Pending. | Yes |
-| `finalize_variant` | `id`, `key` | Keep one implementation and remove all other implementation and Scaffold. | Yes |
+| `finalize_variant` | `id`, `key` | Keep one presentation and remove all other stored presentations and Scaffold references. | Yes |
 
-`request_variants` is the delivery boundary for complete candidates; it is not a request for Waypoint itself to generate them. Candidate generation belongs to the coding agent. Waypoint owns the stored set, Active Variant, discard, cancellation, Finalization, and cleanup.
+`request_variants` is the delivery boundary for complete candidates; it is not a request for Waypoint itself to generate them. Every `implementation` must contain non-empty `pending_changes` and/or scoped `css` that the extension can visibly apply. File paths, preview URLs, labels, and application state are metadata rather than presentation instructions and are rejected inside `implementation`.
+
+Use `replace_variants` when generated candidates need revision. Replacement validates the complete new set before swapping it in, preserves the original pre-comparison presentation, and leaves the old set unchanged on failure. `cancel_variant_request` ends comparison and requires a newly authored Variant Intent before another set can begin.
+
+Candidate generation and source edits belong to the coding agent. Structural alternatives may use temporary source Scaffold, with each candidate's scoped CSS selecting its presentation. Waypoint owns the stored set and the Keep or Cancel decision; the coding agent removes temporary source and comparison logic before completing the work. The application should not add an independent variant selector.
 
 ## Related contracts
 

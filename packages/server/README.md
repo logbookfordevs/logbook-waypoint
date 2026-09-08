@@ -216,7 +216,7 @@ Use `inspect_annotations` with one or more Annotation IDs when selected work nee
 
 Survey and Inspect report screenshot and attachment availability without embedding media bytes. Retrieve a screenshot or attachment separately when its evidence is needed. The canonical [Annotation Context contract](../../docs/contracts/annotation-context.md) defines the projection, batching, compatibility, and trust boundaries.
 
-See [Use Waypoint through MCP](../../docs/MCP_GUIDE.md) for the normal workflow, concrete calls, response boundary, and complete 19-tool reference.
+See [Use Waypoint through MCP](../../docs/MCP_GUIDE.md) for the normal workflow, concrete calls, response boundary, and complete 20-tool reference.
 
 ### Design Actions workflow
 
@@ -224,7 +224,7 @@ See [Use Waypoint through MCP](../../docs/MCP_GUIDE.md) for the normal workflow,
 
 Developers author the request in the browser extension. See [Use Design Actions](../../docs/DESIGN_ACTIONS.md) for the action catalog, authoring flow, Variant behavior, and user-visible recovery states.
 
-Waypoint owns the workflow and lifecycle. Design Intent records Freeform or one named Design Action on an ordinary Annotation. Variant Intent separately asks an agent to generate alternatives; once complete candidates exist, Waypoint owns the resulting Variant Set, Active Variant, cancellation, and Finalization cleanup.
+Waypoint owns the workflow and lifecycle. Design Intent records Freeform or one named Design Action on an ordinary Annotation. Variant Intent separately asks an agent to generate alternatives; once complete browser-presentable candidates exist, Waypoint owns the resulting Variant Set, Active Variant, atomic candidate replacement, cancellation, and Finalization decision. The coding agent removes temporary source Scaffold after Keep or Cancel.
 
 An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action retains a provider-neutral Resolution Record with its outcome and verification evidence. When Variant Intent produced a Variant Set, that set must reach Finalization before resolution. Survey returns compact Queue context, Inspect returns complete selected evidence, and Watch reactively delivers that same Survey-grade context with revision metadata.
 

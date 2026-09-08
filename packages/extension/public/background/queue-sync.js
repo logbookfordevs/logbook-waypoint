@@ -187,9 +187,12 @@ var WaypointQueueSync = (() => {
         const localOwnsVariant = hasVariantOwnedState(local);
         const serverOwnsVariant = hasVariantOwnedState(server);
         if (localOwnsVariant && !serverOwnsVariant) {
-          const merged = withPreservedIntents(reconcileLifecycleFields(local, server, local), local, server, removeDesignIntent, removeVariantIntent);
-          annotations.push(merged);
-          if (JSON.stringify(merged) !== JSON.stringify(local)) changed = true;
+          const merged = withPreservedIntents(server, local, server, removeDesignIntent, true);
+          const matchesServer = JSON.stringify(withoutSyncFlag(merged)) === JSON.stringify(withoutSyncFlag(server));
+          const synchronized = { ...merged, _synced: matchesServer };
+          annotations.push(synchronized);
+          if (!matchesServer) flagsChanged = true;
+          if (JSON.stringify(synchronized) !== JSON.stringify(local)) changed = true;
           continue;
         }
         if (localOwnsVariant || serverOwnsVariant) {
