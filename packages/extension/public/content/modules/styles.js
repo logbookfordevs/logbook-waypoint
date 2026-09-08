@@ -1333,7 +1333,7 @@ var WAYPOINT_STYLES = `
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: var(--waypoint-accent);
+  color: var(--waypoint-text-primary);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -1476,7 +1476,7 @@ var WAYPOINT_STYLES = `
   justify-content: center;
   flex: none;
 }
-.waypoint-queue-open { border: 0; background: transparent; color: var(--waypoint-accent); font-size: 12px; font-weight: 600; cursor: pointer; padding: 2px 0; }
+.waypoint-queue-open { border: 0; background: transparent; color: var(--waypoint-text-primary); font-size: 12px; font-weight: 600; cursor: pointer; padding: 2px 0; }
 .waypoint-queue-row-actions {
   display: flex;
   align-items: center;

@@ -80,6 +80,19 @@ test('settings help links use a readable text role across themes', async () => {
   assert.doesNotMatch(helpLinkStyles, /color:\s*var\(--waypoint-accent\)/);
 });
 
+test('queue text actions remain readable in Night Watch', async () => {
+  const contentStyles = await readFile(contentStylesUrl, 'utf8');
+
+  for (const selector of ['.waypoint-queue-sync-now', '.waypoint-queue-open']) {
+    const ruleStart = contentStyles.indexOf(`${selector} {`);
+    const ruleEnd = contentStyles.indexOf('}', ruleStart) + 1;
+    const rule = contentStyles.slice(ruleStart, ruleEnd);
+
+    assert.match(rule, /color:\s*var\(--waypoint-text-primary\)/);
+    assert.doesNotMatch(rule, /color:\s*var\(--waypoint-accent\)/);
+  }
+});
+
 test('settings popover gives controls a slightly wider responsive measure', async () => {
   const contentStyles = await readFile(contentStylesUrl, 'utf8');
 
