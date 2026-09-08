@@ -4,7 +4,7 @@
 
 Developers can describe interface changes in Waypoint Annotations, but they cannot explicitly request Impeccable's guided design workflows in a structured, inspectable way. Freeform comments alone cannot reliably distinguish ordinary feedback from a request to apply a specific design discipline such as Polish, Distill, Layout, or Animate.
 
-The integration must not turn Waypoint into a thin wrapper around Impeccable Live. Waypoint already owns the Queue, Annotation lifecycle, Watch delivery, Variant evaluation, Scaffold cleanup, and retained history. Developers also need a quiet ordinary-Annotation experience when they do not use Impeccable, transparent attribution when they do, and recoverable behavior when an agent cannot execute the requested workflow.
+The integration must not turn Waypoint into a thin wrapper around Impeccable Live. Waypoint already owns the Queue, Annotation lifecycle, Watch delivery, Variant evaluation, recorded Scaffold references, cleanup decisions, and retained history. Coding agents own source edits and reconcile temporary Scaffold after those decisions. Developers also need a quiet ordinary-Annotation experience when they do not use Impeccable, transparent attribution when they do, and recoverable behavior when an agent cannot execute the requested workflow.
 
 ## Solution
 
@@ -12,7 +12,7 @@ Add **Design Actions** as an optional section inside the existing Annotation edi
 
 Waypoint saves the request as validated Design Intent on an ordinary Annotation. The Annotation continues through Pending, Claim, Resolved, and Discarded without provider-specific lifecycle states. Survey, Inspect, and Watch deliver the intent to agents. Agents that cannot proceed release the Annotation to Pending with a Work Notice; successful work resolves with a provider-neutral Resolution Record.
 
-Requesting alternatives saves separate Variant Intent. After generating candidate implementations, the agent creates a server-owned Variant Set. Waypoint alone governs activation, individual discard, Finalization, cancellation, Scaffold cleanup, and the rule that unresolved Variants prevent resolution.
+Requesting alternatives saves separate Variant Intent. After generating browser-presentable candidate implementations, the agent creates a server-owned Variant Set. Waypoint alone governs activation, individual discard, Finalization, cancellation, recorded Scaffold reconciliation, and the rule that unresolved Variants prevent resolution. The agent performs corresponding source cleanup.
 
 Developers who do not want this workflow may globally hide Design Actions from new Annotation authoring. Existing saved Design Intent always remains visible when its Annotation is reopened.
 
@@ -64,11 +64,11 @@ Developers who do not want this workflow may globally hide Design Actions from n
 44. As a developer, I want exactly one Active Variant at all times during evaluation, so that the interface has one unambiguous presented implementation.
 45. As a developer, I want to activate and discard individual Variants through Waypoint, so that candidate evaluation remains independent of the coding agent.
 46. As a developer, I want to cancel an unresolved Variant Set without discarding the Annotation, so that I can safely revise the underlying Design Intent.
-47. As a developer, I want cancellation to remove every candidate and Scaffold atomically, so that stale preview structures cannot remain in the application.
+47. As a developer, I want cancellation to remove every stored candidate and Scaffold reference atomically, so that the agent receives one unambiguous source-cleanup decision.
 48. As a developer, I want unresolved Variants to lock Design Intent and block resolution, so that the request cannot complete while evaluation remains open.
-49. As a developer, I want a finalized Variant to preserve only the chosen implementation after cleanup, so that temporary candidates do not become product code.
+49. As a developer, I want a finalized Variant to preserve only the chosen presentation and direct the agent to reconcile temporary source, so that comparison code does not become product code.
 50. As an agent, I want to reclaim an Annotation after a long Variant evaluation, so that I can verify Finalization and resolve even if the original Claim expired.
-51. As a developer, I want Waypoint rather than Impeccable Live to own Variant acceptance and cleanup, so that one system remains authoritative.
+51. As a developer, I want Waypoint rather than Impeccable Live to own Variant acceptance and cleanup decisions, so that one system remains authoritative while the coding agent performs source edits.
 52. As a security-conscious developer, I want Design Intent, Work Notices, and Resolution Records validated and safely projected, so that annotations cannot smuggle hidden execution instructions or sensitive internals.
 53. As a developer, I want Design Actions available regardless of the selected agent, so that the browser does not guess capability from incomplete setup information.
 54. As a developer, I want documentation to distinguish tested, expected, and unknown agent integrations, so that compatibility claims remain honest.
@@ -149,13 +149,13 @@ Developers who do not want this workflow may globally hide Design Actions from n
 
   The comment may explicitly request between two and six candidates. Three remains the fallback. More than six requires clarification; silent truncation is rejected.
 
-- **Creating a Variant Set is atomic.** The agent generates candidates before invoking the server-owned creation interface. The complete set contains unique stable keys, human names, implementation payloads, and Scaffold ownership. Partial presentation is rejected.
+- **Creating a Variant Set is atomic.** The agent generates candidates before invoking the server-owned creation interface. The complete set contains unique stable keys, human names, browser-presentable implementation payloads, and Scaffold references. Partial or unpresentable sets are rejected.
 
-- **Variant Sets remain Waypoint-owned.** Exactly one Active Variant is required. Activation, individual discard, Finalization, cleanup, and resolvability guards remain under the canonical Variant interface. A Design Action alone produces one implementation; Variant Intent opts into candidate generation.
+- **Variant Sets remain Waypoint-owned.** Exactly one Active Variant is required. Every candidate supplies non-empty `pending_changes` and/or scoped `css` the extension can visibly present. Activation, individual discard, Finalization, recorded cleanup, and resolvability guards remain under the canonical Variant interface. A Design Action alone produces one implementation; Variant Intent opts into candidate generation.
 
-- **Whole-set cancellation is distinct from Discard.** Add an explicit cancellation operation for unresolved Variant Sets. It atomically removes candidates, active presentation, and all Scaffold while preserving the Annotation as Pending. Terminal Annotation discard is rejected as a substitute because the developer may only want to revise intent.
+- **Whole-set cancellation is distinct from Discard.** Add an explicit cancellation operation for unresolved Variant Sets. It atomically removes stored candidates, active presentation, and Scaffold references while preserving the Annotation as Pending. The coding agent then removes temporary source Scaffold. Terminal Annotation discard is rejected as a substitute because the developer may only want to revise intent.
 
-- **Unresolved evaluation locks intent and resolution.** Design Intent cannot change while a Variant Set is unresolved, and the Annotation cannot resolve until Finalization has removed all discarded candidates and Scaffold. Claim expiry may return the Annotation to Pending without destroying the Variant Set; an agent later reclaims it to verify and resolve.
+- **Unresolved evaluation locks intent and resolution.** Design Intent cannot change while a Variant Set is unresolved, and the Annotation cannot resolve until Finalization has removed all discarded candidate records and Scaffold references. Claim expiry may return the Annotation to Pending without destroying the Variant Set; an agent later reclaims it to reconcile source, verify, and resolve.
 
 - **The initial integration does not version-lock Impeccable.** Waypoint versions its own schema, not the installed external skill. An incompatible or unavailable installation produces a Work Notice. Version negotiation is rejected until real compatibility failures justify it.
 
@@ -171,7 +171,7 @@ Developers who do not want this workflow may globally hide Design Actions from n
 
 - Keep one canonical validation implementation shared by all server adapters. HTTP, MCP, Watch, and extension tests demonstrate adapter conformance rather than restating the allowlist independently.
 
-- Include malformed and adversarial records at the server seam: unknown schema/workflow/action, Design Intent on terminal records, unsafe Work Notice or Resolution Record content, out-of-range candidate counts, incomplete Scaffold cleanup, and persistence failure during cancellation or Finalization.
+- Include malformed and adversarial records at the server seam: unknown schema/workflow/action, Design Intent on terminal records, unsafe Work Notice or Resolution Record content, out-of-range candidate counts, unpresentable candidate payloads, incomplete Scaffold-reference cleanup, and persistence failure during cancellation or Finalization.
 
 - Run a bounded browser acceptance pass after implementation at desktop and 390px. Verify the wrapped matrix, Freeform and named states, each action's one-line explanation, keyboard focus, 200% zoom, reduced motion, the separate Request Variants control, reopened saved intent, Work Notice presentation, and lifecycle-locked states. This is acceptance evidence, not a replacement for the two automated seams.
 

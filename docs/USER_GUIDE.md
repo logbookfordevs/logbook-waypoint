@@ -132,7 +132,7 @@ Survey → optional Inspect → Claim → implement → Resolve or Release
 
 Survey returns compact context intended to be sufficient for normal implementation. Inspect is the optional equivalent of opening DevTools when layout, cascade, placement, source identity, or relationships between Targets remain ambiguous.
 
-See [Use Waypoint through MCP](MCP_GUIDE.md) for client examples, concrete calls, lifecycle behavior, and the complete 19-tool reference.
+See [Use Waypoint through MCP](MCP_GUIDE.md) for client examples, concrete calls, lifecycle behavior, and the complete 20-tool reference.
 
 ## Use Design Actions when you want guided design work
 

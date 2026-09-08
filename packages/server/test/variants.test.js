@@ -11,6 +11,7 @@ import {
   createVariantRequest,
   discardVariant,
   finalizeVariant,
+  replaceVariantRequest,
 } from '../lib/variants.js';
 
 const annotation = () => ({
@@ -44,6 +45,49 @@ test('request creates named stable candidates with exactly one Active Variant', 
   );
 });
 
+test('request rejects candidate metadata that Waypoint cannot present', () => {
+  assert.throws(
+    () => createVariantRequest(annotation(), [
+      {
+        key: 'branch',
+        name: 'Branching flow',
+        implementation: {
+          file: 'src/RoutingVisualization.jsx',
+          variant: 'branch',
+          preview_url: 'http://localhost:5173/?routing=branch',
+        },
+      },
+      candidates[1],
+    ]),
+    /presentable.*pending_changes.*css/i,
+  );
+  assert.throws(
+    () => createVariantRequest(annotation(), [
+      { key: 'empty', name: 'Empty', implementation: { css: '  ' } },
+      candidates[1],
+    ]),
+    /presentable.*pending_changes.*css/i,
+  );
+  assert.throws(
+    () => createVariantRequest(annotation(), [
+      { key: 'mixed', name: 'Mixed', implementation: { css: '.card {}', pending_changes: [] } },
+      candidates[1],
+    ]),
+    /presentable.*pending_changes.*css/i,
+  );
+});
+
+test('activation refuses a legacy candidate that has no executable presentation', () => {
+  const requested = createVariantRequest(annotation(), candidates);
+  requested.variant_request.variants[1].implementation = { preview_url: 'http://localhost:5173/?routing=spacious' };
+
+  assert.throws(
+    () => activateVariant(requested, 'spacious'),
+    /presentable.*pending_changes.*css/i,
+  );
+  assert.equal(requested.variant_request.active_variant_key, 'compact');
+});
+
 test('activation changes the presented implementation without a lifecycle transition and survives reopen', () => {
   const requested = createVariantRequest(annotation(), candidates);
   const activated = activateVariant(requested, 'spacious');
@@ -52,6 +96,8 @@ test('activation changes the presented implementation without a lifecycle transi
   assert.equal(activated.status, 'pending');
   assert.equal(reopened.variant_request.active_variant_key, 'spacious');
   assert.equal(reopened.variant_request.variants.filter(variant => variant.state === 'active').length, 1);
+  assert.equal(reopened.css, '.card { gap: 24px; }');
+  assert.deepEqual(reopened.variant_presentation, candidates[1].implementation);
 });
 
 test('an unresolved Variant Set never grows beyond six complete candidates', () => {
@@ -103,6 +149,48 @@ test('cancellation restores a recoverable Pending Annotation without candidate s
   assert.deepEqual(cancelled.pending_changes, original.pending_changes);
   assert.equal(cancelled.css, original.css);
   assert.equal(requested.variant_request.status, 'unresolved');
+});
+
+test('replacement atomically swaps an unresolved Variant Set without cancelling it', () => {
+  const original = {
+    ...annotation(),
+    css: '.card { color: green; }',
+  };
+  const requested = createVariantRequest(original, candidates);
+  const replacements = [
+    { key: 'quiet', name: 'Quiet', implementation: { css: '.card { gap: 12px; }' }, scaffold: ['replacement-shell'] },
+    { key: 'bold', name: 'Bold', implementation: { css: '.card { gap: 32px; }' }, scaffold: ['replacement-shell'] },
+  ];
+
+  const replaced = replaceVariantRequest(requested, replacements);
+
+  assert.equal(replaced.variant_request.status, 'unresolved');
+  assert.equal(replaced.variant_request.active_variant_key, 'quiet');
+  assert.equal(replaced.variant_request.requested_count, 2);
+  assert.deepEqual(replaced.variant_request.variants.map(variant => variant.key), ['quiet', 'bold']);
+  assert.deepEqual(replaced.variant_request.origin_presentation, { css: original.css });
+  assert.equal(replaced.css, replacements[0].implementation.css);
+  assert.deepEqual(requested.variant_request.variants.map(variant => variant.key), ['compact', 'spacious']);
+});
+
+test('replacement failure preserves the existing unresolved Variant Set', () => {
+  const requested = createVariantRequest(annotation(), candidates);
+  const beforeAttempt = structuredClone(requested);
+
+  assert.throws(
+    () => replaceVariantRequest(requested, candidates.slice(0, 1)),
+    /requires 2 complete Variants/i,
+  );
+  assert.deepEqual(requested, beforeAttempt);
+});
+
+test('a cancelled Variant Set requires new authored intent instead of failing schema validation', () => {
+  const cancelled = cancelVariantRequest(createVariantRequest(annotation(), candidates));
+
+  assert.throws(
+    () => createVariantRequest(cancelled, candidates),
+    /no active Variant Intent/i,
+  );
 });
 
 test('unresolved evaluation locks Design Intent across generic and synchronized updates', () => {

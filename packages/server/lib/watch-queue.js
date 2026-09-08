@@ -64,6 +64,7 @@ function portableAnnotation(annotation, hasScreenshot) {
   const portableVariantRequest = variant_request && {
     status: variant_request.status,
     active_variant_key: variant_request.active_variant_key,
+    ...(variant_request.requested_count !== undefined ? { requested_count: variant_request.requested_count } : {}),
     variants: variant_request.variants?.map(({ key, name, state }) => ({ key, name, state })),
   };
   return {

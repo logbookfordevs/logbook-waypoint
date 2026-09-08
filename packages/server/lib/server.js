@@ -66,6 +66,7 @@ import {
   discardVariantRequest,
   discardVariant as discardVariantRecord,
   finalizeVariant as finalizeVariantRecord,
+  replaceVariantRequest,
 } from './variants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -120,6 +121,49 @@ function lifecycleToolSchema({ owner, reason = false, resolutionRecord = false }
     },
     required: owner ? ['id', 'owner'] : ['id'],
     additionalProperties: false,
+  };
+}
+
+function variantCandidatesToolSchema() {
+  return {
+    type: 'array',
+    minItems: 1,
+    maxItems: 6,
+    items: {
+      type: 'object',
+      properties: {
+        key: { type: 'string' },
+        name: { type: 'string' },
+        implementation: {
+          type: 'object',
+          description: 'Executable browser presentation for this candidate. Include non-empty pending_changes and/or scoped css; file paths, preview URLs, labels, and application state metadata are not presentation instructions.',
+          properties: {
+            pending_changes: {
+              type: 'object',
+              minProperties: 1,
+              description: 'Original-to-value DOM presentation changes understood by Waypoint.',
+            },
+            css: {
+              type: 'string',
+              minLength: 1,
+              description: 'Scoped CSS that visibly presents this candidate, including temporary structural Scaffold when needed.',
+            },
+          },
+          anyOf: [
+            { required: ['pending_changes'] },
+            { required: ['css'] },
+          ],
+          additionalProperties: false,
+        },
+        scaffold: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Stable identifiers for temporary source structures the coding agent must reconcile after selection or cancellation.',
+        },
+      },
+      required: ['key', 'name', 'implementation'],
+      additionalProperties: false,
+    },
   };
 }
 
@@ -397,6 +441,9 @@ export class LocalAnnotationsServer {
 
     this.app.post('/api/annotations/:id/variants/request', runVariantOperation(
       req => this.requestVariants({ id: req.params.id, variants: req.body?.variants }),
+    ));
+    this.app.post('/api/annotations/:id/variants/replace', runVariantOperation(
+      req => this.replaceVariants({ id: req.params.id, variants: req.body?.variants }),
     ));
     this.app.delete('/api/annotations/:id/variants', runVariantOperation(
       req => this.cancelVariantRequest({ id: req.params.id }),
@@ -823,26 +870,25 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'request_variants',
-            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active. If the user later cancels, clean up temporary variant code before considering the work complete.',
+            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active. Structural alternatives must use Scaffold controlled by candidate presentation. If the user later cancels, clean up temporary variant code before considering the work complete.',
             inputSchema: {
               type: 'object',
               properties: {
                 id: { type: 'string', description: 'Annotation ID' },
-                variants: {
-                  type: 'array',
-                  minItems: 1,
-                  items: {
-                    type: 'object',
-                    properties: {
-                      key: { type: 'string' },
-                      name: { type: 'string' },
-                      implementation: { type: 'object' },
-                      scaffold: { type: 'array', items: { type: 'string' } },
-                    },
-                    required: ['key', 'name', 'implementation'],
-                    additionalProperties: false,
-                  },
-                },
+                variants: variantCandidatesToolSchema(),
+              },
+              required: ['id', 'variants'],
+              additionalProperties: false,
+            },
+          },
+          {
+            name: 'replace_variants',
+            description: 'Replaces every candidate in an unresolved Variant Set and makes the first replacement Active.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'Annotation ID' },
+                variants: variantCandidatesToolSchema(),
               },
               required: ['id', 'variants'],
               additionalProperties: false,
@@ -1056,12 +1102,14 @@ export class LocalAnnotationsServer {
           }
 
           case 'request_variants':
+          case 'replace_variants':
           case 'activate_variant':
           case 'discard_variant':
           case 'cancel_variant_request':
           case 'finalize_variant': {
             const operations = {
               request_variants: () => this.requestVariants(args),
+              replace_variants: () => this.replaceVariants(args),
               activate_variant: () => this.activateVariant(args),
               discard_variant: () => this.discardVariant(args),
               cancel_variant_request: () => this.cancelVariantRequest(args),
@@ -1298,6 +1346,10 @@ export class LocalAnnotationsServer {
 
   async requestVariants(args) {
     return this.updateVariantAnnotation(args?.id, annotation => createVariantRequest(annotation, args?.variants));
+  }
+
+  async replaceVariants(args) {
+    return this.updateVariantAnnotation(args?.id, annotation => replaceVariantRequest(annotation, args?.variants));
   }
 
   async activateVariant(args) {

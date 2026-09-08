@@ -45,7 +45,7 @@ Freeform is useful when your comment already gives a clear design direction that
 
 **Request Variants** is separate from the selected Design Action. Use it when you want the agent to produce multiple named directions instead of one implementation.
 
-The initial request asks for three candidates by default. You can ask for a different count in the comment, within Waypoint's supported range of two to six. Once candidates exist, Waypoint owns which Variant is active, individual discard, cancellation, and final cleanup.
+The initial request asks for three candidates by default. You can ask for a different count in the comment, within Waypoint's supported range of two to six. Each candidate must include presentation changes the extension can visibly apply. Once candidates exist, Waypoint owns which Variant is active, individual discard, cancellation, and the final cleanup decision; the coding agent reconciles temporary source after that decision.
 
 An Annotation with unfinished Variants cannot be resolved. Finalize the chosen Variant first so Waypoint can remove the temporary scaffold safely.
 
@@ -66,6 +66,6 @@ Turn off **Show Design Actions** in the extension settings to remove the section
 
 ## What Waypoint does—and does not—own
 
-Impeccable supplies the design discipline. Waypoint remains responsible for the Annotation, Queue, lifecycle, Watch delivery, Work Notices, retained results, Variants, and cleanup.
+Impeccable supplies the design discipline. Waypoint remains responsible for the Annotation, Queue, lifecycle, Watch delivery, Work Notices, retained results, Variant selection, and cleanup state. The coding agent remains responsible for source changes, including temporary Variant Scaffold.
 
 Waypoint does not embed Impeccable Live, run its picker or preview protocol, install skills into agent environments, or guess whether an agent is capable. This keeps one authoritative work state and makes failures recoverable through the normal Queue.

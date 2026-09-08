@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { LocalAnnotationsServer } from '../lib/server.js';
 
@@ -45,6 +45,31 @@ const candidates = [
     scaffold: ['switcher'],
   },
 ];
+
+test('MCP requires a browser-presentable implementation for every Variant', async () => {
+  const { server } = createServer();
+  let listTools;
+  server.setupMCPHandlersForServer({
+    setRequestHandler(schema, handler) {
+      if (schema === ListToolsRequestSchema) listTools = handler;
+    },
+  });
+
+  const tools = await listTools();
+  const requestVariants = tools.tools.find(tool => tool.name === 'request_variants');
+  const replaceVariants = tools.tools.find(tool => tool.name === 'replace_variants');
+  const implementation = requestVariants.inputSchema.properties.variants.items.properties.implementation;
+
+  assert.match(requestVariants.description, /structural alternatives.*Scaffold.*candidate presentation/i);
+  assert.match(replaceVariants.description, /replaces every candidate.*first replacement Active/i);
+  assert.deepEqual(replaceVariants.inputSchema.properties.variants, requestVariants.inputSchema.properties.variants);
+  assert.deepEqual(Object.keys(implementation.properties).sort(), ['css', 'pending_changes']);
+  assert.equal(implementation.additionalProperties, false);
+  assert.deepEqual(implementation.anyOf, [
+    { required: ['pending_changes'] },
+    { required: ['css'] },
+  ]);
+});
 
 test('server atomically replaces authored Variant Intent with the complete generated Variant Set', async () => {
   const { server, read } = createServer();
@@ -120,6 +145,46 @@ test('server atomically cancels an unresolved Variant Set while preserving its P
   assert.equal(read.annotations[0].status, 'pending');
 });
 
+test('server atomically replaces an unresolved Variant Set', async () => {
+  const { server, read } = createServer();
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+  const replacements = candidates.map((candidate, index) => ({
+    ...candidate,
+    key: `replacement-${index + 1}`,
+    name: `Replacement ${index + 1}`,
+  }));
+
+  const replaced = await server.replaceVariants({
+    id: 'waypoint_1750000000000_abc123xyz',
+    variants: replacements,
+  });
+
+  assert.deepEqual(replaced.variant_request.variants.map(variant => variant.key), ['replacement-1', 'replacement-2']);
+  assert.deepEqual(read()[0].variant_request.variants.map(variant => variant.key), ['replacement-1', 'replacement-2']);
+});
+
+test('failed persistence cannot partially replace an unresolved Variant Set', async () => {
+  const requested = await createServer().server.requestVariants({
+    id: 'waypoint_1750000000000_abc123xyz',
+    variants: candidates,
+  });
+  const persisted = [structuredClone(requested)];
+  const server = new LocalAnnotationsServer();
+  server.loadAnnotations = async () => structuredClone(persisted);
+  server._saveAnnotationsInternal = async () => { throw new Error('disk unavailable'); };
+  const replacements = candidates.map((candidate, index) => ({
+    ...candidate,
+    key: `replacement-${index + 1}`,
+    name: `Replacement ${index + 1}`,
+  }));
+
+  await assert.rejects(
+    () => server.replaceVariants({ id: persisted[0].id, variants: replacements }),
+    /disk unavailable/,
+  );
+  assert.deepEqual(persisted[0], requested);
+});
+
 test('HTTP cancellation is distinct from Annotation Discard', async () => {
   const { server, read } = createServer();
   await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
@@ -164,6 +229,33 @@ test('MCP cancellation removes the unresolved Variant Set through the canonical 
   assert.equal(response.isError, undefined);
   assert.equal(payload.data.annotation.status, 'pending');
   assert.equal('variant_request' in payload.data.annotation, false);
+});
+
+test('MCP replacement revises an unresolved Variant Set without cancellation', async () => {
+  const { server } = createServer();
+  await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
+  let callTool;
+  server.setupMCPHandlersForServer({
+    setRequestHandler(schema, handler) {
+      if (schema === CallToolRequestSchema) callTool = handler;
+    },
+  });
+  const replacements = candidates.map((candidate, index) => ({
+    ...candidate,
+    key: `mcp-replacement-${index + 1}`,
+    name: `MCP Replacement ${index + 1}`,
+  }));
+
+  const response = await callTool({
+    params: {
+      name: 'replace_variants',
+      arguments: { id: 'waypoint_1750000000000_abc123xyz', variants: replacements },
+    },
+  });
+  const payload = JSON.parse(response.content[0].text);
+
+  assert.equal(response.isError, undefined);
+  assert.equal(payload.data.annotation.variant_request.active_variant_key, 'mcp-replacement-1');
 });
 
 test('failed persistence cannot partially cancel unresolved Variant state', async () => {

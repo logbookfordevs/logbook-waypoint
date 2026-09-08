@@ -1158,6 +1158,10 @@ var WaypointToolbar = (() => {
     const targetIndex = targetElements.findIndex(Boolean);
     const element = targetElements[targetIndex];
     if (!element) {
+      if (globalThis.WaypointVariantPicker?.handles(annotation)) {
+        WaypointEvents.emit('annotation:edit', { annotation, element: null, targetElements, targetIndex });
+        return;
+      }
       WaypointBadgeManager.highlightElement(annotation);
       return;
     }

@@ -411,8 +411,8 @@ test('HTTP media writes roll back staged files and preserve superseded files unt
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ variants: [
-          { key: 'a', name: 'A', implementation: {} },
-          { key: 'b', name: 'B', implementation: {} },
+          { key: 'a', name: 'A', implementation: { css: '[data-variant="a"] { display: block; }' } },
+          { key: 'b', name: 'B', implementation: { css: '[data-variant="b"] { display: block; }' } },
         ] }),
       });
       assert.equal(requestVariants.status, 200);

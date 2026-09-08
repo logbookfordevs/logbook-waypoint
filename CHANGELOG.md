@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- Variant Sets now accept only browser-presentable `pending_changes` or scoped CSS, keeping the Waypoint picker as the authoritative comparison control while agents remain free to build temporary structural alternatives.
+- Agents can atomically replace every candidate in an unresolved Variant Set without cancelling the comparison or losing its original presentation.
+
+### Fixed
+- Unresolved Variant Sets remain accessible from the Queue when a redesigned Target can no longer be located on the page.
+- Queue synchronization now accepts server-side Variant cancellation instead of repeatedly pushing stale cached Variant state back to the server.
+
 ## [0.1.3] - 2026-09-07
 
 ### Added

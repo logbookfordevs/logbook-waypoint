@@ -170,4 +170,8 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   assert.equal(emitted.at(-1).name, 'annotation:variant-updated');
   assert.equal('variant_request' in emitted.at(-1).payload.annotation, false);
   assert.equal(context.document.querySelector('.waypoint-variant-picker'), null);
+
+  assert.equal(context.WaypointVariantPicker.show(variants, null), true);
+  assert.notEqual(context.document.querySelector('.waypoint-variant-picker'), null);
+  assert.equal(context.document.querySelector('.waypoint-variant-picker').style.left, '28px');
 });

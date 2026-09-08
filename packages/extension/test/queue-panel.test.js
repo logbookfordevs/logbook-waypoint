@@ -791,6 +791,32 @@ test('Queue Open starts at the first available Target when an earlier Target is 
   assert.equal(editEvent.payload.targetIndex, 1);
 });
 
+test('Queue opens an unresolved Variant Set when its Target is unavailable', async () => {
+  const annotation = {
+    id: 'waypoint_1750000000000_abc123xyz',
+    url: 'http://localhost:3000/settings/members',
+    status: 'pending',
+    comment: 'Compare structural variants',
+    selector: '#removed-target',
+    variant_request: {
+      status: 'unresolved',
+      active_variant_key: 'branch',
+      variants: [{ key: 'branch', name: 'Branching flow', state: 'active' }],
+    },
+  };
+  const { context, emitted, root } = await openQueue([annotation]);
+  context.WaypointVariantPicker = { handles: candidate => candidate.variant_request?.status === 'unresolved' };
+
+  root.querySelector('.waypoint-queue-open').click();
+
+  const editEvent = emitted.find(event => event.name === 'annotation:edit');
+  assert.equal(editEvent.payload.annotation.id, annotation.id);
+  assert.equal(editEvent.payload.element, null);
+  assert.equal(editEvent.payload.targetElements.length, 1);
+  assert.equal(editEvent.payload.targetElements[0], null);
+  assert.equal(root.querySelector('.waypoint-queue-panel'), null);
+});
+
 test('Queue supports keyboard dismissal with Escape', async () => {
   const annotation = {
     id: 'waypoint_1750000000000_abc123xyz',

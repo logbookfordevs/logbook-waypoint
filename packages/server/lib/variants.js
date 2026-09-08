@@ -2,6 +2,7 @@ import { hasSameAnnotationTargetSet } from './annotation-targets.js';
 import { requestedVariantCount } from './variant-intent.js';
 
 const VARIANT_KEY = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
+const PRESENTATION_FIELDS = new Set(['pending_changes', 'css']);
 
 export class VariantContractError extends Error {
   constructor(message, remainingCleanup = []) {
@@ -27,6 +28,27 @@ function cleanupTarget(kind, key) {
   return { kind, key };
 }
 
+function hasNonEmptyRecord(value) {
+  return value !== null
+    && typeof value === 'object'
+    && !Array.isArray(value)
+    && Object.keys(value).length > 0;
+}
+
+function validatePresentation(implementation) {
+  if (!implementation || typeof implementation !== 'object' || Array.isArray(implementation)) {
+    fail('Every Variant requires a Waypoint-presentable implementation using non-empty pending_changes and/or css');
+  }
+  const hasUnsupportedField = Object.keys(implementation).some(field => !PRESENTATION_FIELDS.has(field));
+  const hasPendingChanges = hasNonEmptyRecord(implementation.pending_changes);
+  const hasCss = typeof implementation.css === 'string' && implementation.css.trim().length > 0;
+  const hasInvalidPendingChanges = 'pending_changes' in implementation && !hasPendingChanges;
+  const hasInvalidCss = 'css' in implementation && !hasCss;
+  if (hasUnsupportedField || hasInvalidPendingChanges || hasInvalidCss || !hasPendingChanges && !hasCss) {
+    fail('Every Variant requires a Waypoint-presentable implementation using non-empty pending_changes and/or css');
+  }
+}
+
 function validateCandidates(candidates) {
   if (!Array.isArray(candidates) || candidates.length === 0) fail('A variant request requires at least one Variant');
   if (candidates.length > 6) fail('A Variant Set contains at most 6 complete Variants');
@@ -35,9 +57,7 @@ function validateCandidates(candidates) {
   const names = candidates.map(candidate => candidate?.name?.trim());
   if (keys.some(key => typeof key !== 'string' || !VARIANT_KEY.test(key))) fail('Every Variant requires a stable implementation key');
   if (names.some(name => !name)) fail('Every Variant requires a human-readable name');
-  if (candidates.some(candidate => !candidate.implementation || typeof candidate.implementation !== 'object' || Array.isArray(candidate.implementation))) {
-    fail('Every Variant requires an implementation object');
-  }
+  for (const candidate of candidates) validatePresentation(candidate.implementation);
   if (candidates.some(candidate => candidate.scaffold !== undefined && (!Array.isArray(candidate.scaffold) || candidate.scaffold.some(key => typeof key !== 'string' || !key)))) {
     fail('Variant Scaffold keys must be non-empty strings');
   }
@@ -85,12 +105,30 @@ function assertScaffoldReconciled(request) {
 }
 
 function present(annotation, variant) {
+  validatePresentation(variant.implementation);
   annotation.variant_presentation = clone(variant.implementation);
   for (const field of ['pending_changes', 'css']) {
     if (field in variant.implementation) annotation[field] = clone(variant.implementation[field]);
     else delete annotation[field];
   }
   return annotation;
+}
+
+function buildVariantRequest(candidates, requestedCount, originPresentation) {
+  return {
+    status: 'unresolved',
+    active_variant_key: candidates[0].key,
+    requested_count: requestedCount,
+    origin_presentation: clone(originPresentation),
+    variants: candidates.map((candidate, index) => ({
+      key: candidate.key,
+      name: candidate.name.trim(),
+      state: index === 0 ? 'active' : 'inactive',
+      implementation: clone(candidate.implementation),
+      scaffold: unique(candidate.scaffold ?? []),
+    })),
+    scaffold: unique(candidates.flatMap(candidate => candidate.scaffold ?? [])),
+  };
 }
 
 export function createVariantRequest(annotation, candidates) {
@@ -107,23 +145,25 @@ export function createVariantRequest(annotation, candidates) {
 
   const next = clone(annotation);
   delete next.variant_intent;
-  next.variant_request = {
-    status: 'unresolved',
-    active_variant_key: candidates[0].key,
-    origin_presentation: Object.fromEntries(
-      ['pending_changes', 'css']
-        .filter(field => Object.hasOwn(annotation, field))
-        .map(field => [field, clone(annotation[field])]),
-    ),
-    variants: candidates.map((candidate, index) => ({
-      key: candidate.key,
-      name: candidate.name.trim(),
-      state: index === 0 ? 'active' : 'inactive',
-      implementation: clone(candidate.implementation ?? {}),
-      scaffold: unique(candidate.scaffold ?? []),
-    })),
-    scaffold: unique(candidates.flatMap(candidate => candidate.scaffold ?? [])),
-  };
+  const originPresentation = Object.fromEntries(
+    ['pending_changes', 'css']
+      .filter(field => Object.hasOwn(annotation, field))
+      .map(field => [field, clone(annotation[field])]),
+  );
+  next.variant_request = buildVariantRequest(candidates, requestedCount, originPresentation);
+  return present(next, next.variant_request.variants[0]);
+}
+
+export function replaceVariantRequest(annotation, candidates) {
+  const request = requireUnresolved(annotation);
+  const requestedCount = request.requested_count ?? request.variants.length;
+  validateCandidates(candidates);
+  if (candidates.length !== requestedCount) {
+    fail(`Variant Intent requires ${requestedCount} complete Variants`);
+  }
+
+  const next = clone(annotation);
+  next.variant_request = buildVariantRequest(candidates, requestedCount, request.origin_presentation ?? {});
   return present(next, next.variant_request.variants[0]);
 }
 

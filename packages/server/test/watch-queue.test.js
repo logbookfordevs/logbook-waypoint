@@ -327,6 +327,7 @@ test('portable Watch activity excludes Variant implementation and Scaffold data'
     variant_request: {
       status: 'unresolved',
       active_variant_key: 'compact',
+      requested_count: 3,
       scaffold: ['variant-shell'],
       variants: [{
         key: 'compact',
@@ -341,6 +342,7 @@ test('portable Watch activity excludes Variant implementation and Scaffold data'
   assert.deepEqual(portable.variant_request, {
     status: 'unresolved',
     active_variant_key: 'compact',
+    requested_count: 3,
     variants: [{ key: 'compact', name: 'Compact', state: 'active' }],
   });
   assert.equal('variant_presentation' in portable, false);

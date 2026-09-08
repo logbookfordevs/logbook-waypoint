@@ -565,7 +565,7 @@ test('Queue sync retains migrated terminal history missing from the server', asy
   assert.match(background, /serverIds\.has\(annotation\.id\) \|\| annotation\.status === 'pending'/);
 });
 
-test('Queue conflict resolution preserves Variant-owned state from ordinary records', async () => {
+test('Queue conflict resolution accepts server cancellation of locally cached Variant state', async () => {
   const context = createBrowserContext();
   await loadScript(context, 'annotation-id.js');
   await loadScript(context, 'background/queue-sync.js');
@@ -585,8 +585,10 @@ test('Queue conflict resolution preserves Variant-owned state from ordinary reco
   };
 
   const localOwned = context.WaypointQueueSync.merge([unresolved], [newerOrdinary], []);
-  assert.deepEqual(localOwned.annotations[0].variant_request, unresolved.variant_request);
-  assert.equal(localOwned.changed, false);
+  assert.equal('variant_request' in localOwned.annotations[0], false);
+  assert.equal('variant_presentation' in localOwned.annotations[0], false);
+  assert.equal(localOwned.annotations[0]._synced, true);
+  assert.equal(localOwned.changed, true);
 
   const serverOwned = context.WaypointQueueSync.merge([newerOrdinary], [unresolved], []);
   assert.deepEqual(serverOwned.annotations[0].variant_request, unresolved.variant_request);
@@ -759,6 +761,36 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   assert.equal(replacement.style.backgroundColor, 'yellow');
   assert.equal(replacement.textContent, 'Old');
   assert.equal(context.document.querySelector('[data-waypoint-style]'), null);
+});
+
+test('Variant CSS switches temporary structural Scaffold after its captured Target disappears', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><section data-route-variant="branch"></section><section data-route-variant="ring"></section></body></html>');
+  context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#overlay') };
+  context.WaypointElementContext = { findElementBySelector: () => null };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  const annotation = {
+    id: 'waypoint_1750000000001_structural',
+    selector: '#removed-target',
+    comment: 'Compare structural routes',
+    status: 'pending',
+    created_at: '2026-01-01T00:00:00.000Z',
+    css: '[data-route-variant] { display: none; } [data-route-variant="branch"] { display: block; }',
+  };
+
+  context.WaypointBadgeManager.render([annotation]);
+  const style = context.document.querySelector('[data-waypoint-style]');
+  assert.match(style.textContent, /route-variant="branch"/);
+  assert.equal(context.document.querySelector('.waypoint-badge'), null);
+
+  context.WaypointBadgeManager.render([{
+    ...annotation,
+    css: '[data-route-variant] { display: none; } [data-route-variant="ring"] { display: block; }',
+  }]);
+  assert.equal(context.document.querySelector('[data-waypoint-style]'), style);
+  assert.match(style.textContent, /route-variant="ring"/);
+  assert.doesNotMatch(style.textContent, /route-variant="branch"/);
 });
 
 test('live copy preview survives a host rerender of the same Target', async () => {
