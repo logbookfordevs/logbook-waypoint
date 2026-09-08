@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.1.3] - 2026-09-07
+
 ### Added
 - Added `waypoint update` for npm global and GitHub installer installations, preserving the installation location and channel. GitHub updates download the installer over HTTPS before running it. Older GitHub installs need one rerun of their original installer to enable detection; restart the server or reconnect the MCP agent after updating.
 

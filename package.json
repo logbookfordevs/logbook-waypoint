@@ -1,6 +1,6 @@
 {
   "name": "logbook-waypoint",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Local-first visual feedback for developers and coding agents",
   "author": "Leonardo Reis Dias",

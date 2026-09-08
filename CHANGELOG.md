@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.1.3] - 2026-09-07
+
+### Added
+- Added `waypoint update` for npm global and GitHub installer installations, with installation-channel detection and preserved install locations.
+
 ### Changed
 - Redesigned the Variant picker with a draggable panel, compact wheel navigation, a View all list, and clearer comparison and confirmation controls.
+- Live annotation watching now begins with an explicit URL scope and retains that scope in continuation cursors, while scoped operations treat `localhost` and `127.0.0.1` as aliases.
+- Clarified agent guidance for cleaning up temporary Variant code when a Variant Set is cancelled.
 
 ### Fixed
 - Kept the Variant picker within the viewport, corrected clipped selection and hover styling, and added Escape navigation and dismissal.
