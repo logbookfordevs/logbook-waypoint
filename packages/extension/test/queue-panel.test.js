@@ -362,7 +362,7 @@ test('settings use the larger available side of the viewport as their height bou
   assert.equal(dropdown.style.getPropertyValue('--waypoint-settings-available-height'), '678px');
 });
 
-test('Escape closes settings and resets the trigger disclosure state', async () => {
+test('Escape closes settings from anywhere and resets the trigger disclosure state', async () => {
   const { context, root } = await openQueue([]);
   root.querySelector('.waypoint-queue-close').click();
   const trigger = root.querySelector('.waypoint-tb-settings');
@@ -371,7 +371,7 @@ test('Escape closes settings and resets the trigger disclosure state', async () 
 
   const escape = new context.window.Event('keydown', { bubbles: true });
   escape.key = 'Escape';
-  root.querySelector('.waypoint-settings-dropdown').dispatchEvent(escape);
+  context.document.dispatchEvent(escape);
 
   assert.equal(root.querySelector('.waypoint-settings-dropdown'), null);
   assert.equal(trigger.getAttribute('aria-expanded'), 'false');

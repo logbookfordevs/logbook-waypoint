@@ -599,12 +599,7 @@ var WaypointToolbar = (() => {
     settingsDropdown.addEventListener('click', (e) => {
       e.stopPropagation();
     });
-    settingsDropdown.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      e.stopPropagation();
-      closeSettings({ restoreFocus: true });
-    });
+    document.addEventListener('keydown', onSettingsKeydown, true);
 
     // Close on outside click (next tick to avoid immediate close)
     setTimeout(() => {
@@ -1067,6 +1062,14 @@ var WaypointToolbar = (() => {
     settingsButton?.setAttribute('aria-expanded', 'false');
     if (restoreFocus) settingsButton?.focus();
     document.removeEventListener('click', onOutsideClick);
+    document.removeEventListener('keydown', onSettingsKeydown, true);
+  }
+
+  function onSettingsKeydown(event) {
+    if (event.key !== 'Escape' || !settingsDropdown) return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeSettings({ restoreFocus: true });
   }
 
   function onOutsideClick(e) {

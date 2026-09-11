@@ -172,19 +172,47 @@ export const documentationPages: DocumentationPage[] = [
   {
     slug: 'design-actions',
     title: 'Design Actions',
-    summary: 'Attach optional structured design direction without replacing the Annotation lifecycle.',
+    summary: 'Use Impeccable design disciplines from an Annotation while Waypoint keeps one trustworthy workflow.',
     sections: [
       {
-        heading: 'Optional Design Intent',
+        heading: 'Install Impeccable first',
+        prerequisite: 'Required only for Design Actions. Ordinary Waypoint Annotations do not require Impeccable.',
         paragraphs: [
-          'A Design Intent adds a guided operation such as Polish, Layout, Typeset, or Animate to an ordinary Annotation. The request stays provider-neutral when no workflow is selected.',
-          'Design Actions require the Impeccable skill, but Impeccable contributes discipline rather than owning Queue state, Claim, Watch, or resolution.',
+          'Design Actions are powered by the external Impeccable skill. Install Impeccable for the coding agent that will claim the Annotation, following its current agent-specific instructions.',
+          'Waypoint does not install Impeccable or detect whether an agent can load it. Waypoint does not currently certify a particular agent installation path, so confirm the skill is available in the same environment where the agent connects to Waypoint through MCP.',
+        ],
+        resource: {
+          href: 'https://github.com/pbakaus/impeccable',
+          label: 'Open Impeccable installation and setup instructions',
+        },
+      },
+      {
+        heading: 'Write one brief, then choose the discipline',
+        paragraphs: [
+          'Describe the desired outcome in the normal Annotation comment, then turn on Design Actions. Leave the action unselected for Design Actions · Freeform, or choose one named discipline: Bolder, Quieter, Distill, Polish, Typeset, Colorize, Layout, Animate, Delight, or Overdrive.',
+          'Each Annotation carries at most one primary Design Action. The comment remains the only brief, so constraints and context stay together instead of drifting across two prompt fields.',
         ],
       },
       {
-        heading: 'One primary action',
+        heading: 'Request Variants separately',
         paragraphs: [
-          'Each Annotation carries at most one primary Design Action. The freeform brief can still add constraints, and a freeform Impeccable direction is valid without choosing a predefined action.',
+          'A Design Action describes how the agent should approach the interface. Request Variants asks for multiple named candidates. You can use either feature alone or combine them on the same Annotation.',
+          'When Variants are requested, Waypoint owns the Active Variant, discard and Keep decisions, and final cleanup. Finalize the chosen candidate before resolving the Annotation so the coding agent can reconcile temporary source Scaffold safely.',
+        ],
+      },
+      {
+        heading: 'Recover when the skill is unavailable',
+        paragraphs: [
+          'If the executing agent cannot load Impeccable, it should not silently replace the requested discipline with generic design work. The Annotation returns to Pending with a workflow_unavailable Work Notice.',
+          'Install or repair Impeccable in that agent environment, then claim the same Annotation again. The original brief and Design Intent remain in the Queue for the next attempt.',
+        ],
+        note: 'If you do not use Impeccable, turn off Show Design Actions in extension settings. Existing saved Design Intent remains visible when you reopen its Annotation.',
+      },
+      {
+        heading: 'Keep one workflow authority',
+        paragraphs: [
+          'Impeccable supplies the design methodology. Waypoint remains responsible for the Annotation, Queue, Claim and Watch state, Work Notices, retained results, Variant selection, and cleanup decisions. The coding agent remains responsible for source changes.',
+          'Waypoint does not embed Impeccable Live or adopt its separate picker, polling, preview, or acceptance workflow. That boundary keeps one authoritative lifecycle and makes interrupted work recoverable through the normal Queue.',
         ],
       },
     ],

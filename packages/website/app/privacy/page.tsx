@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
 import { CircleAlert, LockKeyhole, MapPin, Server, ShieldCheck } from 'lucide-react';
 
+import { createSocialMetadata } from '@/lib/site-config';
+
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description: 'How Logbook Waypoint handles, stores, shares, and deletes local Annotation data.',
   alternates: { canonical: '/privacy' },
-  openGraph: { url: '/privacy' },
+  ...createSocialMetadata({
+    title: 'Privacy Policy — Logbook Waypoint',
+    description: 'How Logbook Waypoint handles, stores, shares, and deletes local Annotation data.',
+    url: '/privacy',
+  }),
 };
 
 const policySections = [

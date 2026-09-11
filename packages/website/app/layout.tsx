@@ -10,7 +10,7 @@ import type { Metadata } from 'next';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { ThemeBoundary } from '@/components/theme-boundary';
-import { siteUrl } from '@/lib/site-config';
+import { createSocialMetadata, siteUrl } from '@/lib/site-config';
 
 import '@/app/globals.css';
 import '@/app/styles/hero.css';
@@ -23,18 +23,22 @@ import '@/app/styles/motion-and-responsive.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  applicationName: 'Logbook Waypoint',
   title: {
     default: 'Logbook Waypoint — Pin the point. Chart the change.',
     template: '%s — Logbook Waypoint',
   },
   description: 'Local-first visual feedback your coding agent can Watch, Claim, and Resolve.',
+  authors: [{ name: 'Logbook for Devs', url: 'https://logbookfordevs.com/' }],
+  creator: 'Logbook for Devs',
+  publisher: 'Logbook for Devs',
+  category: 'developer tools',
   alternates: { canonical: '/' },
-  openGraph: {
-    title: 'Logbook Waypoint',
-    description: 'Visual feedback your coding agent can act on.',
-    type: 'website',
+  ...createSocialMetadata({
+    title: 'Logbook Waypoint — Pin the point. Chart the change.',
+    description: 'Local-first visual feedback your coding agent can Watch, Claim, and Resolve.',
     url: '/',
-  },
+  }),
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

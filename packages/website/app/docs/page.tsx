@@ -3,13 +3,17 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, BookOpen, Compass, Route } from 'lucide-react';
 
 import { documentationPages } from '@/lib/docs-content';
-import { chromeWebStoreUrl, signalChartUrl } from '@/lib/site-config';
+import { chromeWebStoreUrl, createSocialMetadata, signalChartUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: 'Documentation',
   description: 'The Logbook Waypoint field guide for local Annotation and agent workflows.',
   alternates: { canonical: '/docs' },
-  openGraph: { url: '/docs' },
+  ...createSocialMetadata({
+    title: 'Documentation — Logbook Waypoint',
+    description: 'The Logbook Waypoint field guide for local Annotation and agent workflows.',
+    url: '/docs',
+  }),
 };
 
 export default function DocumentationIndex() {

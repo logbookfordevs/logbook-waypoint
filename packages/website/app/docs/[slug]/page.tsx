@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 
 import { CodeBlock } from '@/components/code-block';
 import { documentationPages, getDocumentationPage } from '@/lib/docs-content';
+import { createSocialMetadata } from '@/lib/site-config';
 
 interface DocumentationRouteProps {
   params: Promise<{ slug: string }>;
@@ -27,7 +28,11 @@ export async function generateMetadata({ params }: DocumentationRouteProps): Pro
     title: page.title,
     description: page.summary,
     alternates: { canonical: canonicalPath },
-    openGraph: { url: canonicalPath },
+    ...createSocialMetadata({
+      title: `${page.title} — Logbook Waypoint`,
+      description: page.summary,
+      url: canonicalPath,
+    }),
   };
 }
 
