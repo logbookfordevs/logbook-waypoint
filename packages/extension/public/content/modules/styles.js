@@ -1860,10 +1860,15 @@ var WAYPOINT_STYLES = `
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--waypoint-text-secondary);
+  color: color-mix(in srgb, var(--waypoint-on-accent) 72%, transparent);
   cursor: pointer;
   font-family: var(--waypoint-font);
   font-size: 13px;
+}
+
+.waypoint-guide-back-btn span {
+  color: var(--waypoint-on-accent);
+  font-weight: 600;
 }
 
 .waypoint-guide-back-btn:focus-visible,
@@ -1914,6 +1919,7 @@ var WAYPOINT_STYLES = `
 }
 
 .waypoint-data-storage-review { color: var(--waypoint-warning) !important; }
+.waypoint-data-storage-variants { color: var(--waypoint-danger) !important; }
 .waypoint-data-storage-projects { display: grid; gap: 8px; }
 
 .waypoint-data-storage-project-header {

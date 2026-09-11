@@ -460,6 +460,49 @@ test('settings show cached maintenance guidance and load Data & Storage details 
   assert.equal(root.querySelector('.waypoint-data-storage-view'), null);
 });
 
+test('Data & Storage warns about unfinished Variants and permits confirmed record deletion', async () => {
+  const summary = {
+    project_count: 1,
+    annotation_count: 2,
+    old_pending_count: 0,
+    cleanup_candidate_count: 0,
+    unresolved_variant_count: 1,
+    cleanup_unresolved_variant_count: 0,
+    review_count: 0,
+  };
+  const snapshot = {
+    summary,
+    projects: [{
+      origin: 'http://localhost:3000',
+      annotation_count: 2,
+      route_count: 1,
+      status_counts: { pending: 2, claimed: 0, resolved: 0, discarded: 0 },
+      unresolved_variant_count: 1,
+      last_activity_at: '2026-09-07T00:00:00.000Z',
+      approximate_bytes: 3072,
+    }],
+  };
+  const { dataRequests, root } = await openQueue([], { dataHealthSummary: summary, dataManagerSnapshot: snapshot });
+  root.querySelector('.waypoint-queue-close').click();
+  root.querySelector('.waypoint-tb-settings').click();
+  await new Promise(resolve => setImmediate(resolve));
+  root.querySelector('.waypoint-data-storage-btn').click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const project = root.querySelector('.waypoint-data-storage-project');
+  assert.match(project.textContent, /1 unfinished Variant request/);
+  const deleteButton = project.querySelector('.waypoint-data-delete-project');
+  deleteButton.click();
+  assert.match(deleteButton.textContent, /Delete 2 and discard 1 unfinished Variant\?/);
+  assert.equal(dataRequests.deletions.length, 0);
+
+  deleteButton.click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(JSON.parse(JSON.stringify(dataRequests.deletions)), [
+    { scope: 'project', origin: 'http://localhost:3000' },
+  ]);
+});
+
 test('clicking delete all closes an open Queue through outside-click handling', async () => {
   const annotation = {
     id: 'waypoint_1750000000000_deleteall',
