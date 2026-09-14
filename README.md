@@ -12,7 +12,7 @@
 Logbook Waypoint is a local-first visual feedback tool for developers and coding agents. Place annotations directly on a development interface, preserve the surrounding element context, and let an MCP-compatible agent read and resolve the resulting queue.
 
 > [!NOTE]
-> The Waypoint CLI is available through npm and checksummed GitHub Releases. The browser extension is currently installed as an unpacked build from this repository.
+> The Waypoint CLI is available through npm and checksummed GitHub Releases. Install the browser extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/logbook-waypoint/fgondknhkpekdhbbkgodokmpnpadfedo).
 
 > [!TIP]
 > **Prefer a visual tour?** Open the interactive [Waypoint Signal Chart](https://tot.page/I3pC-z9cCejNITMc7Mk96Q/index.html@b5f1d9e0955ce3411ccf9709e3d05bd89415a8bd) to trace the extension → Queue → MCP → agent workflow, explore every journey, and inspect all 19 MCP tools.
