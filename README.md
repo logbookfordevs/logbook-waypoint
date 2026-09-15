@@ -238,7 +238,7 @@ The `Show Design Actions` preference only controls authoring UI for new Annotati
 
 Waypoint owns the Design Actions workflow and Annotation lifecycle; Impeccable supplies the external design discipline, not a second work-state system. An authored Design Intent may include separate Variant Intent. After an agent generates candidates and submits browser-presentable implementations, Waypoint stores and governs the Variant Set, its Active Variant, atomic candidate replacement, and the cleanup decision. The coding agent reconciles temporary source Scaffold after Keep or Cancel.
 
-If the requested workflow is unavailable or execution fails recoverably, the agent releases the Annotation to Pending with a safe Work Notice. Successful Design Actions retain a provider-neutral Resolution Record with a short outcome and verification evidence. Survey keeps Queue context compact, Inspect exposes the complete record for selected Annotations, and Watch keeps delivery concise.
+If the requested workflow is unavailable or execution fails recoverably, the agent releases the Annotation to Pending with a safe Work Notice. Successful Design Actions require and retain a provider-neutral Resolution Record with a short outcome and verification evidence; ordinary Annotations resolve without one. Application routes and repository-relative source paths are valid evidence, while machine-specific absolute paths and provider-internal material are not. Survey keeps Queue context compact, Inspect exposes the complete record for selected Annotations, and Watch keeps delivery concise.
 
 ## Security boundary
 

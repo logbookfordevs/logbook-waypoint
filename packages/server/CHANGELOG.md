@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Fixed
+- Resolution Records now expose their Design Action-only MCP contract, report ordinary-Annotation misuse with a direct recovery step, and accept application routes and repository-relative source paths as portable evidence.
+
 ## [0.1.4] - 2026-09-08
 
 ### Changed

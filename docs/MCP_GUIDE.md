@@ -216,11 +216,11 @@ Annotation comments, captured page text, selectors, Source Identity, and related
 | `claim_annotation` | `id`, `owner`, `url?` | Claim Pending work or refresh the same owner's Claim. | Yes |
 | `release_annotation` | `id`, `owner`, `url?`, `reason?` | Return owned work to Pending, optionally with a Work Notice. | Yes |
 | `dismiss_work_notice` | `id`, `url?` | Clear the active notice without changing Pending state. | Yes |
-| `resolve_annotation` | `id`, `owner`, `url?`, `resolution_record?` | Retain completed work as Resolved history. | Yes |
+| `resolve_annotation` | `id`, `owner`, `url?`, `resolution_record?` | Retain completed work as Resolved history. Design Actions require `resolution_record`; ordinary Annotations must omit it. | Yes |
 | `discard_annotation` | `id`, `owner?`, `url?` | Close work as retained Discarded history. | Yes |
 | `delete_annotation` | `id` | Permanently remove one Annotation and its stored media. | **Yes, irreversible** |
 
-Resolve and discard retain history. Delete is a separate destructive operation. Pending work must be claimed before resolution; a Design Action cannot resolve without its required Resolution Record, and unfinished Variants must be finalized first.
+Resolve and discard retain history. Delete is a separate destructive operation. Pending work must be claimed before resolution; an Impeccable Design Action cannot resolve without its required Resolution Record, while an ordinary Annotation resolves without one. Resolution evidence may name application routes and repository-relative source paths, but must omit machine-specific absolute paths and provider-internal material. Unfinished Variants must be finalized first.
 
 ### Evidence, export, and cleanup
 

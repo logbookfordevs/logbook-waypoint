@@ -105,13 +105,20 @@ function lifecycleToolSchema({ owner, reason = false, resolutionRecord = false }
       ...(resolutionRecord ? {
         resolution_record: {
           type: 'object',
+          description: 'Required completion evidence only when resolving an Impeccable Design Action. Omit this field for an ordinary Annotation.',
           properties: {
-            summary: { type: 'string', minLength: 1, maxLength: RESOLUTION_SUMMARY_MAX_LENGTH },
+            summary: {
+              type: 'string',
+              minLength: 1,
+              maxLength: RESOLUTION_SUMMARY_MAX_LENGTH,
+              description: 'Provider-neutral implementation outcome. Application routes and repository-relative paths are allowed; machine-specific absolute paths and provider-internal material are not.',
+            },
             verification: {
               type: 'array',
               minItems: 1,
               maxItems: RESOLUTION_VERIFICATION_MAX_ITEMS,
               items: { type: 'string', minLength: 1, maxLength: RESOLUTION_VERIFICATION_ITEM_MAX_LENGTH },
+              description: 'Provider-neutral checks that substantiate the completed Design Action.',
             },
           },
           required: ['summary', 'verification'],
@@ -783,7 +790,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'resolve_annotation',
-            description: 'Marks an Annotation owned by the caller as Resolved and retains it as Queue history. Pending Annotations must be claimed first.',
+            description: 'Marks an Annotation owned by the caller as Resolved and retains it as Queue history. Pending Annotations must be claimed first. An Impeccable Design Action requires a Resolution Record as its completion evidence; an ordinary Annotation must omit resolution_record.',
             inputSchema: lifecycleToolSchema({ owner: true, resolutionRecord: true }),
           },
           {
@@ -1679,7 +1686,11 @@ export class LocalAnnotationsServer {
       }
       if (args.operation === 'resolve') {
         assertAnnotationDeletable(annotations[index]);
-        if (annotations[index].design_intent !== undefined) assertResolutionRecord(args.resolution_record);
+        if (annotations[index].design_intent !== undefined) {
+          assertResolutionRecord(args.resolution_record);
+        } else if (args.resolution_record !== undefined) {
+          throw new TypeError('resolution_record is only supported when resolving a Design Action; resolve this Annotation without resolution_record');
+        }
       }
       const lifecycleInput = args.operation === 'discard'
         ? discardVariantRequest(annotations[index])
