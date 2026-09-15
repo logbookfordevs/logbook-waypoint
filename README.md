@@ -117,6 +117,28 @@ Waypoint runs in the background by default. Use `waypoint status` to check it,
 `waypoint logs` to inspect it, and `waypoint stop` when you are finished. For a
 temporary terminal-attached session, use `waypoint start --foreground`.
 
+### Watch a project
+
+Keep a foreground consumer attached to one loopback project:
+
+```bash
+waypoint watch http://localhost:3000/
+```
+
+Agent harnesses that can surface background command output can use complete NDJSON envelopes:
+
+```bash
+waypoint watch http://localhost:3000/ --json
+```
+
+Use `--once` for one bounded result, including an empty timeout. Every structured result includes the durable cursor; resume only from a cursor the consumer actually processed:
+
+```bash
+waypoint watch http://localhost:3000/ --json --once --cursor '<opaque-cursor>'
+```
+
+The server records activity durably even when no consumer is attached. The CLI retrieves that activity but cannot universally wake an idle coding agent; that final attention step depends on the agent harness.
+
 ### Local development
 
 When running Waypoint directly from this repository instead of an installed

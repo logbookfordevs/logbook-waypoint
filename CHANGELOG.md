@@ -9,10 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - GitHub release installations now recommend Waypoint's agent workflow skill and can open the Skills CLI for user-selected agent harnesses.
+- Added `waypoint watch <url>` as a foreground Queue consumer, with complete NDJSON envelopes, bounded one-result mode, explicit cursor resumption, and reconnect handling.
 
 ### Changed
 - Scoped Queue reads now explicitly support optimistic empty project URLs, while MCP descriptions stay concise and the installed skill carries detailed workflow guidance.
 - Variant cancellation now publishes an explicit `variant_cancelled` Watch change so agents do not mistake a user decision for lost work.
+- The Waypoint skill now treats watching as a standing responsibility, uses background CLI output only when the agent harness can surface it, and falls back to cursor-based checks at workflow boundaries.
 
 ### Fixed
 - Resolution Records now identify themselves as Impeccable Design Action artifacts, report invalid usage before inspecting evidence, and accept application routes and repository-relative source paths.

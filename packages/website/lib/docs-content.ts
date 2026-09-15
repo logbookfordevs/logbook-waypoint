@@ -127,6 +127,15 @@ export const documentationPages: DocumentationPage[] = [
         code: 'npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global',
       },
       {
+        heading: 'Keep a foreground Watch',
+        paragraphs: [
+          'Agent harnesses that surface background command output can keep a foreground Waypoint consumer running while implementation continues. Structured mode emits one complete untrusted MCP result envelope per line and reconnects through the existing durable Watch journal.',
+          'The command retrieves activity without creating or renewing Claims. It cannot guarantee that an idle agent wakes up: scheduling attention remains the responsibility of the coding-agent harness.',
+        ],
+        code: 'waypoint watch http://localhost:3000/ --json',
+        note: 'Use --once for one bounded result. Resume a restarted consumer with --cursor only after the agent has processed the envelope carrying that cursor.',
+      },
+      {
         heading: 'Connect Codex',
         paragraphs: [
           'Add the local streamable HTTP endpoint to Codex configuration. The server remains on IPv4 loopback and does not require a LAN binding.',

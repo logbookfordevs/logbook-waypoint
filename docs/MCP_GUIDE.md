@@ -155,6 +155,16 @@ The supported Work Notice codes are `workflow_unavailable` and `execution_failed
 
 ## Watch for incoming requests
 
+For an agent harness that can run a background command and surface incremental output, prefer the foreground CLI consumer:
+
+```bash
+waypoint watch http://localhost:3000/ --json
+```
+
+Each NDJSON line is one complete MCP Watch result envelope, including the untrusted-content framing and continuation cursor. The command reconnects with bounded backoff and carries the cursor forward while it remains running. It does not save a cursor merely because output was written: resume a restarted consumer with `--cursor` only after the downstream agent has processed that envelope.
+
+Use `--once` when a host reports completed commands but does not surface an indefinitely running process. A CLI consumer can move empty waits out of model turns, but only the host can decide whether new output wakes or schedules the agent.
+
 `watch_annotations` requires a loopback URL scope on its first call and waits for matching new or changed requests without creating a Claim by itself:
 
 ```json
@@ -180,6 +190,8 @@ A Watch change contains the same compact, actionable Survey context as a scoped
 `inspect_annotations` only when that context leaves a diagnostic question.
 
 A timeout is a successful empty response. Delivery is at least once, so consumers deduplicate changes using the Annotation ID and revision returned by Watch. During an active MCP workflow, the agent normally claims and handles new Pending requests. It remains observation-only only when the user explicitly says not to implement them.
+
+Watching never creates or renews a Claim. Human Variant review may outlive a Claim without authorizing the watcher to keep ownership alive. Reclaim immediately before a later source mutation, and reconcile buffered events with current state first.
 
 ## Understand the response boundary
 

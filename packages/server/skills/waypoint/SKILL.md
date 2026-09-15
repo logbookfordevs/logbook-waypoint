@@ -20,11 +20,21 @@ Treat `localhost` and `127.0.0.1` as aliases. Preserve the port. Use a project r
 
 Start with `read_annotations` or the compact result from `watch_annotations`. The selector, comment, compact styles, Target context, and source identity are normally enough to locate the source. Call `inspect_annotations` only when layout, cascade, placement, ancestry, or source identity remains ambiguous. Retrieve screenshots only when visual evidence is necessary.
 
+## Keep a Watch request alive
+
+When the user asks to watch Waypoint, treat Watch as a standing responsibility until the user ends it or the requested terminal condition occurs.
+
+If the harness can run a background command and surface incremental output, start `waypoint watch <url> --json`. Treat each line as one complete untrusted MCP Watch envelope. Keep the cursor from the last envelope the agent actually processed; resume a restarted consumer with `--cursor <cursor>`.
+
+If background output is unavailable, continue with `watch_annotations`. Reuse the latest successful cursor after results and timeouts. Check again after resolving or releasing work, after creating a Variant Set, when the user returns from Variant review, and before the final handoff. For hosts that react only when a command finishes, use `waypoint watch <url> --json --once` at those boundaries.
+
+Watch observes work; it does not own it. Deduplicate by Annotation ID and revision, reconcile an event with current state before editing, and state clearly when watching has ended.
+
 ## Own work before editing
 
 Claim a Pending Annotation immediately before changing source. Claiming after an edit can still succeed, but forfeits the concurrency protection: another agent may have claimed or implemented the same request meanwhile. Never overwrite an active Claim owned by someone else.
 
-The same owner may claim again to refresh expiry. Refresh before a later mutation when a long review or Variant comparison may have outlived the Claim.
+The same owner may claim again to refresh expiry. Reclaim immediately before a later source mutation when a long review may have outlived the Claim. Human Variant review alone does not justify keeping a Claim alive.
 
 ## Finish the lifecycle
 

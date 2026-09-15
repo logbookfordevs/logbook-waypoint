@@ -17,6 +17,16 @@ describe('agent workflow skill documentation', () => {
     expect(skillIndex).toBeGreaterThanOrEqual(0);
     expect(mcpIndex).toBeGreaterThan(skillIndex ?? -1);
   });
+
+  it('documents foreground Watch without promising universal agent wake-up', () => {
+    const agentSetup = getDocumentationPage('agent-setup');
+    const watchSection = agentSetup?.sections.find((section) => section.heading === 'Keep a foreground Watch');
+
+    expect(watchSection?.code).toBe('waypoint watch http://localhost:3000/ --json');
+    expect(watchSection?.paragraphs.join(' ')).toMatch(/cannot guarantee.*idle agent wakes up/i);
+    expect(watchSection?.note).toMatch(/--once/);
+    expect(watchSection?.note).toMatch(/--cursor/);
+  });
 });
 
 describe('Design Actions documentation', () => {

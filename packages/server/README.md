@@ -60,6 +60,22 @@ waypoint logs
 waypoint logs -f
 ```
 
+### Watch one project
+
+Run a foreground Watch consumer for a loopback project, Page, or View State:
+
+```bash
+waypoint watch http://localhost:3000/
+```
+
+Use `--json` for complete NDJSON MCP result envelopes and `--once` for one bounded result. Resume from the cursor of the last envelope the downstream consumer actually processed:
+
+```bash
+waypoint watch http://localhost:3000/ --json --once --cursor '<opaque-cursor>'
+```
+
+The command reconnects with bounded backoff and reads from the existing durable Watch journal. It is a foreground consumer, not another daemon or event store. Whether its output wakes an idle agent remains a capability of the coding-agent harness.
+
 ## AI Coding Agent Integration
 
 After starting the server, connect it to your AI coding agent. The server supports multiple agents via MCP (Model Context Protocol) using both HTTP and SSE transports.
