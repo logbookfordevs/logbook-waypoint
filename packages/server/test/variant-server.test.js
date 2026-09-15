@@ -557,6 +557,7 @@ test('Variant Set cancellation publishes Pending state through Watch without can
     const cancellation = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
 
     assert.equal(cancellation.changes.length, 1);
+    assert.equal(cancellation.changes[0].change_type, 'variant_cancelled');
     assert.equal(cancellation.changes[0].annotation.status, 'pending');
     assert.equal('variant_request' in cancellation.changes[0].annotation, false);
     assert.doesNotMatch(JSON.stringify(cancellation), /implementation|scaffold|pending_changes/);

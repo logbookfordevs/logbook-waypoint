@@ -35,7 +35,9 @@ The retrieval tools themselves remain side-effect-free: Reading, inspection, pro
 
 ## Start with a compact Survey
 
-Call `read_annotations` without a URL when the project is not yet known:
+Prefer the current repository's explicit loopback development URL when it can be inferred from the user's request, a running server, terminal output, or the documented dev command. A scoped read is optimistic: a valid project URL with no stored Annotations returns an empty Queue, not an error.
+
+Call `read_annotations` without a URL only when the current project URL cannot be inferred:
 
 ```json
 {
@@ -174,7 +176,7 @@ Reuse only the cursor from the last successful response; it retains the scope ac
 ```
 
 A Watch change contains the same compact, actionable Survey context as a scoped
-`read_annotations` result, plus its revision and deduplication key. Escalate to
+`read_annotations` result, plus its revision and deduplication key. Variant cancellation additionally carries `change_type: "variant_cancelled"`. Escalate to
 `inspect_annotations` only when that context leaves a diagnostic question.
 
 A timeout is a successful empty response. Delivery is at least once, so consumers deduplicate changes using the Annotation ID and revision returned by Watch. During an active MCP workflow, the agent normally claims and handles new Pending requests. It remains observation-only only when the user explicitly says not to implement them.

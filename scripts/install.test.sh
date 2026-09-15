@@ -49,6 +49,11 @@ if [[ "$(basename "$0")" = "curl" ]]; then
   exit 0
 fi
 
+if [[ "$(basename "$0")" = "npx" ]]; then
+  printf '%s\n' "$*" >> "$FAKE_NPX_LOG"
+  exit 0
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_DIR="$(mktemp -d)"
 
@@ -63,23 +68,27 @@ trap cleanup EXIT
 FAKE_BIN="$TEST_DIR/fake-bin"
 FAKE_ARCHIVE="$TEST_DIR/waypoint-cli.tar.gz"
 FAKE_CURL_LOG="$TEST_DIR/curl.log"
+FAKE_NPX_LOG="$TEST_DIR/npx.log"
 INSTALL_ROOT="$TEST_DIR/install"
 BIN_DIR="$TEST_DIR/user-bin"
 PAYLOAD_DIR="$TEST_DIR/payload"
 
-mkdir -p "$FAKE_BIN" "$PAYLOAD_DIR/bin" "$PAYLOAD_DIR/lib"
+mkdir -p "$FAKE_BIN" "$PAYLOAD_DIR/bin" "$PAYLOAD_DIR/lib" "$PAYLOAD_DIR/skills/waypoint"
 ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/curl"
+ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/npx"
 printf '#!/usr/bin/env node\nif (process.argv.includes("--version")) console.log("0.1.4");\n' > "$PAYLOAD_DIR/bin/cli.js"
 printf 'export {};\n' > "$PAYLOAD_DIR/lib/server.js"
 printf '{"name":"@logbookfordevs/waypoint","version":"0.1.4","type":"module"}\n' > "$PAYLOAD_DIR/package.json"
+printf '%s\n' '---' 'name: waypoint' 'description: Test skill.' '---' > "$PAYLOAD_DIR/skills/waypoint/SKILL.md"
 tar -czf "$FAKE_ARCHIVE" -C "$PAYLOAD_DIR" .
 FAKE_CHECKSUM="$(shasum -a 256 "$FAKE_ARCHIVE" | awk '{print $1}')"
-export FAKE_ARCHIVE FAKE_CHECKSUM FAKE_CURL_LOG
+export FAKE_ARCHIVE FAKE_CHECKSUM FAKE_CURL_LOG FAKE_NPX_LOG
 
 install_output="$(
   PATH="$FAKE_BIN:$PATH" \
   WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" \
   WAYPOINT_BIN_DIR="$BIN_DIR" \
+  WAYPOINT_INSTALL_SKILL=1 \
   bash "$ROOT_DIR/scripts/install.sh" 2>&1
 )"
 
@@ -88,6 +97,7 @@ grep -q 'releases/download/v0.1.4/waypoint-cli.tar.gz' "$FAKE_CURL_LOG"
 test -f "$INSTALL_ROOT/releases/v0.1.4/bin/cli.js"
 test -f "$INSTALL_ROOT/releases/v0.1.4/lib/server.js"
 test -x "$BIN_DIR/waypoint"
+grep -q -- "--yes skills@latest add $INSTALL_ROOT/releases/v0.1.4/skills/waypoint --global" "$FAKE_NPX_LOG"
 "$BIN_DIR/waypoint" --version | grep -q '^0.1.4$'
 
 printf '0%.0s' {1..64} > "$TEST_DIR/bad-checksum"
@@ -95,6 +105,7 @@ if PATH="$FAKE_BIN:$PATH" \
   FAKE_CHECKSUM="$(cat "$TEST_DIR/bad-checksum")" \
   WAYPOINT_INSTALL_ROOT="$TEST_DIR/bad-install" \
   WAYPOINT_BIN_DIR="$TEST_DIR/bad-bin" \
+  WAYPOINT_INSTALL_SKILL=skip \
   bash "$ROOT_DIR/scripts/install.sh" >/dev/null 2>&1; then
   printf 'installer accepted an invalid checksum\n' >&2
   exit 1

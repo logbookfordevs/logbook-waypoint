@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Added
+- GitHub release installations now recommend Waypoint's agent workflow skill and can open the Skills CLI for user-selected agent harnesses.
+
+### Changed
+- Scoped Queue reads now explicitly support optimistic empty project URLs, while MCP descriptions stay concise and the installed skill carries detailed workflow guidance.
+- Variant cancellation now publishes an explicit `variant_cancelled` Watch change so agents do not mistake a user decision for lost work.
+
 ### Fixed
 - Resolution Records now identify themselves as Impeccable Design Action artifacts, report invalid usage before inspecting evidence, and accept application routes and repository-relative source paths.
 

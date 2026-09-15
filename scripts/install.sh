@@ -8,6 +8,7 @@ INSTALL_ROOT="${WAYPOINT_INSTALL_ROOT:-$HOME/.local/share/logbook-waypoint}"
 BIN_DIR="${WAYPOINT_BIN_DIR:-$HOME/.local/bin}"
 BIN_PATH="$BIN_DIR/waypoint"
 UNLINK_MODE=0
+SKILL_MODE="${WAYPOINT_INSTALL_SKILL:-ask}"
 
 info() {
   printf '\033[1;36m%s\033[0m %s\n' "waypoint" "$1"
@@ -30,6 +31,7 @@ Options:
   --asset <name>          Release asset name. Defaults to waypoint-cli.tar.gz.
   --install-root <path>   Directory where Waypoint releases are stored.
   --bin-dir <path>        Directory where the waypoint launcher is written.
+  --skip-skill            Skip the recommended Waypoint agent skill prompt.
   --unlink                Remove the launcher written by this installer.
   -h, --help              Show this help and exit.
 
@@ -77,6 +79,7 @@ while [[ $# -gt 0 ]]; do
       BIN_PATH="$BIN_DIR/waypoint"
       shift
       ;;
+    --skip-skill) SKILL_MODE=skip; shift ;;
     --unlink) UNLINK_MODE=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) fail "unknown option: $1" ;;
@@ -160,6 +163,41 @@ unlink_launcher() {
   info "removed $BIN_PATH"
 }
 
+install_skill() {
+  local source_dir="$1/skills/waypoint"
+  [[ -f "$source_dir/SKILL.md" ]] || fail "release asset did not contain skills/waypoint/SKILL.md"
+
+  if [[ "$SKILL_MODE" = "skip" || "$SKILL_MODE" = "0" ]]; then
+    info "skipped Waypoint agent skill"
+    return 0
+  fi
+
+  local install_answer=""
+  if [[ "$SKILL_MODE" = "1" || "$SKILL_MODE" = "yes" ]]; then
+    install_answer="y"
+  elif [[ -r /dev/tty && -w /dev/tty ]]; then
+    printf '\nWaypoint works best with its agent workflow skill. Install it now? [Y/n] ' > /dev/tty
+    read -r install_answer < /dev/tty || install_answer=""
+  else
+    info "recommended: install the Waypoint agent skill from a terminal"
+    info "run: npx skills@latest add \"$source_dir\" --global"
+    return 0
+  fi
+
+  case "$install_answer" in
+    ""|y|Y|yes|YES|Yes) ;;
+    *) info "skipped Waypoint agent skill"; return 0 ;;
+  esac
+
+  if ! command -v npx >/dev/null 2>&1; then
+    info "npx is unavailable; install the skill later with: npx skills@latest add \"$source_dir\" --global"
+    return 0
+  fi
+
+  info "opening agent selection with the Skills CLI"
+  npx --yes skills@latest add "$source_dir" --global
+}
+
 if [[ "$UNLINK_MODE" -eq 1 ]]; then
   unlink_launcher
   exit 0
@@ -200,6 +238,7 @@ rm -rf "$release_dir"
 mkdir -p "$release_dir"
 tar -xzf "$archive_path" -C "$release_dir"
 write_launcher "$release_dir/bin/cli.js"
+install_skill "$release_dir"
 node --input-type=module - "$release_dir" "$INSTALL_ROOT" "$BIN_DIR" "$REPO" "$ASSET_NAME" <<'METADATA'
 import { writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';

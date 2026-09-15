@@ -25,6 +25,13 @@ function comparableAnnotation(annotation) {
   return JSON.stringify(canonicalValue(annotation));
 }
 
+function changeType(previous, annotation) {
+  const cancelledVariantRequest = previous?.variant_request?.status === 'unresolved'
+    && annotation.status === 'pending'
+    && annotation.variant_request === undefined;
+  return cancelledVariantRequest ? 'variant_cancelled' : undefined;
+}
+
 function portableAnnotation(annotation, hasScreenshot) {
   annotation = normalizeAnnotationTargets(annotation);
   const {
@@ -115,6 +122,7 @@ function validateSavedQueue(saved) {
       || cursors.has(change.cursor)
       || !change.annotation
       || !isValidAnnotationId(change.annotation.id)
+      || (change.change_type !== undefined && change.change_type !== 'variant_cancelled')
     ) {
       throw new Error('Invalid Watch journal change');
     }
@@ -186,11 +194,13 @@ export class WatchQueue {
       const previous = previousById.get(annotation.id);
       if (!previous || comparableAnnotation(previous) !== comparableAnnotation(annotation)) {
         const sequence = ++this.sequence;
+        const type = changeType(previous, annotation);
         const change = {
           sequence,
           cursor: randomUUID(),
           annotation,
           revision: `${this.initialCursor}:${sequence}`,
+          ...(type ? { change_type: type } : {}),
         };
         this.history.push(change);
         this.cursorSequences.set(change.cursor, sequence);

@@ -13,6 +13,7 @@ The MCP Watch interface requires a loopback `url` on the first call. Subsequent 
 - Cursors are signed with a private key retained in the local journal and retain their scope across restarts. A conflicting URL, modified cursor, or older unscoped cursor is rejected; start a new Watch with `url` to select a scope.
 - Unrelated changes advance the scan position without being delivered or ending a wait early.
 - Each change carries the same compact Survey-grade Annotation context as a scoped `read_annotations` response, plus revision metadata for reactive delivery and deduplication.
+- Cancelling an unresolved Variant Set publishes `change_type: "variant_cancelled"` so consumers can distinguish a user decision from missing Variant state.
 - Complete diagnostic context remains behind `inspect_annotations`; Watch does not create a third context tier between Survey and Inspect.
 - Delivery is non-destructive and never creates a Claim.
 - Delivery is at least once; clients deduplicate by Annotation identity and revision.

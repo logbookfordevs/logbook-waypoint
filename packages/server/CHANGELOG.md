@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Added
+- GitHub release installations now offer the model-invoked Waypoint workflow skill through the Skills CLI's agent selection.
+
+### Changed
+- MCP tool descriptions are concise by default; the Waypoint skill carries project inference, Survey-before-Inspect, claim-before-edit, lifecycle, and Variant cancellation guidance.
+- Explicit loopback scopes are documented and tested as successful empty Queue reads before a project has stored its first Annotation.
+- Whole-set cancellation publishes `change_type: "variant_cancelled"` through Watch.
+
 ### Fixed
 - Resolution Records now expose their Design Action-only MCP contract, report ordinary-Annotation misuse with a direct recovery step, and accept application routes and repository-relative source paths as portable evidence.
 
