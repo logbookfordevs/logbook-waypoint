@@ -21,7 +21,6 @@
   "files": [
     "bin/",
     "lib/",
-    "skills/",
     "README.md"
   ],
   "scripts": {

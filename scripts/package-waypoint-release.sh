@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SERVER_DIR="$ROOT_DIR/packages/server"
+SKILL_DIR="$ROOT_DIR/skills/waypoint"
 OUT_DIR="${WAYPOINT_RELEASE_OUT_DIR:-$ROOT_DIR/.release}"
 ASSET_NAME="${WAYPOINT_RELEASE_ASSET:-waypoint-cli.tar.gz}"
 ASSET_PATH="$OUT_DIR/$ASSET_NAME"
@@ -29,6 +30,12 @@ trap cleanup EXIT
 package_dir="$tmp_dir/package"
 info "deploying the production @logbookfordevs/waypoint package"
 pnpm --dir "$ROOT_DIR" --filter @logbookfordevs/waypoint deploy --prod --legacy "$package_dir"
+[[ -f "$SKILL_DIR/SKILL.md" ]] || {
+  printf 'waypoint: root skill is missing at %s\n' "$SKILL_DIR/SKILL.md" >&2
+  exit 1
+}
+mkdir -p "$package_dir/skills"
+cp -R "$SKILL_DIR" "$package_dir/skills/waypoint"
 chmod +x "$package_dir/bin/cli.js"
 
 mkdir -p "$OUT_DIR"
