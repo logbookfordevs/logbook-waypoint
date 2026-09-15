@@ -38,7 +38,9 @@ export const documentationPages: DocumentationPage[] = [
       },
       {
         heading: 'Install from a GitHub Release',
-        paragraphs: ['Run the public installer to download and verify the latest Waypoint CLI release.'],
+        paragraphs: [
+          'Run the public installer to download and verify the latest Waypoint CLI release. The installer then recommends Waypoint’s agent workflow skill and, with your confirmation, opens agent selection through the Skills CLI.',
+        ],
         code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\nwaypoint start',
       },
       {
@@ -49,6 +51,19 @@ export const documentationPages: DocumentationPage[] = [
         ],
         code: 'npm install --global @logbookfordevs/waypoint\nwaypoint start',
         note: 'Use waypoint status to check the server, waypoint logs to inspect it, waypoint stop when finished, or waypoint start --foreground for a terminal-attached session.',
+      },
+      {
+        heading: 'Install the agent workflow skill',
+        prerequisite: 'Recommended for agent workflows. The skill is not required when you use Waypoint only for visual annotation and copy.',
+        paragraphs: [
+          'The Waypoint skill teaches a coding agent how to find the current local project, begin with compact Queue context, Claim before editing, and interpret lifecycle and Variant decisions correctly. MCP provides access to Waypoint’s tools; the skill provides the working method.',
+          'The GitHub installer offers this step automatically. If you installed through npm or skipped the prompt, run the Skills CLI and choose the agent harnesses where you use Waypoint.',
+        ],
+        code: 'npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global',
+        resource: {
+          href: 'https://github.com/vercel-labs/skills',
+          label: 'Review the Skills CLI and supported agents',
+        },
       },
       {
         heading: 'Build the extension from source',
@@ -95,6 +110,14 @@ export const documentationPages: DocumentationPage[] = [
         heading: 'Start the installed server',
         paragraphs: ['Start Waypoint after installing it from a GitHub Release or npm. The local server listens on IPv4 loopback.'],
         code: 'waypoint start',
+      },
+      {
+        heading: 'Give your agent the Waypoint workflow',
+        paragraphs: [
+          'Install the recommended Waypoint skill in each coding-agent harness that will handle Annotations. The Skills CLI detects supported agents and lets you choose the destinations. This gives the agent Waypoint’s workflow guidance; connect MCP next so it can reach the local Queue.',
+        ],
+        code: 'npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global',
+        note: 'The GitHub installer offers to open this selection for you. Re-run the command if you later add another coding-agent harness.',
       },
       {
         heading: 'Add Waypoint to supported agents',
