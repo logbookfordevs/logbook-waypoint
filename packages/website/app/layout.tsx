@@ -19,6 +19,7 @@ import '@/app/styles/route-journey.css';
 import '@/app/styles/journey-home.css';
 import '@/app/styles/marketing.css';
 import '@/app/styles/docs.css';
+import '@/app/styles/waypoint-practice.css';
 import '@/app/styles/motion-and-responsive.css';
 
 export const metadata: Metadata = {
