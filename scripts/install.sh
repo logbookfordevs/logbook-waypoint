@@ -32,11 +32,13 @@ Options:
   --install-root <path>   Directory where Waypoint releases are stored.
   --bin-dir <path>        Directory where the waypoint launcher is written.
   --skip-skill            Skip the recommended Waypoint agent skill prompt.
+  -y, --yes              Install the recommended skill without prompting.
   --unlink                Remove the launcher written by this installer.
   -h, --help              Show this help and exit.
 
 Examples:
   curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
+  curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash -s -- --yes
   ./scripts/install.sh --version v0.1.5
   ./scripts/install.sh --unlink
 USAGE
@@ -80,6 +82,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --skip-skill) SKILL_MODE=skip; shift ;;
+    -y|--yes) SKILL_MODE=yes; shift ;;
     --unlink) UNLINK_MODE=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) fail "unknown option: $1" ;;

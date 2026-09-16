@@ -96,8 +96,8 @@ install_output="$(
   PATH="$TEST_PATH" \
   WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" \
   WAYPOINT_BIN_DIR="$BIN_DIR" \
-  WAYPOINT_INSTALL_SKILL=1 \
-  bash "$ROOT_DIR/scripts/install.sh" 2>&1
+  WAYPOINT_INSTALL_SKILL=ask \
+  bash "$ROOT_DIR/scripts/install.sh" --yes 2>&1
 )"
 
 grep -q 'releases/latest' "$FAKE_CURL_LOG"
@@ -111,7 +111,7 @@ grep -Fxq -- "--yes skills@latest add $INSTALL_ROOT/releases/v0.1.4/skills/waypo
 ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/afk"
 npx_calls="$(wc -l < "$FAKE_NPX_LOG")"
 PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
-  WAYPOINT_INSTALL_SKILL=1 bash "$ROOT_DIR/scripts/install.sh" >/dev/null
+  WAYPOINT_INSTALL_SKILL=ask bash "$ROOT_DIR/scripts/install.sh" -y >/dev/null
 grep -Fxq -- "skills add $INSTALL_ROOT/releases/v0.1.4/skills/waypoint --global --agent universal --skill waypoint --yes" "$FAKE_AFK_LOG"
 test "$(wc -l < "$FAKE_NPX_LOG")" = "$npx_calls"
 afk_calls="$(wc -l < "$FAKE_AFK_LOG")"
