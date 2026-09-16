@@ -50,6 +50,7 @@ The extension, server, package, CLI, MCP configuration, storage keys, and Annota
 - [Documentation map](docs/README.md) — guides, contracts, specifications, architectural decisions, package docs, and release notes
 - [User guide](docs/USER_GUIDE.md) — first Annotation, Queue management, copy/export, MCP setup, Design Actions, and settings
 - [MCP guide](docs/MCP_GUIDE.md) — normal agent workflow, compact Survey, diagnostic Inspect, examples, and all 19 tools
+- [Waypoint agent skill](skills/waypoint/SKILL.md) — repository source for the installable agent workflow
 - [Privacy policy](PRIVACY.md) — local data handling, permissions, retention, and disclosure
 - [Domain language](CONTEXT.md)
 - [Architectural decisions](docs/adr/)
@@ -116,6 +117,28 @@ waypoint start
 Waypoint runs in the background by default. Use `waypoint status` to check it,
 `waypoint logs` to inspect it, and `waypoint stop` when you are finished. For a
 temporary terminal-attached session, use `waypoint start --foreground`.
+
+### Watch a project
+
+Keep a foreground consumer attached to one loopback project:
+
+```bash
+waypoint watch http://localhost:3000/
+```
+
+Agent harnesses that can surface background command output can use complete NDJSON envelopes:
+
+```bash
+waypoint watch http://localhost:3000/ --json
+```
+
+Use `--once` for one bounded result, including an empty timeout. Every structured result includes the durable cursor; resume only from a cursor the consumer actually processed:
+
+```bash
+waypoint watch http://localhost:3000/ --json --once --cursor '<opaque-cursor>'
+```
+
+The server records activity durably even when no consumer is attached. The CLI retrieves that activity but cannot universally wake an idle coding agent; that final attention step depends on the agent harness.
 
 ### Local development
 
@@ -220,7 +243,7 @@ VS Code MCP configuration depends on the AI extension you use. Configure Waypoin
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
-Through MCP, annotations are user requests. Agents handle relevant Pending annotations through Claim, implementation, verification, and resolution or safe release unless the user explicitly requests a read-only or observation-only result. Saying “read my annotations” alone still requests the normal implementation workflow. Agents first discover stored projects with an unscoped `read_annotations` call, then select one URL scope to receive compact summaries. Unscoped reads never return Annotation bodies, even when only one project exists. Inspect selected IDs only when complete diagnostic context is useful. Compact summaries are intended to be sufficient for normal implementation; “compact” describes the response size, not a partial brief. Read and Inspect calls are side-effect-free; lifecycle changes remain explicit. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
+Through MCP, annotations are user requests. The GitHub installer strongly recommends Waypoint's model-invoked workflow skill and, with confirmation, opens the Skills CLI so you can select the agent harnesses that receive it. That skill teaches agents to infer the current loopback development URL, query it optimistically even before it contains Annotations, begin with compact Survey context, claim before editing, and finish the lifecycle. An explicit empty project scope returns an empty Queue rather than an error. Unscoped discovery still lists only projects that already contain Annotations. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
 
 ### Design Actions setup
 
@@ -238,7 +261,7 @@ The `Show Design Actions` preference only controls authoring UI for new Annotati
 
 Waypoint owns the Design Actions workflow and Annotation lifecycle; Impeccable supplies the external design discipline, not a second work-state system. An authored Design Intent may include separate Variant Intent. After an agent generates candidates and submits browser-presentable implementations, Waypoint stores and governs the Variant Set, its Active Variant, atomic candidate replacement, and the cleanup decision. The coding agent reconciles temporary source Scaffold after Keep or Cancel.
 
-If the requested workflow is unavailable or execution fails recoverably, the agent releases the Annotation to Pending with a safe Work Notice. Successful Design Actions retain a provider-neutral Resolution Record with a short outcome and verification evidence. Survey keeps Queue context compact, Inspect exposes the complete record for selected Annotations, and Watch keeps delivery concise.
+If the requested workflow is unavailable or execution fails recoverably, the agent releases the Annotation to Pending with a safe Work Notice. Successful Design Actions require and retain a provider-neutral Resolution Record with a short outcome and verification evidence; ordinary Annotations resolve without one. Application routes and repository-relative source paths are valid evidence, while machine-specific absolute paths and provider-internal material are not. Survey keeps Queue context compact, Inspect exposes the complete record for selected Annotations, and Watch keeps delivery concise.
 
 ## Security boundary
 

@@ -5,7 +5,7 @@ const UNSAFE_EVIDENCE = [
   /\b(?:hidden|system)\s+prompt\b/i,
   /\b(?:impeccable live|provider[- ]internal|polling journal)\b/i,
   /\bstack\s+trace\b|(?:^|\n)\s*at\s+\S+(?:\s+\([^\n]+:\d+:\d+\)|:\d+:\d+)/i,
-  /(?:^|[\s('"])(?:\/[A-Za-z0-9._-]+){2,}(?=$|[\s)'":,])|\b[A-Za-z]:\\(?:[^\\\s]+\\)+[^\\\s]+/,
+  /(?:^|[\s('"])(?:file:\/\/\/|\/(?:Users\/[^/\s]+|home\/[^/\s]+|private\/|var\/folders\/|tmp\/|workspace\/|root\/|etc\/)[^\s)'":,]*)|\b[A-Za-z]:\\(?:[^\\\s]+\\)+[^\\\s]+/,
 ];
 
 function assertSafeText(value, label, maxLength) {
@@ -45,10 +45,13 @@ export function assertResolutionRecordSummary(record) {
 
 export function assertAnnotationResolutionRecord(annotation) {
   if (annotation.resolution_record !== undefined) {
-    assertResolutionRecord(annotation.resolution_record);
-    if (annotation.status !== 'resolved' || annotation.design_intent === undefined) {
+    if (annotation.design_intent === undefined) {
+      throw new TypeError('resolution_record is only supported when resolving a Design Action; resolve this Annotation without resolution_record');
+    }
+    if (annotation.status !== 'resolved') {
       throw new TypeError('Resolution Record belongs only to a Resolved Design Action');
     }
+    assertResolutionRecord(annotation.resolution_record);
   }
   return annotation;
 }

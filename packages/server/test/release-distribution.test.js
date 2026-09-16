@@ -12,6 +12,8 @@ test('release packager produces the archive consumed by the direct installer', a
   assert.match(packager, /waypoint-cli\.tar\.gz/);
   assert.match(packager, /@logbookfordevs\/waypoint/);
   assert.match(packager, /deploy --prod/);
+  assert.match(packager, /SKILL_DIR="\$ROOT_DIR\/skills\/waypoint"/);
+  assert.match(packager, /cp -R "\$SKILL_DIR" "\$package_dir\/skills\/waypoint"/);
   assert.match(packager, /\.sha256/);
 });
 

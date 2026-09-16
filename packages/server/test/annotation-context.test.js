@@ -128,9 +128,8 @@ test('inspect_annotations diagnoses selected IDs with complete captured context'
   const tools = await listTools();
   const readTool = tools.tools.find(tool => tool.name === 'read_annotations');
   const inspectTool = tools.tools.find(tool => tool.name === 'inspect_annotations');
-  assert.match(readTool.description, /^Intake requests\b/);
-  assert.match(readTool.description, /Pending Annotations are actionable work/i);
-  assert.match(readTool.description, /claim before implementation, resolve after verification, or release when blocked/i);
+  assert.match(readTool.description, /^Survey compact Annotation summaries\b/);
+  assert.match(readTool.description, /empty scope succeeds with an empty list/i);
   assert.match(inspectTool.description, /^Diagnose\b/);
   assert.equal(inspectTool.inputSchema.properties.ids.maxItems, undefined);
 
@@ -151,6 +150,21 @@ test('inspect_annotations diagnoses selected IDs with complete captured context'
   assert.equal(payload.data.annotations[0].has_screenshot, true);
   assert.doesNotMatch(JSON.stringify(payload), /data:image/);
   assert.doesNotMatch(JSON.stringify(payload), /Unrelated work/);
+});
+
+test('an explicit unknown loopback scope is a successful empty survey', async () => {
+  const server = new LocalAnnotationsServer();
+  server.loadAnnotations = async () => [];
+
+  const result = await server.readAnnotations({
+    status: 'pending',
+    url: 'http://localhost:3002/*',
+  });
+
+  assert.deepEqual(result.annotations, []);
+  assert.equal(result.pagination.total, 0);
+  assert.deepEqual(result.projectInfo, []);
+  assert.equal(result.projectSelection, null);
 });
 
 test('inspect_annotations preserves complete ordered Target Sets', async () => {

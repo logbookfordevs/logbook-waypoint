@@ -1,4 +1,41 @@
-export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+import type { Metadata } from 'next';
+
+export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://waypoint.logbookfordevs.com';
+
+const socialImageAlt = 'Logbook Waypoint — Pin the point. Chart the change.';
+
+export function createSocialMetadata({
+  description,
+  title,
+  url,
+}: {
+  description: string;
+  title: string;
+  url: string;
+}): Pick<Metadata, 'openGraph' | 'twitter'> {
+  return {
+    openGraph: {
+      description,
+      images: [{
+        alt: socialImageAlt,
+        height: 630,
+        url: '/opengraph-image',
+        width: 1200,
+      }],
+      locale: 'en_US',
+      siteName: 'Logbook Waypoint',
+      title,
+      type: 'website',
+      url,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      description,
+      images: [{ alt: socialImageAlt, url: '/twitter-image' }],
+      title,
+    },
+  };
+}
 
 export const chromeWebStoreUrl =
   'https://chromewebstore.google.com/detail/logbook-waypoint/fgondknhkpekdhbbkgodokmpnpadfedo';

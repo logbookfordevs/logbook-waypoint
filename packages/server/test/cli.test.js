@@ -20,6 +20,18 @@ test('start exposes foreground as the explicit alternative to background startup
   assert.doesNotMatch(stdout, /--daemon/);
 });
 
+test('watch exposes foreground, structured, bounded, and resumable modes', async () => {
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [path.join(serverRoot, 'bin/cli.js'), 'watch', '--help'],
+  );
+
+  assert.match(stdout, /--json\s+Write complete MCP Watch result envelopes as NDJSON/);
+  assert.match(stdout, /--once\s+Return after one Watch result/);
+  assert.match(stdout, /--cursor <cursor>\s+Resume from a previously processed Watch cursor/);
+  assert.doesNotMatch(stdout, /--daemon/);
+});
+
 
 test('restart starts the default background server without treating node as a command', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-cli-restart-'));

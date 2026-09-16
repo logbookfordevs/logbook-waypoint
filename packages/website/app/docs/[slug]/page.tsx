@@ -4,7 +4,9 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, Info } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
 import { CodeBlock } from '@/components/code-block';
+import { WaypointPractice } from '@/components/waypoint-practice';
 import { documentationPages, getDocumentationPage } from '@/lib/docs-content';
+import { createSocialMetadata } from '@/lib/site-config';
 
 interface DocumentationRouteProps {
   params: Promise<{ slug: string }>;
@@ -27,7 +29,11 @@ export async function generateMetadata({ params }: DocumentationRouteProps): Pro
     title: page.title,
     description: page.summary,
     alternates: { canonical: canonicalPath },
-    openGraph: { url: canonicalPath },
+    ...createSocialMetadata({
+      title: `${page.title} — Logbook Waypoint`,
+      description: page.summary,
+      url: canonicalPath,
+    }),
   };
 }
 
@@ -42,6 +48,7 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
   const currentIndex = documentationPages.findIndex((item) => item.slug === slug);
   const previousPage = documentationPages[currentIndex - 1];
   const nextPage = documentationPages[currentIndex + 1];
+  const showsPractice = slug === 'core-workflow';
   const previousPageLink = previousPage
     ? <Link href={`/docs/${previousPage.slug}`}><ArrowLeft /> <span>Previous<strong>{previousPage.title}</strong></span></Link>
     : <span />;
@@ -54,11 +61,14 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
       <nav className="article-toc" aria-label="On this page">
         <strong>On this page</strong>
         <div className="article-toc__links">
+          {showsPractice && <a href="#try-waypoint">Try Waypoint</a>}
           {page.sections.map((section) => (
             <a key={section.heading} href={`#${toAnchor(section.heading)}`}>{section.heading}</a>
           ))}
         </div>
       </nav>
+
+      {showsPractice && <WaypointPractice />}
 
       {page.sections.map((section) => (
         <section key={section.heading} id={toAnchor(section.heading)}>

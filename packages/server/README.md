@@ -60,6 +60,22 @@ waypoint logs
 waypoint logs -f
 ```
 
+### Watch one project
+
+Run a foreground Watch consumer for a loopback project, Page, or View State:
+
+```bash
+waypoint watch http://localhost:3000/
+```
+
+Use `--json` for complete NDJSON MCP result envelopes and `--once` for one bounded result. Resume from the cursor of the last envelope the downstream consumer actually processed:
+
+```bash
+waypoint watch http://localhost:3000/ --json --once --cursor '<opaque-cursor>'
+```
+
+The command reconnects with bounded backoff and reads from the existing durable Watch journal. It is a foreground consumer, not another daemon or event store. Whether its output wakes an idle agent remains a capability of the coding-agent harness.
+
 ## AI Coding Agent Integration
 
 After starting the server, connect it to your AI coding agent. The server supports multiple agents via MCP (Model Context Protocol) using both HTTP and SSE transports.
@@ -226,7 +242,7 @@ Developers author the request in the browser extension. See [Use Design Actions]
 
 Waypoint owns the workflow and lifecycle. Design Intent records Freeform or one named Design Action on an ordinary Annotation. Variant Intent separately asks an agent to generate alternatives; once complete browser-presentable candidates exist, Waypoint owns the resulting Variant Set, Active Variant, atomic candidate replacement, cancellation, and Finalization decision. The coding agent removes temporary source Scaffold after Keep or Cancel.
 
-An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action retains a provider-neutral Resolution Record with its outcome and verification evidence. When Variant Intent produced a Variant Set, that set must reach Finalization before resolution. Survey returns compact Queue context, Inspect returns complete selected evidence, and Watch reactively delivers that same Survey-grade context with revision metadata.
+An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action requires and retains a provider-neutral Resolution Record with its outcome and verification evidence; ordinary Annotations resolve without one. Application routes and repository-relative source paths are valid evidence, while machine-specific absolute paths and provider-internal material are not. When Variant Intent produced a Variant Set, that set must reach Finalization before resolution. Survey returns compact Queue context, Inspect returns complete selected evidence, and Watch reactively delivers that same Survey-grade context with revision metadata.
 
 Data is stored in `~/.logbook-waypoint/annotations.json`.
 

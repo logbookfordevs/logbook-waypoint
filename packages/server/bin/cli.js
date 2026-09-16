@@ -10,6 +10,7 @@ import chalk from 'chalk';
 import { homedir } from 'os';
 import fs from 'fs';
 import { updateInstallation } from '../lib/update.js';
+import { runWatch } from '../lib/cli-watch.js';
 import { PRODUCT_IDENTITY } from '../lib/product-identity.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -223,6 +224,39 @@ program
     } else {
       // Show last N lines
       const tail = spawn('tail', ['-n', options.lines, LOG_FILE], { stdio: 'inherit' });
+    }
+  });
+
+program
+  .command('watch')
+  .description('Watch one project for Annotation changes')
+  .argument('<url>', 'Loopback project, Page, or View State URL')
+  .option('--json', 'Write complete MCP Watch result envelopes as NDJSON')
+  .option('--once', 'Return after one Watch result, including an empty timeout')
+  .option('--cursor <cursor>', 'Resume from a previously processed Watch cursor')
+  .option('--timeout <milliseconds>', 'Long-poll timeout from 0 to 30000', '25000')
+  .action(async (url, options) => {
+    const timeoutMs = Number(options.timeout);
+    const controller = new AbortController();
+    const stop = () => controller.abort();
+    process.once('SIGINT', stop);
+    process.once('SIGTERM', stop);
+
+    try {
+      await runWatch({
+        url,
+        cursor: options.cursor,
+        timeoutMs,
+        json: options.json === true,
+        once: options.once === true,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      console.error(chalk.red(`Waypoint Watch failed: ${error.message}`));
+      process.exitCode = 1;
+    } finally {
+      process.removeListener('SIGINT', stop);
+      process.removeListener('SIGTERM', stop);
     }
   });
 

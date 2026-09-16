@@ -373,7 +373,6 @@ class WaypointAnnotationsBackground {
       const annotations = WaypointAnnotationCollection.canonicalize(stored.waypointAnnotations);
       const selectedIds = new Set(WaypointDataManagement.selectIds(annotations, selection));
       const selected = annotations.filter(annotation => selectedIds.has(annotation.id));
-      for (const annotation of selected) WaypointVariantPolicy.assertDeleteAllowed(annotation);
       if (!selected.length) return { deleted_count: 0, snapshot: WaypointDataManagement.snapshot(annotations) };
 
       const deletedIds = new Set(stored.waypointDeletedAnnotationIds || []);
