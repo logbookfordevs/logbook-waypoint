@@ -255,3 +255,9 @@ writeFileSync(join(releaseDir, '.waypoint-install.json'), JSON.stringify({
 }));
 writeFileSync(join(root, '.waypoint-skill-preference'), `${skillMode}\n`);
 METADATA
+
+printf '\n'
+info "Waypoint $VERSION is ready."
+printf '\n  Start the local server   waypoint start\n'
+printf '  Check server status     waypoint status\n'
+printf '  Get future updates      waypoint update\n\n'

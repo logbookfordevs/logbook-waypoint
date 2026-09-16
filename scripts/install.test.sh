@@ -101,6 +101,8 @@ install_output="$(
 )"
 
 grep -q 'releases/latest' "$FAKE_CURL_LOG"
+[[ "$install_output" = *"Waypoint v0.1.4 is ready."* ]]
+[[ "$install_output" = *"Get future updates      waypoint update"* ]]
 grep -q 'releases/download/v0.1.4/waypoint-cli.tar.gz' "$FAKE_CURL_LOG"
 test -f "$INSTALL_ROOT/releases/v0.1.4/bin/cli.js"
 test -f "$INSTALL_ROOT/releases/v0.1.4/lib/server.js"
