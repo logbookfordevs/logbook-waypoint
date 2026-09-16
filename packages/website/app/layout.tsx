@@ -24,6 +24,9 @@ import '@/app/styles/motion-and-responsive.css';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: 'Logbook Waypoint',
+  icons: {
+    icon: { url: '/brand/waypoint-mark.svg', type: 'image/svg+xml', sizes: 'any' },
+  },
   title: {
     default: 'Logbook Waypoint — Pin the point. Chart the change.',
     template: '%s — Logbook Waypoint',
