@@ -8,6 +8,7 @@ INSTALL_ROOT="${WAYPOINT_INSTALL_ROOT:-$HOME/.local/share/logbook-waypoint}"
 BIN_DIR="${WAYPOINT_BIN_DIR:-$HOME/.local/bin}"
 BIN_PATH="$BIN_DIR/waypoint"
 UNLINK_MODE=0
+SKILL_MODE="${WAYPOINT_INSTALL_SKILL:-auto}"
 
 info() {
   printf '\033[1;36m%s\033[0m %s\n' "waypoint" "$1"
@@ -30,12 +31,15 @@ Options:
   --asset <name>          Release asset name. Defaults to waypoint-cli.tar.gz.
   --install-root <path>   Directory where Waypoint releases are stored.
   --bin-dir <path>        Directory where the waypoint launcher is written.
+  --skip-skill            Skip skill installation and remember this preference.
+  -y, --yes              Enable skill installation, overriding a saved opt-out.
   --unlink                Remove the launcher written by this installer.
   -h, --help              Show this help and exit.
 
 Examples:
   curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
-  ./scripts/install.sh --version v0.1.4
+  curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash -s -- --yes
+  ./scripts/install.sh --version v0.1.5
   ./scripts/install.sh --unlink
 USAGE
 }
@@ -77,6 +81,8 @@ while [[ $# -gt 0 ]]; do
       BIN_PATH="$BIN_DIR/waypoint"
       shift
       ;;
+    --skip-skill) SKILL_MODE=skip; shift ;;
+    -y|--yes) SKILL_MODE=yes; shift ;;
     --unlink) UNLINK_MODE=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) fail "unknown option: $1" ;;
@@ -160,6 +166,34 @@ unlink_launcher() {
   info "removed $BIN_PATH"
 }
 
+install_skill() {
+  local source_dir="$1/skills/waypoint"
+
+  if [[ "$SKILL_MODE" = "skip" || "$SKILL_MODE" = "0" ]]; then
+    info "skipped Waypoint agent skill"
+    return 0
+  fi
+
+  if [[ ! -f "$source_dir/SKILL.md" ]]; then
+    info "release has no bundled skill; CLI installed. Retry with: npx --yes skills@latest add logbookfordevs/logbook-waypoint --global --agent universal --skill waypoint --yes"
+    return 0
+  elif command -v afk >/dev/null 2>&1; then
+    info "installing the Waypoint skill globally with AFK"
+    if afk skills add "$source_dir" --global --agent universal --skill waypoint --yes; then
+      info "Waypoint skill installed in the shared global library (~/.agents/skills)"
+      return 0
+    fi
+  elif command -v npx >/dev/null 2>&1; then
+    info "installing the Waypoint skill globally with the Skills CLI"
+    if npx --yes skills@latest add "$source_dir" --global --agent universal --skill waypoint --yes; then
+      info "Waypoint skill installed in the shared global library (~/.agents/skills)"
+      return 0
+    fi
+  fi
+  info "CLI installed, but skill installation did not complete. Retry with: npx --yes skills@latest add \"$source_dir\" --global --agent universal --skill waypoint --yes"
+  return 0
+}
+
 if [[ "$UNLINK_MODE" -eq 1 ]]; then
   unlink_launcher
   exit 0
@@ -168,6 +202,17 @@ fi
 command -v curl >/dev/null 2>&1 || fail "curl is required to install Logbook Waypoint"
 command -v tar >/dev/null 2>&1 || fail "tar is required to install Logbook Waypoint"
 require_node
+
+if [[ "$SKILL_MODE" = "auto" || "$SKILL_MODE" = "ask" ]]; then
+  SKILL_MODE=yes
+  if [[ -f "$INSTALL_ROOT/.waypoint-skill-preference" ]]; then
+    read -r SKILL_MODE < "$INSTALL_ROOT/.waypoint-skill-preference" || true
+  fi
+fi
+case "$SKILL_MODE" in
+  skip|0) SKILL_MODE=skip ;;
+  *) SKILL_MODE=yes ;;
+esac
 
 if [[ "$VERSION" = "latest" ]]; then
   info "fetching latest release"
@@ -200,11 +245,19 @@ rm -rf "$release_dir"
 mkdir -p "$release_dir"
 tar -xzf "$archive_path" -C "$release_dir"
 write_launcher "$release_dir/bin/cli.js"
-node --input-type=module - "$release_dir" "$INSTALL_ROOT" "$BIN_DIR" "$REPO" "$ASSET_NAME" <<'METADATA'
+install_skill "$release_dir"
+node --input-type=module - "$release_dir" "$INSTALL_ROOT" "$BIN_DIR" "$REPO" "$ASSET_NAME" "$SKILL_MODE" <<'METADATA'
 import { writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-const [releaseDir, root, bin, repo, asset] = process.argv.slice(2);
+const [releaseDir, root, bin, repo, asset, skillMode] = process.argv.slice(2);
 writeFileSync(join(releaseDir, '.waypoint-install.json'), JSON.stringify({
   channel: 'github', installRoot: resolve(root), binDir: resolve(bin), repo, asset
 }));
+writeFileSync(join(root, '.waypoint-skill-preference'), `${skillMode}\n`);
 METADATA
+
+printf '\n'
+info "Waypoint $VERSION is ready."
+printf '\n  Start the local server   waypoint start\n'
+printf '  Check server status     waypoint status\n'
+printf '  Get future updates      waypoint update\n\n'

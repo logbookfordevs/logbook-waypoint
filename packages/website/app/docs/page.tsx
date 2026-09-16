@@ -3,13 +3,17 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, BookOpen, Compass, Route } from 'lucide-react';
 
 import { documentationPages } from '@/lib/docs-content';
-import { chromeWebStoreUrl, signalChartUrl } from '@/lib/site-config';
+import { chromeWebStoreUrl, createSocialMetadata, signalChartUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: 'Documentation',
   description: 'The Logbook Waypoint field guide for local Annotation and agent workflows.',
   alternates: { canonical: '/docs' },
-  openGraph: { url: '/docs' },
+  ...createSocialMetadata({
+    title: 'Documentation — Logbook Waypoint',
+    description: 'The Logbook Waypoint field guide for local Annotation and agent workflows.',
+    url: '/docs',
+  }),
 };
 
 export default function DocumentationIndex() {
@@ -17,8 +21,8 @@ export default function DocumentationIndex() {
     <article className="docs-index">
       <h1>Waypoint field guide</h1>
       <p className="docs-lede">
-        Learn how a rendered Target becomes retained Queue activity, then connect an MCP-compatible
-        coding agent without widening the local boundary.
+        Point to something in your interface, explain what should change, and hand the feedback to
+        your coding agent. Start with Installation and Core Workflow, then explore the controls you need.
       </p>
       <div className="docs-notice">
         <Compass aria-hidden="true" />

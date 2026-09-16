@@ -1,4 +1,6 @@
 .docs-shell {
+  --docs-page-title: clamp(2rem, 3vw, 2.5rem);
+  --docs-section-title: 1.5rem;
   min-height: 70vh;
   display: grid;
   grid-template-columns: 18rem minmax(0, 1fr);
@@ -76,11 +78,16 @@
   margin-inline: auto;
 }
 
+.docs-article {
+  max-width: 70ch;
+}
+
 .docs-index h1,
 .docs-article h1 {
   margin-top: 0.6rem;
-  font-size: var(--type-reading-title);
-  line-height: 0.98;
+  font-size: var(--docs-page-title);
+  font-weight: 600;
+  line-height: 1.2;
   letter-spacing: -0.025em;
 }
 
@@ -249,22 +256,24 @@
 
 .article-toc__links {
   display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
 }
 
 .article-toc__links a {
   width: fit-content;
+  max-width: 100%;
   color: var(--verdigris);
-  font-size: clamp(0.68rem, 0.78vw, 0.76rem);
+  font-size: 0.88rem;
   line-height: 1.45;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   text-underline-offset: 0.2em;
 }
 
 .docs-article > section {
   scroll-margin-top: 2rem;
-  padding-top: 3.6rem;
+  padding-top: 2.75rem;
 }
 
 .docs-section-prerequisite {
@@ -286,21 +295,25 @@
 }
 
 .docs-article h2 {
-  max-width: 28ch;
-  margin: 0 0 1rem;
+  max-width: 40ch;
+  margin: 0 0 0.85rem;
   font-family: var(--font-display);
-  font-size: var(--type-article-heading);
-  font-weight: 610;
-  line-height: 1.08;
-  letter-spacing: -0.025em;
+  font-size: var(--docs-section-title);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
 
 .docs-article > section > p {
-  max-width: none;
+  max-width: 70ch;
   color: var(--walnut-muted);
   line-height: 1.75;
+}
+
+.docs-article > section > p + p {
+  margin-top: 1rem;
 }
 
 .docs-resource-link {
@@ -340,7 +353,8 @@
 .code-block pre {
   margin: 0;
   padding: 1.5rem 5.5rem 1.5rem 1.5rem;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   color: #b9d6d0;
   font: 0.78rem/1.75 var(--font-mono);
 }

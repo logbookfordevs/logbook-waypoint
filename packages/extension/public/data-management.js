@@ -26,6 +26,8 @@
     const origins = new Set();
     let oldPendingCount = 0;
     let cleanupCandidateCount = 0;
+    let unresolvedVariantCount = 0;
+    let cleanupUnresolvedVariantCount = 0;
     let oldestActivity = null;
 
     for (const annotation of collection) {
@@ -33,9 +35,14 @@
       if (origin) origins.add(origin);
       const timestamp = activityAt(annotation);
       if (timestamp !== null && (oldestActivity === null || timestamp < oldestActivity)) oldestActivity = timestamp;
+      const hasUnresolvedVariant = annotation?.variant_request?.status === 'unresolved';
+      if (hasUnresolvedVariant) unresolvedVariantCount += 1;
       if (!isOlderThan(annotation, cutoff)) continue;
       if (annotation.status === 'pending') oldPendingCount += 1;
-      if (annotation.status === 'resolved' || annotation.status === 'discarded') cleanupCandidateCount += 1;
+      if (annotation.status === 'resolved' || annotation.status === 'discarded') {
+        cleanupCandidateCount += 1;
+        if (hasUnresolvedVariant) cleanupUnresolvedVariantCount += 1;
+      }
     }
 
     return {
@@ -43,6 +50,8 @@
       annotation_count: collection.length,
       old_pending_count: oldPendingCount,
       cleanup_candidate_count: cleanupCandidateCount,
+      unresolved_variant_count: unresolvedVariantCount,
+      cleanup_unresolved_variant_count: cleanupUnresolvedVariantCount,
       review_count: oldPendingCount + cleanupCandidateCount,
       oldest_activity_at: oldestActivity === null ? null : new Date(oldestActivity).toISOString(),
       stale_after_days: staleAfterDays,
@@ -88,6 +97,7 @@
           status_counts: counts,
           old_pending_count: projectSummary.old_pending_count,
           cleanup_candidate_count: projectSummary.cleanup_candidate_count,
+          unresolved_variant_count: projectSummary.unresolved_variant_count,
           last_activity_at: latestActivity === null ? null : new Date(latestActivity).toISOString(),
           approximate_bytes: JSON.stringify(projectAnnotations).length,
         };

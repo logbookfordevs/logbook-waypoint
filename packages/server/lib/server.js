@@ -105,13 +105,20 @@ function lifecycleToolSchema({ owner, reason = false, resolutionRecord = false }
       ...(resolutionRecord ? {
         resolution_record: {
           type: 'object',
+          description: 'Required completion evidence only when resolving an Impeccable Design Action. Omit this field for an ordinary Annotation.',
           properties: {
-            summary: { type: 'string', minLength: 1, maxLength: RESOLUTION_SUMMARY_MAX_LENGTH },
+            summary: {
+              type: 'string',
+              minLength: 1,
+              maxLength: RESOLUTION_SUMMARY_MAX_LENGTH,
+              description: 'Provider-neutral implementation outcome. Application routes and repository-relative paths are allowed; machine-specific absolute paths and provider-internal material are not.',
+            },
             verification: {
               type: 'array',
               minItems: 1,
               maxItems: RESOLUTION_VERIFICATION_MAX_ITEMS,
               items: { type: 'string', minLength: 1, maxLength: RESOLUTION_VERIFICATION_ITEM_MAX_LENGTH },
+              description: 'Provider-neutral checks that substantiate the completed Design Action.',
             },
           },
           required: ['summary', 'verification'],
@@ -691,7 +698,7 @@ export class LocalAnnotationsServer {
         tools: [
           {
             name: 'watch_annotations',
-            description: 'Monitor one URL-scoped annotation Queue without changing lifecycle state or creating a Claim. Start with url; localhost and 127.0.0.1 are aliases. Each change contains the same compact, actionable Survey context as read_annotations plus revision metadata. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Resume with only the opaque cursor from the last successful response. For live annotation sessions, repeat this call with the returned cursor. Watch does not require a scheduled automation. Delivery is at least once: deduplicate changes by Annotation ID and revision.',
+            description: 'Wait for compact changes in one loopback URL scope. Start with url, then resume with cursor. Timeouts are successful empty responses. Delivery is at least once; deduplicate by Annotation ID and revision.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -714,7 +721,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'read_annotations',
-            description: 'Intake requests from the annotation Queue. Pending Annotations are actionable work: claim before implementation, resolve after verification, or release when blocked. Unfiltered calls discover projects without returning Annotation bodies; repeat with an explicit url filter for one project. Scoped calls return focused implementation context. Authored pending_changes and css are original-to-value instructions to map onto the project design system. Read is side-effect-free.',
+            description: 'Survey compact Annotation summaries. Without url, discovers projects that already contain Annotations. With an explicit loopback url, returns that scope directly; an unknown or empty scope succeeds with an empty list. Read is side-effect-free.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -768,7 +775,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'claim_annotation',
-            description: 'Claims one Pending Annotation for an owner immediately before implementation begins. Competing active Claims are rejected; the same owner refreshes expiry. Read, Inspect, and Watch calls are side-effect-free, so agents explicitly call this tool before changing the project.',
+            description: 'Claim one Pending Annotation before editing. A competing active Claim is rejected; the same owner refreshes expiry.',
             inputSchema: lifecycleToolSchema({ owner: true }),
           },
           {
@@ -783,7 +790,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'resolve_annotation',
-            description: 'Marks an Annotation owned by the caller as Resolved and retains it as Queue history. Pending Annotations must be claimed first.',
+            description: 'Marks an Annotation owned by the caller as Resolved and retains it as Queue history. Pending Annotations must be claimed first. An Impeccable Design Action requires a Resolution Record as its completion evidence; an ordinary Annotation must omit resolution_record.',
             inputSchema: lifecycleToolSchema({ owner: true, resolutionRecord: true }),
           },
           {
@@ -916,7 +923,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'cancel_variant_request',
-            description: 'Cancels an unresolved Variant Set, removes all candidate presentation and Scaffold, and preserves the Annotation as Pending.',
+            description: 'Cancels an unresolved Variant Set, removes candidate state, and returns the Annotation to Pending. Watch publishes change_type variant_cancelled.',
             inputSchema: {
               type: 'object',
               properties: { id: { type: 'string' } },
@@ -1326,6 +1333,7 @@ export class LocalAnnotationsServer {
         annotation: summarizeAnnotation(change.annotation),
         revision: change.revision,
         dedupe_key: `${change.annotation.id}:${change.revision}`,
+        ...(change.change_type ? { change_type: change.change_type } : {}),
       })),
       cursor: result.cursor,
       timed_out: result.changes.length === 0,
@@ -1679,7 +1687,11 @@ export class LocalAnnotationsServer {
       }
       if (args.operation === 'resolve') {
         assertAnnotationDeletable(annotations[index]);
-        if (annotations[index].design_intent !== undefined) assertResolutionRecord(args.resolution_record);
+        if (annotations[index].design_intent !== undefined) {
+          assertResolutionRecord(args.resolution_record);
+        } else if (args.resolution_record !== undefined) {
+          throw new TypeError('resolution_record is only supported when resolving a Design Action; resolve this Annotation without resolution_record');
+        }
       }
       const lifecycleInput = args.operation === 'discard'
         ? discardVariantRequest(annotations[index])

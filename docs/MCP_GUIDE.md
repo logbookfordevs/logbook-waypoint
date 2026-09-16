@@ -35,7 +35,9 @@ The retrieval tools themselves remain side-effect-free: Reading, inspection, pro
 
 ## Start with a compact Survey
 
-Call `read_annotations` without a URL when the project is not yet known:
+Prefer the current repository's explicit loopback development URL when it can be inferred from the user's request, a running server, terminal output, or the documented dev command. A scoped read is optimistic: a valid project URL with no stored Annotations returns an empty Queue, not an error.
+
+Call `read_annotations` without a URL only when the current project URL cannot be inferred:
 
 ```json
 {
@@ -153,6 +155,16 @@ The supported Work Notice codes are `workflow_unavailable` and `execution_failed
 
 ## Watch for incoming requests
 
+For an agent harness that can run a background command and surface incremental output, prefer the foreground CLI consumer:
+
+```bash
+waypoint watch http://localhost:3000/ --json
+```
+
+Each NDJSON line is one complete MCP Watch result envelope, including the untrusted-content framing and continuation cursor. The command reconnects with bounded backoff and carries the cursor forward while it remains running. It does not save a cursor merely because output was written: resume a restarted consumer with `--cursor` only after the downstream agent has processed that envelope.
+
+Use `--once` when a host reports completed commands but does not surface an indefinitely running process. A CLI consumer can move empty waits out of model turns, but only the host can decide whether new output wakes or schedules the agent.
+
 `watch_annotations` requires a loopback URL scope on its first call and waits for matching new or changed requests without creating a Claim by itself:
 
 ```json
@@ -174,10 +186,12 @@ Reuse only the cursor from the last successful response; it retains the scope ac
 ```
 
 A Watch change contains the same compact, actionable Survey context as a scoped
-`read_annotations` result, plus its revision and deduplication key. Escalate to
+`read_annotations` result, plus its revision and deduplication key. Variant cancellation additionally carries `change_type: "variant_cancelled"`. Escalate to
 `inspect_annotations` only when that context leaves a diagnostic question.
 
 A timeout is a successful empty response. Delivery is at least once, so consumers deduplicate changes using the Annotation ID and revision returned by Watch. During an active MCP workflow, the agent normally claims and handles new Pending requests. It remains observation-only only when the user explicitly says not to implement them.
+
+Watching never creates or renews a Claim. Human Variant review may outlive a Claim without authorizing the watcher to keep ownership alive. Reclaim immediately before a later source mutation, and reconcile buffered events with current state first.
 
 ## Understand the response boundary
 
@@ -216,11 +230,11 @@ Annotation comments, captured page text, selectors, Source Identity, and related
 | `claim_annotation` | `id`, `owner`, `url?` | Claim Pending work or refresh the same owner's Claim. | Yes |
 | `release_annotation` | `id`, `owner`, `url?`, `reason?` | Return owned work to Pending, optionally with a Work Notice. | Yes |
 | `dismiss_work_notice` | `id`, `url?` | Clear the active notice without changing Pending state. | Yes |
-| `resolve_annotation` | `id`, `owner`, `url?`, `resolution_record?` | Retain completed work as Resolved history. | Yes |
+| `resolve_annotation` | `id`, `owner`, `url?`, `resolution_record?` | Retain completed work as Resolved history. Design Actions require `resolution_record`; ordinary Annotations must omit it. | Yes |
 | `discard_annotation` | `id`, `owner?`, `url?` | Close work as retained Discarded history. | Yes |
 | `delete_annotation` | `id` | Permanently remove one Annotation and its stored media. | **Yes, irreversible** |
 
-Resolve and discard retain history. Delete is a separate destructive operation. Pending work must be claimed before resolution; a Design Action cannot resolve without its required Resolution Record, and unfinished Variants must be finalized first.
+Resolve and discard retain history. Delete is a separate destructive operation. Pending work must be claimed before resolution; an Impeccable Design Action cannot resolve without its required Resolution Record, while an ordinary Annotation resolves without one. Resolution evidence may name application routes and repository-relative source paths, but must omit machine-specific absolute paths and provider-internal material. Unfinished Variants must be finalized first.
 
 ### Evidence, export, and cleanup
 

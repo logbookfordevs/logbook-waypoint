@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- The GitHub installer includes the Waypoint skill without prompting, using AFK when available or npx otherwise. Updates retain the `--skip-skill` preference; `--yes` re-enables installation. Skill failures leave the CLI installed and show a retry command.
+
+## [0.1.5] - 2026-09-16
+
+### Added
+- GitHub release installations now offer the model-invoked Waypoint workflow skill through the Skills CLI's agent selection.
+- Added a foreground `waypoint watch <url>` consumer with human-readable output, complete NDJSON MCP envelopes, `--once`, explicit cursor resumption, bounded reconnect backoff, backpressure, and clean signal handling.
+
+### Changed
+- MCP tool descriptions are concise by default; the Waypoint skill carries project inference, Survey-before-Inspect, claim-before-edit, lifecycle, and Variant cancellation guidance.
+- Explicit loopback scopes are documented and tested as successful empty Queue reads before a project has stored its first Annotation.
+- Whole-set cancellation publishes `change_type: "variant_cancelled"` through Watch.
+- Watch guidance now separates durable server capture, event consumption, and host-controlled agent attention; it does not renew Claims during human Variant review.
+
+### Fixed
+- Resolution Records now expose their Design Action-only MCP contract, report ordinary-Annotation misuse with a direct recovery step, and accept application routes and repository-relative source paths as portable evidence.
+
 ## [0.1.4] - 2026-09-08
 
 ### Changed

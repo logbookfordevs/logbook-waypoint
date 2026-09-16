@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- The GitHub installer includes the Waypoint skill by default, preferring AFK and falling back to npx with the universal global target. It remembers `--skip-skill` for updates, accepts `--yes` to re-enable installation, and keeps CLI installation successful if the skill step fails.
+
+## [0.1.5] - 2026-09-16
+
+### Added
+- Added a guided practice exercise in Core Workflow and expanded the website documentation with setup verification, lifecycle decisions, and recovery steps.
+- GitHub release installations now recommend Waypoint's agent workflow skill and can open the Skills CLI for user-selected agent harnesses.
+- Added `waypoint watch <url>` as a foreground Queue consumer, with complete NDJSON envelopes, bounded one-result mode, explicit cursor resumption, and reconnect handling.
+
+### Changed
+- Scoped Queue reads now explicitly support optimistic empty project URLs, while MCP descriptions stay concise and the installed skill carries detailed workflow guidance.
+- Variant cancellation now publishes an explicit `variant_cancelled` Watch change so agents do not mistake a user decision for lost work.
+- The Waypoint skill now treats watching as a standing responsibility, uses background CLI output only when the agent harness can surface it, and falls back to cursor-based checks at workflow boundaries.
+
+### Fixed
+- Extension settings now close with Escape even when focus is outside the panel.
+- Data & Storage can delete Annotations with unfinished Variants after an explicit confirmation that includes discarding those Variants.
+- Documentation headings and reading widths are more comfortable, and section links and code blocks wrap on narrow screens.
+- Resolution Records now identify themselves as Impeccable Design Action artifacts, report invalid usage before inspecting evidence, and accept application routes and repository-relative source paths.
+
 ## [0.1.4] - 2026-09-08
 
 ### Changed

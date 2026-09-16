@@ -275,11 +275,16 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
     assert.deepEqual(read.resolution_record, resolutionRecord);
 
     let callTool;
+    let listTools;
     server.setupMCPHandlersForServer({
       setRequestHandler(schema, handler) {
         if (schema === CallToolRequestSchema) callTool = handler;
+        if (schema === ListToolsRequestSchema) listTools = handler;
       },
     });
+    const resolveTool = (await listTools()).tools.find(tool => tool.name === 'resolve_annotation');
+    assert.match(resolveTool.description, /Design Action.*Resolution Record/i);
+    assert.match(resolveTool.inputSchema.properties.resolution_record.description, /only.*Design Action/i);
     const mcpRead = await callTool({
       params: { name: 'read_annotations', arguments: { status: 'resolved', url: 'http://localhost:3000/*' } },
     });
@@ -391,6 +396,18 @@ test('Design Actions require safe Resolution Records while ordinary resolution s
 
   try {
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
+    await assert.rejects(
+      () => server.changeAnnotationLifecycle({
+        id,
+        operation: 'resolve',
+        owner: 'agent-one',
+        resolution_record: {
+          summary: 'Changed the alert color on /firms/import.',
+          verification: ['Updated src/modules/firms/components/FirmImport/PreflightStep.tsx'],
+        },
+      }),
+      /only supported when resolving a Design Action.*without resolution_record/i,
+    );
     const ordinary = await server.changeAnnotationLifecycle({ id, operation: 'resolve', owner: 'agent-one' });
     assert.equal(ordinary.status, 'resolved');
     assert.equal('resolution_record' in ordinary, false);
@@ -438,8 +455,8 @@ test('Design Actions require safe Resolution Records while ordinary resolution s
       operation: 'resolve',
       owner: 'agent-two',
       resolution_record: {
-        summary: 'Renamed the visible developer prompt field.',
-        verification: ['Manual verification remains required'],
+        summary: 'Changed the alert color on /firms/import.',
+        verification: ['Updated src/modules/firms/components/FirmImport/PreflightStep.tsx'],
       },
     });
     assert.equal(accepted.status, 'resolved');

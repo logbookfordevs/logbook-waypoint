@@ -599,12 +599,7 @@ var WaypointToolbar = (() => {
     settingsDropdown.addEventListener('click', (e) => {
       e.stopPropagation();
     });
-    settingsDropdown.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      e.stopPropagation();
-      closeSettings({ restoreFocus: true });
-    });
+    document.addEventListener('keydown', onSettingsKeydown, true);
 
     // Close on outside click (next tick to avoid immediate close)
     setTimeout(() => {
@@ -670,6 +665,7 @@ var WaypointToolbar = (() => {
               <div>
                 <strong>${escapeHTML(project.origin)}</strong>
                 <span>${project.annotation_count} annotation${project.annotation_count === 1 ? '' : 's'} · ${project.route_count} route${project.route_count === 1 ? '' : 's'}</span>
+                ${project.unresolved_variant_count > 0 ? `<span class="waypoint-data-storage-variants">${project.unresolved_variant_count} unfinished Variant request${project.unresolved_variant_count === 1 ? '' : 's'}</span>` : ''}
               </div>
               <span>${escapeHTML(formatStorageBytes(project.approximate_bytes))} record data</span>
             </div>
@@ -696,10 +692,20 @@ var WaypointToolbar = (() => {
   function wireDataDeletion(button, selection, snapshot) {
     let confirming = false;
     const initialLabel = button.textContent;
+    const project = selection.scope === 'project'
+      ? snapshot.projects?.find(candidate => candidate.origin === selection.origin)
+      : null;
+    const unresolvedVariantCount = selection.scope === 'old_history'
+      ? snapshot.summary?.cleanup_unresolved_variant_count || 0
+      : selection.scope === 'project'
+        ? project?.unresolved_variant_count || 0
+        : snapshot.summary?.unresolved_variant_count || 0;
     button.addEventListener('click', async () => {
       if (!confirming) {
         confirming = true;
-        button.textContent = `Confirm permanent deletion of ${button.dataset.count}`;
+        button.textContent = unresolvedVariantCount > 0
+          ? `Delete ${button.dataset.count} and discard ${unresolvedVariantCount} unfinished Variant${unresolvedVariantCount === 1 ? '' : 's'}?`
+          : `Confirm permanent deletion of ${button.dataset.count}`;
         button.classList.add('confirming');
         return;
       }
@@ -733,9 +739,9 @@ var WaypointToolbar = (() => {
 
     // Replace header with back navigation
     header.innerHTML = `
-      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--waypoint-text-secondary);font-family:var(--waypoint-font);font-size:13px;padding:0;">
+      <button class="waypoint-guide-back-btn" type="button">
         ${ICONS.back}
-        <span style="color:var(--waypoint-text-primary);font-weight:600;">Documentation</span>
+        <span>Documentation</span>
       </button>
     `;
 
@@ -797,9 +803,9 @@ var WaypointToolbar = (() => {
     if (!header || !body) return;
 
     header.innerHTML = `
-      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--waypoint-text-secondary);font-family:var(--waypoint-font);font-size:13px;padding:0;">
+      <button class="waypoint-guide-back-btn" type="button">
         ${ICONS.back}
-        <span style="color:var(--waypoint-text-primary);font-weight:600;">Get started</span>
+        <span>Get started</span>
       </button>
     `;
 
@@ -1024,9 +1030,9 @@ var WaypointToolbar = (() => {
     if (!wf) return;
 
     header.innerHTML = `
-      <button class="waypoint-guide-back-btn" type="button" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--waypoint-text-secondary);font-family:var(--waypoint-font);font-size:13px;padding:0;">
+      <button class="waypoint-guide-back-btn" type="button">
         ${ICONS.back}
-        <span style="color:var(--waypoint-text-primary);font-weight:600;">${wf.title}</span>
+        <span>${wf.title}</span>
       </button>
     `;
 
@@ -1056,6 +1062,14 @@ var WaypointToolbar = (() => {
     settingsButton?.setAttribute('aria-expanded', 'false');
     if (restoreFocus) settingsButton?.focus();
     document.removeEventListener('click', onOutsideClick);
+    document.removeEventListener('keydown', onSettingsKeydown, true);
+  }
+
+  function onSettingsKeydown(event) {
+    if (event.key !== 'Escape' || !settingsDropdown) return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeSettings({ restoreFocus: true });
   }
 
   function onOutsideClick(e) {
