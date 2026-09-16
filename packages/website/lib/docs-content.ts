@@ -26,6 +26,13 @@ export const documentationPages: DocumentationPage[] = [
     summary: 'Install the extension, add the optional local server, and open your first enabled route.',
     sections: [
       {
+        heading: 'Choose how you want to work',
+        paragraphs: [
+          'For occasional feedback, install the browser extension, annotate your page, and copy the feedback into your coding-agent chat. You do not need the local server or MCP for this path.',
+          'For an ongoing feedback loop, also install the Waypoint CLI, start its local server, and connect your agent through MCP. The agent can then read and update the Queue directly. The recommended Waypoint skill teaches it how to handle that work.',
+        ],
+      },
+      {
         heading: 'Current availability',
         paragraphs: [
           'Install Logbook Waypoint from the Chrome Web Store for the supported browser-extension experience.',
@@ -66,6 +73,14 @@ export const documentationPages: DocumentationPage[] = [
         },
       },
       {
+        heading: 'Enable your first page',
+        paragraphs: [
+          'Open the page you want to work on, then open Waypoint from your browser’s extensions menu. Local development sites are supported automatically; other sites offer Enable for this site. Show the toolbar using the extension’s toggle. If you see Reload to activate, reload the page first.',
+          'Choose Annotate in the toolbar and select an element. Write a small request, such as “Change this button label to Save changes,” then save it. Open the Queue and check that your comment is there. This verifies the browser workflow before you add an agent.',
+          'Continue with Core Workflow for copy and paste, or Agent Setup to connect the Queue directly to your coding agent.',
+        ],
+      },
+      {
         heading: 'Build the extension from source',
         paragraphs: [
           'Clone the repository, install the workspace, and build the browser extension with pnpm.',
@@ -84,7 +99,8 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'Annotate the rendered interface',
         paragraphs: [
-          'Enable Waypoint for the route you are working on, enter annotation mode, and select the page or Target that needs attention. Add a concise brief; screenshots, attachments, Element Edits, Design Intent, and Variant Intent are optional context.',
+          'Start with a small, visible change. Choose Annotate in the Waypoint toolbar, then select the button, heading, or other element that needs attention. That selected element is the Annotation’s Target.',
+          'Write the outcome you want: “Change this button label to Save changes. Keep its current size and position.” Save the Annotation, then open the Queue to find it. You do not need Design Actions or Variants for an ordinary request.',
         ],
       },
       {
@@ -94,9 +110,33 @@ export const documentationPages: DocumentationPage[] = [
         ],
       },
       {
+        heading: 'Hand the request to your agent',
+        paragraphs: [
+          'Without MCP, select the work in the Queue, choose Copy, and paste it into your coding-agent chat. Ask the agent to implement the request in the project. Copying provides context; it does not itself change your source code or complete the work.',
+          'With MCP connected, ask the agent to read Waypoint for your app’s URL. Include the actual host and port, especially when you run more than one project. Ask it to implement the saved request and verify the result.',
+        ],
+        code: 'Read my Waypoint annotations for http://localhost:3000/ and implement the button-label request. Verify the change before resolving it.',
+        note: 'Replace the example URL with your app’s address. If Clear on copy is enabled in settings, copying can delete Annotations; leave it off when you want to retain them.',
+      },
+      {
         heading: 'Resolve with evidence',
         paragraphs: [
-          'An agent Claims temporary ownership, completes the requested change, and records a provider-neutral Resolution Record. Resolved and Discarded Annotations remain history until explicit Deletion.',
+          'In the MCP workflow, the agent Claims the Annotation before editing, implements the request, verifies it, and marks it Resolved. Open your app and check the result yourself. A Resolved status records completion; it does not replace your review.',
+          'Design Actions require a structured Resolution Record describing the result and verification. Ordinary Annotations resolve without that record. Resolved and Discarded Annotations remain history until explicit Deletion.',
+        ],
+      },
+      {
+        heading: 'Preview an edit without changing source',
+        paragraphs: [
+          'For a single Target, Element Edits let you describe changes to text, styles, or CSS and preview them in the page. Use this to make your request concrete before handing it to the agent.',
+          'A browser preview is not a saved source-code change. The agent still needs to locate the implementation in your project and apply the change there. Verify the resulting app after implementation.',
+        ],
+      },
+      {
+        heading: 'Give several elements one shared brief',
+        paragraphs: [
+          'Enter annotation mode and hold Shift while selecting the first Target. Release Shift, then select or deselect other Targets. With two to eight selected, choose Annotate, write the shared brief, and save.',
+          'All Targets must be on the same exact page URL. Use Edit selection to adjust them without losing your draft. Multiple Targets share one Annotation and lifecycle; text, style, and CSS edits are available only for single-Target Annotations.',
         ],
       },
     ],
@@ -125,6 +165,16 @@ export const documentationPages: DocumentationPage[] = [
           'Add MCP can detect supported coding agents and guide you through the configuration it will update. It configures the connection but does not install or start Waypoint.',
         ],
         code: 'npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global',
+      },
+      {
+        heading: 'Verify the connection with one request',
+        paragraphs: [
+          'After configuring MCP, reload or reconnect your agent’s MCP tools if your client requires it. Run waypoint status to check the local server, then ask the agent to read Waypoint for the URL open in your browser.',
+          'A successful connection returns your saved Annotations, or an empty result when that URL has no work yet. An empty Queue is not a connection failure. Save a test Annotation on that page and ask again; the agent should be able to report your comment.',
+          'Your app’s port and Waypoint’s port serve different purposes: use your app URL to identify the work, and http://127.0.0.1:3846/mcp to configure the tool connection.',
+          'Use the project root, such as http://localhost:3000/, to read across the project. A path such as /account narrows the request to that page; including a query or hash narrows it to that captured view, such as a particular filter or tab.',
+        ],
+        code: 'Read my Waypoint annotations for http://localhost:3000/. Tell me what is pending before changing anything.',
       },
       {
         heading: 'Keep a foreground Watch',
@@ -177,7 +227,22 @@ export const documentationPages: DocumentationPage[] = [
         heading: 'Lifecycle authority',
         paragraphs: [
           'Pending means an Annotation is available to Claim. Claim gives one agent temporary ownership. A Work Notice explains why an attempt could not proceed without inventing a separate blocked lifecycle state.',
-          'Resolved retains completed work and its Resolution Record. Discarded intentionally closes work without implementation. Deletion is the separate, permanent removal action.',
+          'Resolved retains completed work; a Design Action also retains its required Resolution Record. Discarded intentionally closes work without implementation. Deletion is the separate, permanent removal action.',
+        ],
+      },
+      {
+        heading: 'Read the state before taking action',
+        paragraphs: [
+          'Open the Queue to inspect saved feedback and its status. Pending means the work is available; Claimed means an agent has temporary ownership. Reading or watching the Queue does not Claim the work, and a Claim alone does not mean the source has changed.',
+          'When work returns to Pending with a Work Notice, read the explanation before retrying. Repair the missing prerequisite or clarify the request, then ask the agent to claim it again. If a session was interrupted, have the next agent inspect both the Annotation and the current source before continuing.',
+        ],
+      },
+      {
+        heading: 'Close work or remove its history',
+        paragraphs: [
+          'Discard an Annotation when you no longer want its request implemented. Delete it when you want the retained record removed permanently. Neither action is a source-code undo; ask your agent separately if an implementation also needs to be reverted.',
+          'In Settings → Data & Storage, review stored projects and choose Delete project data, Delete old history when available, or Clear all Waypoint data. Read the confirmation before clicking again. When unfinished Variants are present, the confirmation explicitly includes discarding them.',
+          'Deleting stored Variant data does not clean temporary code out of your repository. If an agent created a Scaffold, arrange source cleanup before deleting the records it needs to understand that work.',
         ],
       },
     ],
@@ -190,13 +255,30 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'Request named candidates',
         paragraphs: [
-          'Variant Intent asks an agent to produce multiple named Variants for one Annotation. Waypoint owns the resulting Variant Set, the Active Variant shown for evaluation, and the selection workflow.',
+          'Use Variants when you want to compare approaches before committing to one. In your Annotation, turn on Request Variants and describe meaningful differences: “Compare a compact inline alert with a more prominent banner. Keep the wording the same.” Ask your connected agent to implement the request.',
+          'The request is Variant Intent; the generated candidates form a Variant Set. Requesting candidates does not itself generate them—the coding agent must do that work. Variants do not require a Design Action or Impeccable.',
+        ],
+      },
+      {
+        heading: 'Compare before you Keep',
+        paragraphs: [
+          'Open the Annotation’s generated Variants and activate a named candidate to see it on the page. Switching the Active Variant changes the presentation for evaluation; it does not resolve the Annotation or commit to that choice.',
+          'Close and reopen the Annotation to continue the same comparison. To discard the Active Variant, activate another candidate first. An unresolved comparison must retain at least two candidates, so individual discard is unavailable when it would leave only one.',
         ],
       },
       {
         heading: 'Finalize cleanly',
         paragraphs: [
-          'A temporary Scaffold allows candidates to coexist. Finalization preserves the chosen implementation and removes the Scaffold plus every discarded Variant. Candidate generation never creates a parallel lifecycle outside the Annotation.',
+          'When you have decided, use Keep for the chosen candidate. This is the decision to preserve that implementation and finish the comparison. Ask the agent to reconcile the decision in source and verify the final result before resolving the Annotation.',
+          'Some comparisons need temporary source code, called a Scaffold, so candidates can coexist. Waypoint records your decision; the coding agent removes that temporary structure and the unwanted implementations. A Keep decision is not proof that source cleanup has finished.',
+        ],
+      },
+      {
+        heading: 'Cancel a comparison or request another attempt',
+        paragraphs: [
+          'Cancel the Variant Set when you want to end the comparison without keeping a candidate. Cancellation removes its stored candidates and preview while preserving the Annotation as Pending. It is different from discarding the Annotation itself.',
+          'Tell the agent to clean up any temporary source Scaffold after cancellation. The cancellation event represents your decision, not lost work to recreate. Author new Variant Intent if you want another comparison.',
+          'While a Variant Set is unresolved, the brief and Design Intent are read-only. For revisions to an existing comparison, discuss the changes with the agent so it can replace the candidate set. If cleanup fails, inspect the remaining work with the agent before trying to resolve the Annotation.',
         ],
       },
     ],
@@ -223,6 +305,13 @@ export const documentationPages: DocumentationPage[] = [
         paragraphs: [
           'Describe the desired outcome in the normal Annotation comment, then turn on Design Actions. Leave the action unselected for Design Actions · Freeform, or choose one named discipline: Bolder, Quieter, Distill, Polish, Typeset, Colorize, Layout, Animate, Delight, or Overdrive.',
           'Each Annotation carries at most one primary Design Action. The comment remains the only brief, so constraints and context stay together instead of drifting across two prompt fields.',
+        ],
+      },
+      {
+        heading: 'Choose a discipline by the result you want',
+        paragraphs: [
+          'Use a brief such as “Make the main action easier to notice without adding more color,” then choose the discipline that matches your goal. Bolder asks for stronger expression; Quieter asks for restraint; Typeset focuses on typography; Layout focuses on arrangement. Freeform lets the brief guide the approach without naming a discipline.',
+          'Include constraints the agent cannot infer from a screenshot: preserve the wording, keep the mobile layout, or avoid changing shared components. After implementation, inspect the result and the Resolution Record, which captures the Design Action’s completion summary and verification evidence.',
         ],
       },
       {
@@ -261,6 +350,20 @@ export const documentationPages: DocumentationPage[] = [
         ],
       },
       {
+        heading: 'Decide what context to share',
+        paragraphs: [
+          'An Annotation can include your comment, page URL, selected element text and context, captured styles, and optional screenshots or attachments. Review the page and request for sensitive information before sharing them with a coding agent.',
+          'Use the screenshot setting to control capture, and grant site access only where you want to annotate. Copied feedback goes wherever you paste it. MCP makes context available to your connected agent, whose provider and data policies still apply; local storage does not mean the agent processes everything locally.',
+        ],
+      },
+      {
+        heading: 'Find and remove retained data',
+        paragraphs: [
+          'The extension keeps browser-side data, and the local server persists Annotation records in ~/.logbook-waypoint/annotations.json. Stopping the server does not erase those records.',
+          'Use Settings → Data & Storage to inspect projects and permanently remove stored Annotations. Review unfinished Variant work before deletion so your agent can clean up any temporary source code. Removing the browser extension or CLI is a separate operation from managing retained server data.',
+        ],
+      },
+      {
         heading: 'Narrow browser boundary',
         paragraphs: [
           'Waypoint exposes no public page-world Annotation CRUD bridge. A narrow read-only probe may assist React Source Identity, but Source Identity is untrusted context rather than guaranteed source mapping.',
@@ -285,6 +388,23 @@ export const documentationPages: DocumentationPage[] = [
         heading: 'The agent cannot see the Queue',
         paragraphs: [
           'Confirm the local server is running and the MCP client points to the expected loopback endpoint. Check the extension compatibility notice if server and extension builds come from different revisions.',
+          'Run waypoint status first. If the server is stopped, run waypoint start and check again. If it fails to start, inspect waypoint logs for the reported error. Reconnect your agent’s MCP tools after correcting its configuration.',
+          'If tools connect but return no Annotations, compare the requested URL with the browser address, especially its port and path. A page or view filter can exclude work elsewhere in the project; try the project root. Save a small test Annotation at the intended URL and read again.',
+        ],
+        code: 'waypoint status\nwaypoint logs',
+      },
+      {
+        heading: 'The agent stopped noticing new feedback',
+        paragraphs: [
+          'Ask the agent to read the Queue again for the explicit app URL. Watch delivers activity, but it cannot guarantee that your coding-agent harness wakes an idle agent or keeps scheduling reads while the agent edits.',
+          'If you use waypoint watch, keep its terminal process running and inspect any reported connection error. See Agent Setup for the foreground consumer and resumption options. A quiet Watch does not by itself mean an Annotation was deleted.',
+        ],
+      },
+      {
+        heading: 'A preview is gone or the source looks unchanged',
+        paragraphs: [
+          'Element Edits and Active Variants are browser presentations, not proof of a permanent source change. Ask the agent whether it implemented and verified the request in your repository.',
+          'For Variants, inspect the Queue for a Keep or cancellation decision before asking the agent to restore anything. Cancellation intentionally removes the comparison; recreating it would reverse that decision. If the original Target no longer exists, open the Annotation from the Queue and ask the agent to inspect the changed page structure.',
         ],
       },
       {
@@ -307,6 +427,20 @@ export const documentationPages: DocumentationPage[] = [
           'Use npm when you prefer registry-managed global packages. Use the GitHub installer when you prefer the release archive under ~/.local/share/logbook-waypoint with a launcher in ~/.local/bin.',
         ],
         code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\n# or\nnpm install --global @logbookfordevs/waypoint',
+      },
+      {
+        heading: 'Update the installation you already use',
+        paragraphs: [
+          'For an npm installation, rerun npm install --global @logbookfordevs/waypoint. For a GitHub Release installation, rerun the public installer. Then run waypoint restart and waypoint status so the running server uses the updated installation.',
+          'Manage the store extension through Chrome’s extension updates. For an unpacked source build, rebuild, reload it in chrome://extensions, and refresh your app tab. If Waypoint reports a compatibility mismatch, update the server and extension before retrying the workflow.',
+        ],
+      },
+      {
+        heading: 'Stop using Waypoint',
+        paragraphs: [
+          'Run waypoint stop to stop the local server. Remove its MCP entry from each agent where you configured it, and remove the browser extension through Chrome when you no longer need annotation tools.',
+          'For npm installations, use npm uninstall --global @logbookfordevs/waypoint. The GitHub installer’s --unlink option removes its managed launcher; it is not a full data wipe. Review and delete unwanted Annotation history through Data & Storage before removing the tools you use to access it.',
+        ],
       },
       {
         heading: 'Browser extension availability',

@@ -520,7 +520,7 @@
 
   .docs-index h1,
   .docs-article h1 {
-    font-size: clamp(2.6rem, 12vw, 3.4rem);
+    font-size: var(--docs-page-title);
   }
 
   .article-toc {

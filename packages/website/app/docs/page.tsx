@@ -21,8 +21,8 @@ export default function DocumentationIndex() {
     <article className="docs-index">
       <h1>Waypoint field guide</h1>
       <p className="docs-lede">
-        Learn how a rendered Target becomes retained Queue activity, then connect an MCP-compatible
-        coding agent without widening the local boundary.
+        Point to something in your interface, explain what should change, and hand the feedback to
+        your coding agent. Start with Installation and Core Workflow, then explore the controls you need.
       </p>
       <div className="docs-notice">
         <Compass aria-hidden="true" />
