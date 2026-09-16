@@ -54,6 +54,11 @@ if [[ "$(basename "$0")" = "npx" ]]; then
   exit 0
 fi
 
+if [[ "$(basename "$0")" = "afk" ]]; then
+  printf '%s\n' "$*" >> "$FAKE_AFK_LOG"
+  exit 0
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_DIR="$(mktemp -d)"
 
@@ -69,6 +74,7 @@ FAKE_BIN="$TEST_DIR/fake-bin"
 FAKE_ARCHIVE="$TEST_DIR/waypoint-cli.tar.gz"
 FAKE_CURL_LOG="$TEST_DIR/curl.log"
 FAKE_NPX_LOG="$TEST_DIR/npx.log"
+FAKE_AFK_LOG="$TEST_DIR/afk.log"
 INSTALL_ROOT="$TEST_DIR/install"
 BIN_DIR="$TEST_DIR/user-bin"
 PAYLOAD_DIR="$TEST_DIR/payload"
@@ -76,16 +82,18 @@ PAYLOAD_DIR="$TEST_DIR/payload"
 mkdir -p "$FAKE_BIN" "$PAYLOAD_DIR/bin" "$PAYLOAD_DIR/lib" "$PAYLOAD_DIR/skills/waypoint"
 ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/curl"
 ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/npx"
+ln -s "$(command -v node)" "$FAKE_BIN/node"
+TEST_PATH="$FAKE_BIN:/usr/bin:/bin:/usr/sbin:/sbin"
 printf '#!/usr/bin/env node\nif (process.argv.includes("--version")) console.log("0.1.4");\n' > "$PAYLOAD_DIR/bin/cli.js"
 printf 'export {};\n' > "$PAYLOAD_DIR/lib/server.js"
 printf '{"name":"@logbookfordevs/waypoint","version":"0.1.4","type":"module"}\n' > "$PAYLOAD_DIR/package.json"
 printf '%s\n' '---' 'name: waypoint' 'description: Test skill.' '---' > "$PAYLOAD_DIR/skills/waypoint/SKILL.md"
 tar -czf "$FAKE_ARCHIVE" -C "$PAYLOAD_DIR" .
 FAKE_CHECKSUM="$(shasum -a 256 "$FAKE_ARCHIVE" | awk '{print $1}')"
-export FAKE_ARCHIVE FAKE_CHECKSUM FAKE_CURL_LOG FAKE_NPX_LOG
+export FAKE_ARCHIVE FAKE_CHECKSUM FAKE_CURL_LOG FAKE_NPX_LOG FAKE_AFK_LOG
 
 install_output="$(
-  PATH="$FAKE_BIN:$PATH" \
+  PATH="$TEST_PATH" \
   WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" \
   WAYPOINT_BIN_DIR="$BIN_DIR" \
   WAYPOINT_INSTALL_SKILL=1 \
@@ -97,8 +105,19 @@ grep -q 'releases/download/v0.1.4/waypoint-cli.tar.gz' "$FAKE_CURL_LOG"
 test -f "$INSTALL_ROOT/releases/v0.1.4/bin/cli.js"
 test -f "$INSTALL_ROOT/releases/v0.1.4/lib/server.js"
 test -x "$BIN_DIR/waypoint"
-grep -q -- "--yes skills@latest add $INSTALL_ROOT/releases/v0.1.4/skills/waypoint --global" "$FAKE_NPX_LOG"
+grep -Fxq -- "--yes skills@latest add $INSTALL_ROOT/releases/v0.1.4/skills/waypoint --global --agent universal --skill waypoint --yes" "$FAKE_NPX_LOG"
 "$BIN_DIR/waypoint" --version | grep -q '^0.1.4$'
+
+ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/afk"
+npx_calls="$(wc -l < "$FAKE_NPX_LOG")"
+PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
+  WAYPOINT_INSTALL_SKILL=1 bash "$ROOT_DIR/scripts/install.sh" >/dev/null
+grep -Fxq -- "skills add $INSTALL_ROOT/releases/v0.1.4/skills/waypoint --global --agent universal --skill waypoint --yes" "$FAKE_AFK_LOG"
+test "$(wc -l < "$FAKE_NPX_LOG")" = "$npx_calls"
+afk_calls="$(wc -l < "$FAKE_AFK_LOG")"
+PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
+  WAYPOINT_INSTALL_SKILL=skip bash "$ROOT_DIR/scripts/install.sh" >/dev/null
+test "$(wc -l < "$FAKE_AFK_LOG")" = "$afk_calls"
 
 printf '0%.0s' {1..64} > "$TEST_DIR/bad-checksum"
 if PATH="$FAKE_BIN:$PATH" \

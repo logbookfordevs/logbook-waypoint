@@ -46,7 +46,7 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'Install from a GitHub Release',
         paragraphs: [
-          'Run the public installer to download and verify the latest Waypoint CLI release. The installer then recommends Waypoint’s agent workflow skill and, with your confirmation, opens agent selection through the Skills CLI.',
+          'Run the public installer to download and verify the latest Waypoint CLI release. With your confirmation, it installs Waypoint’s agent workflow skill globally for the universal agent target, without opening a selection menu. It uses AFK when available and otherwise runs the Skills CLI through npx.',
         ],
         code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\nwaypoint start',
       },
@@ -64,7 +64,7 @@ export const documentationPages: DocumentationPage[] = [
         prerequisite: 'Recommended for agent workflows. The skill is not required when you use Waypoint only for visual annotation and copy.',
         paragraphs: [
           'The Waypoint skill teaches a coding agent how to find the current local project, begin with compact Queue context, Claim before editing, and interpret lifecycle and Variant decisions correctly. MCP provides access to Waypoint’s tools; the skill provides the working method.',
-          'The GitHub installer offers this step automatically. If you installed through npm or skipped the prompt, run the Skills CLI and choose the agent harnesses where you use Waypoint.',
+          'The GitHub installer offers a global universal-target installation automatically. If you installed through npm, skipped the prompt, or need a specific harness, run the command below to choose the agent harnesses where you use Waypoint.',
         ],
         code: 'npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global',
         resource: {
@@ -157,7 +157,7 @@ export const documentationPages: DocumentationPage[] = [
           'Install the recommended Waypoint skill in each coding-agent harness that will handle Annotations. The Skills CLI detects supported agents and lets you choose the destinations. This gives the agent Waypoint’s workflow guidance; connect MCP next so it can reach the local Queue.',
         ],
         code: 'npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global',
-        note: 'The GitHub installer offers to open this selection for you. Re-run the command if you later add another coding-agent harness.',
+        note: 'The GitHub installer uses the global universal target without a selection menu, preferring AFK when installed. Run this command yourself to select a specific coding-agent harness.',
       },
       {
         heading: 'Add Waypoint to supported agents',

@@ -180,7 +180,7 @@ install_skill() {
     read -r install_answer < /dev/tty || install_answer=""
   else
     info "recommended: install the Waypoint agent skill from a terminal"
-    info "run: npx skills@latest add \"$source_dir\" --global"
+    info "run: npx --yes skills@latest add \"$source_dir\" --global --agent universal --skill waypoint --yes"
     return 0
   fi
 
@@ -189,13 +189,16 @@ install_skill() {
     *) info "skipped Waypoint agent skill"; return 0 ;;
   esac
 
-  if ! command -v npx >/dev/null 2>&1; then
-    info "npx is unavailable; install the skill later with: npx skills@latest add \"$source_dir\" --global"
+  if command -v afk >/dev/null 2>&1; then
+    info "installing the Waypoint skill globally with AFK"
+    afk skills add "$source_dir" --global --agent universal --skill waypoint --yes
+  elif command -v npx >/dev/null 2>&1; then
+    info "installing the Waypoint skill globally with the Skills CLI"
+    npx --yes skills@latest add "$source_dir" --global --agent universal --skill waypoint --yes
+  else
+    info "afk and npx are unavailable; install the skill later with: npx --yes skills@latest add \"$source_dir\" --global --agent universal --skill waypoint --yes"
     return 0
   fi
-
-  info "opening agent selection with the Skills CLI"
-  npx --yes skills@latest add "$source_dir" --global
 }
 
 if [[ "$UNLINK_MODE" -eq 1 ]]; then
