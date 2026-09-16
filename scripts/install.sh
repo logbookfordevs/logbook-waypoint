@@ -91,13 +91,13 @@ done
 
 require_node() {
   if ! command -v node >/dev/null 2>&1; then
-    fail "node >=18 is required to run Logbook Waypoint"
+    fail "node >=22.12.0 is required to run Logbook Waypoint"
   fi
 
-  local major
-  major="$(node -p 'Number(process.versions.node.split(".")[0])' 2>/dev/null || true)"
-  if [[ -z "$major" || "$major" -lt 18 ]]; then
-    fail "node >=18 is required; found $(node --version 2>/dev/null || printf 'unknown')"
+  local supported
+  supported="$(node -p '((v) => v[0] > 22 || (v[0] === 22 && v[1] >= 12))(process.versions.node.split(".").map(Number))' 2>/dev/null || true)"
+  if [[ "$supported" != "true" ]]; then
+    fail "node >=22.12.0 is required; found $(node --version 2>/dev/null || printf 'unknown')"
   fi
 }
 
@@ -133,7 +133,7 @@ set -euo pipefail
 WAYPOINT_ENTRYPOINT=$escaped_entry_path
 
 if ! command -v node >/dev/null 2>&1; then
-  printf 'waypoint: node >=18 is required to run Logbook Waypoint.\n' >&2
+  printf 'waypoint: node >=22.12.0 is required to run Logbook Waypoint.\n' >&2
   exit 1
 fi
 

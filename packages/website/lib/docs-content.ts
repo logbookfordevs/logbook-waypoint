@@ -53,7 +53,7 @@ export const documentationPages: DocumentationPage[] = [
       },
       {
         heading: 'Install through npm',
-        prerequisite: 'Node.js 18+ required. GitHub installs to ~/.local/bin and flags missing PATH setup.',
+        prerequisite: 'Node.js 22.12+ required. GitHub installs to ~/.local/bin and flags missing PATH setup.',
         paragraphs: [
           'Install the published package globally, or use npx for a temporary first look. Start runs the local server in the background by default.',
         ],
