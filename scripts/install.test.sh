@@ -59,6 +59,13 @@ if [[ "$(basename "$0")" = "afk" ]]; then
   exit "${FAKE_SKILL_EXIT:-0}"
 fi
 
+if [[ "$(basename "$0")" = "node" ]]; then
+  if [[ "${1:-}" = "-p" && -n "${FAKE_NODE_VERSION:-}" ]]; then
+    exec "$REAL_NODE" -p "Object.defineProperty(process.versions, 'node', {value: process.env.FAKE_NODE_VERSION}); $2"
+  fi
+  exec "$REAL_NODE" "$@"
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_DIR="$(mktemp -d)"
 
@@ -82,7 +89,9 @@ PAYLOAD_DIR="$TEST_DIR/payload"
 mkdir -p "$FAKE_BIN" "$PAYLOAD_DIR/bin" "$PAYLOAD_DIR/lib" "$PAYLOAD_DIR/skills/waypoint"
 ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/curl"
 ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/npx"
-ln -s "$(command -v node)" "$FAKE_BIN/node"
+REAL_NODE="$(command -v node)"
+export REAL_NODE
+ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/node"
 TEST_PATH="$FAKE_BIN:/usr/bin:/bin:/usr/sbin:/sbin"
 printf '#!/usr/bin/env node\nif (process.argv.includes("--version")) console.log("0.1.4");\n' > "$PAYLOAD_DIR/bin/cli.js"
 printf 'export {};\n' > "$PAYLOAD_DIR/lib/server.js"
@@ -92,8 +101,19 @@ tar -czf "$FAKE_ARCHIVE" -C "$PAYLOAD_DIR" .
 FAKE_CHECKSUM="$(shasum -a 256 "$FAKE_ARCHIVE" | awk '{print $1}')"
 export FAKE_ARCHIVE FAKE_CHECKSUM FAKE_CURL_LOG FAKE_NPX_LOG FAKE_AFK_LOG
 
+for unsupported_version in 18.20.8 20.19.0 22.11.0; do
+  if PATH="$TEST_PATH" FAKE_NODE_VERSION="$unsupported_version" \
+    WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
+    bash "$ROOT_DIR/scripts/install.sh" --skip-skill >"$TEST_DIR/node-error" 2>&1; then
+    printf 'installer accepted unsupported Node %s\n' "$unsupported_version" >&2
+    exit 1
+  fi
+  grep -q 'node >=22.12.0 is required' "$TEST_DIR/node-error"
+  test ! -e "$FAKE_CURL_LOG"
+done
+
 install_output="$(
-  PATH="$TEST_PATH" \
+  PATH="$TEST_PATH" FAKE_NODE_VERSION=22.12.0 \
   WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" \
   WAYPOINT_BIN_DIR="$BIN_DIR" \
   WAYPOINT_INSTALL_SKILL=auto \
