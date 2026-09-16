@@ -56,7 +56,7 @@ fi
 
 if [[ "$(basename "$0")" = "afk" ]]; then
   printf '%s\n' "$*" >> "$FAKE_AFK_LOG"
-  exit 0
+  exit "${FAKE_SKILL_EXIT:-0}"
 fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -96,8 +96,8 @@ install_output="$(
   PATH="$TEST_PATH" \
   WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" \
   WAYPOINT_BIN_DIR="$BIN_DIR" \
-  WAYPOINT_INSTALL_SKILL=ask \
-  bash "$ROOT_DIR/scripts/install.sh" --yes 2>&1
+  WAYPOINT_INSTALL_SKILL=auto \
+  bash "$ROOT_DIR/scripts/install.sh" 2>&1
 )"
 
 grep -q 'releases/latest' "$FAKE_CURL_LOG"
@@ -116,8 +116,25 @@ grep -Fxq -- "skills add $INSTALL_ROOT/releases/v0.1.4/skills/waypoint --global 
 test "$(wc -l < "$FAKE_NPX_LOG")" = "$npx_calls"
 afk_calls="$(wc -l < "$FAKE_AFK_LOG")"
 PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
-  WAYPOINT_INSTALL_SKILL=skip bash "$ROOT_DIR/scripts/install.sh" >/dev/null
+  WAYPOINT_INSTALL_SKILL=auto bash "$ROOT_DIR/scripts/install.sh" --skip-skill >/dev/null
 test "$(wc -l < "$FAKE_AFK_LOG")" = "$afk_calls"
+
+# A later installer invocation (including waypoint update) preserves the opt-out.
+PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
+  WAYPOINT_INSTALL_SKILL=auto bash "$ROOT_DIR/scripts/install.sh" >/dev/null
+test "$(wc -l < "$FAKE_AFK_LOG")" = "$afk_calls"
+
+# Explicit opt-in overrides the preference; a failed skill does not fail the CLI.
+failure_output="$(PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
+  FAKE_SKILL_EXIT=1 bash "$ROOT_DIR/scripts/install.sh" --yes)"
+[[ "$failure_output" = *"skill installation did not complete"* ]]
+test -f "$INSTALL_ROOT/releases/v0.1.4/.waypoint-install.json"
+grep -Fxq yes "$INSTALL_ROOT/.waypoint-skill-preference"
+"$BIN_DIR/waypoint" --version | grep -q '^0.1.4$'
+afk_calls="$(wc -l < "$FAKE_AFK_LOG")"
+PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
+  WAYPOINT_INSTALL_SKILL=auto bash "$ROOT_DIR/scripts/install.sh" >/dev/null
+test "$(wc -l < "$FAKE_AFK_LOG")" -gt "$afk_calls"
 
 printf '0%.0s' {1..64} > "$TEST_DIR/bad-checksum"
 if PATH="$FAKE_BIN:$PATH" \

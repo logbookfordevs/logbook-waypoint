@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Next Release
 
 ### Changed
-- The GitHub installer now uses `afk skills add` when available, otherwise `npx skills`, to install the optional Waypoint skill with `--global --agent universal --skill waypoint --yes` after confirmation.
+- The GitHub installer includes the Waypoint skill without prompting, using AFK when available or npx otherwise. Updates retain the `--skip-skill` preference; `--yes` re-enables installation. Skill failures leave the CLI installed and show a retry command.
 
 ## [0.1.5] - 2026-09-16
 

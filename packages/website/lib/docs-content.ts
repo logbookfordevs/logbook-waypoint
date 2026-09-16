@@ -46,7 +46,8 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'Install from a GitHub Release',
         paragraphs: [
-          'Run the public installer to download and verify the latest Waypoint CLI release. With your confirmation, it installs Waypoint’s agent workflow skill globally for the universal agent target, without opening a selection menu. It uses AFK when available and otherwise runs the Skills CLI through npx.',
+          'Run the public installer to download and verify the latest Waypoint CLI release. It includes Waypoint’s agent workflow skill by default, installing globally for the universal agent target without prompting. It uses AFK when available and otherwise runs the Skills CLI through npx.',
+          'To opt out, pipe the installer into bash -s -- --skip-skill. The installer remembers that choice for future updates. Re-run with --yes to enable skill installation again. If the skill step fails, the CLI still installs and prints a retry command.',
         ],
         code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\nwaypoint start',
       },
@@ -64,7 +65,7 @@ export const documentationPages: DocumentationPage[] = [
         prerequisite: 'Recommended for agent workflows. The skill is not required when you use Waypoint only for visual annotation and copy.',
         paragraphs: [
           'The Waypoint skill teaches a coding agent how to find the current local project, begin with compact Queue context, Claim before editing, and interpret lifecycle and Variant decisions correctly. MCP provides access to Waypoint’s tools; the skill provides the working method.',
-          'The GitHub installer offers a global universal-target installation automatically. If you installed through npm, skipped the prompt, or need a specific harness, run the command below to choose the agent harnesses where you use Waypoint.',
+          'The GitHub installer includes a global universal-target installation automatically. If you installed through npm, opted out, or need a specific harness, run the command below to choose the agent harnesses where you use Waypoint.',
         ],
         code: 'npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global',
         resource: {

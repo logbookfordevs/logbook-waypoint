@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Next Release
 
 ### Changed
-- The GitHub installer now installs the optional Waypoint skill globally for the universal agent target without a harness-selection menu, preferring AFK when available and falling back to the Skills CLI through npx.
+- The GitHub installer includes the Waypoint skill by default, preferring AFK and falling back to npx with the universal global target. It remembers `--skip-skill` for updates, accepts `--yes` to re-enable installation, and keeps CLI installation successful if the skill step fails.
 
 ## [0.1.5] - 2026-09-16
 
