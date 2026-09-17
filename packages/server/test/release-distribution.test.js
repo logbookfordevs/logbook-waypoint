@@ -17,6 +17,17 @@ test('release packager produces the archive consumed by the direct installer', a
   assert.match(packager, /\.sha256/);
 });
 
+test('Waypoint skill includes OpenAI discovery metadata', async () => {
+  const metadata = await readFile(
+    path.join(repositoryRoot, 'skills/waypoint/agents/openai.yaml'),
+    'utf8',
+  );
+
+  assert.match(metadata, /display_name: "Waypoint"/);
+  assert.match(metadata, /default_prompt: "Use \$waypoint/);
+  assert.match(metadata, /allow_implicit_invocation: true/);
+});
+
 test('tagged release workflow publishes npm and GitHub assets from one validation job', async () => {
   const workflow = await readFile(path.join(repositoryRoot, '.github/workflows/publish.yml'), 'utf8');
 
