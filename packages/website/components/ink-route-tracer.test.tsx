@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { InkRouteTracer } from '@/components/ink-route-tracer';
@@ -8,6 +8,9 @@ const audioSpies = vi.hoisted(() => ({
   playCheckpoint: vi.fn(),
   playImpact: vi.fn(),
   prepare: vi.fn(),
+  playNarration: vi.fn(),
+  stopNarration: vi.fn(),
+  setNarrationEnabled: vi.fn(),
   resume: vi.fn().mockResolvedValue(undefined),
   setMuted: vi.fn(),
   setScratchVelocity: vi.fn(),
@@ -30,6 +33,9 @@ vi.mock('@/components/ink-route-audio', () => ({
     playCheckpoint = audioSpies.playCheckpoint;
     playImpact = audioSpies.playImpact;
     prepare = audioSpies.prepare;
+    playNarration = audioSpies.playNarration;
+    stopNarration = audioSpies.stopNarration;
+    setNarrationEnabled = audioSpies.setNarrationEnabled;
     resume = audioSpies.resume;
     setMuted = audioSpies.setMuted;
     setScratchVelocity = audioSpies.setScratchVelocity;
@@ -110,6 +116,17 @@ describe('Ink Route signature tracer', () => {
     expect(audioSpies.unlock).toHaveBeenCalledOnce();
   });
 
+  it('lets the screening toggle stop narration and replay the take', () => {
+    render(<InkRouteTracer />);
+    const toggle = screen.getByRole('button', { name: 'Narration on', hidden: true });
+    fireEvent.click(toggle);
+    expect(audioSpies.setNarrationEnabled).toHaveBeenLastCalledWith(false);
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(toggle);
+    expect(audioSpies.setNarrationEnabled).toHaveBeenLastCalledWith(true);
+    expect(audioSpies.playNarration).toHaveBeenCalledOnce();
+  });
+
   it('uses the completed static destination and focus handoff for reduced motion', async () => {
     mockMotionPreference(true);
     render(<InkRouteTracer />);
@@ -136,6 +153,34 @@ describe('Ink Route signature tracer', () => {
     finishWarmup('ready');
 
     await waitFor(() => expect(window.scrollTo).toHaveBeenCalled());
+  });
+
+  it('runs to Annotation without scrolling and starts narration at ink impact', async () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
+      frames.set(++frameId, callback);
+      return frameId;
+    }));
+    vi.stubGlobal('cancelAnimationFrame', vi.fn((id: number) => frames.delete(id)));
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const { container } = render(<InkRouteTracer />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /See the journey/i })); });
+    const startedAt = performance.now();
+    const advance = (from: number, to: number) => {
+      for (let elapsed = from; elapsed <= to; elapsed += 40) {
+        const scheduled = [...frames.values()];
+        frames.clear();
+        act(() => scheduled.forEach((callback) => callback(startedAt + elapsed)));
+      }
+    };
+    advance(0, 1800);
+    expect(audioSpies.playNarration).toHaveBeenCalledOnce();
+    expect(audioSpies.playCheckpoint).not.toHaveBeenCalled();
+    advance(1840, 10500);
+    expect(audioSpies.playCheckpoint).toHaveBeenCalledOnce();
+    expect(container.querySelector('.ink-route__stage')).toHaveStyle('--annotation-progress: 1.0000');
+    expect(window.scrollTo).not.toHaveBeenCalled();
   });
 
   it('suspends while hidden and resumes initiated audio on foreground return', async () => {

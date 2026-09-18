@@ -18,6 +18,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "site:dev": "pnpm --filter @logbookfordevs/waypoint-website dev",
     "build": "pnpm --filter @logbookfordevs/waypoint-extension build && pnpm --filter @logbookfordevs/waypoint-website build",
     "check": "pnpm --filter @logbookfordevs/waypoint-extension check && pnpm --filter @logbookfordevs/waypoint-website check",
     "test": "pnpm -r test"

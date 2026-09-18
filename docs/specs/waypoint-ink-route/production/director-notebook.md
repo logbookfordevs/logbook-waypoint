@@ -2,7 +2,7 @@
 
 **Production home:** `docs/specs/waypoint-ink-route/production/`
 
-**Current stage:** Route A's hero-through-Annotation visual direction is approved and integrated as tracer evidence. Production expansion is paused while the director chooses whether the next frontier hardens this cut or pre-produces the Queue segment.
+**Current stage:** Route A's hero-through-Annotation visual direction is approved and its bounded engineering hardening is complete. Production expansion remains unapproved. Narration is under consideration; its role must be decided before preproduction approval for any voice-bearing cut.
 
 **Approved production boundary:** Preserve the accepted Route A tracer direction, representative asset batch, held-breath rhythm, and dashed map route through first Annotation. This approval integrates tracer evidence only; it does not authorize Queue, Agent, Resolution, final asset authoring, renderer lock, dependency installation, full-page production, final install routing, or postproduction.
 
@@ -19,6 +19,7 @@
 
 ## Locked choices
 
+- **2026-09-18 — Hybrid traversal approved:** The visitor triggers each leg through scroll or an explicit keyboard/touch-accessible Continue action. That leg plays autonomously with synchronized narration, then holds indefinitely at its destination. Fresh intentional input after arrival starts the next leg; input during playback must not accumulate into a queued departure. Legs must offer a skip-to-destination path. This supersedes scroll-scrubbing as the selected interaction direction. The current tracer covers only the first leg; multi-leg gating and skip coverage remain implementation work, not verified behavior.
 - The new homepage direction starts from scratch. Existing homepage composition and motion are not creative authority.
 - The canonical treatment is **The Ink Route**, within the broader Living Storybook Chart direction.
 - The base canvas is minimalist **Driftwood Paper `#e9e1d3`**.
@@ -44,6 +45,7 @@
 
 ## Open questions
 
+- Whether narration becomes an optional companion or carries the storytelling/pacing; see [Narration consideration](#narration-consideration--2026-09-07). Consideration is not a greenlight.
 - Exact hero promise, CTA labels, and final public installation destination at launch.
 - Thelu's precise framing in the hero and whether Thelu reappears during the route.
 - Final production timing after representative material, camera, world, and sound are screened.
@@ -133,15 +135,48 @@ These remaining questions belong to the corrected medium gate, replacement trace
 
 **2026-09-04 — Route A engineering hardening approved and completed.** The director selected the previously recorded warm-path, foreground-audio, deterministic-test, and Node 26 test-runtime conditions before further production. The pass changes no approved visual, route, copy, or timing direction.
 
+## Narration consideration — 2026-09-07
+
+**Status:** Exploring, recorded at the director's request. No narration, script, timing change, recording, or implementation is approved. The existing treatment and accepted tracer remain authoritative.
+
+**Evidence:** The director is considering adding narration and requested an impact assessment before reopening settled work. The [treatment](./treatment.md) explicitly says “No narration”; the [shot plan](./shot-plan.md) reserves silence for hero clearance and empty paper, then synchronized impact and drawing foley. No standalone script exists in this binder; current story copy is carried by the treatment, shot plan, and tracer. Final copy and exact production timing remain open.
+
+**Impact assessment:**
+
+- **Treatment:** Adding any narration would require a narrow amendment to the explicit no-narration sound clause. Optional companion speech can preserve the premise, product route, visual medium, and accepted shots. A narrator that introduces new meaning, changes beat order, or dictates pacing would require approval of those affected treatment choices as well.
+- **Script:** If selected, narration earns a script before voice production: spoken lines mapped to beats, existing visible copy, intentional silence, and delivery intent. Considering narration alone does not approve a script or require manufacturing one now.
+- **Shot timing and interaction:** Companion lines that fit existing destination moments may preserve timing. Speech that needs longer holds, prevents skipping, or drives transitions changes the affected shot/input contract and needs a bounded timed read or animatic screening. Scroll speed, reversal, direct entry, interruption, and replay must have deliberate voice behavior; an independently running narration track cannot silently become a second narrative clock.
+- **Later sound pass:** Final voice performance/recording and mix may be refined later once the script and timing relationship are accepted. The narration decision itself cannot be deferred entirely to the sound pass, because it can change script, attention, silence, and shot duration before picture lock.
+
+**Earliest decision gate:** A focused treatment-amendment decision about narration's role, at the next directing meeting and before approving preproduction for the first cut intended to contain speech. If narration is selected, approve its script and timing relationship at that cut's preproduction gate before producing it. If voice is limited to a later destination, unrelated approved work can continue; resolve this before that destination's preproduction approval. Existing tracer acceptance is not automatically reopened.
+
+**Recommendation:** Keep directing. First evaluate sparse, optional companion narration at destination reveals, preserving the silent empty-paper beat and audible ink impact as the baseline for comparison. This is a recommendation, not a selected direction. Only reopen a specific approved shot if a proposed spoken line demonstrably requires it. Preserve complete visible meaning, immediate CTA access, mute, and reduced-motion coverage.
+
 ## Next co-directing decision
 
-Choose whether the next production frontier is final asset authoring for the approved hero-through-Annotation cut or preproduction for the Queue journey segment.
+**2026-09-18 update:** Hybrid traversal is selected. Recommended next move: pre-produce the Annotation → Queue leg, including its spoken line, visual transformation, arrival evidence, and fresh-input gate. Keep the accepted first leg as the starting point. This interaction approval does not approve Queue artwork, narration, or implementation automatically.
+
+### Timed scene revision authorized — 2026-09-07
+
+**Opening pacing revision:** The director found the first timed take too fast and abrupt. The new screening edit gives hero clearance 900 ms, blank paper 550 ms, ink bloom 1100 ms, and first route growth 2400 ms, followed by 5000 ms to arrival. This replaces the timing below: the complete sequence now lasts 9.95 seconds, with narration beginning around 1.45 seconds. The first route growth previously occupied just 240 ms, causing a conspicuous burst before the slower continuation. The revised edit awaits visual acceptance; TypeScript and 21 tests pass.
+
+The director requested autonomous slow ink travel, narration beginning with the ink, and scroll serving as a scene trigger. For the current hero-through-Annotation cut, this supersedes scroll-scrubbed playback and the earlier arrival-only voice cue. A click on See the journey or crossing the scene's scroll threshold starts the same timed sequence; subsequent scrolling does not change its playback progress. Browser audio still requires permission through user activation; silent traversal remains usable.
+
+The existing 1.28-second entrance is followed by 7.45 seconds of autonomous travel. The supplied take measures approximately 7.94 seconds; narration starts at ink impact, approximately 0.79 seconds into the entrance. Picture and sound pause with page visibility; Back to hero cancels and resets the sequence. Direct Annotation entry and reduced motion show the completed destination. This timing is a screening proposal within the explicitly requested revision, awaiting the director's in-context judgment. Future destinations remain outside implementation scope. TypeScript and 21 tests pass, including autonomous arrival with no scroll and narration preceding checkpoint completion.
+
+### Narration test authorized — 2026-09-07
+
+The director authorized integrating the supplied ElevenLabs recording for a bounded Annotation comparison. This supersedes the no-narration exclusion only for this screening experiment; final narration acceptance remains open. The line is “Every journey begins by marking a place. Ours begins where something could be better.” Voice: Spuds Oxley – Grandpa, Multilingual v2, speed 0.92, stability 60%, similarity 75%, style 16%, speaker boost on. Runtime asset: `packages/website/public/ink-route/waypoint-annotation-narration-grandpa-pace-0.92x-take-01.mp3`.
+
+The take plays at Annotation checkpoint completion after deliberate journey activation. A temporary Narration toggle supports comparison and replay; the shared mute and audio visibility lifecycle apply. Returning to the hero stops the take. Opening silence, ink impact, and visual timing remain intact. Loading failure leaves the visual experience usable. Next evidence: director hears the take in context and judges placement, breathing room, and voice; no final voice or timing acceptance is inferred from passing tests.
+
+Determine narration's role before approving any voice-bearing cut, then choose whether the next production frontier is final asset authoring for hero-through-Annotation or preproduction for Queue.
 
 ## Current production slate
 
 - **Recorded:** Route A's replacement tracer direction, completed dashed-map revision, and bounded engineering-hardening pass are integrated. The SVG reshoot remains behavioral evidence; Take B remains the rhythm hypothesis rather than a locked final edit.
 - **Current gate and approved boundary:** The visual-direction tracer gate is closed. No next production batch is open.
-- **Recommended production move:** **Keep directing.** Choose between final asset authoring for the approved hero-through-Annotation cut and pre-producing the Queue segment before dispatching more implementation.
+- **Recommended production move:** **Keep directing.** Resolve the proposed narration role for any affected upcoming cut, then select the next production frontier.
 - **Why this move fits now:** The signature visual risk is resolved, but the two possible next frontiers spend effort differently and the director has not selected one.
 - **Approved production frontier:** Preserve the merged tracer, its representative source batch, and its completed warm-path/audio/test hardening only.
 - **Still unresolved in the Director's Room:** Next-frontier selection; final layered assets and foley; custom WebGL versus PixiJS/Three.js ownership if complexity expands; physical mobile GPU evidence; Safari audio evidence; final timing/input adapter; optional haptics.
@@ -150,6 +185,7 @@ Choose whether the next production frontier is final asset authoring for the app
 
 ## Continuity log
 
+- **2026-09-18 / hybrid traversal greenlight** — Director selected user-triggered autonomous legs with indefinite destination holds. Preserved the slowed ink opening and narration test. The current first-leg implementation already advances independently of scroll and holds at Annotation; full multi-leg gating and skip behavior have not been implemented or screened. Next unapproved gate is the Queue leg's preproduction proposal.
 - **2026-08-31 / treatment greenlight** — Recorded The Ink Route as the selected treatment. Advanced the production to the preproduction gate. No implementation authority was inferred from the director's agreement.
 - **2026-08-31 / preproduction prepared** — Added the proposed shot plan, technical scout, storyboard SVG/PNG, tracer boundary, and dailies matrix. Status remains unapproved pending director review.
 - **2026-08-31 / tracer greenlight** — Director explicitly greenlit the preproduction package and requested a fresh worktree production unit. Locked the seven-item tracer boundary, recorded the next screening gate, and kept the rest of the page outside production authority.
@@ -160,3 +196,4 @@ Choose whether the next production frontier is final asset authoring for the app
 - **2026-09-01 / Route A tracer shot** — Produced original desktop/mobile chart boards and an ink-density plate, built the custom WebGL material/world compositor without installing a renderer package, removed the visible SVG route/impact and redundant A/B selector, captured desktop/mobile/direct/reduced/failure dailies, and recorded [`screenings-route-a.md`](./screenings-route-a.md). Status is an unapproved screening pause; production does not expand before the director's decision.
 - **2026-09-01 / Route A tracer approved and integrated** — Preserved the director's strongly positive screening, accepted the requested dashed-map revision at `3399ea0`, replayed desktop/mobile dailies, reviewed standards and binder fidelity, and merged the local tracer branch. Recorded warm-path, background-audio, physical-mobile, Safari, and focused test-coverage conditions for the next production gate; no push or production expansion followed.
 - **2026-09-04 / Route A engineering hardening completed** — Added a renderer-readiness contract with a bounded static-fallback release, restored previously initiated Web Audio after foreground return, added deterministic renderer/audio/integration coverage, and removed the Node 26 localStorage flag requirement. Raw website TypeScript, `19` tests, and the Next production build pass. No visual direction or later route segment was changed.
+- **2026-09-07 / narration consideration recorded** — Recorded narration as an unapproved possibility and assessed treatment, script, shot timing, and sound-pass impact. Identified a focused treatment amendment before the first voice-bearing cut's preproduction approval as the earliest decision gate. Preserved all existing approvals; no script, audio asset, timing, or implementation was changed.

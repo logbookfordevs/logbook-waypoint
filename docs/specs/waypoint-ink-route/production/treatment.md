@@ -33,6 +33,7 @@ The frame starts almost empty and becomes legible rather than merely more decora
 
 ## Approved visual and interaction language
 
+- **2026-09-18 interaction amendment:** Hybrid traversal supersedes the scroll-scrubbed journey below: user input triggers a leg; an authored timeline carries ink, camera, and narration to the destination; the destination holds until fresh input. Preserve accessible Continue and skip-to-destination paths. Scroll during playback must not queue another departure. Only the first leg exists in the current tracer; later scenes require their own preproduction approval.
 - **Canvas:** Driftwood Paper `#e9e1d3`.
 - **Typography:** Existing Waypoint Poppins, Literata, and IBM Plex Mono roles.
 - **Route:** Black-brown organic ink, initially sparse, becoming a dashed traveling path.

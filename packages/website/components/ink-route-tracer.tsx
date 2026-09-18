@@ -27,10 +27,11 @@ declare global {
   }
 }
 
-const HELD_BREATH_TIMING: TimingSpec = { total: 1280, phases: [480, 310, 250, 240] };
+const HELD_BREATH_TIMING: TimingSpec = { total: 4950, phases: [900, 550, 1100, 2400] };
 
 const VISUAL_PHASES = [0, 0.28, 0.42, 0.56, 1] as const;
 const MUTE_STORAGE_KEY = 'waypoint-ink-route-muted';
+const ANNOTATION_TRAVEL_MS = 5000;
 const RENDERER_WARM_PATH_TIMEOUT_MS = 2500;
 
 function waitForRendererWarmPath(readiness: Promise<RendererStatus>) {
@@ -102,10 +103,13 @@ export function InkRouteTracer() {
   const impactPlayedRef = useRef(false);
   const checkpointPlayedRef = useRef(false);
   const programmaticScrollRef = useRef(0);
+  const sceneProgressRef = useRef(0);
+  const triggerSceneRef = useRef<() => void>(() => undefined);
   const mutedRef = useRef(false);
   const latestRouteProgressRef = useRef(0);
   const latestFrameTimeRef = useRef(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [narrationEnabled, setNarrationEnabled] = useState(true);
   const [isMotionReduced, setIsMotionReduced] = useState(false);
   const [showsJourneyControls, setShowsJourneyControls] = useState(false);
 
@@ -185,13 +189,8 @@ export function InkRouteTracer() {
         trace.framesOver50Ms += 1;
       }
 
-      const localScroll = window.scrollY - rootTop;
-      const progress = reducedMotion.matches
-        ? (localScroll > 4 || window.location.hash === '#annotation' ? 1 : 0)
-        : clamp(localScroll / entranceRange);
-      const annotationProgress = reducedMotion.matches
-        ? progress
-        : clamp((localScroll - entranceRange) / annotationRange);
+      const progress = clamp(sceneProgressRef.current);
+      const annotationProgress = clamp(sceneProgressRef.current - 1);
       const routeProgress = clamp(smoothstep(0.56, 1, progress) * 0.36 + annotationProgress * 0.64);
       const impactProgress = smoothstep(0.42, 0.56, progress);
       const heroProgress = smoothstep(0, 0.28, progress);
@@ -237,9 +236,10 @@ export function InkRouteTracer() {
       const movedForward = routeProgress > latestRouteProgressRef.current;
       const crossedImpact = latestProgress < 0.42 && progress >= 0.42;
       const crossedCheckpoint = latestAnnotationProgress < 0.88 && annotationProgress >= 0.88;
-      if (intentionalJourneyRef.current && movedForward && crossedImpact && !impactPlayedRef.current) {
+      if (intentionalJourneyRef.current && crossedImpact && !impactPlayedRef.current) {
         impactPlayedRef.current = true;
         audioRef.current?.playImpact();
+        audioRef.current?.playNarration();
       }
       if (intentionalJourneyRef.current && movedForward && crossedCheckpoint && !checkpointPlayedRef.current) {
         checkpointPlayedRef.current = true;
@@ -276,6 +276,13 @@ export function InkRouteTracer() {
       scheduleRender();
     };
 
+    const handleScroll = () => {
+      if (window.scrollY - rootTop > 24 && sceneProgressRef.current === 0 && !journeyStartingRef.current) {
+        triggerSceneRef.current();
+      }
+      scheduleRender();
+    };
+
     const handleVisibility = () => {
       if (document.hidden) {
         void audioRef.current?.suspend();
@@ -302,6 +309,7 @@ export function InkRouteTracer() {
 
     measure();
     if (window.location.hash === '#annotation') {
+      sceneProgressRef.current = 2;
       window.requestAnimationFrame(() => {
         window.scrollTo(0, rootTop + entranceRange + annotationRange * 0.9);
         journeyHeadingRef.current?.focus({ preventScroll: true });
@@ -311,7 +319,7 @@ export function InkRouteTracer() {
       render();
     }
 
-    window.addEventListener('scroll', scheduleRender, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleResize);
     document.addEventListener('visibilitychange', handleVisibility);
     reducedMotion.addEventListener('change', handleMotionPreference);
@@ -319,7 +327,7 @@ export function InkRouteTracer() {
     return () => {
       mountedRef.current = false;
       journeyStartingRef.current = false;
-      window.removeEventListener('scroll', scheduleRender);
+      window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibility);
       reducedMotion.removeEventListener('change', handleMotionPreference);
@@ -369,7 +377,7 @@ export function InkRouteTracer() {
 
     journeyStartingRef.current = true;
     void waitForRendererWarmPath(rendererReadinessRef.current).then(() => {
-      if (!mountedRef.current) {
+      if (!mountedRef.current || !intentionalJourneyRef.current) {
         journeyStartingRef.current = false;
         return;
       }
@@ -379,32 +387,38 @@ export function InkRouteTracer() {
       window.history.replaceState(null, '', '#journey');
 
       if (reducedMotion) {
+        sceneProgressRef.current = 2;
         journeyStartingRef.current = false;
         window.scrollTo(0, rootTop + entranceRange);
+        window.dispatchEvent(new Event('resize'));
         journeyHeadingRef.current?.focus({ preventScroll: true });
         return;
       }
 
       const timing = HELD_BREATH_TIMING;
-      const startTime = performance.now();
+      let previousTime = performance.now();
+      let elapsed = 0;
       const animateScroll = (now: number) => {
-        const elapsed = now - startTime;
-        const progress = timelineProgress(elapsed, timing);
-        window.scrollTo(0, rootTop + entranceRange * progress);
-        if (elapsed < timing.total) {
+        if (!document.hidden) elapsed += Math.min(now - previousTime, 80);
+        previousTime = now;
+        sceneProgressRef.current = elapsed <= timing.total
+          ? timelineProgress(elapsed, timing)
+          : 1 + clamp((elapsed - timing.total) / ANNOTATION_TRAVEL_MS);
+        window.dispatchEvent(new Event('scroll'));
+        if (elapsed < timing.total + ANNOTATION_TRAVEL_MS) {
           programmaticScrollRef.current = window.requestAnimationFrame(animateScroll);
           return;
         }
 
         programmaticScrollRef.current = 0;
         journeyStartingRef.current = false;
-        window.scrollTo(0, rootTop + entranceRange);
         journeyHeadingRef.current?.focus({ preventScroll: true });
       };
 
       programmaticScrollRef.current = window.requestAnimationFrame(animateScroll);
     });
   };
+  triggerSceneRef.current = startJourney;
 
   const toggleMute = () => {
     if (isMotionReduced) {
@@ -424,12 +438,18 @@ export function InkRouteTracer() {
     }
 
     intentionalJourneyRef.current = false;
+    window.cancelAnimationFrame(programmaticScrollRef.current);
+    programmaticScrollRef.current = 0;
+    journeyStartingRef.current = false;
+    sceneProgressRef.current = 0;
+    audioRef.current?.stopNarration();
     audioRef.current?.setScratchVelocity(0);
     window.history.replaceState(null, '', window.location.pathname);
     window.scrollTo({
       top: root.getBoundingClientRect().top + window.scrollY,
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      behavior: 'auto',
     });
+    window.dispatchEvent(new Event('resize'));
     window.setTimeout(() => journeyButtonRef.current?.focus({ preventScroll: true }), 520);
   };
 
@@ -506,13 +526,19 @@ export function InkRouteTracer() {
         <div className="ink-route__journey-copy">
           <p>THE INK ROUTE · FIRST BEARING</p>
           <h2 ref={journeyHeadingRef} id="journey" tabIndex={-1}>The route authors the world.</h2>
-          <span>Scroll to follow the ink into Annotation.</span>
+          <span>Follow the ink into Annotation.</span>
         </div>
 
         <div className="ink-route__persistent-controls" hidden={!showsJourneyControls}>
           <button type="button" onClick={returnToHero}><ArrowLeft aria-hidden="true" /> Back to hero</button>
           <span aria-hidden="true" />
           <button type="button" onClick={toggleMute} disabled={isMotionReduced}>{muteIcon} {soundLabel}</button>
+          <button type="button" aria-pressed={narrationEnabled} onClick={() => {
+            const enabled = !narrationEnabled;
+            setNarrationEnabled(enabled);
+            audioRef.current?.setNarrationEnabled(enabled);
+            if (enabled) audioRef.current?.playNarration();
+          }}>Narration {narrationEnabled ? 'on' : 'off'}</button>
         </div>
 
         <a id="annotation" className="ink-route__annotation-anchor" href="#annotation" tabIndex={-1}>Annotation checkpoint</a>

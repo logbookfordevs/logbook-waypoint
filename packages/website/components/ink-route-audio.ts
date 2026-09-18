@@ -21,6 +21,9 @@ export class InkRouteAudio {
   private scratchGain: GainNode | null = null;
   private scratchSource: AudioBufferSourceNode | null = null;
   private muted = false;
+  private narrationBuffer: AudioBuffer | null = null;
+  private narrationSource: AudioBufferSourceNode | null = null;
+  private narrationEnabled = true;
 
   prepare() {
     if (!this.context) {
@@ -30,6 +33,17 @@ export class InkRouteAudio {
       this.master.gain.value = this.muted ? 0 : 0.72;
       this.master.connect(this.context.destination);
       this.startScratchTexture();
+      const context = this.context;
+      void fetch('/ink-route/waypoint-annotation-narration-grandpa-pace-0.92x-take-01.mp3')
+        .then((response) => {
+          if (!response.ok) throw new Error('Narration unavailable');
+          return response.arrayBuffer();
+        })
+        .then((bytes) => context.decodeAudioData(bytes))
+        .then((buffer) => {
+          if (this.context === context) this.narrationBuffer = buffer;
+        })
+        .catch(() => undefined);
     }
   }
 
@@ -57,6 +71,31 @@ export class InkRouteAudio {
     const now = this.context.currentTime;
     this.master.gain.cancelScheduledValues(now);
     this.master.gain.setTargetAtTime(muted ? 0 : 0.72, now, 0.025);
+  }
+
+  setNarrationEnabled(enabled: boolean) {
+    this.narrationEnabled = enabled;
+    if (!enabled) this.stopNarration();
+  }
+
+  stopNarration() {
+    this.narrationSource?.stop();
+    this.narrationSource?.disconnect();
+    this.narrationSource = null;
+  }
+
+  playNarration() {
+    if (!this.context || !this.master || !this.narrationBuffer || !this.narrationEnabled || this.muted) return;
+    this.stopNarration();
+    const source = this.context.createBufferSource();
+    source.buffer = this.narrationBuffer;
+    source.connect(this.master);
+    source.onended = () => {
+      source.disconnect();
+      if (this.narrationSource === source) this.narrationSource = null;
+    };
+    this.narrationSource = source;
+    source.start();
   }
 
   playImpact() {
@@ -131,6 +170,8 @@ export class InkRouteAudio {
   }
 
   dispose() {
+    this.stopNarration();
+    this.narrationBuffer = null;
     this.scratchSource?.stop();
     this.scratchSource = null;
     void this.context?.close();
