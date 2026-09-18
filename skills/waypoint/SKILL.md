@@ -5,7 +5,9 @@ description: Use when handling Logbook Waypoint Annotations or Variant Sets thro
 
 # Waypoint
 
-Use Waypoint as a local request Queue, not as passive commentary.
+Use Waypoint as a local request Queue. When the user asks to read Waypoint, act on actionable Annotations through resolution by default: read, claim, implement, verify, and resolve. The read tool retrieves requests; a successful read or a list of findings is only intake, not task completion. Limit the task to inspection or a summary only when the user explicitly requests that scope.
+
+Complete each actionable Annotation in scope, or report the concrete blocker or required user decision. Follow the Claim and Variant lifecycle below, including waiting for the user's Variant selection when required.
 
 ## Find the project
 
