@@ -156,6 +156,6 @@ See [Use Design Actions](DESIGN_ACTIONS.md) for setup requirements, the action c
 
 ## Know what remains local
 
-The server listens only on IPv4 loopback. Annotation data is stored locally, and captured page content is treated as untrusted evidence. The GitHub installer can open the Skills CLI, with confirmation, so you choose which agent harnesses receive Waypoint's workflow skill. It does not install Impeccable or transmit Annotation content. Waypoint does not expose a public page automation API, publish changes, or send annotation content to a hosted Waypoint service.
+The server listens only on IPv4 loopback. Annotation data is stored locally, and captured page content is treated as untrusted evidence. The GitHub installer includes the Waypoint workflow skill by default, using AFK when available and otherwise the Skills CLI. Pass --skip-skill to opt out; this preference is remembered for updates. Pass --yes to re-enable it. A skill-install failure leaves the CLI installed and prints a retry command. It does not install Impeccable or transmit Annotation content. Waypoint does not expose a public page automation API, publish changes, or send annotation content to a hosted Waypoint service.
 
 For the complete boundary, see [Security](../SECURITY.md). For exact behavior, continue into the [documentation map](README.md) and its contracts.
