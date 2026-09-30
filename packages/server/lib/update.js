@@ -6,6 +6,8 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 const packageName = '@logbookfordevs/waypoint';
+const skillUpdateArgs = ['--yes', 'skills@latest', 'add', 'logbookfordevs/logbook-waypoint', '--global', '--agent', 'universal', '--skill', 'waypoint', '--yes'];
+export const skillUpdateRetryCommand = `npx ${skillUpdateArgs.join(' ')}`;
 
 async function samePath(left, right) {
   try { return await realpath(left) === await realpath(right); }
@@ -52,7 +54,15 @@ function run(command, args) {
 
 export async function updateInstallation(packageRoot, { detect = detectInstallation, execute = run } = {}) {
   const { command, args } = await detect(packageRoot);
-  if (command !== 'bash') return execute(command, args);
+  if (command !== 'bash') {
+    await execute(command, args);
+    try {
+      await execute('npx', skillUpdateArgs);
+      return { skillUpdated: true };
+    } catch (error) {
+      return { skillUpdated: false, skillError: error.message };
+    }
+  }
   const temporary = await mkdtemp(join(tmpdir(), 'waypoint-update-'));
   try {
     const installer = join(temporary, 'install.sh');

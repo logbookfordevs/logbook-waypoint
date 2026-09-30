@@ -15,14 +15,22 @@ Copy and export work without MCP. The server becomes useful when the agent shoul
 
 ## Install Waypoint and build the extension
 
-Install the latest checksummed CLI release:
+Recommended for agent workflows: install the latest checksummed CLI release and its bundled Waypoint skill:
 
 ```bash
 curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
 waypoint start
 ```
 
-You can alternatively install the CLI through npm with `npm install --global @logbookfordevs/waypoint`.
+Alternatively, install the CLI through npm and then add the skill separately:
+
+```bash
+npm install --global @logbookfordevs/waypoint
+npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global
+waypoint start
+```
+
+Use `waypoint update` to keep an installed CLI current, then `waypoint restart` to run the new server version. npm updates also refresh the skill; the curl installer updates its bundled skill unless you opted out.
 
 Until the browser extension is published, build it from the repository root:
 
@@ -132,7 +140,7 @@ Survey → optional Inspect → Claim → implement → Resolve or Release
 
 Survey returns compact context intended to be sufficient for normal implementation. Inspect is the optional equivalent of opening DevTools when layout, cascade, placement, source identity, or relationships between Targets remain ambiguous.
 
-See [Use Waypoint through MCP](MCP_GUIDE.md) for client examples, concrete calls, lifecycle behavior, and the complete 20-tool reference.
+See [Use Waypoint through MCP](MCP_GUIDE.md) for client examples, concrete calls, lifecycle behavior, and the MCP tool reference. Watch uses the CLI.
 
 ## Use Design Actions when you want guided design work
 

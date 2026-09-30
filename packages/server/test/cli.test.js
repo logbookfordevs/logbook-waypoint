@@ -20,16 +20,33 @@ test('start exposes foreground as the explicit alternative to background startup
   assert.doesNotMatch(stdout, /--daemon/);
 });
 
-test('watch exposes foreground, structured, bounded, and resumable modes', async () => {
+test('watch exposes current snapshots and an explicit detailed event mode', async () => {
   const { stdout } = await execFileAsync(
     process.execPath,
     [path.join(serverRoot, 'bin/cli.js'), 'watch', '--help'],
   );
 
-  assert.match(stdout, /--json\s+Write complete MCP Watch result envelopes as NDJSON/);
-  assert.match(stdout, /--once\s+Return after one Watch result/);
-  assert.match(stdout, /--cursor <cursor>\s+Resume from a previously processed Watch cursor/);
+  assert.match(stdout, /--json\s+Write each current open-work snapshot as one JSON/);
+  assert.match(stdout, /--events\s+Write detailed changes; without --cursor, replay\s+full Watch/);
+  assert.match(stdout, /--once\s+Return after the first snapshot/);
+  assert.match(stdout, /--cursor <cursor>\s+Resume a detailed --events stream/);
   assert.doesNotMatch(stdout, /--daemon/);
+});
+
+test('snapshot Watch rejects a cursor reserved for the detailed event stream', async () => {
+  await assert.rejects(
+    execFileAsync(process.execPath, [
+      path.join(serverRoot, 'bin/cli.js'),
+      'watch',
+      'http://localhost:3000/',
+      '--cursor',
+      'old-cursor',
+    ]),
+    error => {
+      assert.match(error.stderr, /--cursor requires --events/);
+      return true;
+    },
+  );
 });
 
 

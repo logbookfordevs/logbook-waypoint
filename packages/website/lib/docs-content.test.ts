@@ -3,6 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { getDocumentationPage } from '@/lib/docs-content';
 
 describe('agent workflow skill documentation', () => {
+  it('recommends the curl installer and gives npm users a separate skill command', () => {
+    const installation = getDocumentationPage('installation');
+    const recommended = installation?.sections.find((section) => section.heading === 'Recommended: install from a GitHub Release');
+    const npm = installation?.sections.find((section) => section.heading === 'Alternative: install through npm');
+    const releases = getDocumentationPage('releases');
+    const update = releases?.sections.find((section) => section.heading === 'Update the installation you already use');
+
+    expect(recommended?.code).toMatch(/^curl -fsSL /);
+    expect(npm?.code).toContain('npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global');
+    expect(update?.code).toContain('waypoint update');
+  });
+
   it('places skill installation before MCP connection and explains their different jobs', () => {
     const installation = getDocumentationPage('installation');
     const agentSetup = getDocumentationPage('agent-setup');
@@ -25,7 +37,8 @@ describe('agent workflow skill documentation', () => {
     expect(watchSection?.code).toBe('waypoint watch http://localhost:3000/ --json');
     expect(watchSection?.paragraphs.join(' ')).toMatch(/cannot guarantee.*idle agent wakes up/i);
     expect(watchSection?.note).toMatch(/--once/);
-    expect(watchSection?.note).toMatch(/--cursor/);
+    expect(watchSection?.note).toMatch(/--events/);
+    expect(watchSection?.paragraphs.join(' ')).toMatch(/CLI Watch/);
   });
 });
 

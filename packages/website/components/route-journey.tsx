@@ -356,10 +356,10 @@ export function RouteJourney() {
 
             <article ref={(node) => { sceneRefs.current[2] = node; }} className="ink-scene ink-scene--agent">
               <div className="ink-scene__copy ink-scene__copy--light"><p>{chapters[2].bearing}</p><h3>{chapters[2].title}</h3><blockquote>{chapters[2].copy}</blockquote></div>
-              <div className="agent-shot" aria-label="A coding agent reading and claiming the annotation through MCP">
+              <div className="agent-shot" aria-label="A coding agent watching through the CLI, then reading and claiming the annotation">
                 <div className="agent-shot__radar" aria-hidden="true"><i /><i /><i /><b /></div>
                 <div className="agent-shot__terminal">
-                  <p><span>waypoint_mcp</span><code>watch_annotations</code></p>
+                  <p><span>waypoint CLI</span><code>watch --json</code></p>
                   <pre><b>→</b> Annotation wp_1842{`\n`}  status  <em>Pending</em>{`\n`}  target  section.empty-state{`\n`}  brief   “Tighten this empty state.”</pre>
                   <p><span>agent</span><code>claim_annotation</code></p>
                   <div><Radio aria-hidden="true" /><b>Claimed</b><small>Implementation in progress</small></div>

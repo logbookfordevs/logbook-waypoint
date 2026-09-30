@@ -44,7 +44,7 @@ import { ALLOWED_IMAGE_MIME_TYPES, AttachmentStore } from './attachment-store.js
 import { encodeAnnotationsExport } from './export-codec.js';
 import { inspectAnnotation } from './annotation-inspection.js';
 import { summarizeAnnotation } from './annotation-summary.js';
-import { createProjectScope, matchesProjectScope } from './project-scope.js';
+import { createProjectScope, isLoopbackProjectUrl, matchesProjectScope } from './project-scope.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
 import { PersistentWatchQueue, toReadAnnotation, toWatchAnnotation } from './watch-queue.js';
 import {
@@ -273,6 +273,16 @@ export class LocalAnnotationsServer {
         minExtensionVersion: '0.1.0',
         timestamp: new Date().toISOString() 
       });
+    });
+
+    this.app.post('/api/watch', async (req, res) => {
+      try {
+        const data = await this.watchAnnotations(req.body ?? {});
+        res.json({ type: 'watch_events', data_trust: 'untrusted', data });
+      } catch (error) {
+        const invalidCursor = /Watch cursor|Watch cursor belongs/.test(error.message);
+        res.status(invalidCursor ? 400 : requestErrorStatus(error)).json({ error: error.message });
+      }
     });
 
     // API endpoints for Chrome extension
@@ -697,34 +707,15 @@ export class LocalAnnotationsServer {
       return {
         tools: [
           {
-            name: 'watch_annotations',
-            description: 'Wait for compact changes in one loopback URL scope. Start with url, then resume with cursor. Timeouts are successful empty responses. Delivery is at least once; deduplicate by Annotation ID and revision.',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                url: { type: 'string', description: 'Loopback URL scope, required on the first call. Uses the same project, Page, and View State matching as read_annotations.' },
-                cursor: {
-                  type: 'string',
-                  description: 'Opaque cursor from the last successful watch_annotations response'
-                },
-                timeout_ms: {
-                  type: 'number',
-                  minimum: 0,
-                  maximum: 30000,
-                  default: 25000,
-                  description: 'Maximum time to wait; timeout is a successful empty response'
-                }
-              },
-              anyOf: [{ required: ['url'] }, { required: ['cursor'] }],
-              additionalProperties: false
-            }
-          },
-          {
             name: 'read_annotations',
-            description: 'Survey compact Annotation summaries. Without url, discovers projects that already contain Annotations. With an explicit loopback url, returns that scope directly; an unknown or empty scope succeeds with an empty list. Read is side-effect-free.',
+            description: 'Survey compact Annotation summaries by exact Annotation ID or loopback URL scope. Supply id or url. An unknown ID or empty scope succeeds with an empty list. Read is side-effect-free.',
             inputSchema: {
               type: 'object',
               properties: {
+                id: {
+                  type: 'string',
+                  description: 'Canonical Annotation ID for one exact Survey result. May be combined with url to verify its scope.'
+                },
                 status: {
                   type: 'string',
                   enum: ['pending', 'claimed', 'resolved', 'discarded', 'all'],
@@ -749,6 +740,7 @@ export class LocalAnnotationsServer {
                   description: 'Filter by localhost scope. A Page URL without query or hash includes every View State on that pathname (e.g., "http://localhost:3000/account"). A complete Captured URL filters one exact View State. Use a project root or wildcard (e.g., "http://localhost:3000/" or "http://localhost:3000/*") for the entire project.'
                 }
               },
+              anyOf: [{ required: ['id'] }, { required: ['url'] }],
               additionalProperties: false
             }
           },
@@ -971,19 +963,9 @@ export class LocalAnnotationsServer {
 
       try {
         switch (name) {
-          case 'watch_annotations': {
-            const result = await this.watchAnnotations(args || {});
-            return {
-              content: [{
-                type: 'text',
-                text: JSON.stringify(createToolPayload('watch_annotations', result), null, 2)
-              }]
-            };
-          }
-
           case 'read_annotations': {
             const result = await this.readAnnotations(args || {});
-            const { annotations, projectInfo, projectSelection, multiProjectWarning } = result;
+            const { annotations, pagination, projectInfo, projectSelection, multiProjectWarning } = result;
 
             return {
               content: [
@@ -992,10 +974,11 @@ export class LocalAnnotationsServer {
                   text: JSON.stringify(createToolPayload('read_annotations', {
                     annotations,
                     count: annotations.length,
+                    pagination,
                     projects: projectInfo,
                     project_selection: projectSelection,
                     multi_project_warning: multiProjectWarning,
-                    filter_applied: args?.url || 'none'
+                    filter_applied: args?.id || args?.url || 'none'
                   }), null, 2)
                 }
               ]
@@ -1319,15 +1302,37 @@ export class LocalAnnotationsServer {
   async watchAnnotations(args) {
     const timeoutMs = args.timeout_ms ?? 25_000;
     if (!Number.isInteger(timeoutMs) || timeoutMs < 0 || timeoutMs > 30_000) {
-      throw new Error('timeout_ms must be an integer between 0 and 30000');
+      throw new TypeError('timeout_ms must be an integer between 0 and 30000');
     }
 
+    if (args.from_now === true && args.cursor !== undefined) {
+      throw new TypeError('from_now cannot be combined with cursor');
+    }
+    if (args.include_open_work === true && args.url === undefined) {
+      throw new TypeError('include_open_work requires url');
+    }
     if (args.cursor === undefined || args.url !== undefined) createProjectScope(args.url);
     await this.loadCurrentAnnotations();
     const result = await this.watchQueue.watch(
-      { cursor: args.cursor, timeoutMs, url: args.url, scoped: true },
+      { cursor: args.cursor, fromNow: args.from_now === true, timeoutMs, url: args.url, scoped: true },
       () => this.loadAnnotations(),
     );
+    const needsOpenWork = args.include_open_work === true
+      && (args.from_now === true || result.changes.length > 0);
+    const openScope = needsOpenWork ? createProjectScope(args.url) : null;
+    const openWork = openScope
+      ? (await this.loadCurrentAnnotations())
+        .filter(annotation => annotationMatchesProjectScope(annotation, openScope))
+        .filter(annotation => annotation.status === 'pending' || annotation.status === 'claimed')
+        .map(annotation => ({
+          id: annotation.id,
+          status: annotation.status,
+          url: annotation.url,
+          ...(annotation.updated_at ? { updated_at: annotation.updated_at } : {}),
+          ...(annotation.claim?.owner ? { owner: annotation.claim.owner } : {}),
+        }))
+        .sort((left, right) => left.id.localeCompare(right.id))
+      : undefined;
     return {
       changes: result.changes.map(change => ({
         annotation: summarizeAnnotation(change.annotation),
@@ -1337,6 +1342,7 @@ export class LocalAnnotationsServer {
       })),
       cursor: result.cursor,
       timed_out: result.changes.length === 0,
+      ...(openWork ? { open_work: openWork } : {}),
     };
   }
 
@@ -1544,12 +1550,22 @@ export class LocalAnnotationsServer {
   }
 
   async readAnnotations(args) {
-    const annotations = await this.loadCurrentAnnotations();
-    const { status = 'pending', limit = 50, offset = 0, url } = args;
+    const { id, status = id ? 'all' : 'pending', limit = 50, offset = 0, url } = args;
+    if (id === undefined && url === undefined) {
+      throw new TypeError('read_annotations requires id or url');
+    }
+    if (id !== undefined && !isValidAnnotationId(id)) {
+      throw new TypeError('Invalid Waypoint annotation ID');
+    }
     assertAnnotationStatusFilter(status);
     const scope = url ? createProjectScope(url) : null;
+    const annotations = await this.loadCurrentAnnotations();
 
     let filtered = annotations;
+
+    if (id !== undefined) {
+      filtered = filtered.filter(annotation => annotation.id === id && isLoopbackProjectUrl(annotation.url));
+    }
 
     if (status !== 'all') {
       filtered = filtered.filter(a => a.status === status);
@@ -1575,29 +1591,6 @@ export class LocalAnnotationsServer {
       }
     });
 
-    // Add project context to response
-    const projectCount = Object.keys(groupedByProject).length;
-    const projectSelection = !url && projectCount > 0
-      ? {
-          required: true,
-          recommendation: 'Repeat read_annotations with one project URL filter to read annotation bodies.',
-          suggested_filters: Object.keys(groupedByProject).map(baseUrl => `${baseUrl}/*`),
-        }
-      : null;
-    let multiProjectWarning = null;
-
-    if (projectCount > 1 && !url) {
-      const projectSuggestions = Object.keys(groupedByProject).map(baseUrl => `"${baseUrl}/*"`).join(' or ');
-      multiProjectWarning = {
-        warning: `MULTI-PROJECT DETECTED: Found annotations from ${projectCount} different projects. This may cause cross-project contamination.`,
-        recommendation: `Use the 'url' parameter to filter annotations for your current project.`,
-        suggested_filters: Object.keys(groupedByProject).map(baseUrl => `${baseUrl}/*`),
-        guidance: `Example: Use url: "${Object.keys(groupedByProject)[0]}/*" to filter for the first project.`,
-        projects_detected: Object.keys(groupedByProject)
-      };
-      console.warn(`MULTI-PROJECT WARNING: Found annotations from ${projectCount} different projects. Use url parameter: ${projectSuggestions}`);
-    }
-
     // Build project info for better context
     const projectInfo = Object.entries(groupedByProject).map(([baseUrl, annotations]) => ({
       base_url: baseUrl,
@@ -1611,10 +1604,7 @@ export class LocalAnnotationsServer {
 
     // Apply pagination with offset
     const total = filtered.length;
-    const requiresProjectFilter = !url;
-    const paginatedResults = requiresProjectFilter
-      ? []
-      : filtered.slice(offset, offset + limit);
+    const paginatedResults = filtered.slice(offset, offset + limit);
 
     // Calculate pagination metadata
     const pagination = {
@@ -1630,8 +1620,8 @@ export class LocalAnnotationsServer {
       annotations: annotationSummaries,
       pagination: pagination,
       projectInfo: projectInfo,
-      projectSelection: projectSelection,
-      multiProjectWarning: multiProjectWarning
+      projectSelection: null,
+      multiProjectWarning: null
     };
   }
 

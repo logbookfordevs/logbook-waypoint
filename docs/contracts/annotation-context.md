@@ -6,7 +6,7 @@ Status: Implemented.
 
 Waypoint separates annotation discovery, work context, diagnostic context, and visual evidence across three MCP tools:
 
-1. `read_annotations` surveys the Queue with compact actionable summaries.
+1. `read_annotations` surveys the Queue with compact actionable summaries by exact Annotation ID or URL scope.
 2. `inspect_annotations` diagnoses one or more selected Annotations by canonical ID with their complete captured context.
 3. `get_annotation_screenshot` retrieves visual evidence for one selected Target when text context is insufficient.
 
@@ -16,9 +16,9 @@ The Reading and Inspect operations themselves are side-effect-free. They do not 
 
 ## Survey
 
-An unfiltered `read_annotations` call discovers only projects whose stored URLs match an accepted loopback scope and returns project summaries and recommended URL filters without returning Annotation bodies. This rule also applies when only one project has matching Annotations. The caller selects one project and repeats the survey with its URL filter. Production and other unsupported origins are omitted from project metadata and recommendations. An unfiltered call returns no Annotation bodies even when no supported projects remain.
+`read_annotations` requires an exact Annotation ID or an explicit loopback URL. A URL survey returns that scope directly, including an empty list for an unknown scope. An exact-ID read returns one Survey summary directly when its stored URL is loopback. Production and other unsupported origins are omitted from ID reads.
 
-A scoped survey returns compact summaries suitable for understanding, prioritizing, grouping, selecting, and usually implementing work. Compact describes response size, not an incomplete work brief: Survey is the default implementation context, while Inspect is an optional diagnostic path for remaining ambiguity. Each summary may include:
+A scoped survey or exact-ID read returns compact summaries suitable for understanding, prioritizing, grouping, selecting, and usually implementing work. Compact describes response size, not an incomplete work brief: Survey is the default implementation context, while Inspect is an optional diagnostic path for remaining ambiguity. Each summary may include:
 
 - Annotation ID, route, lifecycle state, comment, and timestamps.
 - Target count and a normalized `targets` array.
@@ -51,4 +51,4 @@ Annotation comments, captured page content, selectors, Source Identity, and rela
 
 ## Test surface
 
-Tests cover discovery-first unscoped reads, URL-scoped compact summaries, legacy and multi-Target normalization, deterministic framework-noise filtering, batched inspection, missing IDs, complete diagnostic context, and exclusion of embedded media.
+Tests cover required ID-or-URL selection, URL-scoped and exact-ID compact summaries, legacy and multi-Target normalization, deterministic framework-noise filtering, batched inspection, missing IDs, complete diagnostic context, and exclusion of embedded media.

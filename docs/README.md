@@ -10,14 +10,14 @@ Choose the shortest route for what you need to understand or change.
 
 - [User guide](USER_GUIDE.md) — annotate a page, manage the Queue, copy or export work, connect MCP, and configure everyday behavior.
 - [Use Design Actions](DESIGN_ACTIONS.md) — author guided or Freeform design work, request Variants, and understand Queue outcomes.
-- [Use Waypoint through MCP](MCP_GUIDE.md) — follow the normal agent workflow, understand compact Survey and diagnostic Inspect, and reference all 19 tools.
+- [Use Waypoint through MCP and CLI Watch](MCP_GUIDE.md) — follow the normal agent workflow, understand compact Survey and diagnostic Inspect, and use CLI Watch.
 - [Development guide](DEVELOPMENT.md) — work on the extension and local server.
 - [Update system](UPDATE_SYSTEM.md) — understand the retained local update behavior and maintenance boundary.
 - [Server package guide](../packages/server/README.md) — install, run, connect, and use the local MCP server.
 
 ## Behavioral contracts
 
-- [Annotation Context](contracts/annotation-context.md) — Survey versus Inspect, project discovery, Target compatibility, media, and trust boundaries.
+- [Annotation Context](contracts/annotation-context.md) — Survey versus Inspect, ID and URL selection, Target compatibility, media, and trust boundaries.
 - [Annotation Lifecycle](contracts/annotation-lifecycle.md) — Pending, Claim, release, resolution, discard, expiry, and deletion ownership.
 - [Product Identifiers](contracts/product-identifiers.md) — canonical repository, package, MCP, storage, and Annotation identifiers.
 - [Chrome Web Store submission](CHROME_WEB_STORE.md) — extension packaging, listing copy, privacy disclosures, reviewer instructions, assets, and delivery gates.

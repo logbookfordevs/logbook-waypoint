@@ -1000,7 +1000,7 @@ var WaypointToolbar = (() => {
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Watch continuously</div>
-            <p class="waypoint-guide-text">During an active review, ask your agent: <em>"Watch Waypoint for new annotations and handle them."</em> <strong>watch_annotations</strong> receives new requests; the agent claims each one when implementation begins and resolves completed work.</p>
+            <p class="waypoint-guide-text">During an active review, ask your agent: <em>"Watch Waypoint for new annotations and handle them."</em> The <strong>waypoint watch</strong> CLI shows current open work; the agent reads a selected ID, claims it when implementation begins, and resolves completed work.</p>
           </div>
         `
       },
