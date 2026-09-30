@@ -4,16 +4,17 @@ Global MCP server for Logbook Waypoint browser extension.
 
 ## Installation
 
-Install the latest checksummed release directly:
+Recommended for agent workflows: install the latest checksummed release and its bundled Waypoint skill together:
 
 ```bash
 curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
 ```
 
-Or install through npm:
+Alternatively, install the CLI through npm and add the agent skill separately:
 
 ```bash
 npm install --global @logbookfordevs/waypoint
+npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global
 ```
 
 For a one-off run, use `npx @logbookfordevs/waypoint --help`.
@@ -68,10 +69,10 @@ Run a foreground Watch consumer for a loopback project, Page, or View State:
 waypoint watch http://localhost:3000/
 ```
 
-Use `--json` for complete NDJSON MCP result envelopes and `--once` for one bounded result. Resume from the cursor of the last envelope the downstream consumer actually processed:
+Use `--json` for one complete open-work snapshot per line and `--once` for an immediate snapshot. Watch is a CLI operation; the MCP tool list no longer includes it. Use `--events` for detailed history, and resume from the cursor of the last event result the downstream consumer actually processed:
 
 ```bash
-waypoint watch http://localhost:3000/ --json --once --cursor '<opaque-cursor>'
+waypoint watch http://localhost:3000/ --json --events --once --cursor '<opaque-cursor>'
 ```
 
 The command reconnects with bounded backoff and reads from the existing durable Watch journal. It is a foreground consumer, not another daemon or event store. Whether its output wakes an idle agent remains a capability of the coding-agent harness.
@@ -232,7 +233,7 @@ Use `inspect_annotations` with one or more Annotation IDs when selected work nee
 
 Survey and Inspect report screenshot and attachment availability without embedding media bytes. Retrieve a screenshot or attachment separately when its evidence is needed. The canonical [Annotation Context contract](../../docs/contracts/annotation-context.md) defines the projection, batching, compatibility, and trust boundaries.
 
-See [Use Waypoint through MCP](../../docs/MCP_GUIDE.md) for the normal workflow, concrete calls, response boundary, and complete 20-tool reference.
+See [Use Waypoint through MCP](../../docs/MCP_GUIDE.md) for the normal workflow, concrete calls, response boundary, and MCP tool reference. Watch uses the CLI.
 
 ### Design Actions workflow
 
@@ -265,4 +266,6 @@ waypoint update
 waypoint restart
 ```
 
-The update command detects npm global installations and GitHub installer installations and updates through the same channel. Older GitHub installs need one rerun of their original installer command to enable detection. Source checkouts and other package managers should use their original update workflow. Reconnect your agent if it launches the MCP server directly. Browser extension updates are separate.
+The update command detects npm global installations and GitHub installer installations and updates through the same channel. npm updates also run the Skills CLI to refresh the global universal Waypoint skill; if that step fails, the CLI remains updated and prints a retry command. GitHub updates reinstall the bundled skill unless you saved `--skip-skill`. Older GitHub installs need one rerun of their original installer command to enable detection. Source checkouts and other package managers should use their original update workflow. Reconnect your agent if it launches the MCP server directly. Browser extension updates are separate.
+
+An older npm installation may need to run the separate `npx skills@latest add` command above once after its first upgrade to this updater; its old update code cannot refresh the skill retroactively.

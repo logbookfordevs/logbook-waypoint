@@ -20,6 +20,48 @@ test('npm update targets the verified global prefix', async t => {
   assert.deepEqual(plan.args, ['install', '--global', '--prefix', root, '@logbookfordevs/waypoint@latest']);
 });
 
+test('npm update refreshes the global Waypoint skill after the package succeeds', async () => {
+  const calls = [];
+  const result = await updateInstallation('/unused', {
+    detect: async () => ({ command: 'npm', args: ['install', '--global', '@logbookfordevs/waypoint@latest'] }),
+    execute: async (command, args) => calls.push({ command, args }),
+  });
+
+  assert.deepEqual(calls, [{
+    command: 'npm', args: ['install', '--global', '@logbookfordevs/waypoint@latest'],
+  }, {
+    command: 'npx',
+    args: ['--yes', 'skills@latest', 'add', 'logbookfordevs/logbook-waypoint', '--global', '--agent', 'universal', '--skill', 'waypoint', '--yes'],
+  }]);
+  assert.deepEqual(result, { skillUpdated: true });
+});
+
+test('npm update reports a skill-install failure without hiding the completed package update', async () => {
+  const calls = [];
+  const result = await updateInstallation('/unused', {
+    detect: async () => ({ command: 'npm', args: ['install'] }),
+    execute: async command => {
+      calls.push(command);
+      if (command === 'npx') throw new Error('skill install failed');
+    },
+  });
+
+  assert.deepEqual(calls, ['npm', 'npx']);
+  assert.deepEqual(result, { skillUpdated: false, skillError: 'skill install failed' });
+});
+
+test('failed npm package update never starts skill installation', async () => {
+  const calls = [];
+  await assert.rejects(updateInstallation('/unused', {
+    detect: async () => ({ command: 'npm', args: ['install'] }),
+    execute: async command => {
+      calls.push(command);
+      throw new Error('npm failed');
+    },
+  }), /npm failed/);
+  assert.deepEqual(calls, ['npm']);
+});
+
 test('source checkout cannot update a different global installation', async t => {
   const root = await fixture(t);
   await assert.rejects(detectInstallation(root, async () => ({ stdout: join(root, 'node_modules') })), /Cannot identify/);

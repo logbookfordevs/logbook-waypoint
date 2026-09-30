@@ -15,7 +15,7 @@ Logbook Waypoint is a local-first visual feedback tool for developers and coding
 > The Waypoint CLI is available through npm and checksummed GitHub Releases. Install the browser extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/logbook-waypoint/fgondknhkpekdhbbkgodokmpnpadfedo).
 
 > [!TIP]
-> **Prefer a visual tour?** Open the interactive [Waypoint Signal Chart](https://tot.page/I3pC-z9cCejNITMc7Mk96Q/index.html@b5f1d9e0955ce3411ccf9709e3d05bd89415a8bd) to trace the extension → Queue → MCP → agent workflow, explore every journey, and inspect all 19 MCP tools.
+> **Prefer a visual tour?** Open the interactive [Waypoint Signal Chart](https://tot.page/I3pC-z9cCejNITMc7Mk96Q/index.html@b5f1d9e0955ce3411ccf9709e3d05bd89415a8bd) for the extension, Queue, and agent workflow. Its MCP tool map may lag the current CLI Watch interface.
 
 ## Current foundation
 
@@ -49,7 +49,7 @@ The extension, server, package, CLI, MCP configuration, storage keys, and Annota
 
 - [Documentation map](docs/README.md) — guides, contracts, specifications, architectural decisions, package docs, and release notes
 - [User guide](docs/USER_GUIDE.md) — first Annotation, Queue management, copy/export, MCP setup, Design Actions, and settings
-- [MCP guide](docs/MCP_GUIDE.md) — normal agent workflow, compact Survey, diagnostic Inspect, examples, and all 19 tools
+- [MCP and CLI Watch guide](docs/MCP_GUIDE.md) — normal agent workflow, compact Survey, diagnostic Inspect, and CLI Watch examples
 - [Waypoint agent skill](skills/waypoint/SKILL.md) — repository source for the installable agent workflow
 - [Privacy policy](PRIVACY.md) — local data handling, permissions, retention, and disclosure
 - [Domain language](CONTEXT.md)
@@ -85,19 +85,19 @@ pnpm --filter @logbookfordevs/waypoint-website build
 
 ## CLI installation
 
-Tagged releases provide the same `waypoint` CLI through npm and a checksummed
-GitHub release archive.
+Tagged releases provide the `waypoint` CLI through npm and a checksummed GitHub release archive. The curl installer is recommended for agent workflows because it installs the CLI and Waypoint skill together.
 
-Install directly from the latest GitHub release:
+Recommended: install the latest verified GitHub release:
 
 ```bash
 curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
 ```
 
-Or install through npm:
+Alternatively, install the CLI through npm, then install the skill separately:
 
 ```bash
 npm install --global @logbookfordevs/waypoint
+npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global
 ```
 
 Use npm without a permanent installation for a first look:
@@ -105,6 +105,10 @@ Use npm without a permanent installation for a first look:
 ```bash
 npx @logbookfordevs/waypoint --help
 ```
+
+For either installed channel, run `waypoint update` to update the CLI. GitHub installer updates also reinstall its bundled skill; npm updates run the Skills CLI to refresh the skill. Restart the Waypoint server afterward with `waypoint restart`.
+
+If an older npm installation runs `waypoint update` for the first time, its old updater may not refresh the skill during that upgrade. Run the separate `npx skills@latest add` command above once; later updates use the new behavior.
 
 ### Start Waypoint
 
@@ -120,22 +124,22 @@ temporary terminal-attached session, use `waypoint start --foreground`.
 
 ### Watch a project
 
-Keep a foreground consumer attached to one loopback project:
+Keep a foreground consumer attached to one loopback project. It prints current Pending and Claimed Annotation IDs at startup and whenever that open-work list changes:
 
 ```bash
 waypoint watch http://localhost:3000/
 ```
 
-Agent harnesses that can surface background command output can use complete NDJSON envelopes:
+Agent harnesses that can surface background command output can use one complete JSON snapshot per line:
 
 ```bash
 waypoint watch http://localhost:3000/ --json
 ```
 
-Use `--once` for one bounded result, including an empty timeout. Every structured result includes the durable cursor; resume only from a cursor the consumer actually processed:
+Use `--once` to get the current snapshot and exit. Use `read_annotations` with an ID to fetch the selected Annotation's Survey context through MCP. Watch itself is available through the CLI only. For consumers that need the previous detailed change stream, use `--events`; without a cursor, it replays the full Watch history. Its results include a durable cursor:
 
 ```bash
-waypoint watch http://localhost:3000/ --json --once --cursor '<opaque-cursor>'
+waypoint watch http://localhost:3000/ --json --events --once --cursor '<opaque-cursor>'
 ```
 
 The server records activity durably even when no consumer is attached. The CLI retrieves that activity but cannot universally wake an idle coding agent; that final attention step depends on the agent harness.
@@ -243,7 +247,7 @@ VS Code MCP configuration depends on the AI extension you use. Configure Waypoin
 
 The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
 
-Through MCP, annotations are user requests. The GitHub installer includes Waypoint's model-invoked workflow skill by default, globally for the universal agent target without prompts. It prefers `afk skills add` when AFK is available and otherwise uses `npx skills@latest add`. Both receive `--global --agent universal --skill waypoint --yes`. Pass `--skip-skill` to opt out; the installer remembers this for updates. Pass `--yes` to re-enable installation. A skill-install failure leaves the CLI installed and prints a retry command. To select a specific harness yourself, run `npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global`. That skill teaches agents to infer the current loopback development URL, query it optimistically even before it contains Annotations, begin with compact Survey context, claim before editing, and finish the lifecycle. An explicit empty project scope returns an empty Queue rather than an error. Unscoped discovery still lists only projects that already contain Annotations. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
+Through MCP, annotations are user requests. The GitHub installer includes Waypoint's model-invoked workflow skill by default, globally for the universal agent target without prompts. It prefers `afk skills add` when AFK is available and otherwise uses `npx skills@latest add`. Both receive `--global --agent universal --skill waypoint --yes`. Pass `--skip-skill` to opt out; the installer remembers this for updates. Pass `--yes` to re-enable installation. A skill-install failure leaves the CLI installed and prints a retry command. To select a specific harness yourself, run `npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global`. That skill teaches agents to infer the current loopback development URL, query it optimistically even before it contains Annotations, begin with compact Survey context, claim before editing, and finish the lifecycle. An explicit empty project scope returns an empty Queue rather than an error. Read accepts either a URL scope or an exact Annotation ID. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
 
 ### Design Actions setup
 

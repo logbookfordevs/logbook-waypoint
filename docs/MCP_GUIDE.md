@@ -2,7 +2,7 @@
 
 Waypoint gives a coding agent a structured Queue of visual requests. The extension captures what the developer meant, the local server exposes that context through MCP, and the agent uses lifecycle tools to make ownership and outcomes visible.
 
-This guide starts with the normal path. The complete 20-tool reference is available later for advanced workflows.
+This guide starts with the normal path. The MCP tool reference is available later for advanced workflows; Watch runs through the CLI.
 
 ## The normal workflow
 
@@ -31,21 +31,13 @@ read_annotations
 
 MCP annotations are user requests. An agent continues from Survey into the implementation workflow above unless the user explicitly requests a read-only or observation-only result, such as “just summarize” or “do not implement.” Saying “read my annotations” alone still requests the normal implementation workflow.
 
-The retrieval tools themselves remain side-effect-free: Reading, inspection, project context, export, and Watch do not create or refresh a Claim. The agent explicitly claims an Annotation only when it is ready to begin that bounded work.
+Reading, inspection, project context, export, and CLI Watch are side-effect-free: they do not create or refresh a Claim. The agent explicitly claims an Annotation only when it is ready to begin that bounded work.
 
 ## Start with a compact Survey
 
 Prefer the current repository's explicit loopback development URL when it can be inferred from the user's request, a running server, terminal output, or the documented dev command. A scoped read is optimistic: a valid project URL with no stored Annotations returns an empty Queue, not an error.
 
-Call `read_annotations` without a URL only when the current project URL cannot be inferred:
-
-```json
-{
-  "status": "pending"
-}
-```
-
-An unscoped call always returns project discovery metadata and recommended URL filters—not Annotation bodies. This remains true when only one stored project exists, so an agent never guesses that old work belongs to the current task. Repeat the call with the intended project:
+Read the current project by URL:
 
 ```json
 {
@@ -54,7 +46,15 @@ An unscoped call always returns project discovery metadata and recommended URL f
 }
 ```
 
-The scoped response contains compact, actionable summaries. **Compact describes response size, not an incomplete work brief.** Survey is the default implementation context and should usually be sufficient on its own.
+When Watch supplies an ID, read that exact Annotation directly:
+
+```json
+{
+  "id": "waypoint_1750000000000_abc123xyz"
+}
+```
+
+Both calls return compact, actionable summaries. Read requires an ID or URL. **Compact describes response size, not an incomplete work brief.** Survey is the default implementation context and should usually be sufficient on its own.
 
 A summary can include:
 
@@ -161,35 +161,11 @@ For an agent harness that can run a background command and surface incremental o
 waypoint watch http://localhost:3000/ --json
 ```
 
-Each NDJSON line is one complete MCP Watch result envelope, including the untrusted-content framing and continuation cursor. The command reconnects with bounded backoff and carries the cursor forward while it remains running. It does not save a cursor merely because output was written: resume a restarted consumer with `--cursor` only after the downstream agent has processed that envelope.
+Each JSON line is a lightweight snapshot of current Pending and Claimed Annotation IDs for that URL. Read a selected ID with `read_annotations` for Survey context. Watch is available through the CLI, while MCP remains available for Read and lifecycle actions. The command reconnects with bounded backoff and stays quiet on empty waits. Use `--events` for a detailed event stream and explicit cursor continuation. Without a cursor, `--events` replays full Watch history.
 
-Use `--once` when a host reports completed commands but does not surface an indefinitely running process. A CLI consumer can move empty waits out of model turns, but only the host can decide whether new output wakes or schedules the agent.
+Use `--once` to return the current open-work snapshot immediately. A CLI consumer can move empty waits out of model turns, but only the host can decide whether new output wakes or schedules the agent.
 
-`watch_annotations` requires a loopback URL scope on its first call and waits for matching new or changed requests without creating a Claim by itself:
-
-```json
-{
-  "url": "http://localhost:3000/",
-  "timeout_ms": 25000
-}
-```
-
-The same scope rules as `read_annotations` apply: a project root watches the whole project, a Page watches its pathname across View States, and a URL with query or hash matches that View State. `localhost` and `127.0.0.1` are aliases; ports and protocols remain distinct.
-
-Reuse only the cursor from the last successful response; it retains the scope across server restarts. To change scope, start a new Watch with `url` and no cursor. Older unscoped cursors must also be replaced this way:
-
-```json
-{
-  "cursor": "opaque-cursor-from-the-last-response",
-  "timeout_ms": 25000
-}
-```
-
-A Watch change contains the same compact, actionable Survey context as a scoped
-`read_annotations` result, plus its revision and deduplication key. Variant cancellation additionally carries `change_type: "variant_cancelled"`. Escalate to
-`inspect_annotations` only when that context leaves a diagnostic question.
-
-A timeout is a successful empty response. Delivery is at least once, so consumers deduplicate changes using the Annotation ID and revision returned by Watch. During an active MCP workflow, the agent normally claims and handles new Pending requests. It remains observation-only only when the user explicitly says not to implement them.
+The same scope rules as `read_annotations` apply: a project root watches the whole project, a Page watches its pathname across View States, and a URL with query or hash matches that View State. `localhost` and `127.0.0.1` are aliases; ports and protocols remain distinct. Restarting the default command reads current open work again, so agents do not manage a cursor. Detailed `--events` consumers resume with `--cursor` from their last processed result and deduplicate by Annotation ID and revision.
 
 Watching never creates or renews a Claim. Human Variant review may outlive a Claim without authorizing the watcher to keep ownership alive. Reclaim immediately before a later source mutation, and reconcile buffered events with current state first.
 
@@ -216,12 +192,11 @@ Annotation comments, captured page text, selectors, Source Identity, and related
 
 | Tool | Main inputs | Use it for | Changes state? |
 | --- | --- | --- | --- |
-| `read_annotations` | `status?`, `limit?`, `offset?`, `url?` | Discover projects and survey compact Queue summaries. | No |
+| `read_annotations` | `id` or `url`; `status?`, `limit?`, `offset?` | Survey one ID or a URL scope. | No |
 | `inspect_annotations` | `ids` | Diagnose one or more selected Annotations with complete captured context. | No |
 | `get_project_context` | `url` | Infer likely framework and project context for a loopback development URL. | No |
-| `watch_annotations` | `url` on first call; `cursor` on resume; `timeout_ms?` | Wait for scoped Queue changes with resumable, at-least-once delivery. | No |
 
-`status` accepts `pending`, `claimed`, `resolved`, `discarded`, or `all`. Survey defaults to Pending, a limit of 50, and an offset of 0. Limits may range from 1 to 200. Watch timeouts may range from 0 to 30,000 milliseconds.
+`status` accepts `pending`, `claimed`, `resolved`, `discarded`, or `all`. Survey defaults to Pending, a limit of 50, and an offset of 0. Limits may range from 1 to 200. CLI Watch timeouts may range from 0 to 30,000 milliseconds.
 
 ### Lifecycle
 

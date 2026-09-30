@@ -84,7 +84,7 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
     assert.equal(retained.annotations.length, 1);
     await assert.rejects(() => server.changeAnnotationLifecycle({ id, operation: 'discard' }), /terminal/i);
     await server.deleteAnnotation({ id });
-    assert.equal((await server.readAnnotations({ status: 'all' })).annotations.length, 0);
+    assert.equal((await server.readAnnotations({ status: 'all', url: 'http://localhost:3000/*' })).annotations.length, 0);
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));
@@ -566,7 +566,7 @@ test('persisted Queue records reject non-canonical lifecycle states', async () =
 
   try {
     await assert.rejects(
-      () => server.readAnnotations({ status: 'all' }),
+      () => server.readAnnotations({ status: 'all', url: 'http://localhost:3000/*' }),
       /invalid lifecycle state/i,
     );
   } finally {
@@ -595,7 +595,7 @@ test('persisted Queue records reject malformed Work Notices', async () => {
   });
 
   try {
-    await assert.rejects(() => server.readAnnotations({ status: 'all' }), /Work Notice/i);
+    await assert.rejects(() => server.readAnnotations({ status: 'all', url: 'http://localhost:3000/*' }), /Work Notice/i);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -794,7 +794,7 @@ test('persisted malformed Design Intent is rejected before HTTP, MCP, or Watch c
   });
 
   try {
-    await assert.rejects(() => server.readAnnotations({ status: 'all' }), /Design Intent workflow/i);
+    await assert.rejects(() => server.readAnnotations({ status: 'all', url: 'http://localhost:3000/*' }), /Design Intent workflow/i);
     await assert.rejects(() => server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 }), /Design Intent workflow/i);
   } finally {
     await rm(directory, { recursive: true, force: true });
