@@ -257,6 +257,16 @@ test('background validates attachment payloads before forwarding an annotation t
   );
 });
 
+test('permitted sites load the same ordered dependencies as built-in sites', async () => {
+  const source = await readFile(new URL('../.output/chrome-mv3/background/background.js', import.meta.url), 'utf8');
+  const manifest = JSON.parse(await readFile(new URL('../.output/chrome-mv3/manifest.json', import.meta.url), 'utf8'));
+  const registration = source.match(/registerContentScripts\(\[\{[\s\S]*?js: \[([\s\S]*?)\]/);
+  assert.ok(registration, 'dynamic registration has an ordered content script list');
+  const scripts = [...registration[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
+  const builtin = manifest.content_scripts.find(entry => entry.js.includes('content/content.js'));
+  assert.deepEqual(scripts, builtin.js, 'permitted sites must have all dependencies required by the same extension UI');
+});
+
 test('background only reports site enablement after injection registration and validates imports before storage or sync', async () => {
   const source = await readFile(new URL('../public/background/background.js', import.meta.url), 'utf8');
 

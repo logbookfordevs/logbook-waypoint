@@ -155,6 +155,7 @@ async function openQueue(annotations, options) {
   vm.runInContext(queuePanelSource, harness.context, { filename: 'queue-panel.js' });
   vm.runInContext(toolbarSource, harness.context, { filename: 'floating-toolbar.js' });
   await harness.context.WaypointToolbar.init();
+  harness.context.WaypointInspectionMode = { isActive: () => Boolean(options?.annotationModeActive) };
   if (options?.annotationModeActive) {
     harness.listeners.get('inspection:started')?.();
   }

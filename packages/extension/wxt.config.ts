@@ -24,6 +24,7 @@ const CONTENT_MODULES = [
   'annotation-targets.js',
   'annotation-collection.js',
   'annotation-page.js',
+  'journal-model.js',
   'design-intent.js',
   'variant-intent.js',
   'annotation-validation.js',
@@ -47,6 +48,8 @@ const CONTENT_MODULES = [
   'content/modules/variant-picker.js',
   'content/modules/annotation-popover.js',
   'content/modules/queue-panel.js',
+  'content/modules/journal-geometry.js',
+  'content/modules/journal-mode.js',
   'content/modules/floating-toolbar.js',
   'content/content.js',
 ];
@@ -91,6 +94,7 @@ export default defineConfig({
       {
         resources: [
           'assets/fonts/InterVariable.woff2',
+          'assets/fonts/caveat/Caveat.ttf',
           'assets/thelu/thelu-settings-day-smooth.png',
           'assets/thelu/thelu-settings-night.png',
           'assets/thelu/thelu-waypoint-collapsed.png',

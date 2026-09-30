@@ -16,7 +16,9 @@ console.log('[Waypoint] content.js loaded');
     const style = document.createElement('style');
     style.setAttribute('data-waypoint-font', 'true');
     const fontUrl = chrome.runtime.getURL('assets/fonts/InterVariable.woff2');
+    const journalFont = chrome.runtime.getURL('assets/fonts/caveat/Caveat.ttf');
     style.textContent = `
+      @font-face { font-family: 'Waypoint Journal'; src: url('${journalFont}') format('truetype'); font-weight: 400 700; font-display: swap; }
       @font-face {
         font-family: 'Inter';
         src: url('${fontUrl}') format('woff2-variations');
@@ -47,6 +49,7 @@ console.log('[Waypoint] content.js loaded');
     WaypointBadgeManager.init();
     WaypointInspectionMode.init();
     WaypointAnnotationPopover.init();
+    await WaypointJournal.init();
     await WaypointToolbar.init();
 
     // 5. Set up message listener (popup ↔ content)
