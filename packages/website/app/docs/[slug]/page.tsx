@@ -73,7 +73,7 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
 
       {showsPractice && <WaypointPractice />}
       {isJournalGuide && <figure className="docs-journal-screenshot">
-        <Image src="/images/journal/journal-notes.png" width={2400} height={1726} sizes="(max-width: 800px) 100vw, 650px" alt="The actual Waypoint toolbar in Journal mode, with a handwritten taped note and curved arrow pointing to a circled heading on a sample project page." />
+        <Image loading="eager" src="/images/journal/journal-notes.png" width={2400} height={1726} sizes="(max-width: 800px) 100vw, 650px" alt="The actual Waypoint toolbar in Journal mode, with a handwritten taped note and curved arrow pointing to a circled heading on a sample project page." />
         <figcaption>The extension in action on a sample page: the Journal switch, taped note, target circle, and connecting arrow.</figcaption>
       </figure>}
 
