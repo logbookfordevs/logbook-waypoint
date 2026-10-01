@@ -168,7 +168,7 @@ export const documentationPages: DocumentationPage[] = [
         heading: 'Pin and write',
         paragraphs: [
           'Hover an element, then click or press Enter to select it. Left and right arrow keys adjust the selection scope. Selecting a clickable target blocks its normal page action.',
-          'Write on the taped note and save with the checkmark or Cmd/Ctrl+Enter. Plain Enter inside the editor inserts a new line. Notes contain text only and stay outside the Agent Queue.'
+          'Write on the taped note and save with the checkmark or Cmd/Ctrl+Enter. Plain Enter inside the editor inserts a new line. Saving a new note resumes selection so you can pin the next element immediately. Notes contain text only and stay outside the Agent Queue.'
         ]
       },
       {

@@ -420,8 +420,10 @@ var WaypointJournal = (() => {
     note.appendChild(textarea);
     const save = () => {
       if (!textarea.value.trim()) { textarea.setCustomValidity('Write a note first.'); textarea.reportValidity(); return; }
+      const resumesSelection = !draft.entryId;
       mutate({ type: 'save', ...draft, comment: textarea.value, seed: selected.entry.seed }, () => {
         closeNote(true); WaypointEvents.emit('multi-target:saved'); WaypointEvents.emit('inspection:stop');
+        if (resumesSelection) WaypointEvents.emit('inspection:start');
       });
     };
     if (inlineEditor) {
@@ -454,7 +456,12 @@ var WaypointJournal = (() => {
     if (!current()) { openMenu(); return; }
     const session = revision, url = window.location.href, journalId = activeId;
     try {
-      const context = await WaypointElementContext.generate(target);
+      const context = {
+        selector: WaypointElementContext.generateSelector(target),
+        tag: target.tagName.toLowerCase(),
+        text: target.textContent.slice(0, 100).trim(),
+        classes: Array.from(target.classList),
+      };
       if (!isActive() || revision !== session || window.location.href !== url || activeId !== journalId) return;
       if (action) {
         await mutate({ type: 'reattach', ...action, target: targetFrom(context), url }, () => { reattach = null; WaypointEvents.emit('inspection:stop'); openMenu(); });

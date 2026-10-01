@@ -48,6 +48,7 @@ async function harness(stored = {}) {
     WaypointMultiTargetSelection: { shouldHandle: () => false },
     WaypointAPI: { loadAnnotations: async () => [], getSkipDeleteConfirm: async () => false },
     WaypointElementContext: {
+      generateSelector: target => `#${target.id}`,
       generate: async target => ({ selector: `#${target.id}`, tag: 'h1', text: target.textContent, classes: [] }),
       findElementBySelector: target => window.document.querySelector(target.selector),
     },
@@ -236,17 +237,21 @@ test('first journal pen click creates a collection and resumes selection without
   assert.equal(active, true, 'pen can restart normally');
 });
 
-test('journal releases selection before asynchronous target capture finishes', async () => {
+test('journal opens immediately without source probes or screenshot capture', async () => {
   const h = await harness();
   await h.click('Journal'); h.ctx.WaypointJournal.openMenu(); await createJournal(h);
-  let stopped = false, resolveCapture;
+  let stopped = false, fullCaptureCalls = 0;
   h.ctx.WaypointEvents.on('inspection:stop', () => { stopped = true; });
-  h.ctx.WaypointElementContext.generate = () => new Promise(resolve => { resolveCapture = resolve; });
+  h.ctx.WaypointElementContext.generate = () => { fullCaptureCalls++; return new Promise(() => {}); };
   h.ctx.WaypointEvents.emit('inspection:elementClicked', { element: h.window.document.querySelector('#target') });
-  assert.equal(stopped, true, 'a pending capture must not leave the inspector selected with disabled listeners');
-  resolveCapture({ selector: '#target', tag: 'h1', text: 'Title', classes: [] });
-  await h.flush();
-  assert.ok(h.root.querySelector('textarea'));
+  assert.equal(stopped, true);
+  assert.ok(h.root.querySelector('textarea'), 'editor opens without waiting for asynchronous capture');
+  assert.equal(fullCaptureCalls, 0, 'Journal does not request Agent source or screenshot context');
+  h.root.querySelector('textarea').value = 'Quick thought';
+  await h.click('Save note');
+  const target = h.storage.waypointJournals.journals[0].entries[0].targets[0];
+  assert.equal(target.selector, '#target');
+  assert.equal(target.element_context.text, 'Title');
 });
 
 function imageClipboard(h, write) {
@@ -310,4 +315,30 @@ test('failed capture or clipboard write restores journal controls and reports a 
     assert.equal(h.root.host.hasAttribute('data-waypoint-journal-capture'), false);
     assert.match(h.root.querySelector('[role="alert"]').textContent, /permission denied/);
   }
+});
+
+
+test('saving new journal notes resumes selection for consecutive pins while editing does not', async () => {
+  const h = await harness();
+  await h.click('Journal'); h.ctx.WaypointJournal.openMenu(); await createJournal(h);
+  let selecting = false;
+  h.ctx.WaypointEvents.on('inspection:start', () => { selecting = true; h.ctx.WaypointEvents.emit('inspection:started'); });
+  h.ctx.WaypointEvents.on('inspection:stop', () => { selecting = false; h.ctx.WaypointEvents.emit('inspection:stopped'); });
+  for (const comment of ['First thought', 'Another thought']) {
+    if (comment === 'First thought') h.ctx.WaypointEvents.emit('inspection:start');
+    assert.equal(selecting, true, 'next pin needs no pen activation');
+    h.ctx.WaypointEvents.emit('inspection:elementClicked', { element: h.window.document.querySelector('#target') });
+    await h.flush();
+    assert.equal(selecting, false, 'selection pauses while writing');
+    h.root.querySelector('textarea').value = comment;
+    await h.click('Save note');
+    assert.equal(selecting, true, 'successful creation resumes selection');
+  }
+  assert.equal(h.storage.waypointJournals.journals[0].entries.length, 2);
+  h.ctx.WaypointEvents.emit('inspection:stop');
+  h.root.querySelector('[aria-label="Edit note: First thought"]').dispatchEvent(new h.window.Event('dblclick'));
+  await h.flush();
+  h.root.querySelector('textarea').value = 'Revised thought';
+  await h.click('Save note');
+  assert.equal(selecting, false, 'editing existing notes does not activate the pen');
 });

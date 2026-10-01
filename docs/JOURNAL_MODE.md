@@ -13,7 +13,7 @@ The screenshot shows the actual extension on a sample page. The [website Journal
 1. Open an enabled page and choose **Journal** in the toolbar's Agent / Journal switch. Switching mode does not open a menu.
 2. Choose the pen. If the page has no journal, Waypoint creates one with a playful name automatically.
 3. Hover an element and click it, or press **Enter** to select the highlighted element. Selection blocks the page's normal click action. Left and right arrow keys adjust the selection scope.
-4. Write your note on the taped paper. Use the save checkmark or **Cmd/Ctrl+Enter**. Plain Enter inserts a new line in the editor.
+4. Write your note on the taped paper. Use the save checkmark or **Cmd/Ctrl+Enter**. Plain Enter inserts a new line in the editor. After saving a new note, selection resumes so you can pin the next element immediately.
 
 The separate **Journals** icon opens the active-journal picker, creation form, and note list. You can create multiple named journals for the same page and view one at a time. Switching back to Journal restores the current page's selected journal when available.
 

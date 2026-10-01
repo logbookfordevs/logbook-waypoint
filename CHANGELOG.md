@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- Journal notes open without waiting for Agent source detection or screenshot capture.
+- Journal selection resumes after saving a new note, so consecutive notes can be pinned without reactivating the pen.
+
 ## [0.2.0] - 2026-09-30
 
 ### Added
