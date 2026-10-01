@@ -38,8 +38,7 @@ Before uploading, unzip the artifact into a temporary directory and confirm:
 
 ### Summary
 
-Place visual feedback directly on development interfaces and route it to coding
-agents through a local MCP server.
+Annotate web interfaces with personal journal notes or visual feedback for coding agents.
 
 ### Detailed description
 

@@ -1,6 +1,6 @@
 export interface ProductIdentity {
   readonly productName: 'Logbook Waypoint';
-  readonly description: 'Place visual annotations on local interfaces and route them to coding agents through MCP.';
+  readonly description: 'Annotate web interfaces with personal journal notes or visual feedback for coding agents.';
   readonly repositorySlug: 'logbook-waypoint';
   readonly npmPackage: '@logbookfordevs/waypoint';
   readonly cliCommand: 'waypoint';
