@@ -1,6 +1,6 @@
 {
   "name": "@logbookfordevs/waypoint-extension",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "Logbook Waypoint browser extension",
   "author": "Leonardo Reis Dias",
