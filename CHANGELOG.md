@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Added
+- Added local Journal mode to the extension toolbar, with named journals, taped text notes, hand-drawn highlights and arrows, and reattachment for missing targets, kept separate from the agent Queue.
+- Data & Storage separates Agent and Journal maintenance, including confirmed deletion of all journals and notes without removing Agent data.
+- Journal mode can copy the visible page with its notes and drawings as a screenshot, with a short shutter sound after a successful copy.
+
 ### Changed
+- Extension menus use more consistent typography, and hovering an element then pressing Enter starts an Agent annotation or Journal note.
 - The GitHub installer includes the Waypoint skill by default, preferring AFK and falling back to npx with the universal global target. It remembers `--skip-skill` for updates, accepts `--yes` to re-enable installation, and keeps CLI installation successful if the skill step fails.
 - npm-based `waypoint update` now refreshes the global Waypoint skill after updating the CLI and prints a retry command if the skill step fails; installation guidance recommends the curl installer for the bundled CLI and skill.
 - `waypoint watch <url>` now shows current Pending and Claimed IDs by default, with detailed changes available through `--events`; agents can read a selected ID for its full Survey context.

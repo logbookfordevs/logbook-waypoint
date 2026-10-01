@@ -133,6 +133,7 @@ var WaypointBadgeManager = (() => {
   }
 
   function onProvisionalPin({ clientX, clientY, shiftKey = false }) {
+    if (globalThis.WaypointJournal?.isActive()) return;
     if (WaypointMultiTargetSelection.shouldHandle(shiftKey)) return;
     removeProvisional();
     const root = WaypointShadowHost.getRoot();
@@ -155,6 +156,7 @@ var WaypointBadgeManager = (() => {
   }
 
   function render(annotations) {
+    if (globalThis.WaypointJournal?.isActive()) { clearAll(); return; }
     const renderableAnnotations = WaypointAnnotationStatus.filterRenderable(annotations);
     removeProvisional();
     rollbackChangedTargets(renderableAnnotations);

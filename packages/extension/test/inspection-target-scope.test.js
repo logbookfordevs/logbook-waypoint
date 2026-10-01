@@ -69,8 +69,29 @@ async function createHarness() {
     window.document.querySelector(`#${id}`).getBoundingClientRect = () => rect;
   }
 
-  return { documentListeners, emitted, handlers, inspectButton, root, window };
+  return { context, documentListeners, emitted, handlers, inspectButton, root, window };
 }
+
+test('selection consumes the completing click even when journal capture immediately stops inspection', async () => {
+  const h = await createHarness();
+  const emit = h.context.WaypointEvents.emit;
+  h.context.WaypointEvents.emit = (name, payload) => {
+    emit(name, payload);
+    if (name === 'inspection:elementClicked') h.context.WaypointInspectionMode.stop();
+  };
+  const target = h.window.document.querySelector('#button');
+  const event = type => {
+    const e = new h.window.Event(type, { cancelable: true });
+    Object.defineProperty(e, 'target', { value: target });
+    e.composedPath = () => [target, h.window.document];
+    return e;
+  };
+  h.documentListeners.get('pointerdown')(event('pointerdown'));
+  assert.equal(h.context.WaypointInspectionMode.isActive(), false);
+  const click = event('click');
+  h.documentListeners.get('click')(click);
+  assert.equal(click.defaultPrevented, true, 'link navigation and page click handlers must be suppressed');
+});
 
 function dispatch(window, target, type, properties = {}) {
   const event = new window.Event(type, { bubbles: true, cancelable: true, composed: true });
@@ -101,6 +122,22 @@ test('inspection arrows resize the highlighted target and click confirms the adj
   dispatch(window, leaf, 'pointerdown', { clientX: 50, clientY: 40 });
   const selection = emitted.find(event => event.name === 'inspection:elementClicked');
   assert.equal(selection.payload.element, button);
+});
+
+test('Enter selects the hovered scope without activating its page action', async () => {
+  const { documentListeners, emitted, window } = await createHarness();
+  const leaf = window.document.querySelector('#leaf');
+  dispatch(window, leaf, 'mouseover');
+  dispatch(window, window.document, 'keydown', { key: 'ArrowRight' });
+  const event = new window.Event('keydown', { cancelable: true });
+  Object.defineProperty(event, 'key', { value: 'Enter' });
+  event.composedPath = () => [leaf, window.document];
+  documentListeners.get('keydown')(event);
+  assert.equal(event.defaultPrevented, true);
+  const selection = emitted.find(item => item.name === 'inspection:elementClicked');
+  assert.equal(selection.payload.element, window.document.querySelector('#button'));
+  assert.equal(selection.payload.clientX, 77);
+  assert.equal(selection.payload.clientY, 42);
 });
 
 test('inspection arrows work while the toolbar inspect button retains focus', async () => {

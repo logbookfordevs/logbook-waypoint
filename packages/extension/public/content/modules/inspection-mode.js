@@ -12,6 +12,29 @@ var WaypointInspectionMode = (() => {
   let scopePath = [];
   let scopeIndex = 0;
   let showScopeControls = true;
+  let gestureTimer = null;
+
+  function releaseGesture() {
+    clearTimeout(gestureTimer);
+    document.removeEventListener('mousedown', swallowGesture, true);
+    document.removeEventListener('click', swallowGesture, true);
+    document.removeEventListener('pointerdown', releaseGesture, true);
+  }
+
+  function swallowGesture(event) {
+    if (isOurUI(event)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (event.type === 'click') releaseGesture();
+  }
+
+  function protectGesture() {
+    releaseGesture();
+    document.addEventListener('mousedown', swallowGesture, true);
+    document.addEventListener('click', swallowGesture, true);
+    document.addEventListener('pointerdown', releaseGesture, true);
+    gestureTimer = setTimeout(releaseGesture, 1500);
+  }
 
   // Bound handlers for removal
   let onMouseOver = null;
@@ -220,12 +243,18 @@ var WaypointInspectionMode = (() => {
     if (!pointerTarget || pointerTarget === document.body || pointerTarget === document.documentElement) return;
     const target = scopeAnchor === pointerTarget && hoveredElement ? hoveredElement : pointerTarget;
 
-    if (!WaypointMultiTargetSelection.shouldHandle(e.shiftKey)) tempDisable();
+    // Selection can stop synchronously; protect the rest of this same gesture.
+    protectGesture();
+    captureTarget(target, e);
+  }
+
+  function captureTarget(target, event) {
+    if (!WaypointMultiTargetSelection.shouldHandle(event.shiftKey)) tempDisable();
     WaypointEvents.emit('inspection:elementClicked', {
       element: target,
-      clientX: e.clientX,
-      clientY: e.clientY,
-      shiftKey: e.shiftKey,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      shiftKey: event.shiftKey,
     });
   }
 
@@ -244,8 +273,17 @@ var WaypointInspectionMode = (() => {
 
   function handleKeyDown(e) {
     if (!active || !hoveredElement) return;
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    if (e.key !== 'Enter' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     if (isOurUI(e) && !isScopeControlEvent(e) && !isInspectionTriggerEvent(e)) return;
+    if (e.isComposing || (e.key === 'Enter' && e.repeat)) return;
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const bounds = hoveredElement.getBoundingClientRect();
+      captureTarget(hoveredElement, { clientX: bounds.left + bounds.width / 2, clientY: bounds.top + bounds.height / 2, shiftKey: e.shiftKey });
+      return;
+    }
 
     e.preventDefault();
     e.stopPropagation();
@@ -366,7 +404,7 @@ var WaypointInspectionMode = (() => {
     toastEl = document.createElement('div');
     toastEl.className = 'waypoint-toast';
     toastEl.innerHTML = `
-      <p>Click any element to annotate</p>
+      <p>Click an element or hover and press Enter</p>
       <p class="sub">Use &larr; and &rarr; to adjust the target · ESC to exit</p>
     `;
     root.appendChild(toastEl);

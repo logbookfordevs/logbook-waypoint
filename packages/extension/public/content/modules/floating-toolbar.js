@@ -98,7 +98,8 @@ var WaypointToolbar = (() => {
     await restorePosition();
 
     // Listen for events
-    WaypointEvents.on('inspection:started', () => { isAnnotating = true; updateUI(); });
+    WaypointEvents.on('journal:changed', updateUI);
+    WaypointEvents.on('inspection:started', () => { isAnnotating = WaypointInspectionMode.isActive(); updateUI(); });
     WaypointEvents.on('inspection:stopped', () => { isAnnotating = false; updateUI(); });
     WaypointEvents.on('badges:rendered', ({ total, styleCount }) => {
       styleAnnotationCount = styleCount || 0;
@@ -158,6 +159,7 @@ var WaypointToolbar = (() => {
     `;
 
     root.appendChild(toolbarEl);
+    globalThis.WaypointJournal?.attachToolbar(toolbarEl);
     wireButtons();
     setupDrag();
     updateUI();
@@ -169,7 +171,7 @@ var WaypointToolbar = (() => {
 
     // Annotate toggle
     toolbarEl.querySelector('.waypoint-tb-annotate').addEventListener('click', () => {
-      if (isAnnotating) {
+      if (WaypointInspectionMode.isActive()) {
         WaypointEvents.emit('inspection:stop');
       } else {
         WaypointEvents.emit('inspection:start');
@@ -178,6 +180,10 @@ var WaypointToolbar = (() => {
 
     // Copy all
     toolbarEl.querySelector('.waypoint-tb-copy').addEventListener('click', async () => {
+      if (globalThis.WaypointJournal?.isActive()) {
+        if (await WaypointJournal.copy()) showCopyFeedback();
+        return;
+      }
       const annotations = await WaypointAPI.loadAnnotations();
       if (!annotations.length) return;
       await copyAnnotations(annotations);
@@ -194,6 +200,7 @@ var WaypointToolbar = (() => {
 
     toolbarEl.querySelector('.waypoint-tb-queue').addEventListener('click', (event) => {
       event.stopPropagation();
+      if (globalThis.WaypointJournal?.isActive()) { WaypointJournal.openMenu(); return; }
       if (isAnnotating) WaypointEvents.emit('inspection:stop');
       closeSettings();
       WaypointQueuePanel.toggle(toolbarEl, {
@@ -212,6 +219,7 @@ var WaypointToolbar = (() => {
 
     // Delete all
     toolbarEl.querySelector('.waypoint-tb-delete').addEventListener('click', async () => {
+      if (globalThis.WaypointJournal?.isActive()) { await WaypointJournal.clear(); return; }
       const root = WaypointShadowHost.getRoot();
       if (!root) return;
 
@@ -232,6 +240,7 @@ var WaypointToolbar = (() => {
     toolbarEl.querySelector('.waypoint-tb-settings').addEventListener('click', (e) => {
       e.stopPropagation();
       WaypointQueuePanel.close();
+      globalThis.WaypointJournal?.closePanel();
       toggleSettings();
     });
   }
@@ -621,7 +630,7 @@ var WaypointToolbar = (() => {
     return `Last activity ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   }
 
-  async function showDataStorage() {
+  async function showDataStorage(activeTab = 'agent') {
     if (!settingsDropdown) return;
     settingsDropdown.classList.add('data-storage-open');
     const header = settingsDropdown.querySelector('.waypoint-settings-header');
@@ -633,7 +642,29 @@ var WaypointToolbar = (() => {
       </button>
     `;
     body.className = 'waypoint-settings-body waypoint-data-storage-view';
-    body.innerHTML = '<p class="waypoint-data-storage-loading" role="status">Loading stored projects…</p>';
+    body.innerHTML = `<div class="waypoint-storage-tabs" role="tablist" aria-label="Stored data">
+      <button type="button" role="tab" id="waypoint-storage-agent-tab" aria-controls="waypoint-storage-agent">Agent</button>
+      <button type="button" role="tab" id="waypoint-storage-journal-tab" aria-controls="waypoint-storage-journal">Journal</button>
+    </div><div id="waypoint-storage-agent" class="waypoint-data-agent-content" role="tabpanel" aria-labelledby="waypoint-storage-agent-tab"></div>
+    <div id="waypoint-storage-journal" role="tabpanel" aria-labelledby="waypoint-storage-journal-tab"></div>`;
+    const agentContent = body.querySelector('#waypoint-storage-agent');
+    const journalContent = body.querySelector('#waypoint-storage-journal');
+    agentContent.innerHTML = '<p role="status">Loading stored projects…</p>';
+    const tabs = Array.from(body.querySelectorAll('[role="tab"]'));
+    const selectTab = value => {
+      tabs.forEach((tab, index) => { const chosen = (index === 0 ? 'agent' : 'journal') === value; tab.setAttribute('aria-selected', String(chosen)); tab.tabIndex = chosen ? 0 : -1; });
+      agentContent.hidden = value !== 'agent'; journalContent.hidden = value !== 'journal';
+      if (value === 'journal') globalThis.WaypointJournal?.renderStorage(journalContent);
+    };
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => selectTab(index === 0 ? 'agent' : 'journal'));
+      tab.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault(); const next = event.key === 'Home' ? 0 : event.key === 'End' ? 1 : 1 - index;
+        selectTab(next === 0 ? 'agent' : 'journal'); tabs[next].focus();
+      });
+    });
+    selectTab(activeTab);
     header.querySelector('.waypoint-guide-back-btn').addEventListener('click', () => {
       closeSettings();
       openSettings();
@@ -642,10 +673,10 @@ var WaypointToolbar = (() => {
     try {
       const snapshot = await WaypointAPI.getDataManagerSnapshot();
       if (!settingsDropdown || !body.isConnected) return;
-      renderDataStorage(body, snapshot);
+      renderDataStorage(agentContent, snapshot);
     } catch (error) {
       if (!body.isConnected) return;
-      body.innerHTML = `<p class="waypoint-data-storage-error" role="alert">${escapeHTML(error?.message || 'Could not load stored data.')}</p>`;
+      agentContent.innerHTML = `<p class="waypoint-data-storage-error" role="alert">${escapeHTML(error?.message || 'Could not load stored data.')}</p>`;
     }
   }
 
@@ -676,7 +707,7 @@ var WaypointToolbar = (() => {
         `).join('') : '<p class="waypoint-data-storage-empty">No stored annotations.</p>'}
       </div>
       ${summary.cleanup_candidate_count > 0 ? `<button class="waypoint-data-delete-history" type="button" data-count="${summary.cleanup_candidate_count}">Delete old history (${summary.cleanup_candidate_count})</button>` : ''}
-      ${summary.annotation_count > 0 ? `<button class="waypoint-data-delete-all" type="button" data-count="${summary.annotation_count}">Clear all Waypoint data</button>` : ''}
+      ${summary.annotation_count > 0 ? `<button class="waypoint-data-delete-all" type="button" data-count="${summary.annotation_count}">Clear all Agent data</button>` : ''}
       <p class="waypoint-data-storage-feedback" role="status" aria-live="polite"></p>
     `;
 
@@ -715,7 +746,7 @@ var WaypointToolbar = (() => {
       try {
         const result = await WaypointAPI.deleteDataSelection(selection);
         if (!settingsDropdown) return;
-        renderDataStorage(settingsDropdown.querySelector('.waypoint-data-storage-view'), result.snapshot || snapshot);
+        renderDataStorage(settingsDropdown.querySelector('.waypoint-data-agent-content'), result.snapshot || snapshot);
         const nextFeedback = settingsDropdown.querySelector('.waypoint-data-storage-feedback');
         if (nextFeedback) nextFeedback.textContent = `${result.deleted_count} annotation${result.deleted_count === 1 ? '' : 's'} permanently deleted.`;
       } catch (error) {
@@ -1104,15 +1135,25 @@ var WaypointToolbar = (() => {
     }
 
     // Enable/disable copy + delete, badge on copy
-    const totalCount = annotationCount + styleAnnotationCount;
+    const journaling = globalThis.WaypointJournal?.isActive();
+    const totalCount = journaling ? WaypointJournal.count() : annotationCount + styleAnnotationCount;
+    const queueBtn = toolbarEl.querySelector('.waypoint-tb-queue');
+    if (queueBtn) {
+      queueBtn.title = journaling ? 'Journals' : 'Open Queue';
+      queueBtn.innerHTML = (journaling ? ICONS.book : ICONS.queue) + `<span class="waypoint-toolbar-tip">${journaling ? 'Journals' : 'Queue'}</span>`;
+    }
     const copyBtn = toolbarEl.querySelector('.waypoint-tb-copy');
     const deleteBtn = toolbarEl.querySelector('.waypoint-tb-delete');
     if (copyBtn) {
-      copyBtn.disabled = totalCount === 0;
-      copyBtn.innerHTML = ICONS.copy +
-        (annotationCount > 0 ? `<span class="waypoint-toolbar-count">${annotationCount}</span>` : '') +
-        (styleAnnotationCount > 0 ? `<span class="waypoint-toolbar-style-count">${styleAnnotationCount}</span>` : '') +
-        '<span class="waypoint-toolbar-tip">Copy all</span>';
+      copyBtn.disabled = !journaling && totalCount === 0;
+      const copyLabel = journaling ? 'Copy journal screenshot' : 'Copy all annotations';
+      copyBtn.setAttribute('aria-label', copyLabel);
+      if (journaling) copyBtn.removeAttribute('title');
+      else copyBtn.title = copyLabel;
+      copyBtn.innerHTML = (journaling ? ICONS.camera : ICONS.copy) +
+        (totalCount > 0 ? `<span class="waypoint-toolbar-count">${journaling ? totalCount : annotationCount}</span>` : '') +
+        (!journaling && styleAnnotationCount > 0 ? `<span class="waypoint-toolbar-style-count">${styleAnnotationCount}</span>` : '') +
+        (journaling ? '' : '<span class="waypoint-toolbar-tip">Copy all</span>');
     }
     if (deleteBtn) deleteBtn.disabled = totalCount === 0;
   }
@@ -1732,6 +1773,7 @@ var WaypointToolbar = (() => {
 
   return {
     init,
+    openDataStorage: (tab = 'agent') => { if (!settingsDropdown) openSettings(); return showDataStorage(tab); },
     createExportEnvelope: (...args) => WaypointExportCodec.createExportEnvelope(...args),
     normalizeImportEnvelope: (...args) => WaypointExportCodec.normalizeImportEnvelope(...args),
     formatAnnotationsAsMarkdown: (annotations, options) => WaypointExportCodec.formatAnnotationsAsMarkdown(annotations, { ...options, formatGroups: formatAnnotationsForClipboard }),

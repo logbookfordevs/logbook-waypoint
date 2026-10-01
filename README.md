@@ -35,6 +35,12 @@ Annotations move from Pending to Claimed before agent work. Release or inactivit
 
 The Queue shows whether local changes are up to date, waiting to sync, or blocked because the server is unavailable. **Sync now** retries the current project's pending work. Saves, deletions, and Design or Variant Intent removals remain recoverable locally until synchronization succeeds.
 
+## Journal mode
+
+Switch to **Journal** for personal notes displayed as taped paper with hand-drawn highlights and arrows. Pin with a click or Enter, edit in place, drag notes, hide the whole journal, or copy the visible page as an image. Named journals remain on your device, separate from Agent requests and MCP.
+
+See the [Journal guide](docs/JOURNAL_MODE.md) for setup, screenshot permissions, URL matching, and storage cleanup.
+
 ## Architecture
 
 Logbook Waypoint currently has three parts:

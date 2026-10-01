@@ -5,6 +5,7 @@ importScripts('../annotation-status.js');
 importScripts('../annotation-targets.js');
 importScripts('../annotation-collection.js');
 importScripts('../annotation-page.js');
+importScripts('../journal-model.js');
 importScripts('../design-intent.js');
 importScripts('../variant-intent.js');
 importScripts('../annotation-validation.js');
@@ -147,6 +148,19 @@ class WaypointAnnotationsBackground {
           WaypointSourceIdentityProbe.run(request.targetId, sender)
             .then(result => sendResponse({ success: true, result }))
             .catch(() => sendResponse({ success: false, result: null }));
+          break;
+
+        case 'journalCommand':
+          this._withStorageLock(async () => {
+            const key = WaypointJournalModel.STORAGE_KEY;
+            const stored = await chrome.storage.local.get([key]);
+            const data = WaypointJournalModel.apply(stored[key], request.command, {
+              id: crypto.randomUUID(), now: new Date().toISOString(),
+            });
+            await chrome.storage.local.set({ [key]: data });
+            return data;
+          }).then(data => sendResponse({ success: true, data }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
           break;
 
         case 'getAnnotations':
@@ -1453,9 +1467,12 @@ class WaypointAnnotationsBackground {
           'annotation-status.js',
           'annotation-targets.js',
           'annotation-collection.js',
+          'annotation-page.js',
+          'journal-model.js',
           'design-intent.js',
           'variant-intent.js',
           'annotation-validation.js',
+          'data-management.js',
           'export-codec.js',
           'agent-setup-config.js',
           'content/modules/event-bus.js',
@@ -1466,6 +1483,7 @@ class WaypointAnnotationsBackground {
           'content/modules/api-bridge.js',
           'content/modules/shadow-dom-utils.js',
           'content/modules/source-identity.js',
+          'content/modules/screenshot-capture.js',
           'content/modules/element-context.js',
           'content/modules/multi-target-selection.js',
           'content/modules/badge-manager.js',
@@ -1474,6 +1492,8 @@ class WaypointAnnotationsBackground {
           'content/modules/variant-picker.js',
           'content/modules/annotation-popover.js',
           'content/modules/queue-panel.js',
+          'content/modules/journal-geometry.js',
+          'content/modules/journal-mode.js',
           'content/modules/floating-toolbar.js',
           'content/content.js'
         ],

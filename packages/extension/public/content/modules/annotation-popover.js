@@ -277,12 +277,14 @@ var WaypointAnnotationPopover = (() => {
   }
 
   async function onElementClicked({ element, clientX, clientY, shiftKey = false }) {
+    if (globalThis.WaypointJournal?.isActive()) return;
     if (WaypointMultiTargetSelection.shouldHandle(shiftKey)) return;
     const context = await WaypointElementContext.generate(element);
     return show(element, context, null, clientX, clientY);
   }
 
   function onMultiTargetCompose({ selections, draft }) {
+    if (globalThis.WaypointJournal?.isActive()) return;
     const first = selections[0];
     return show(first.element, first.context, null, first.clientX, first.clientY, { selections, draft });
   }

@@ -5,11 +5,11 @@ import { createSocialMetadata } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'How Logbook Waypoint handles, stores, shares, and deletes local Annotation data.',
+  description: 'How Logbook Waypoint handles, stores, shares, and deletes local Annotation and Journal data.',
   alternates: { canonical: '/privacy' },
   ...createSocialMetadata({
     title: 'Privacy Policy — Logbook Waypoint',
-    description: 'How Logbook Waypoint handles, stores, shares, and deletes local Annotation data.',
+    description: 'How Logbook Waypoint handles, stores, shares, and deletes local Annotation and Journal data.',
     url: '/privacy',
   }),
 };
@@ -21,6 +21,7 @@ const policySections = [
     icon: MapPin,
     paragraphs: [
       'When you create an Annotation, Waypoint processes the annotated page URL, including its path, query, and fragment; the Annotation text you write; and any visual changes you select.',
+      'Journal mode stores journal names, note text, original page URLs, target selectors, and bounded element context in local extension storage. Journals do not synchronize to the MCP server or enter the Agent Queue.',
       'Waypoint also records context for the selected element. This may include its text, tag, classes, stable attributes used by its selector, computed styles, dimensions and position, viewport size, parent context, selector, available component or source-file identity, and the click or pin offset used to place the Annotation.',
       'If you choose to include them, Waypoint also handles captured screenshots and image attachments. Preferences, enabled sites, Queue state, synchronization state, and retained lifecycle history are stored so the extension can preserve your workflow.',
     ],
@@ -32,6 +33,7 @@ const policySections = [
     paragraphs: [
       'The browser extension stores Annotations and preferences in Chrome local extension storage on your device.',
       'When you run the optional Waypoint server, the extension may synchronize Annotation data to 127.0.0.1:3846 on the same device. The server is designed to listen only on the IPv4 loopback interface and stores its Queue and file-backed media locally.',
+      'When you choose the Journal camera button, Waypoint copies a PNG of the visible page with its notes and drawings to your system clipboard. It does not upload the image; another application receives it only when you paste it there.',
       'Waypoint does not send Annotation data, browsing activity, screenshots, or attachments to Logbook for Devs or another Logbook-operated external server. A coding agent you separately connect to the local Waypoint server may receive Annotation data when you direct that workflow. That disclosure is governed by the terms and privacy practices of the agent and its provider.',
     ],
   },
@@ -58,7 +60,8 @@ const policySections = [
     title: 'Retention and deletion',
     icon: CircleAlert,
     paragraphs: [
-      'Resolved and Discarded Annotations remain as lifecycle history until you delete them. Waypoint provides controls to delete individual Annotations, clean retained history, delete a project’s data, or clear all Waypoint data.',
+      'Resolved and Discarded Annotations remain as lifecycle history until you delete them. Waypoint provides controls to delete individual Annotations, clean retained history, delete a project’s data, or clear Agent data.',
+      'Data & Storage has separate Agent and Journal tabs. You can delete a journal or confirm Clear all Journal data to remove every journal and note on this device while preserving Agent data.',
       'You can also remove data by clearing the extension’s stored data or deleting the local server’s data. Deleting synchronized data may require the server to be running so the deletion can be reconciled across both local stores.',
     ],
   },
@@ -74,7 +77,7 @@ export default function PrivacyPage() {
             Logbook Waypoint is a local-first browser extension and coding-agent tool for placing
             structured visual annotations on interfaces under development.
           </p>
-          <p className="privacy-policy__date">Last updated September 3, 2026</p>
+          <p className="privacy-policy__date">Last updated September 30, 2026</p>
         </header>
 
         <nav className="privacy-policy__contents" aria-label="Privacy policy sections">
