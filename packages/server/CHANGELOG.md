@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.2.0] - 2026-09-30
+
 ### Changed
 - The GitHub installer includes the Waypoint skill without prompting, using AFK when available or npx otherwise. Updates retain the `--skip-skill` preference; `--yes` re-enables installation. Skill failures leave the CLI installed and show a retry command.
 - npm-based `waypoint update` now runs the Skills CLI to refresh the global Waypoint skill after the package update. If that step fails, the CLI remains updated and prints a retry command.
