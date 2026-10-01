@@ -122,7 +122,7 @@ function validateSavedQueue(saved) {
       || cursors.has(change.cursor)
       || !change.annotation
       || !isValidAnnotationId(change.annotation.id)
-      || (change.change_type !== undefined && change.change_type !== 'variant_cancelled')
+      || (change.change_type !== undefined && !['variant_cancelled', 'deleted'].includes(change.change_type))
     ) {
       throw new Error('Invalid Watch journal change');
     }
@@ -157,7 +157,11 @@ export class WatchQueue {
     this.latestById = new Map();
     for (const change of this.history) {
       this.cursorSequences.set(change.cursor, change.sequence);
-      this.latestById.set(change.annotation.id, change.annotation);
+      if (change.change_type === 'deleted') {
+        this.latestById.delete(change.annotation.id);
+      } else {
+        this.latestById.set(change.annotation.id, change.annotation);
+      }
     }
   }
 
@@ -185,12 +189,14 @@ export class WatchQueue {
 
   recordChangesFrom(previousById, nextAnnotations) {
     const changes = [];
+    const nextIds = new Set();
 
     for (const rawAnnotation of nextAnnotations) {
       if (!isValidAnnotationId(rawAnnotation?.id)) {
         throw new TypeError('Invalid Waypoint annotation ID');
       }
       const annotation = summarizeAnnotation(rawAnnotation);
+      nextIds.add(annotation.id);
       const previous = previousById.get(annotation.id);
       if (!previous || comparableAnnotation(previous) !== comparableAnnotation(annotation)) {
         const sequence = ++this.sequence;
@@ -207,6 +213,22 @@ export class WatchQueue {
         this.latestById.set(annotation.id, annotation);
         changes.push(change);
       }
+    }
+
+    for (const [id, annotation] of previousById) {
+      if (nextIds.has(id)) continue;
+      const sequence = ++this.sequence;
+      const change = {
+        sequence,
+        cursor: randomUUID(),
+        annotation,
+        revision: `${this.initialCursor}:${sequence}`,
+        change_type: 'deleted',
+      };
+      this.history.push(change);
+      this.cursorSequences.set(change.cursor, sequence);
+      this.latestById.delete(id);
+      changes.push(change);
     }
 
     if (changes.length > 0) this.notifyWaiters();
@@ -275,7 +297,8 @@ export class WatchQueue {
     }
   }
 
-  async watch({ cursor, timeoutMs = 25_000, url, scoped = false } = {}) {
+  async watch({ cursor, fromNow = false, timeoutMs = 25_000, url, scoped = false } = {}) {
+    if (fromNow && cursor !== undefined) throw new Error('fromNow cannot be combined with cursor');
     let scope;
     if (scoped) {
       if (cursor !== undefined) {
@@ -289,6 +312,7 @@ export class WatchQueue {
         scope = createProjectScope(url);
       }
     }
+    if (fromNow) cursor = this.cursor;
     const deadline = Date.now() + timeoutMs;
     let changes;
     do {

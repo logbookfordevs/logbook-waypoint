@@ -130,6 +130,7 @@ test('inspect_annotations diagnoses selected IDs with complete captured context'
   const inspectTool = tools.tools.find(tool => tool.name === 'inspect_annotations');
   assert.match(readTool.description, /^Survey compact Annotation summaries\b/);
   assert.match(readTool.description, /empty scope succeeds with an empty list/i);
+  assert.deepEqual(readTool.inputSchema.anyOf, [{ required: ['id'] }, { required: ['url'] }]);
   assert.match(inspectTool.description, /^Diagnose\b/);
   assert.equal(inspectTool.inputSchema.properties.ids.maxItems, undefined);
 
@@ -165,6 +166,36 @@ test('an explicit unknown loopback scope is a successful empty survey', async ()
   assert.equal(result.pagination.total, 0);
   assert.deepEqual(result.projectInfo, []);
   assert.equal(result.projectSelection, null);
+});
+
+test('read_annotations surveys one ID directly and can verify its URL scope', async () => {
+  const server = new LocalAnnotationsServer();
+  const id = 'waypoint_1750000000000_abc123xyz';
+  const unsupportedId = 'waypoint_1750000000001_abcdefghi';
+  server.loadAnnotations = async () => [{
+    id,
+    url: 'http://localhost:3000/settings',
+    comment: 'Keep the label aligned',
+    status: 'resolved',
+  }, {
+    id: unsupportedId,
+    url: 'https://example.com/settings',
+    comment: 'Outside the local project',
+    status: 'pending',
+  }];
+
+  const selected = await server.readAnnotations({ id });
+  assert.deepEqual(selected.annotations.map(annotation => annotation.id), [id]);
+  assert.equal(selected.annotations[0].comment, 'Keep the label aligned');
+  assert.equal(selected.projectSelection, null);
+
+  const wrongScope = await server.readAnnotations({ id, url: 'http://localhost:3000/profile' });
+  assert.deepEqual(wrongScope.annotations, []);
+
+  const unsupported = await server.readAnnotations({ id: unsupportedId });
+  assert.deepEqual(unsupported.annotations, []);
+
+  await assert.rejects(server.readAnnotations({ id: 'invalid' }), /Invalid Waypoint annotation ID/);
 });
 
 test('inspect_annotations preserves complete ordered Target Sets', async () => {

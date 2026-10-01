@@ -36,7 +36,7 @@ export const documentationPages: DocumentationPage[] = [
         heading: 'Current availability',
         paragraphs: [
           'Install Logbook Waypoint from the Chrome Web Store for the supported browser-extension experience.',
-          'The separate Waypoint CLI is published through npm and as a checksummed GitHub Release. Both CLI channels install the same waypoint command and optional local MCP server.',
+          'The separate Waypoint CLI is published through npm and as a checksummed GitHub Release. The curl installer is recommended for agent workflows because it installs both the CLI and Waypoint skill. npm installs the CLI; add the skill separately.',
         ],
         resource: {
           href: chromeWebStoreUrl,
@@ -44,7 +44,7 @@ export const documentationPages: DocumentationPage[] = [
         },
       },
       {
-        heading: 'Install from a GitHub Release',
+        heading: 'Recommended: install from a GitHub Release',
         paragraphs: [
           'Run the public installer to download and verify the latest Waypoint CLI release. It includes Waypoint’s agent workflow skill by default, installing globally for the universal agent target without prompting. It uses AFK when available and otherwise runs the Skills CLI through npx.',
           'To opt out, pipe the installer into bash -s -- --skip-skill. The installer remembers that choice for future updates. Re-run with --yes to enable skill installation again. If the skill step fails, the CLI still installs and prints a retry command.',
@@ -52,12 +52,12 @@ export const documentationPages: DocumentationPage[] = [
         code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\nwaypoint start',
       },
       {
-        heading: 'Install through npm',
+        heading: 'Alternative: install through npm',
         prerequisite: 'Node.js 22.12+ required. GitHub installs to ~/.local/bin and flags missing PATH setup.',
         paragraphs: [
-          'Install the published package globally, or use npx for a temporary first look. Start runs the local server in the background by default.',
+          'Install the published CLI package globally, then add the Waypoint skill separately with the Skills CLI. Use npx @logbookfordevs/waypoint --help for a temporary first look. Start runs the local server in the background by default.',
         ],
-        code: 'npm install --global @logbookfordevs/waypoint\nwaypoint start',
+        code: 'npm install --global @logbookfordevs/waypoint\nnpx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global\nwaypoint start',
         note: 'Use waypoint status to check the server, waypoint logs to inspect it, waypoint stop when finished, or waypoint start --foreground for a terminal-attached session.',
       },
       {
@@ -247,11 +247,11 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'Keep a foreground Watch',
         paragraphs: [
-          'Agent harnesses that surface background command output can keep a foreground Waypoint consumer running while implementation continues. Structured mode emits one complete untrusted MCP result envelope per line and reconnects through the existing durable Watch journal.',
+          'Agent harnesses that surface background command output can keep the Waypoint CLI Watch running while implementation continues. Structured mode emits one complete current open-work snapshot per line and reconnects through the durable Watch journal. Read a selected ID through MCP for its Survey context.',
           'The command retrieves activity without creating or renewing Claims. It cannot guarantee that an idle agent wakes up: scheduling attention remains the responsibility of the coding-agent harness.',
         ],
         code: 'waypoint watch http://localhost:3000/ --json',
-        note: 'Use --once for one bounded result. Resume a restarted consumer with --cursor only after the agent has processed the envelope carrying that cursor.',
+        note: 'Use --once for an immediate snapshot. The default Watch needs no cursor; --events provides detailed history and optional cursor resumption.',
       },
       {
         heading: 'Connect Codex',
@@ -271,7 +271,7 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'Explore the MCP tool surface',
         paragraphs: [
-          'Open the Signal Chart for a visual explanation of how work travels from Annotation → Queue → MCP → agent, including lifecycle transitions and all 19 Waypoint MCP tools.',
+          'Open the Signal Chart for a visual explanation of how work travels from Annotation to Queue to agent. Its MCP tool map may lag the current CLI Watch interface.',
         ],
         resource: {
           href: signalChartUrl,
@@ -491,17 +491,19 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'CLI releases',
         paragraphs: [
-          'Tagged Waypoint releases publish the local server and CLI through npm and as a checksummed GitHub Release archive. The public install script resolves and verifies the latest archive before installing it.',
-          'Use npm when you prefer registry-managed global packages. Use the GitHub installer when you prefer the release archive under ~/.local/share/logbook-waypoint with a launcher in ~/.local/bin.',
+          'Tagged Waypoint releases publish the local server and CLI through npm and as a checksummed GitHub Release archive. The curl installer is recommended for agent workflows: it verifies the archive and installs the CLI and bundled Waypoint skill together.',
+          'npm is an alternative for registry-managed global packages. It installs the CLI only; add the Waypoint skill with the separate Skills CLI command shown in Installation.',
         ],
-        code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\n# or\nnpm install --global @logbookfordevs/waypoint',
+        code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\n# npm alternative: install the CLI and skill separately\nnpm install --global @logbookfordevs/waypoint\nnpx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global',
       },
       {
         heading: 'Update the installation you already use',
         paragraphs: [
-          'For an npm installation, rerun npm install --global @logbookfordevs/waypoint. For a GitHub Release installation, rerun the public installer. Then run waypoint restart and waypoint status so the running server uses the updated installation.',
+          'Run waypoint update for an installed CLI. It updates through the original npm or GitHub channel and refreshes the Waypoint skill too; GitHub installs respect a saved --skip-skill choice. Then run waypoint restart and waypoint status so the running server uses the updated installation.',
+          'An older npm updater may not refresh the skill on its first upgrade to this behavior. Run the separate Skills CLI command from Installation once if your skill remains old; later waypoint update runs refresh it.',
           'Manage the store extension through Chrome’s extension updates. For an unpacked source build, rebuild, reload it in chrome://extensions, and refresh your app tab. If Waypoint reports a compatibility mismatch, update the server and extension before retrying the workflow.',
         ],
+        code: 'waypoint update\nwaypoint restart\nwaypoint status',
       },
       {
         heading: 'Stop using Waypoint',

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - The GitHub installer includes the Waypoint skill without prompting, using AFK when available or npx otherwise. Updates retain the `--skip-skill` preference; `--yes` re-enables installation. Skill failures leave the CLI installed and show a retry command.
+- npm-based `waypoint update` now runs the Skills CLI to refresh the global Waypoint skill after the package update. If that step fails, the CLI remains updated and prints a retry command.
+- `waypoint watch <url>` now emits lightweight current Pending and Claimed snapshots; use `--events` for detailed changes and `read_annotations` with an ID for Survey context.
+- `read_annotations` now requires an Annotation ID or URL scope.
+
+### Removed
+- Removed `watch_annotations` from MCP. Existing MCP callers should run `waypoint watch <url>` through the CLI.
 
 ## [0.1.5] - 2026-09-16
 

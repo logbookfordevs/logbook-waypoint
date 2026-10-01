@@ -1,5 +1,7 @@
 # Add a foreground Watch consumer
 
+Superseded by [Watch current open work](0010-watch-current-open-work.md), which makes Watch CLI-only.
+
 Waypoint exposes `waypoint watch <url>` as a foreground consumer of the existing MCP Watch interface and durable journal. Human-readable output supports terminals; `--json` emits complete NDJSON MCP result envelopes; `--once` supports hosts that react only when commands finish; and `--cursor` resumes from an envelope the downstream consumer has actually processed.
 
 The server remains the sole event authority. The CLI does not persist a second journal, run another daemon, interpret Annotation content, or renew Claims. It reconnects with bounded backoff, preserves its in-memory cursor, and respects output backpressure.

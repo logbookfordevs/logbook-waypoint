@@ -27,14 +27,14 @@ export default function DocumentationIndex() {
       </p>
       <div className="docs-notice">
         <Compass aria-hidden="true" />
-        <div><strong>Waypoint is available now</strong><p>Install the extension from the <a href={chromeWebStoreUrl} target="_blank" rel="noreferrer">Chrome Web Store</a>. Add the local server separately through npm or a checksummed GitHub Release for agent workflows.</p></div>
+        <div><strong>Waypoint is available now</strong><p>Install the extension from the <a href={chromeWebStoreUrl} target="_blank" rel="noreferrer">Chrome Web Store</a>. For agent workflows, the recommended curl installer adds the local CLI and Waypoint skill together.</p></div>
       </div>
       <a className="docs-signal-chart" href={signalChartUrl} target="_blank" rel="noreferrer">
         <Route aria-hidden="true" />
         <span>
           <small>Visual route map</small>
           <strong>Explore the Waypoint Signal Chart</strong>
-          <p>See how work travels from Annotation → Queue → MCP → agent, alongside all 19 MCP tools.</p>
+          <p>See how work travels from Annotation → Queue → agent, alongside Waypoint’s MCP tools and CLI Watch.</p>
         </span>
         <ArrowUpRight aria-hidden="true" />
       </a>

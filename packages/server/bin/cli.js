@@ -9,8 +9,9 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { homedir } from 'os';
 import fs from 'fs';
-import { updateInstallation } from '../lib/update.js';
+import { skillUpdateRetryCommand, updateInstallation } from '../lib/update.js';
 import { runWatch } from '../lib/cli-watch.js';
+import { runSnapshotWatch } from '../lib/cli-watch-snapshot.js';
 import { PRODUCT_IDENTITY } from '../lib/product-identity.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -229,13 +230,19 @@ program
 
 program
   .command('watch')
-  .description('Watch one project for Annotation changes')
+  .description('Show current open Annotation IDs and keep watching for changes')
   .argument('<url>', 'Loopback project, Page, or View State URL')
-  .option('--json', 'Write complete MCP Watch result envelopes as NDJSON')
-  .option('--once', 'Return after one Watch result, including an empty timeout')
-  .option('--cursor <cursor>', 'Resume from a previously processed Watch cursor')
+  .option('--json', 'Write each current open-work snapshot as one JSON line')
+  .option('--events', 'Write detailed changes; without --cursor, replay full Watch history')
+  .option('--once', 'Return after the first snapshot (or one result with --events)')
+  .option('--cursor <cursor>', 'Resume a detailed --events stream from a processed cursor')
   .option('--timeout <milliseconds>', 'Long-poll timeout from 0 to 30000', '25000')
   .action(async (url, options) => {
+    if (options.cursor && !options.events) {
+      console.error(chalk.red('--cursor requires --events; current snapshots do not need a cursor'));
+      process.exitCode = 1;
+      return;
+    }
     const timeoutMs = Number(options.timeout);
     const controller = new AbortController();
     const stop = () => controller.abort();
@@ -243,7 +250,7 @@ program
     process.once('SIGTERM', stop);
 
     try {
-      await runWatch({
+      await (options.events ? runWatch : runSnapshotWatch)({
         url,
         cursor: options.cursor,
         timeoutMs,
@@ -265,9 +272,13 @@ program
   .description('Update this installation to the latest release')
   .action(async () => {
     try {
-      await updateInstallation(dirname(__dirname));
+      const result = await updateInstallation(dirname(__dirname));
       console.log(chalk.green('Waypoint updated. Run waypoint restart to use the new server version.'));
       console.log(chalk.gray('Reconnect your agent if it launches the MCP server directly.'));
+      if (result?.skillUpdated === false) {
+        console.log(chalk.yellow(`Waypoint skill update failed: ${result.skillError}`));
+        console.log(chalk.gray(`Retry with: ${skillUpdateRetryCommand}`));
+      }
     } catch (error) {
       console.error(chalk.red(error.message));
       process.exitCode = 1;

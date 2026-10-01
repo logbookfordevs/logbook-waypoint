@@ -1,12 +1,8 @@
 import { setTimeout as delay } from 'node:timers/promises';
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-
 import { createProjectScope } from './project-scope.js';
-import { PRODUCT_IDENTITY } from './product-identity.js';
 
-const DEFAULT_MCP_URL = 'http://127.0.0.1:3846/mcp';
+const DEFAULT_SERVER_URL = 'http://127.0.0.1:3846';
 const MAX_RETRY_DELAY_MS = 5_000;
 
 export async function writeStreamLine(stream, line, signal) {
@@ -37,18 +33,6 @@ export async function writeStreamLine(stream, line, signal) {
   });
 }
 
-function parseWatchPayload(result) {
-  if (result.isError) throw new Error('Waypoint Watch returned an MCP tool error');
-  const text = result.content?.find(item => item.type === 'text')?.text;
-  if (typeof text !== 'string') throw new Error('Waypoint Watch returned no text payload');
-
-  const payload = JSON.parse(text);
-  if (payload?.status !== 'success' || !payload.data || !Array.isArray(payload.data.changes)) {
-    throw new Error(payload?.data?.error ?? 'Waypoint Watch returned an invalid payload');
-  }
-  return payload;
-}
-
 function formatUntrustedTerminalText(value) {
   return String(value)
     .replace(/\s+/g, ' ')
@@ -56,23 +40,25 @@ function formatUntrustedTerminalText(value) {
     .trim();
 }
 
-export async function connectMcpWatch({ mcpUrl = DEFAULT_MCP_URL } = {}) {
-  const client = new Client({ name: `${PRODUCT_IDENTITY.cliCommand}-watch`, version: '1.0.0' });
-  const transport = new StreamableHTTPClientTransport(new URL(mcpUrl));
-  await client.connect(transport);
-
+export async function connectLocalWatch({ serverUrl = DEFAULT_SERVER_URL } = {}) {
+  const endpoint = new URL('/api/watch', serverUrl);
   return {
     async watch(args, signal) {
-      const result = await client.callTool(
-        { name: 'watch_annotations', arguments: args },
-        undefined,
-        { signal, timeout: args.timeout_ms + 5_000 },
-      );
-      return parseWatchPayload(result);
+      const requestSignal = AbortSignal.timeout((args.timeout_ms ?? 25_000) + 5_000);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(args),
+        signal: signal ? AbortSignal.any([signal, requestSignal]) : requestSignal,
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? `Waypoint Watch returned HTTP ${response.status}`);
+      if (payload?.type !== 'watch_events' || !Array.isArray(payload.data?.changes) || typeof payload.data.cursor !== 'string') {
+        throw new Error('Waypoint Watch returned an invalid payload');
+      }
+      return payload;
     },
-    async close() {
-      await client.close();
-    },
+    async close() {},
   };
 }
 
@@ -103,7 +89,7 @@ export async function runWatch({
   json = false,
   once = false,
   signal,
-  connect = connectMcpWatch,
+  connect = connectLocalWatch,
   writeOutput = line => writeStreamLine(process.stdout, line, signal),
   writeDiagnostic = line => writeStreamLine(process.stderr, line, signal),
   retryDelayMs = 250,

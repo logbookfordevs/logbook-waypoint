@@ -207,7 +207,7 @@ test('server shares strict loopback project scope across read, context, deletion
   await assert.rejects(server.deleteProjectAnnotations({ url_pattern: 'https://example.com/*' }), /loopback/i);
 });
 
-test('unfiltered reads discover projects without returning annotation bodies', async () => {
+test('Read requires a URL or ID and scopes a mixed local Queue', async () => {
   const server = new LocalAnnotationsServer();
   const annotations = [
     { id, url: 'http://localhost:3000/', comment: 'Waypoint feedback', status: 'pending' },
@@ -220,14 +220,7 @@ test('unfiltered reads discover projects without returning annotation bodies', a
   ];
   server.loadAnnotations = async () => structuredClone(annotations);
 
-  const discovery = await server.readAnnotations({ status: 'pending' });
-
-  assert.deepEqual(discovery.annotations, []);
-  assert.deepEqual(
-    discovery.projectInfo.map(project => project.recommended_filter),
-    ['http://localhost:3000/*', 'http://127.0.0.1:3001/*'],
-  );
-  assert.match(discovery.multiProjectWarning.recommendation, /url.*filter/i);
+  await assert.rejects(server.readAnnotations({ status: 'pending' }), /requires id or url/);
 
   const filtered = await server.readAnnotations({
     status: 'pending',
@@ -238,7 +231,7 @@ test('unfiltered reads discover projects without returning annotation bodies', a
   assert.equal(filtered.multiProjectWarning, null);
 });
 
-test('unfiltered reads require project selection even when only one project exists', async () => {
+test('Read rejects a missing ID or URL even when only one project exists', async () => {
   const server = new LocalAnnotationsServer();
   server.loadAnnotations = async () => [{
     id,
@@ -247,13 +240,7 @@ test('unfiltered reads require project selection even when only one project exis
     status: 'pending',
   }];
 
-  const discovery = await server.readAnnotations({ status: 'pending' });
-
-  assert.deepEqual(discovery.annotations, []);
-  assert.equal(discovery.projectInfo.length, 1);
-  assert.equal(discovery.projectInfo[0].recommended_filter, 'http://localhost:3000/*');
-  assert.equal(discovery.multiProjectWarning, null);
-  assert.match(discovery.projectSelection.recommendation, /url.*filter/i);
+  await assert.rejects(server.readAnnotations({ status: 'pending' }), /requires id or url/);
 });
 
 test('server file-backs screenshots and extension attachments while explicit retrieval controls bytes', async () => {
@@ -524,7 +511,7 @@ test('HTTP attachment references require matching metadata in their canonical An
 });
 
 
-test('discovery recommends only usable loopback scopes from a mixed Queue', async () => {
+test('ID and URL reads omit unsupported origins from a mixed Queue', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-local-discovery-'));
   const annotationsFile = path.join(directory, 'annotations.json');
   const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile: path.join(directory, 'watch.json') });
@@ -534,20 +521,19 @@ test('discovery recommends only usable loopback scopes from a mixed Queue', asyn
       { id: 'waypoint_1750000000001_abcdefghi', url: 'https://waypoint.logbookfordevs.com/docs/installation', comment: 'Production feedback', status: 'pending' },
       { id: 'waypoint_1750000000002_abcdefghi', url: 'http://localhost.evil.test/page', comment: 'Lookalike host', status: 'pending' },
     ]));
-    const discovery = await server.readAnnotations({ status: 'pending' });
-    assert.deepEqual(discovery.annotations, []);
-    assert.deepEqual(discovery.projectInfo.map(project => project.recommended_filter), ['http://localhost:3002/*']);
-    assert.deepEqual(discovery.projectSelection.suggested_filters, ['http://localhost:3002/*']);
-    assert.equal(discovery.multiProjectWarning, null);
-    const scoped = await server.readAnnotations({ url: discovery.projectInfo[0].recommended_filter });
+    const scoped = await server.readAnnotations({ url: 'http://localhost:3002/*' });
     assert.deepEqual(scoped.annotations.map(annotation => annotation.id), [id]);
+    const selected = await server.readAnnotations({ id });
+    assert.deepEqual(selected.annotations.map(annotation => annotation.id), [id]);
+    const production = await server.readAnnotations({ id: 'waypoint_1750000000001_abcdefghi' });
+    assert.deepEqual(production.annotations, []);
     await assert.rejects(server.readAnnotations({ url: 'https://waypoint.logbookfordevs.com/*' }), /loopback/i);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
 });
 
-test('production-only discovery returns neither recommendations nor Annotation bodies', async () => {
+test('an ID for a production-only Annotation returns no Survey body', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-production-discovery-'));
   const annotationsFile = path.join(directory, 'annotations.json');
   const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile: path.join(directory, 'watch.json') });
@@ -555,11 +541,8 @@ test('production-only discovery returns neither recommendations nor Annotation b
     await writeFile(annotationsFile, JSON.stringify([
       { id, url: 'https://waypoint.logbookfordevs.com/docs/installation', comment: 'Production feedback', status: 'pending' },
     ]));
-    const discovery = await server.readAnnotations({ status: 'pending' });
-    assert.deepEqual(discovery.projectInfo, []);
-    assert.equal(discovery.projectSelection, null);
-    assert.equal(discovery.multiProjectWarning, null);
-    assert.deepEqual(discovery.annotations, []);
+    const result = await server.readAnnotations({ id });
+    assert.deepEqual(result.annotations, []);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -37,8 +37,10 @@ The active documentation and runtime regressions are hermetic. They use no live 
 
 ## Explicit CLI updates
 
-Run `waypoint update` to update the CLI and server to the latest release. npm global installs update through npm using the detected global prefix. GitHub installer installs download `https://waypoint.logbookfordevs.com/install.sh` over HTTPS and run it after the download succeeds. The installer verifies the release checksum, preserving the recorded install root, launcher directory, repository, and asset name.
+Run `waypoint update` to update the CLI and server to the latest release. npm global installs update through npm using the detected global prefix, then run the Skills CLI to refresh the global universal Waypoint skill. If skill installation fails, the CLI update remains complete and the command prints a retry instruction. GitHub installer installs download `https://waypoint.logbookfordevs.com/install.sh` over HTTPS and run it after the download succeeds. The installer verifies the release checksum, preserves the recorded install root, launcher directory, repository, and asset name, and reinstalls its bundled skill unless `--skip-skill` was saved.
 
 Older GitHub installs need one rerun of their original installer command to record this metadata. Source checkouts and unrecognized installations are left untouched; update them using their original source or package manager.
+
+When an older npm installation runs `waypoint update` to acquire this behavior, its old updater may update only the package on that first run. Run `npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global` once to refresh the skill; later updates run that step themselves.
 
 After updating, run `waypoint restart` for a background server, or reconnect the agent for a directly launched MCP server. The command does not update the browser extension.

@@ -49,6 +49,30 @@ test('Watch resumes from an opaque cursor and delivers changed terminal states',
   assert.doesNotMatch(first.cursor, /test|waypoint_/);
 });
 
+test('Watch announces deletion so consumers can refresh current state', async () => {
+  const queue = new WatchQueue({ initialCursor: 'initial-test-cursor' });
+  const pending = annotation();
+  queue.reconcile([pending]);
+  const first = await queue.watch({ url: 'http://localhost:3000/', scoped: true, timeoutMs: 0 });
+
+  queue.reconcile([]);
+  const resumed = await queue.watch({
+    url: 'http://localhost:3000/',
+    scoped: true,
+    cursor: first.cursor,
+    timeoutMs: 0,
+  });
+
+  assert.equal(resumed.changes.length, 1);
+  assert.equal(resumed.changes[0].change_type, 'deleted');
+  assert.equal(resumed.changes[0].annotation.id, pending.id);
+  assert.equal(queue.latestById.has(pending.id), false);
+
+  const restored = new WatchQueue(queue.toJSON());
+  assert.equal(restored.latestById.has(pending.id), false);
+  assert.deepEqual(restored.reconcile([]), []);
+});
+
 test('Watch delivery is at least once until the returned cursor is acknowledged', async () => {
   const queue = new WatchQueue({ initialCursor: 'initial-test-cursor' });
   queue.recordChanges([], [annotation()]);
@@ -59,6 +83,23 @@ test('Watch delivery is at least once until the returned cursor is acknowledged'
 
   assert.deepEqual(repeated.changes, first.changes);
   assert.deepEqual(resumed.changes, []);
+});
+
+test('Watch can start after current history and continue with later changes', async () => {
+  const queue = new WatchQueue({ initialCursor: 'initial-test-cursor' });
+  queue.reconcile([annotation()]);
+
+  const initial = await queue.watch({
+    url: 'http://localhost:3000/',
+    scoped: true,
+    fromNow: true,
+    timeoutMs: 0,
+  });
+  assert.deepEqual(initial.changes, []);
+
+  queue.reconcile([annotation({ status: 'claimed' })]);
+  const next = await queue.watch({ cursor: initial.cursor, scoped: true, timeoutMs: 0 });
+  assert.equal(next.changes[0].annotation.status, 'claimed');
 });
 
 test('Watch does not revise an Annotation when only object key order changes', async () => {
@@ -485,9 +526,10 @@ test('persistent Watch delivers an identical Annotation re-created after deletio
     await restarted.recordChanges([pending], async () => []);
     const recreated = await restarted.watch({ cursor: observed.cursor, timeoutMs: 0 }, async () => [pending]);
 
-    assert.equal(recreated.changes.length, 1);
-    assert.equal(recreated.changes[0].annotation.id, pending.id);
-    assert.notEqual(recreated.changes[0].revision, observed.changes.at(-1).revision);
+    assert.equal(recreated.changes.length, 2);
+    assert.equal(recreated.changes[0].change_type, 'deleted');
+    assert.equal(recreated.changes[1].annotation.id, pending.id);
+    assert.notEqual(recreated.changes[1].revision, observed.changes.at(-1).revision);
   } finally {
     await rm(directory, { recursive: true });
   }
