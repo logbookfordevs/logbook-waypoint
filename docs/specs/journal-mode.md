@@ -122,7 +122,7 @@ Phase 1 works on permitted localhost and non-localhost sites without the local s
 ## Out of Scope
 
 - Phase 2 agent integration, CLI publishing contracts, server synchronization, and automatic DOM discovery.
-- Phase 3 sharing, collaboration, permissions, hosted journals, or screenshot export implementation.
+- Phase 3 sharing, collaboration, permissions, or hosted journals. Local visible-viewport screenshot copying is included in the Phase 1 trial.
 - Phase 4 rich Markdown authoring/rendered preview and media support; the first candidates are uploaded/pasted images and GIFs, without dedicated external-media embedding.
 - Phase 5 optional ordered Next/Previous walkthroughs.
 - Freehand drawing tools, new source-analysis capability, automatic Target healing across arbitrary redesigns, cross-device persistence, Drawably adoption, and replacing normal Annotation semantics.

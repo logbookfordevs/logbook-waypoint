@@ -6,6 +6,7 @@ Waypoint turns feedback on a running interface into a Queue that a developer or 
 
 | Your situation | Recommended path |
 | --- | --- |
+| Personal notes on an interface | Switch to Journal; follow the [Journal guide](JOURNAL_MODE.md). |
 | A few changes on one page | Annotate, **Copy**, and paste into your coding chat. |
 | Feedback that needs to travel as a file | Select Queue items and export Markdown or JSON. |
 | Work across routes or repeated agent sessions | Run the local server and connect your agent through MCP. |
@@ -24,7 +25,7 @@ waypoint start
 
 You can alternatively install the CLI through npm with `npm install --global @logbookfordevs/waypoint`.
 
-Until the browser extension is published, build it from the repository root:
+Install the published extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/logbook-waypoint/fgondknhkpekdhbbkgodokmpnpadfedo). To work on the extension or use an unpacked development build, build it from the repository root:
 
 ```bash
 pnpm install
@@ -44,10 +45,10 @@ Local development origins such as `localhost`, `127.0.0.1`, `.local`, and `.test
 
 1. Open the page you want to review.
 2. Select **Annotate** in the Waypoint toolbar, or use its displayed keyboard shortcut.
-3. Select the element that should change.
+3. Hover the element that should change, then click or press Enter to select it.
 4. Describe the desired outcome in the Annotation editor.
 5. Optionally adjust the element's text, spacing, size, typography, color, layout, or other available presentation controls.
-6. Save the Annotation.
+6. Save the Annotation with its save control or Cmd/Ctrl+Enter. Plain Enter in the text editor inserts a new line.
 
 Waypoint places a numbered pin beside the Target and adds the request to the Queue. The saved record can include your comment, selector, captured text and styles, element edits, Source Identity hints, and optional visual evidence.
 
@@ -146,12 +147,12 @@ See [Use Design Actions](DESIGN_ACTIONS.md) for setup requirements, the action c
 
 - **Appearance** cycles between System, Day Chart, and Night Watch.
 - **Pin color** changes the Annotation marker color.
-- **Clear on copy** removes copied route work after a successful copy.
+- **Clear on copy** removes copied Agent route work after a successful text copy. It does not clear Journal notes after copying a screenshot.
 - **Screenshots** controls automatic Target capture for new Annotations.
 - **Show Design Actions** controls whether Impeccable-powered authoring appears for new work.
 - **Keyboard shortcut** records a custom Annotate shortcut.
 - **Site access** grants persistent annotation access on the current non-local site.
-- **Data & Storage** shows a lightweight maintenance summary and loads project details only when opened. Review old Pending work, delete old history, remove one project's records, or clear all local Waypoint data with confirmation.
+- **Data & Storage** separates Agent and Journal tabs. Agent controls review old Pending work, delete history, remove project records, or clear Agent data. Journal controls delete individual journals or clear all journals and notes on this device with confirmation. Clearing Journal data preserves Agent data.
 - **Import/Export** moves portable Annotation records in or out of Waypoint.
 
 ## Know what remains local

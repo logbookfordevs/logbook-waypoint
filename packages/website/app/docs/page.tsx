@@ -7,11 +7,11 @@ import { chromeWebStoreUrl, createSocialMetadata, signalChartUrl } from '@/lib/s
 
 export const metadata: Metadata = {
   title: 'Documentation',
-  description: 'The Logbook Waypoint field guide for local Annotation and agent workflows.',
+  description: 'The Logbook Waypoint field guide for local Annotations, personal journals, and agent workflows.',
   alternates: { canonical: '/docs' },
   ...createSocialMetadata({
     title: 'Documentation — Logbook Waypoint',
-    description: 'The Logbook Waypoint field guide for local Annotation and agent workflows.',
+    description: 'The Logbook Waypoint field guide for local Annotations, personal journals, and agent workflows.',
     url: '/docs',
   }),
 };
@@ -22,7 +22,8 @@ export default function DocumentationIndex() {
       <h1>Waypoint field guide</h1>
       <p className="docs-lede">
         Point to something in your interface, explain what should change, and hand the feedback to
-        your coding agent. Start with Installation and Core Workflow, then explore the controls you need.
+        your coding agent, or keep personal thoughts on the page in Journal mode. Start with Installation,
+        then choose Core Workflow or Journal Mode for the way you want to work.
       </p>
       <div className="docs-notice">
         <Compass aria-hidden="true" />

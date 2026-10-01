@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added local Journal mode to the extension toolbar, with named journals, taped text notes, hand-drawn highlights and arrows, and reattachment for missing targets, kept separate from the agent Queue.
+- Data & Storage separates Agent and Journal maintenance, including confirmed deletion of all journals and notes without removing Agent data.
 - Journal mode can copy the visible page with its notes and drawings as a screenshot, with a short shutter sound after a successful copy.
 
 ### Changed

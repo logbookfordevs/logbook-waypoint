@@ -65,6 +65,9 @@ Waypoint includes:
 Waypoint is local-first. Annotation data is stored in browser extension storage
 and may synchronize with the Waypoint server on `127.0.0.1:3846`. It does not
 require a Logbook account and includes no advertising, analytics, or telemetry.
+Journal notes and names stay in local extension storage, separate from the Agent
+Queue and server. The Journal camera copies a visible-page PNG to the system
+clipboard only when requested; it does not upload the image.
 
 The local Waypoint CLI/server is installed separately. Setup and documentation:
 https://waypoint.logbookfordevs.com/
@@ -96,12 +99,14 @@ server.
 **activeTab**
 
 Waypoint uses the active tab only when the user invokes the extension, so it can
-identify the current page and enable or control the Annotation interface there.
+identify the current page, enable or control the Annotation interface there,
+and capture the visible tab for a requested Journal screenshot.
 
 **storage**
 
 Waypoint stores Annotations, selected Target context, optional screenshots,
-preferences, Queue synchronization state, and lifecycle history locally so work
+preferences, journal names and notes with their URLs and target context, Queue
+synchronization state, and lifecycle history locally so work
 survives page reloads, browser restarts, and temporary local-server outages.
 
 **scripting**

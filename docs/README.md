@@ -9,6 +9,7 @@ Choose the shortest route for what you need to understand or change.
 ## Use and develop Waypoint
 
 - [User guide](USER_GUIDE.md) — annotate a page, manage the Queue, copy or export work, connect MCP, and configure everyday behavior.
+- [Journal guide](JOURNAL_MODE.md) — personal taped notes, screenshot copying, page matching, and local storage.
 - [Use Design Actions](DESIGN_ACTIONS.md) — author guided or Freeform design work, request Variants, and understand Queue outcomes.
 - [Use Waypoint through MCP](MCP_GUIDE.md) — follow the normal agent workflow, understand compact Survey and diagnostic Inspect, and reference all 19 tools.
 - [Development guide](DEVELOPMENT.md) — work on the extension and local server.
@@ -27,6 +28,7 @@ Choose the shortest route for what you need to understand or change.
 
 ## Specifications
 
+- [Journal mode specification](specs/journal-mode.md) — local journals, note interaction, visual behavior, and future boundaries.
 - [Design Actions specification](specs/design-actions.md) — accepted product behavior, decisions, edge cases, and test seams behind the user guide.
 - [Multi-Target Annotations specification](specs/multi-target-annotations.md) — ordered Target Sets, shared feedback, selection behavior, and portable contract boundaries.
 

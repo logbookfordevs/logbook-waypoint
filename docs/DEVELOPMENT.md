@@ -9,6 +9,8 @@ pnpm --filter @logbookfordevs/waypoint-extension build
 
 The unpacked production build is written to `packages/extension/.output/chrome-mv3/`.
 
+Journal mode runs in the extension without the local server. Its storage model is `packages/extension/public/journal-model.js`; presentation and interaction live in `packages/extension/public/content/modules/journal-mode.js`. See the [Journal guide](JOURNAL_MODE.md) and [specification](specs/journal-mode.md) before changing its separation from the Agent Queue.
+
 ## Local Server Development  
 
 ```bash

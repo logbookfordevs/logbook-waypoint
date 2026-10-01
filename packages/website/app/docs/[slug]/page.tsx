@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Info } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
 import { CodeBlock } from '@/components/code-block';
+import { JournalMarginNote } from '@/components/journal-margin-note';
 import { WaypointPractice } from '@/components/waypoint-practice';
 import { documentationPages, getDocumentationPage } from '@/lib/docs-content';
 import { createSocialMetadata } from '@/lib/site-config';
@@ -49,6 +51,7 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
   const previousPage = documentationPages[currentIndex - 1];
   const nextPage = documentationPages[currentIndex + 1];
   const showsPractice = slug === 'core-workflow';
+  const isJournalGuide = slug === 'journal-mode';
   const previousPageLink = previousPage
     ? <Link href={`/docs/${previousPage.slug}`}><ArrowLeft /> <span>Previous<strong>{previousPage.title}</strong></span></Link>
     : <span />;
@@ -69,9 +72,25 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
       </nav>
 
       {showsPractice && <WaypointPractice />}
+      {isJournalGuide && <figure className="docs-journal-screenshot">
+        <Image src="/images/journal/journal-notes.png" width={2400} height={1726} sizes="(max-width: 800px) 100vw, 650px" alt="The actual Waypoint toolbar in Journal mode, with a handwritten taped note and curved arrow pointing to a circled heading on a sample project page." />
+        <figcaption>The extension in action on a sample page: the Journal switch, taped note, target circle, and connecting arrow.</figcaption>
+      </figure>}
 
-      {page.sections.map((section) => (
-        <section key={section.heading} id={toAnchor(section.heading)}>
+      {page.sections.map((section) => {
+        const marginNote = isJournalGuide ? journalMarginNotes[section.heading] : undefined;
+        const hasMarginNote = marginNote !== undefined;
+        const paragraphs = section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>);
+
+        function renderAnnotatedParagraphs() {
+          if (!marginNote) return null;
+          return <>
+            <JournalMarginNote note={marginNote.text} number={marginNote.number}>{paragraphs[0]}</JournalMarginNote>
+            {paragraphs.slice(1)}
+          </>;
+        }
+
+        return <section key={section.heading} id={toAnchor(section.heading)}>
           {section.prerequisite && (
             <p className="docs-section-prerequisite">
               <Info aria-hidden="true" />
@@ -79,7 +98,8 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
             </p>
           )}
           <h2>{section.heading}</h2>
-          {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+          {hasMarginNote && renderAnnotatedParagraphs()}
+          {!hasMarginNote && paragraphs}
           {section.code && <CodeBlock code={section.code} />}
           {section.resource && (
             <a className="docs-resource-link" href={section.resource.href} target="_blank" rel="noreferrer">
@@ -93,8 +113,8 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
               <p><strong>Field note</strong>{section.note}</p>
             </aside>
           )}
-        </section>
-      ))}
+        </section>;
+      })}
 
       <nav className="article-pagination" aria-label="Adjacent documentation">
         {previousPageLink}
@@ -109,3 +129,8 @@ export default async function DocumentationRoute({ params }: DocumentationRouteP
 function toAnchor(value: string) {
   return value.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-').replaceAll(/(^-|-$)/g, '');
 }
+
+const journalMarginNotes: Record<string, { number: number; text: string }> = {
+  'Edit and arrange the paper': { number: 1, text: 'Just like this! This paragraph has its own taped note. The words stay in the guide; the thought lives beside them.' },
+  'Copy the visible journal': { number: 2, text: 'The screenshot keeps the paper, circles, and arrows together. It captures what you can see, so arrange your notes before copying.' },
+};

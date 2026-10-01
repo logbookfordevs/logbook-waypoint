@@ -85,3 +85,9 @@ Capture failures restore the controls and show an error in the Journal panel. Mi
 ## Full Journal storage cleanup
 
 Added Clear all Journal data to the Journal storage tab, using the existing destructive-action styling. Confirmation explains device-wide scope and preserves Agent data. The command runs through the serialized journal storage boundary, clears all journals and notes across page scopes, and resets current selection and session presentation state. Regression coverage verifies cancelling does nothing, accepting removes journal data and visible pins/cards, and Agent storage remains unchanged.
+
+## Journal documentation
+
+Added a dedicated Journal user guide and website article, linked from the repository documentation map and README. Updated everyday settings, privacy disclosures, store permission notes, and developer entry points. The guides use release-ready wording at the user's request; this does not record a release or website deployment.
+
+The website guide annotates its own actual paragraphs with authored taped margin notes, measured SVG circles, and curved arrows. It is explanatory page content, without a simulated toolbar, editing demo, extension storage writes, or MCP calls. A real extension screenshot captured on a controlled sample page is included in both the website and Markdown guide. Desktop and 390px browser checks confirm the notes render and the page has no horizontal overflow. Website tests, repository typecheck, and the production website build pass.

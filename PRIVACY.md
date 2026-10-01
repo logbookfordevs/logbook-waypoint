@@ -1,6 +1,6 @@
 # Logbook Waypoint Privacy Policy
 
-Last updated: September 3, 2026
+Last updated: September 30, 2026
 
 Logbook Waypoint is a local-first browser extension and coding-agent tool for
 placing structured visual annotations on interfaces under development.
@@ -17,6 +17,8 @@ When you create an Annotation, Waypoint may process and store:
 - a screenshot of the selected interface when screenshot capture is enabled;
 - image attachments you explicitly add;
 - preferences, Queue state, and Annotation lifecycle history.
+
+Journal mode also stores journal names, note text, original page URLs, target selectors and bounded element context in local extension storage. Journal data is separate from Agent Annotations and is not synchronized to the local MCP server. When you choose the Journal camera button, Waypoint captures the visible page with its notes and drawings and copies a PNG to your system clipboard. It is not uploaded to a Waypoint service. Other applications can receive that image when you paste it.
 
 Waypoint does not require a Logbook account and does not include advertising,
 analytics, or telemetry.
@@ -57,7 +59,7 @@ or sell user data.
 Data remains on your device until you delete individual Annotations, delete a
 project's data, clear all Waypoint data, remove the extension's stored data, or
 delete the local server's data. Waypoint includes Data & Storage controls for
-reviewing and deleting locally stored project data.
+reviewing and deleting locally stored project data. Its Agent and Journal tabs have separate cleanup scopes. Clear all Journal data deletes every journal and note on this device after confirmation, without deleting Agent data.
 
 ## Sharing and sale
 
