@@ -11,6 +11,7 @@ var WaypointJournal = (() => {
   let inlineEditor = false;
   let pins = [], frame = null, lastMatch = 0, revision = 0;
   let busy = false;
+  let copying = false;
   let geometryKey = null;
   let storageError = null;
   let returnFocus = null;
@@ -293,6 +294,24 @@ var WaypointJournal = (() => {
         mutate({ type: 'delete-journal', journalId: journal.id }, () => { chooseJournal(); renderStorage(container); }, container);
       }));
       container.appendChild(row);
+    }
+    if (data.journals.length) {
+      const clearAll = button('Clear all Journal data', async () => {
+        const message = `Permanently delete all ${data.journals.length} journals and ${count} notes saved on this device? Agent data will not be deleted.`;
+        if (!window.confirm(message)) return;
+        clearAll.disabled = true;
+        await mutate({ type: 'clear-all' }, () => {
+          closeNote(true);
+          activeId = null;
+          selectedByScope.clear();
+          hiddenJournals.clear();
+          notePositions.clear();
+          closePanel();
+          renderStorage(container);
+        }, container);
+        clearAll.disabled = false;
+      }, 'waypoint-data-delete-all');
+      container.appendChild(clearAll);
     }
   }
 
@@ -582,9 +601,84 @@ var WaypointJournal = (() => {
     const skip = await WaypointAPI.getSkipDeleteConfirm();
     if (skip || window.confirm(`Permanently delete all notes in “${current().name}”?`)) await mutate({ type: 'clear', journalId: activeId }, () => closeNote(true));
   }
+  function prepareCopySound() {
+    let audio, played = false;
+    try {
+      const Audio = globalThis.AudioContext || globalThis.webkitAudioContext;
+      if (Audio) {
+        audio = new Audio();
+        audio.resume().catch(() => {});
+      }
+    } catch {}
+    const close = () => { audio?.close().catch(() => {}); };
+    return {
+      play() {
+        if (!audio || audio.state !== 'running') return;
+        try {
+          const buffer = audio.createBuffer(1, Math.round(audio.sampleRate * .09), audio.sampleRate);
+          const samples = buffer.getChannelData(0);
+          for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+          const source = audio.createBufferSource();
+          source.buffer = buffer;
+          const filter = audio.createBiquadFilter();
+          filter.type = 'highpass'; filter.frequency.value = 1000;
+          const gain = audio.createGain();
+          const now = audio.currentTime;
+          gain.gain.setValueAtTime(.035, now);
+          gain.gain.exponentialRampToValueAtTime(.001, now + .025);
+          gain.gain.setValueAtTime(.05, now + .045);
+          gain.gain.exponentialRampToValueAtTime(.001, now + .09);
+          source.connect(filter).connect(gain).connect(audio.destination);
+          source.start(); played = true;
+        } catch {}
+      },
+      dispose() { if (played) setTimeout(close, 150); else close(); },
+    };
+  }
   async function copy() {
-    try { await navigator.clipboard.writeText(entries().map(e => e.comment).join('\n\n')); }
-    catch (error) { openMenu(); report(error); }
+    if (copying) return false;
+    copying = true;
+    let image;
+    let sound;
+    try {
+      if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+        throw new Error('Image copying is unavailable on this page. Try a secure HTTPS page or localhost.');
+      }
+      sound = prepareCopySound();
+      image = (async () => {
+        root.host.setAttribute('data-waypoint-journal-capture', '');
+        try {
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const result = await chrome.runtime.sendMessage({ action: 'captureVisibleTabScreenshot' });
+          if (!result?.success || !result.dataUrl?.startsWith('data:image/png;base64,')) {
+            if (/activeTab|<all_urls>/.test(result?.error || '')) {
+              throw new Error('Click the Waypoint icon in your browser toolbar to enable screenshots for this tab, then try again.');
+            }
+            throw new Error(result?.error || 'Could not capture this view. Try again.');
+          }
+          const bytes = Uint8Array.from(atob(result.dataUrl.split(',')[1]), char => char.charCodeAt(0));
+          return new Blob([bytes], { type: 'image/png' });
+        } finally {
+          root.host.removeAttribute('data-waypoint-journal-capture');
+        }
+      })();
+      image.catch(() => {});
+      // Start the clipboard write in the button's user gesture while capture completes.
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': image })]);
+      await image;
+      sound.play();
+      return true;
+    } catch (error) {
+      await image?.catch(() => {});
+      const message = error.name === 'NotAllowedError'
+        ? new Error('Could not copy the image. Allow clipboard access for this page, then try again.')
+        : error;
+      openMenu(); report(message);
+      return false;
+    } finally {
+      sound?.dispose();
+      copying = false;
+    }
   }
   function attachToolbar(value) {
     toolbar = value;

@@ -38,6 +38,7 @@ var WaypointJournalModel = (() => {
 
   function apply(value, command, { id, now }) {
     const state = read(value);
+    if (command.type === 'clear-all') return { version: 1, journals: [] };
     if (command.type === 'create') {
       const key = scope(command.url);
       if (!key) throw new Error('This page URL is not supported.');

@@ -248,3 +248,66 @@ test('journal releases selection before asynchronous target capture finishes', a
   await h.flush();
   assert.ok(h.root.querySelector('textarea'));
 });
+
+function imageClipboard(h, write) {
+  h.ctx.Blob = Blob;
+  h.ctx.atob = atob;
+  h.ctx.ClipboardItem = class { constructor(data) { this.data = data; } };
+  h.ctx.requestAnimationFrame = callback => { queueMicrotask(callback); return 1; };
+  h.ctx.navigator.clipboard.write = write;
+}
+
+test('clear all Journal data requires confirmation and preserves Agent storage across all page scopes', async () => {
+  const h = await harness({ waypointAnnotationMode: 'journal', waypointAnnotations: [{ id: 'agent-note' }], waypointJournals: {
+    version: 1, journals: [
+      { id: 'one', name: 'Here', scope: 'https://example.com/app?page=1', url: 'https://example.com/app?page=1', entries: [{ id: 'note', comment: 'A saved note', targets: [{ selector: '#target' }], seed: 1 }] },
+      { id: 'two', name: 'Elsewhere', scope: 'https://elsewhere.test/', url: 'https://elsewhere.test/', entries: [] },
+    ],
+  } });
+  const container = h.window.document.createElement('div'); h.root.appendChild(container);
+  h.ctx.WaypointJournal.renderStorage(container);
+  h.window.confirm = () => false;
+  await h.click('Clear all Journal data');
+  assert.equal(h.storage.waypointJournals.journals.length, 2);
+  assert.equal(h.messages.length, 0);
+  h.window.confirm = message => { assert.match(message, /all 2 journals/); return true; };
+  await h.click('Clear all Journal data');
+  assert.equal(h.storage.waypointJournals.journals.length, 0);
+  assert.deepEqual(h.storage.waypointAnnotations, [{ id: 'agent-note' }]);
+  assert.equal(h.root.querySelectorAll('.waypoint-journal-pin').length, 0);
+  assert.equal(h.root.querySelectorAll('.waypoint-journal-saved').length, 0);
+  assert.match(container.textContent, /No stored journals/);
+  assert.equal(container.querySelector('button'), null);
+});
+
+test('journal copy captures PNG artwork with controls hidden and restores them before delivering the image', async () => {
+  const h = await harness({ waypointAnnotationMode: 'journal' });
+  let copied;
+  imageClipboard(h, async items => { copied = await items[0].data['image/png']; });
+  h.ctx.chrome.runtime.sendMessage = async request => {
+    assert.equal(request.action, 'captureVisibleTabScreenshot');
+    assert.equal(h.root.host.hasAttribute('data-waypoint-journal-capture'), true);
+    return { success: true, dataUrl: 'data:image/png;base64,aW1hZ2U=' };
+  };
+  assert.equal(await h.ctx.WaypointJournal.copy(), true);
+  assert.equal(copied.type, 'image/png');
+  assert.equal(await copied.text(), 'image');
+  assert.equal(h.root.host.hasAttribute('data-waypoint-journal-capture'), false);
+  assert.equal(h.storage.waypointJournals, undefined, 'copy does not change stored notes');
+});
+
+test('failed capture or clipboard write restores journal controls and reports a recoverable error', async () => {
+  for (const failsCapture of [true, false]) {
+    const h = await harness({ waypointAnnotationMode: 'journal' });
+    imageClipboard(h, async items => {
+      if (!failsCapture) throw new Error('Clipboard permission denied.');
+      await items[0].data['image/png'];
+    });
+    h.ctx.chrome.runtime.sendMessage = async () => failsCapture
+      ? { success: false, error: 'Capture permission denied.' }
+      : { success: true, dataUrl: 'data:image/png;base64,aW1hZ2U=' };
+    assert.equal(await h.ctx.WaypointJournal.copy(), false);
+    assert.equal(h.root.host.hasAttribute('data-waypoint-journal-capture'), false);
+    assert.match(h.root.querySelector('[role="alert"]').textContent, /permission denied/);
+  }
+});

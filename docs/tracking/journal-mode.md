@@ -75,3 +75,13 @@ Added Enter to select the hovered inspection Target for both Agent and Journal, 
 ## Direct toolbar mode switching
 
 Replaced the dropdown mode button with an Agent/Journal segmented control. Mode changes no longer open a menu; the Journals icon owns journal selection and management. Removed duplicate mode controls from the picker and retained current journal selection across switches. Narrow toolbar spacing keeps the full controls on one row at 390px. All 186 extension tests pass; the final production build and diff checks passed. Browser-confirmed direct switching sets the active state without opening the picker, and the user confirmed the interaction works.
+
+## Screenshot clipboard trial
+
+The pre-trial Journal checkpoint was committed and pushed on feat/journal-mode. Journal's copy control now copies a visible-viewport PNG instead of note text. Toolbar, menus, inspection chrome, and tooltips are hidden during capture; notes, pins, and journal drawings remain. The camera control has no native or custom tooltip and retains an accessible name. A brief synthetic shutter sound plays only after clipboard success. No new permissions or libraries were added.
+
+Capture failures restore the controls and show an error in the Journal panel. Missing activeTab access explains how to enable capture by invoking the extension's browser action; clipboard denial explains allowing clipboard access and retrying. All 188 extension tests and the production build pass. Regression coverage exercises PNG transfer and control restoration for both capture and clipboard errors. The isolated browser reproduced the temporary capture permission requirement; the user confirmed screenshot copying works in their browser and reported the tooltip defect, which was subsequently removed. Automated OS clipboard verification encountered headless browser focus limitations and is not claimed as a passing paste check.
+
+## Full Journal storage cleanup
+
+Added Clear all Journal data to the Journal storage tab, using the existing destructive-action styling. Confirmation explains device-wide scope and preserves Agent data. The command runs through the serialized journal storage boundary, clears all journals and notes across page scopes, and resets current selection and session presentation state. Regression coverage verifies cancelling does nothing, accepting removes journal data and visible pins/cards, and Agent storage remains unchanged.

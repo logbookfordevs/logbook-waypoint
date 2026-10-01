@@ -180,7 +180,10 @@ var WaypointToolbar = (() => {
 
     // Copy all
     toolbarEl.querySelector('.waypoint-tb-copy').addEventListener('click', async () => {
-      if (globalThis.WaypointJournal?.isActive()) { await WaypointJournal.copy(); return; }
+      if (globalThis.WaypointJournal?.isActive()) {
+        if (await WaypointJournal.copy()) showCopyFeedback();
+        return;
+      }
       const annotations = await WaypointAPI.loadAnnotations();
       if (!annotations.length) return;
       await copyAnnotations(annotations);
@@ -1142,11 +1145,15 @@ var WaypointToolbar = (() => {
     const copyBtn = toolbarEl.querySelector('.waypoint-tb-copy');
     const deleteBtn = toolbarEl.querySelector('.waypoint-tb-delete');
     if (copyBtn) {
-      copyBtn.disabled = totalCount === 0;
-      copyBtn.innerHTML = ICONS.copy +
+      copyBtn.disabled = !journaling && totalCount === 0;
+      const copyLabel = journaling ? 'Copy journal screenshot' : 'Copy all annotations';
+      copyBtn.setAttribute('aria-label', copyLabel);
+      if (journaling) copyBtn.removeAttribute('title');
+      else copyBtn.title = copyLabel;
+      copyBtn.innerHTML = (journaling ? ICONS.camera : ICONS.copy) +
         (totalCount > 0 ? `<span class="waypoint-toolbar-count">${journaling ? totalCount : annotationCount}</span>` : '') +
         (!journaling && styleAnnotationCount > 0 ? `<span class="waypoint-toolbar-style-count">${styleAnnotationCount}</span>` : '') +
-        '<span class="waypoint-toolbar-tip">Copy all</span>';
+        (journaling ? '' : '<span class="waypoint-toolbar-tip">Copy all</span>');
     }
     if (deleteBtn) deleteBtn.disabled = totalCount === 0;
   }

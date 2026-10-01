@@ -76,8 +76,10 @@ Phase 1 works on permitted localhost and non-localhost sites without the local s
 - Missing Targets are an expected condition. Hide their anchored pins when they cannot be located, retain the text in journal management, label the missing Target, and offer reattachment or deletion. Do not invent fallback coordinates that imply a valid anchor.
 - Deletion is permanent removal, not Resolved or Discarded. Integrate journals into existing explicit trash/storage cleanup semantics, preserving the scope and confirmation behavior of those controls. No automatic expiry is requested.
 - Data & Storage contains Agent and Journal tabs. Journal menu storage access opens the Journal tab; Agent cleanup remains scoped to Agent data.
+- The Journal tab offers an explicit confirmed reset of all journals and notes on this device, across page scopes, without deleting Agent data.
 - Selecting a Target suppresses the entire selection gesture, including its completing click, so links and buttons do not activate while being annotated.
 - During inspection, Enter selects the hovered Target and opens its editor in either mode. Arrow-key scope adjustments apply to Enter as they do to clicks; saving retains the existing editor shortcut.
+- Journal's camera action copies the current visible viewport as a PNG, preserving notes and drawings while omitting Waypoint controls and tooltips. It restores controls on errors, explains capture/clipboard access recovery, and plays a short success sound only after copying. Agent copying remains text-based.
 - Journal data is not expected to survive arbitrary redesigns forever. Users may clean it up when the underlying UI changes.
 
 ### Journal URL matching

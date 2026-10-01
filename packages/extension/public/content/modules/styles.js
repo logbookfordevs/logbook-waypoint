@@ -2767,6 +2767,13 @@ WAYPOINT_STYLES += `
 }
 .waypoint-journal-drawing { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 44; overflow: hidden; }
 .waypoint-journal-drawing path { fill: none; stroke: var(--waypoint-selection); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+:host([data-waypoint-journal-capture]) .waypoint-toolbar,
+:host([data-waypoint-journal-capture]) .waypoint-toolbar-tip,
+:host([data-waypoint-journal-capture]) .waypoint-journal-panel,
+:host([data-waypoint-journal-capture]) .waypoint-queue-panel,
+:host([data-waypoint-journal-capture]) .waypoint-toast,
+:host([data-waypoint-journal-capture]) .waypoint-scope-controls,
+:host([data-waypoint-journal-capture]) .waypoint-highlight { visibility: hidden !important; }
 .waypoint-journal-pin[hidden] { display: none; }
 @media (pointer: coarse) { .waypoint-journal-pin { min-width: 44px; height: 44px; } .waypoint-journal-button { min-height: 44px; } }
 @media (max-width: 480px) { .waypoint-journal-note { transform: none; } .waypoint-journal-input { font-size: 16px; } }
