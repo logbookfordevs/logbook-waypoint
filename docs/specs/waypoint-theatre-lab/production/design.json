@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-19T22:40:06-03:00",
+  "title": "Design System: Waypoint Theatre Lab — The Marked Page",
+  "extensions": {
+    "colorMeta": {
+      "driftwood-paper": { "role": "neutral", "displayName": "Driftwood Paper", "canonical": "#e9e1d3", "tonalRamp": ["oklch(15% 0.018 78)", "oklch(27% 0.018 78)", "oklch(39% 0.018 78)", "oklch(51% 0.018 78)", "oklch(63% 0.018 78)", "oklch(75% 0.018 78)", "oklch(87% 0.018 78)", "oklch(95% 0.018 78)"] },
+      "ocean-ink": { "role": "neutral", "displayName": "Ocean Ink", "canonical": "#172b29", "tonalRamp": ["oklch(15% 0.025 185)", "oklch(27% 0.025 185)", "oklch(39% 0.025 185)", "oklch(51% 0.025 185)", "oklch(63% 0.025 185)", "oklch(75% 0.025 185)", "oklch(87% 0.025 185)", "oklch(95% 0.025 185)"] },
+      "deep-ocean": { "role": "primary", "displayName": "Deep Ocean", "canonical": "#173b37", "tonalRamp": ["oklch(15% 0.04 180)", "oklch(27% 0.04 180)", "oklch(39% 0.04 180)", "oklch(51% 0.04 180)", "oklch(63% 0.04 180)", "oklch(75% 0.04 180)", "oklch(87% 0.04 180)", "oklch(95% 0.04 180)"] },
+      "deep-ocean-hover": { "role": "primary", "displayName": "Raised Ocean", "canonical": "#24544d", "tonalRamp": ["oklch(15% 0.045 180)", "oklch(27% 0.045 180)", "oklch(39% 0.045 180)", "oklch(51% 0.045 180)", "oklch(63% 0.045 180)", "oklch(75% 0.045 180)", "oklch(87% 0.045 180)", "oklch(95% 0.045 180)"] },
+      "specimen-paper": { "role": "neutral", "displayName": "Specimen Paper", "canonical": "#f6f2e8", "tonalRamp": ["oklch(15% 0.014 82)", "oklch(27% 0.014 82)", "oklch(39% 0.014 82)", "oklch(51% 0.014 82)", "oklch(63% 0.014 82)", "oklch(75% 0.014 82)", "oklch(87% 0.014 82)", "oklch(97% 0.014 82)"] },
+      "annotation-paper": { "role": "neutral", "displayName": "Annotation Paper", "canonical": "#fbf5e8", "tonalRamp": ["oklch(15% 0.016 78)", "oklch(27% 0.016 78)", "oklch(39% 0.016 78)", "oklch(51% 0.016 78)", "oklch(63% 0.016 78)", "oklch(75% 0.016 78)", "oklch(87% 0.016 78)", "oklch(97% 0.016 78)"] },
+      "signal-rust": { "role": "secondary", "displayName": "Signal Rust", "canonical": "#b7432e", "tonalRamp": ["oklch(15% 0.11 35)", "oklch(27% 0.11 35)", "oklch(39% 0.11 35)", "oklch(51% 0.11 35)", "oklch(63% 0.11 35)", "oklch(75% 0.11 35)", "oklch(87% 0.11 35)", "oklch(95% 0.11 35)"] },
+      "focus-rust": { "role": "secondary", "displayName": "Focus Rust", "canonical": "#b94932", "tonalRamp": ["oklch(15% 0.11 35)", "oklch(27% 0.11 35)", "oklch(39% 0.11 35)", "oklch(51% 0.11 35)", "oklch(63% 0.11 35)", "oklch(75% 0.11 35)", "oklch(87% 0.11 35)", "oklch(95% 0.11 35)"] },
+      "transfer-verdigris": { "role": "secondary", "displayName": "Transfer Verdigris", "canonical": "#35665d", "tonalRamp": ["oklch(15% 0.055 175)", "oklch(27% 0.055 175)", "oklch(39% 0.055 175)", "oklch(51% 0.055 175)", "oklch(63% 0.055 175)", "oklch(75% 0.055 175)", "oklch(87% 0.055 175)", "oklch(95% 0.055 175)"] },
+      "retained-brass": { "role": "tertiary", "displayName": "Retained Brass", "canonical": "#c7b586", "tonalRamp": ["oklch(15% 0.045 85)", "oklch(27% 0.045 85)", "oklch(39% 0.045 85)", "oklch(51% 0.045 85)", "oklch(63% 0.045 85)", "oklch(75% 0.045 85)", "oklch(87% 0.045 85)", "oklch(95% 0.045 85)"] },
+      "hairline": { "role": "neutral", "displayName": "Desk Hairline", "canonical": "#bcb5a6", "tonalRamp": ["oklch(15% 0.01 80)", "oklch(27% 0.01 80)", "oklch(39% 0.01 80)", "oklch(51% 0.01 80)", "oklch(63% 0.01 80)", "oklch(75% 0.01 80)", "oklch(87% 0.01 80)", "oklch(95% 0.01 80)"] },
+      "ocean-paper": { "role": "neutral", "displayName": "Ocean Paper", "canonical": "#f1eee2", "tonalRamp": ["oklch(15% 0.012 82)", "oklch(27% 0.012 82)", "oklch(39% 0.012 82)", "oklch(51% 0.012 82)", "oklch(63% 0.012 82)", "oklch(75% 0.012 82)", "oklch(87% 0.012 82)", "oklch(96% 0.012 82)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Constructed Display", "purpose": "Chapter promises and structural headings." },
+      "narrative": { "displayName": "Editorial Narrative", "purpose": "Story copy, Annotation voice, captions, and emphasis." },
+      "operational": { "displayName": "Retained Context", "purpose": "Time, target, chapter, location, and Queue metadata." },
+      "readable": { "displayName": "Readable Story", "purpose": "Complete non-animated transcript and fallback meaning." }
+    },
+    "shadows": [
+      { "name": "specimen-lift", "value": "0 28px 65px #26372e30, 0 7px 20px #26372e18", "purpose": "Lifts the observed browser page from the editing desk." },
+      { "name": "annotation-lift", "value": "0 14px 40px #38302424", "purpose": "Separates the traveling Annotation note during handoff." },
+      { "name": "queue-lift", "value": "0 24px 60px #172b292d", "purpose": "Places the retained Queue record over the receding page." },
+      { "name": "mobile-control-lift", "value": "0 5px 24px #172b2930", "purpose": "Keeps the persistent narrow-screen action distinct from the film." }
+    ],
+    "motion": [
+      { "name": "discovery-leg", "value": "0s–10s", "purpose": "Opening through mark and Annotation hold." },
+      { "name": "transfer-leg", "value": "10s–16s", "purpose": "Annotation handoff into the retained Queue record." },
+      { "name": "score-curve", "value": "cubic-bezier(0.5, 1, 0.5, 0)", "purpose": "The source-authored Theatre keyframe handle used for composition channels." },
+      { "name": "reduced-motion", "value": "next stable chapter", "purpose": "Replaces continuous playback and removes transforms." }
+    ],
+    "breakpoints": [
+      { "name": "wide-stage", "value": "1600px" },
+      { "name": "tablet-stage", "value": "900px" },
+      { "name": "vertical-edit", "value": "650px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Installation Action",
+      "kind": "button",
+      "refersTo": "installation-action",
+      "description": "The immediate route to the installation guide.",
+      "html": "<a class=\"ds-install\" href=\"#\">Get Waypoint <span aria-hidden=\"true\">→</span></a>",
+      "css": ".ds-install { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:18px; padding:12px 20px; background:#173b37; color:#f6f1e6; font:12px Poppins, sans-serif; text-decoration:none; } .ds-install:hover { background:#24544d; } .ds-install:focus-visible { outline:3px solid #b94932; outline-offset:5px; }"
+    },
+    {
+      "name": "Film Transport",
+      "kind": "button",
+      "refersTo": "film-action",
+      "description": "The shared play, pause, continue, and replay action.",
+      "html": "<button class=\"ds-film-action\"><span aria-hidden=\"true\">▶</span> Carry it to Queue</button>",
+      "css": ".ds-film-action { min-height:44px; min-width:205px; display:inline-flex; align-items:center; justify-content:center; gap:9px; padding:13px 22px; border:0; border-radius:0; background:#173b37; color:#fff8ec; font:12px Poppins, sans-serif; } .ds-film-action:hover { box-shadow:inset 0 -2px #b7432e; } .ds-film-action:focus-visible { outline:3px solid #b94932; outline-offset:5px; } .ds-film-action:active { background:#24544d; }"
+    },
+    {
+      "name": "Marked Specimen Target",
+      "kind": "custom",
+      "refersTo": "specimen-target",
+      "description": "The exact page action receiving the editorial mark.",
+      "html": "<div class=\"ds-target\">Explore the collection <span aria-hidden=\"true\">→</span><svg viewBox=\"0 0 300 90\" fill=\"none\" aria-hidden=\"true\"><path pathLength=\"1\" d=\"M278 18C216 2 64 0 23 22C-4 38 8 72 47 79C101 90 269 90 287 61C309 30 269 6 232 9\"/></svg><b>1</b></div>",
+      "css": ".ds-target { position:relative; width:max-content; display:flex; align-items:center; gap:18px; margin:23px; padding:11px 15px; background:#244a40; color:#fbf8ef; font:10px Poppins, sans-serif; } .ds-target svg { position:absolute; width:calc(100% + 54px); height:calc(100% + 42px); inset:-21px -27px; overflow:visible; color:#b7432e; } .ds-target path { stroke:currentColor; stroke-width:2.5; stroke-linecap:round; } .ds-target b { position:absolute; right:-31px; top:-27px; width:24px; height:24px; display:grid; place-items:center; border-radius:50%; background:#b7432e; color:#fff8ea; font:11px Poppins, sans-serif; } .ds-target:focus-within { outline:3px solid #b94932; outline-offset:5px; }"
+    },
+    {
+      "name": "Annotation Note",
+      "kind": "card",
+      "refersTo": "annotation-note",
+      "description": "The comment and target held together before transfer.",
+      "html": "<article class=\"ds-note\"><span>01 / ANNOTATION</span><p>“Give the main action<br>more breathing room.”</p><code>button · Explore the collection</code><footer>✓ &nbsp; Target + intention, together</footer></article>",
+      "css": ".ds-note { width:310px; padding:24px 26px 0; background:#fbf5e8; color:#172b29; box-shadow:0 14px 40px #38302424; transform:rotate(-3deg); } .ds-note span,.ds-note code { color:#9a3d2b; font:10px 'IBM Plex Mono', monospace; } .ds-note code { color:#172b29; font-size:9px; } .ds-note p { margin:14px 0; font:19px/1.6 Literata, serif; } .ds-note footer { margin-top:18px; padding:12px 0; border-top:1px solid #d4ccba; font:9px Poppins, sans-serif; } .ds-note:hover { transform:rotate(0); } .ds-note:focus-within { outline:3px solid #b94932; outline-offset:5px; }"
+    },
+    {
+      "name": "Queue Ledger",
+      "kind": "card",
+      "refersTo": "queue-ledger",
+      "description": "The retained Annotation rendered as agent-ready work.",
+      "html": "<article class=\"ds-queue\"><header><span>Waypoint / local Queue</span><span>01 retained</span></header><div class=\"ds-record\"><b>01</b><div><small>OPEN</small><h3>Give the main action<br>more breathing room.</h3><code>field-notes · button</code></div></div><dl><div><dt>Target</dt><dd>Explore the collection</dd></div><div><dt>Context</dt><dd>Page + element + comment</dd></div><div><dt>Next</dt><dd>Coding agent →</dd></div></dl><em>A clear beginning for the work ahead.</em></article>",
+      "css": ".ds-queue { width:min(540px, 90vw); padding:25px 30px; background:#173b37; color:#f1eee2; box-shadow:0 24px 60px #172b292d; } .ds-queue header { display:flex; justify-content:space-between; gap:10px; padding-bottom:20px; border-bottom:1px solid #67877b; font:10px 'IBM Plex Mono', monospace; } .ds-record { display:flex; gap:20px; padding-top:26px; } .ds-record>b { color:#c7b586; font:35px/1 Literata, serif; } .ds-record small,.ds-record code { color:#c3ded0; font:10px 'IBM Plex Mono', monospace; } .ds-record h3 { margin:8px 0 12px; font:400 27px/1.5 Literata, serif; } .ds-queue dl { margin:28px 0 20px; font:10px Poppins, sans-serif; } .ds-queue dl>div { display:flex; justify-content:space-between; gap:12px; padding:13px 0; border-top:1px solid #537369; } .ds-queue dd { margin:0; } .ds-queue em { font:italic 12px Literata, serif; } .ds-queue:focus-within { outline:3px solid #b94932; outline-offset:5px; }"
+    },
+    {
+      "name": "Persistent Mobile Control",
+      "kind": "button",
+      "refersTo": "film-action",
+      "description": "The narrow-screen continuation action kept reachable over the film.",
+      "html": "<button class=\"ds-mobile-control\"><span aria-hidden=\"true\">▶</span> Carry it to Queue</button>",
+      "css": ".ds-mobile-control { min-height:48px; width:min(358px, calc(100vw - 32px)); display:flex; justify-content:center; align-items:center; gap:12px; padding:0 16px; border:0; border-radius:0; background:#173b37; color:#fff8ec; box-shadow:0 5px 24px #172b2930; font:13px Poppins, sans-serif; } .ds-mobile-control:hover { box-shadow:inset 0 -2px #b7432e, 0 5px 24px #172b2930; } .ds-mobile-control:focus-visible { outline:3px solid #b94932; outline-offset:5px; } .ds-mobile-control:active { background:#24544d; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Marked Page",
+    "overview": "This isolated lab inherits Waypoint's Atlantic Chartroom type roles and turns them into a playable paper edit. Driftwood paper is the desk, a tilted specimen is the observed page, Signal Rust makes the mark, and Deep Ocean receives the same note as a retained Queue record. The visual proof is continuity: the note visibly travels and becomes operational evidence without changing identity.\n\nTheatre.js is the edit authority. Its source-authored 16-second score drives page pose, chart aperture, mark, note, transfer, handoff, Queue, and record reveal through CSS custom properties. The film pauses at Annotation and Queue, while scrub, pace, skip, replay, sound, and readable controls expose the composition rather than hiding it.",
+    "keyCharacteristics": [
+      "One continuous paper specimen moves from observation to retained work.",
+      "Poppins constructs the interface, Literata carries the human story, and IBM Plex Mono identifies operational context.",
+      "Flat editorial controls and ruled ledgers sit over a restrained, inherited chart plate.",
+      "Every animated chapter has a readable, silent, reduced-motion, and failure-tolerant path."
+    ],
+    "rules": [
+      { "name": "The Signal Has a Job Rule", "body": "Rust marks human intervention, Verdigris carries the transfer, and Brass confirms retention; none becomes a general surface fill.", "section": "colors" },
+      { "name": "The Three Jobs Rule", "body": "Sans constructs, serif narrates, and mono verifies. The specimen's tiny type is illustrative scale, not a reusable reading role.", "section": "typography" },
+      { "name": "The Reachable Playback Rule", "body": "On narrow screens, the current chapter action persists above the viewport edge; it uses the same play state and destination logic as the main transport.", "section": "layout" },
+      { "name": "The Paper Owns Depth Rule", "body": "Shadows express physical separation in the edit; flat controls and rules remain flat.", "section": "elevation" },
+      { "name": "The One Score Rule", "body": "Theatre owns all composition channels and checkpoints; React owns lifecycle, preferences, and semantic chapter state; CSS renders the values.", "section": "components" }
+    ],
+    "dos": [
+      "Do preserve the same comment and target as they move from marked page to Annotation note to Queue record.",
+      "Do keep sound optional and synchronize the single narration element to Theatre position, pause, seek, visibility, and disposal.",
+      "Do resolve reduced motion to stable chapters and keep the complete story readable without animation.",
+      "Do retain provenance when reusing the chart plate or narration: the plate comes from the Route A asset ledger, and the voice is the authorized Spuds Oxley ElevenLabs take recorded in the canonical notebook."
+    ],
+    "donts": [
+      "Don't animate the handoff with a second timing owner or infer chapters from CSS transitions.",
+      "Don't hide the next checkpoint action below moving content on mobile.",
+      "Don't promote specimen-page microtype to product reading typography.",
+      "Don't treat the reused chart plate or narration as newly generated, rights-cleared, or finally accepted media."
+    ]
+  }
+}

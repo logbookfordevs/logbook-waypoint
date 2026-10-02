@@ -1,0 +1,8 @@
+{
+  "runTasks": 45236,
+  "longTasks": 3,
+  "maxTaskMs": 119.708,
+  "animationCallbacks": 2155,
+  "maxAnimationCallbackMs": 0.699,
+  "note": "Development Chromium profile includes framework/devtool work; not a physical-device frame budget."
+}
