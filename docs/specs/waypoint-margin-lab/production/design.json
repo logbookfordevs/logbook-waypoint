@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-19T00:00:00-03:00",
+  "title": "Design System: Waypoint Margin Lab",
+  "extensions": {
+    "colorMeta": {
+      "driftwood-paper": { "role": "neutral", "displayName": "Driftwood Paper", "canonical": "#e9e1d3", "tonalRamp": ["oklch(15% 0.025 80)", "oklch(27% 0.025 80)", "oklch(39% 0.025 80)", "oklch(51% 0.025 80)", "oklch(63% 0.025 80)", "oklch(75% 0.025 80)", "oklch(87% 0.025 80)", "oklch(95% 0.025 80)"] },
+      "chart-ink": { "role": "neutral", "displayName": "Chart Ink", "canonical": "#172c29", "tonalRamp": ["oklch(15% 0.025 175)", "oklch(27% 0.025 175)", "oklch(39% 0.025 175)", "oklch(51% 0.025 175)", "oklch(63% 0.025 175)", "oklch(75% 0.025 175)", "oklch(87% 0.025 175)", "oklch(95% 0.025 175)"] },
+      "annotation-rust": { "role": "primary", "displayName": "Annotation Rust", "canonical": "#ab3e29", "tonalRamp": ["oklch(15% 0.13 35)", "oklch(27% 0.13 35)", "oklch(39% 0.13 35)", "oklch(51% 0.13 35)", "oklch(63% 0.13 35)", "oklch(75% 0.13 35)", "oklch(87% 0.13 35)", "oklch(95% 0.13 35)"] },
+      "specimen-paper": { "role": "neutral", "displayName": "Specimen Paper", "canonical": "#f8f3e9", "tonalRamp": ["oklch(15% 0.018 80)", "oklch(27% 0.018 80)", "oklch(39% 0.018 80)", "oklch(51% 0.018 80)", "oklch(63% 0.018 80)", "oklch(75% 0.018 80)", "oklch(87% 0.018 80)", "oklch(97% 0.018 80)"] },
+      "annotation-paper": { "role": "neutral", "displayName": "Annotation Paper", "canonical": "#fff9ed", "tonalRamp": ["oklch(15% 0.018 80)", "oklch(27% 0.018 80)", "oklch(39% 0.018 80)", "oklch(51% 0.018 80)", "oklch(63% 0.018 80)", "oklch(75% 0.018 80)", "oklch(87% 0.018 80)", "oklch(98% 0.018 80)"] },
+      "queue-ocean": { "role": "secondary", "displayName": "Queue Ocean", "canonical": "#102c2c", "tonalRamp": ["oklch(15% 0.035 185)", "oklch(27% 0.035 185)", "oklch(39% 0.035 185)", "oklch(51% 0.035 185)", "oklch(63% 0.035 185)", "oklch(75% 0.035 185)", "oklch(87% 0.035 185)", "oklch(95% 0.035 185)"] },
+      "queue-ink": { "role": "neutral", "displayName": "Queue Ink", "canonical": "#f7efdf", "tonalRamp": ["oklch(15% 0.02 80)", "oklch(27% 0.02 80)", "oklch(39% 0.02 80)", "oklch(51% 0.02 80)", "oklch(63% 0.02 80)", "oklch(75% 0.02 80)", "oklch(87% 0.02 80)", "oklch(96% 0.02 80)"] },
+      "queue-muted": { "role": "neutral", "displayName": "Queue Muted", "canonical": "#c2d2c9", "tonalRamp": ["oklch(15% 0.025 165)", "oklch(27% 0.025 165)", "oklch(39% 0.025 165)", "oklch(51% 0.025 165)", "oklch(63% 0.025 165)", "oklch(75% 0.025 165)", "oklch(87% 0.025 165)", "oklch(95% 0.025 165)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Editorial Display", "purpose": "Large stage copy and the specimen target." },
+      "editorial": { "displayName": "Authored Editorial", "purpose": "Explanatory prose and the human voice." },
+      "annotation": { "displayName": "Retained Thought", "purpose": "Visitor-authored Annotation text before and after Queue transfer." },
+      "evidence": { "displayName": "Context Evidence", "purpose": "Target, path, lifecycle, page metadata, and demo status." }
+    },
+    "shadows": [
+      { "name": "specimen-paper", "value": "0 25px 40px -16px #403a2c45", "purpose": "Lifts the tilted example page from the Driftwood field." },
+      { "name": "composer-paper", "value": "0 20px 50px -15px #453c3055", "purpose": "Places the active writing surface above the specimen." },
+      { "name": "annotation-slip", "value": "0 20px 35px -20px #25302c66", "purpose": "Keeps the retained note legible as a physical slip in both stages." }
+    ],
+    "motion": [
+      { "name": "stage-handoff", "value": "0.85s cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default finite Motion transition across the four visitor-driven stages." },
+      { "name": "copy-change", "value": "0.35s", "purpose": "Short stage-copy entrance and exit." },
+      { "name": "still-mode", "value": "0s", "purpose": "Reduced-motion and Readable-mode resolution." }
+    ],
+    "breakpoints": [
+      { "name": "wide-stage", "value": "1600px" },
+      { "name": "compact-type", "value": "1000px" },
+      { "name": "vertical-stage", "value": "700px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Documentation Action",
+      "kind": "button",
+      "refersTo": "install-action",
+      "description": "The compact route from the lab to supported setup documentation.",
+      "html": "<a class=\"ds-install\" href=\"#\">Get Waypoint <span aria-hidden=\"true\">→</span></a>",
+      "css": ".ds-install { display:inline-flex; align-items:center; gap:22px; padding:13px 19px; border-radius:3px; background:#172c29; color:#f8f3e9; font:12px Poppins,sans-serif; text-decoration:none; } .ds-install:hover { background:#294840; } .ds-install:focus-visible { outline:3px solid #ab3e29; outline-offset:5px; }"
+    },
+    {
+      "name": "Narrative Action",
+      "kind": "button",
+      "refersTo": "annotation-action",
+      "description": "Advances the visitor-driven Annotation and Queue story.",
+      "html": "<button class=\"ds-narrative\">Send to the Queue <span aria-hidden=\"true\">→</span></button>",
+      "css": ".ds-narrative { display:inline-flex; align-items:center; gap:26px; padding:12px 0; border:0; border-bottom:1px solid #ab3e29; background:transparent; color:#ab3e29; font:600 14px Poppins,sans-serif; } .ds-narrative span { transition:transform .2s ease; } .ds-narrative:hover span { transform:translateX(5px); } .ds-narrative:focus-visible { outline:3px solid #ab3e29; outline-offset:5px; }"
+    },
+    {
+      "name": "Annotation Composer",
+      "kind": "input",
+      "refersTo": "annotation-composer",
+      "description": "Captures a visitor-authored note while keeping target evidence visible.",
+      "html": "<form class=\"ds-compose\"><label for=\"ds-note\">What should change?</label><textarea id=\"ds-note\" rows=\"3\">Give this heading a little more room to breathe.</textarea><div><code>Target: h1 · /studio</code><button>Pin Annotation</button></div></form>",
+      "css": ".ds-compose { width:420px; max-width:100%; padding:23px; background:#f9f4ea; color:#172c29; box-shadow:0 20px 50px -15px #453c3055; } .ds-compose label { display:block; margin-bottom:13px; color:#ab3e29; font:600 13px Poppins,sans-serif; } .ds-compose textarea { box-sizing:border-box; width:100%; padding:10px; resize:vertical; border:1px solid #b9b4a5; border-radius:0; background:#eee8dc; color:#172c29; caret-color:#ab3e29; font:16px/1.5 Literata,serif; } .ds-compose > div { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:16px; } .ds-compose code { font:9px 'IBM Plex Mono',monospace; } .ds-compose button { padding:11px; border:0; border-radius:0; background:#ab3e29; color:#fff8ed; font:11px Poppins,sans-serif; } .ds-compose :focus-visible { outline:3px solid #ab3e29; outline-offset:5px; }"
+    },
+    {
+      "name": "Retained Annotation",
+      "kind": "card",
+      "refersTo": "retained-annotation",
+      "description": "The same authored note and element context shown before and after Queue transfer.",
+      "html": "<article class=\"ds-note\"><header><span><b>1</b> ANNOTATION</span><span>QUEUED</span></header><p>Give this heading a little more room to breathe.</p><footer><span>h1</span><span>/studio</span><span>Element context retained</span></footer></article>",
+      "css": ".ds-note { max-width:420px; max-height:230px; overflow-y:auto; padding:24px; background:#fff9ed; color:#172c29; box-shadow:0 20px 35px -20px #25302c66; scrollbar-color:#ab3e29 #eee8dc; scrollbar-width:thin; } .ds-note header { display:flex; justify-content:space-between; gap:10px; color:#ab3e29; font:10px 'IBM Plex Mono',monospace; } .ds-note b { display:inline-grid; place-items:center; width:23px; height:23px; margin-right:6px; border:1px solid currentColor; border-radius:50%; } .ds-note p { margin:18px 0; overflow-wrap:anywhere; font:20px/1.55 Literata,serif; } .ds-note footer { display:flex; flex-wrap:wrap; gap:12px; padding-top:13px; border-top:1px solid #d3ccbd; font:9px 'IBM Plex Mono',monospace; } .ds-note:focus-visible { outline:3px solid #ab3e29; outline-offset:5px; }"
+    },
+    {
+      "name": "Queue Docket",
+      "kind": "card",
+      "refersTo": "queue-docket",
+      "description": "The dark local destination behind the retained Annotation.",
+      "html": "<section class=\"ds-docket\"><header><span>LOCAL QUEUE</span><span>1 ITEM</span></header><h2>Nothing<br>lost in transit.</h2><p>The context stays with the work.</p><footer><span aria-hidden=\"true\"></span>Next stop: coding agent →</footer></section>",
+      "css": ".ds-docket { position:relative; min-height:300px; padding:30px; background:#102c2c; color:#f7efdf; } .ds-docket header { display:flex; justify-content:space-between; color:#bfd5cb; font:10px 'IBM Plex Mono',monospace; } .ds-docket h2 { margin:27px 0 10px; font:400 39px/1.08 Literata,serif; letter-spacing:-.025em; } .ds-docket p { color:#c2d2c9; font:11px Poppins,sans-serif; } .ds-docket footer { position:absolute; bottom:22px; left:30px; display:flex; align-items:center; gap:10px; font:10px Poppins,sans-serif; } .ds-docket footer span { width:7px; height:7px; border:1px solid #a5cbbd; border-radius:50%; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Margin Becomes the Message",
+    "overview": "This isolated alternate-universe lab turns an authored observation into visible work. An editorial spread and tilted specimen frame the target; rust brackets select it; the visitor's own note becomes a paper slip that crosses into a Deep Ocean docket without losing its text or element context.\n\nThis record is scoped to /labs/margin. It describes an experimental surface, not an approved change to the canonical Atlantic Chartroom system. Compared with the incumbent Ocean-led marketing world, the lab makes warm Driftwood Paper the principal field, gives display/editorial typography more dramatic scale and tilt, and uses one finite Motion-driven stage as the product explanation.\n\nEvidence is bounded. Saved review frames predate the final eyebrow removal and 230px queued-note cap. Source confirms both changes, but updated screenshots and visual scroll behavior remain unverified. The finish-review disposition remains fix: the procedural-record issue is resolved, eyebrow removal is only partially closed pending updated frames, the long-note cap is source-confirmed, motion was not independently reviewed, and this record does not claim full Impeccable procedural certification or a source-verifiable quality score.",
+    "keyCharacteristics": [
+      "Warm paper field, precise rust annotation marks, and a single dark Queue destination.",
+      "Poppins structure, Literata authored thought, and IBM Plex Mono retained evidence.",
+      "One visitor-driven story: select, write, pin, send, retain, then point toward a coding agent."
+    ],
+    "rules": [
+      { "name": "The Rust Means Annotation Rule", "body": "Use rust for authored selection, active journey state, and Annotation actions; do not turn it into a general background fill.", "section": "colors" },
+      { "name": "The Three Voices Rule", "body": "Poppins frames the scene, Literata carries human meaning, and mono proves what context survived.", "section": "typography" },
+      { "name": "The Same Note Crosses the Boundary Rule", "body": "The visitor's entered text and h1 · /studio context must remain visibly identical from pinned paper to queued record.", "section": "layout" }
+    ],
+    "dos": [
+      "Do preserve the authored causal chain: target selection → Annotation → Queue → coding-agent threshold.",
+      "Do keep visible focus, native controls, reduced-motion behavior, and the complete Readable-mode explanation.",
+      "Do label the theatre as an illustrative demo and keep the Queue local and inspectable."
+    ],
+    "donts": [
+      "Don't autoplay the story, capture scroll, or imply that the demonstration sends real work.",
+      "Don't extend this lab's paper-first editorial composition into the canonical system without a separate approval.",
+      "Don't treat the removed eyebrow copy as a reusable label pattern; it was a finish-review defect, not a lab token."
+    ]
+  }
+}
