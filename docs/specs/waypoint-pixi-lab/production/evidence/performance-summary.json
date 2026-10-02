@@ -1,0 +1,10 @@
+{
+  "animationCallbacks": 3506,
+  "maxAnimationCallbackMs": 233.565,
+  "tasksOver50ms": 6,
+  "maxTaskMs": 246.927,
+  "environment": "Local development Chromium, 1440x960, GPU canvas, 20fps recording active. Not physical-device frame-pacing proof.",
+  "p95AnimationCallbackMs": 0.612,
+  "p99AnimationCallbackMs": 0.771,
+  "worstFrameAttribution": "233.565ms callback includes 232.6ms CpuProfiler::StartProfiling instrumentation. Raw maximum is retained; not representative of normal rendering."
+}
