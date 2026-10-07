@@ -1,5 +1,5 @@
-import { InkRouteTracer } from '@/components/ink-route-tracer';
+import { InkMapJourney } from '@/components/ink-map-journey';
 
 export default function HomePage() {
-  return <InkRouteTracer />;
+  return <InkMapJourney />;
 }

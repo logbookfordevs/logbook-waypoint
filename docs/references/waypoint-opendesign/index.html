@@ -1,0 +1,1731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Waypoint — Route briefing</title>
+<meta name="description" content="Follow the ink from a note on your screen to finished work: annotate, queue, agent pick, check results.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Literata:opsz,wght@7..72,400;7..72,500&family=Poppins:wght@500;600&display=swap">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+
+:root {
+  --paper: #e9e5d8;
+  --surface: #f3f0e7;
+  --ink: #17201e;
+  --muted: #5d6964;
+  --border: #b9c0b7;
+  --control-border: #5d6964;
+  --action-bg: #102c2c;
+  --action-fg: #f4efde;
+  --action-hover: #173f5f;
+  --selected-bg: #102c2c;
+  --selected-fg: #f4efde;
+  --focus: #102c2c;
+  --code-bg: #102c2c;
+  --code-fg: #f4efde;
+  --verdigris: #3f8580;
+  --signal: #c94f35;
+  --brass: #bd9348;
+  --lantern: #f4efde;
+
+  --font-display: "Poppins", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Literata", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
+
+  --radius: 6px;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --dur-fast: 150ms;
+  --dur-in: 300ms;
+  --dur-out: 200ms;
+  --stagger: 40ms;
+
+  --shadow: 0 12px 32px color-mix(in srgb, var(--ink) 14%, transparent), 0 2px 6px color-mix(in srgb, var(--ink) 8%, transparent);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button { font: inherit; color: inherit; }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+#scene {
+  position: fixed; inset: 0;
+  width: 100vw; height: 100vh; height: 100dvh;
+  display: block;
+  z-index: 0;
+}
+
+#leader {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity var(--dur-out) var(--ease-in);
+}
+#leader.is-visible { opacity: 1; transition: opacity var(--dur-in) ease-out 120ms; }
+#leader line {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+}
+
+/* ——— top bar ——— */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 3;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s4);
+  padding: max(var(--s4), env(safe-area-inset-top)) max(var(--s5), env(safe-area-inset-right)) 0 max(var(--s5), env(safe-area-inset-left));
+  pointer-events: none;
+}
+.topbar > * { pointer-events: auto; }
+
+.wordmark {
+  margin: 0;
+  display: grid; gap: 0;
+}
+.wordmark-name {
+  display: block;
+  font: 600 22px/1.1 var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.wordmark-sub {
+  display: block;
+  font: 500 11px/1.4 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.rail {
+  list-style: none; margin: 0; padding: var(--s1);
+  display: flex; gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.rail-btn {
+  min-height: 44px;
+  padding: 0 var(--s3);
+  display: flex; align-items: center; gap: var(--s2);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--ink);
+  transition: background-color var(--dur-fast) ease-out;
+}
+.rail-num { font: 500 12px/1 var(--font-mono); letter-spacing: 0.04em; }
+.rail-name { font: 500 14px/1 var(--font-display); white-space: nowrap; }
+.rail-mark {
+  flex: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--control-border);
+}
+.rail-btn[data-state="done"] .rail-mark { background: var(--ink); border: 1.5px solid var(--ink); }
+.rail-btn[data-state="current"] { background: var(--selected-bg); color: var(--selected-fg); }
+.rail-btn[data-state="current"] .rail-mark {
+  border: 2px solid var(--selected-fg);
+  background: var(--selected-bg);
+  box-shadow: inset 0 0 0 2px var(--selected-bg), inset 0 0 0 6px var(--selected-fg);
+}
+.rail-btn[data-state="current"] .rail-name { font-weight: 600; }
+@media (hover: hover) {
+  .rail-btn:not([data-state="current"]):hover { background: var(--paper); }
+}
+
+/* ——— cards (balloons) ——— */
+.card {
+  position: fixed; left: 0; top: 0;
+  z-index: 2;
+  width: clamp(320px, 34vw, 440px);
+  max-width: calc(100vw - 32px);
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.985);
+  transform-origin: 0 50%;
+  transition:
+    opacity var(--dur-out) var(--ease-in),
+    transform var(--dur-out) var(--ease-in),
+    visibility 0s linear var(--dur-out);
+}
+.card.is-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur-in) ease-out,
+    transform var(--dur-in) var(--ease-out),
+    visibility 0s;
+}
+.card[data-tail="top"] { transform-origin: 50% 0; }
+
+.card::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  width: 14px; height: 14px;
+  background: var(--surface);
+  border: 0 solid var(--border);
+  transform: rotate(45deg);
+  display: none;
+}
+.card[data-tail="left"]::before {
+  display: block;
+  left: -8px;
+  top: calc(var(--tail, 40px) - 7px);
+  border-left-width: 1px;
+  border-bottom-width: 1px;
+}
+.card[data-tail="top"]::before {
+  display: block;
+  top: -8px;
+  left: calc(var(--tail, 40px) - 7px);
+  border-left-width: 1px;
+  border-top-width: 1px;
+}
+
+.card-scroll {
+  position: relative;
+  z-index: 2;
+  padding: var(--s5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--radius);
+}
+.card-scroll:focus-visible { outline-offset: -3px; }
+
+.card.is-visible .card-scroll > * {
+  animation: card-rise var(--dur-in) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger) + 60ms);
+}
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.card-label {
+  display: flex; align-items: center; gap: var(--s2);
+  margin: 0 0 var(--s3);
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.card-label::before {
+  content: "";
+  flex: none;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--signal);
+}
+
+.card h1 {
+  margin: 0 0 var(--s3);
+  font: 600 clamp(28px, 2.2vw + 12px, 42px)/1.12 var(--font-display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.card h2 {
+  margin: 0 0 var(--s3);
+  font: 600 clamp(21px, 1vw + 14px, 26px)/1.22 var(--font-display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.card p {
+  margin: 0 0 var(--s4);
+  font-size: 17px;
+  line-height: 1.65;
+  max-width: 62ch;
+  text-wrap: pretty;
+}
+.card-scroll > :last-child { margin-bottom: 0; }
+
+.card-hint {
+  padding-top: var(--s3);
+  border-top: 1px solid var(--border);
+  font: 400 13px/1.5 var(--font-mono) !important;
+  color: var(--muted);
+}
+
+.chips {
+  list-style: none; margin: 0; padding: 0;
+  --od-gap: 8px;
+}
+.chips li {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font: 500 12.5px/1.3 var(--font-mono);
+  white-space: nowrap;
+}
+
+.queue {
+  list-style: none; margin: 0; padding: 0;
+  border-top: 1px solid var(--border);
+}
+.queue li {
+  --od-gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.status-mark {
+  flex: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+}
+.status-mark[data-status="claimed"] { background: linear-gradient(90deg, var(--ink) 50%, transparent 50%); }
+.status-mark[data-status="resolved"] { background: var(--ink); }
+.q-status {
+  font: 500 11.5px/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.q-title { font: 400 15px/1.45 var(--font-body); }
+
+.code {
+  margin: 0;
+  padding: var(--s3) 14px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border-radius: var(--radius);
+  font: 400 13px/1.65 var(--font-mono);
+  white-space: pre;
+  overflow-x: auto;
+}
+.code .dim { color: var(--border); }
+
+.outcomes { margin: 0; display: grid; gap: 0; border-top: 1px solid var(--border); }
+.outcomes > div { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.outcomes dt {
+  font: 500 11.5px/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.outcomes dd { margin: 0; font: 400 15px/1.5 var(--font-body); }
+
+.route-summary {
+  list-style: none; margin: 0 0 var(--s5); padding: 0;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2);
+}
+.route-summary li {
+  display: flex; align-items: center; gap: var(--s2);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font: 500 14px/1.3 var(--font-display);
+}
+.route-summary .num { font: 500 12px/1 var(--font-mono); color: var(--muted); }
+
+.attribution { padding-top: var(--s4); border-top: 1px solid var(--border); display: grid; gap: 2px; }
+.attribution p { margin: 0; }
+.attribution .by { font: 500 15px/1.4 var(--font-display); }
+.attribution .motto { font: 400 13px/1.5 var(--font-mono); color: var(--muted); }
+
+.fallback-note { display: none; }
+
+/* ——— controls ——— */
+.controls {
+  position: fixed;
+  z-index: 3;
+  left: 50%;
+  bottom: max(var(--s4), env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(600px, calc(100vw - 32px));
+  display: flex; align-items: center; gap: var(--s3);
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.hint {
+  flex: 1 1 0; min-width: 0;
+  margin: 0;
+  text-align: center;
+  font: 400 12.5px/1.35 var(--font-mono);
+  color: var(--muted);
+}
+
+.btn {
+  min-height: 44px;
+  padding: 0 var(--s4);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font: 500 15px/1 var(--font-display);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) ease-out, transform var(--dur-fast) ease-out;
+}
+.btn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.btn-primary { background: var(--action-bg); color: var(--action-fg); min-width: 176px; }
+.btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--control-border); }
+@media (hover: hover) {
+  .btn-primary:not([aria-disabled="true"]):hover { background: var(--action-hover); }
+  .btn-secondary:not([aria-disabled="true"]):hover { background: var(--paper); }
+}
+.btn:not([aria-disabled="true"]):active { transform: translateY(1px); }
+.btn[aria-disabled="true"] { cursor: default; opacity: 0.55; }
+
+/* ——— compact / portrait ——— */
+@media (max-aspect-ratio: 9/10) {
+  .topbar { padding-left: max(var(--s4), env(safe-area-inset-left)); padding-right: max(var(--s4), env(safe-area-inset-right)); }
+  .wordmark-name { font-size: 19px; }
+  .rail-btn { padding: 0 10px; min-width: 44px; justify-content: center; gap: 6px; }
+  .rail-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .card { width: min(440px, calc(100vw - 32px)); }
+  .card-scroll { padding: 20px; }
+  .card p { font-size: 16px; }
+  .hint { display: none; }
+  .controls { justify-content: space-between; }
+  .btn-primary { flex: 1 1 auto; min-width: 0; }
+  .btn-secondary .btn-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .btn-secondary { padding: 0; width: 48px; }
+}
+@media (max-width: 360px) {
+  .wordmark-sub { display: none; }
+  .rail-num { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .card.is-visible { transform: none; transition: opacity var(--dur-out) linear, visibility 0s linear var(--dur-out); }
+  .card.is-visible { transition: opacity var(--dur-out) linear, visibility 0s; }
+  .card.is-visible .card-scroll > * { animation: none; }
+  .btn, .rail-btn { transition: none; }
+}
+
+/* ——— no WebGL: route told as notes ——— */
+body.no-webgl { overflow: auto; }
+.no-webgl #scene, .no-webgl #leader, .no-webgl .controls, .no-webgl .rail { display: none; }
+.no-webgl .topbar { position: static; padding-bottom: var(--s4); }
+.no-webgl main { padding: var(--s4) var(--s4) var(--s7); display: grid; gap: var(--s5); justify-items: center; }
+.no-webgl .fallback-note { display: block; max-width: 60ch; margin: 0; font: 400 14px/1.5 var(--font-mono); color: var(--muted); }
+.no-webgl .card { position: static; visibility: visible; opacity: 1; transform: none; width: min(560px, 100%); max-width: 100%; }
+.no-webgl .card::before { display: none; }
+</style>
+</head>
+<body>
+<canvas id="scene" aria-hidden="true"></canvas>
+<svg id="leader" aria-hidden="true" focusable="false"><line id="leader-line" x1="0" y1="0" x2="0" y2="0"/></svg>
+
+<header class="topbar">
+  <p class="wordmark"><span class="wordmark-name">Waypoint</span><span class="wordmark-sub">Route briefing</span></p>
+  <nav aria-label="Checkpoints">
+    <ol class="rail">
+      <li><button type="button" class="rail-btn" data-go="1" data-state="upcoming"><span class="rail-mark" aria-hidden="true"></span><span class="rail-num" aria-hidden="true">01</span><span class="rail-name">Annotate</span></button></li>
+      <li><button type="button" class="rail-btn" data-go="2" data-state="upcoming"><span class="rail-mark" aria-hidden="true"></span><span class="rail-num" aria-hidden="true">02</span><span class="rail-name">Queue</span></button></li>
+      <li><button type="button" class="rail-btn" data-go="3" data-state="upcoming"><span class="rail-mark" aria-hidden="true"></span><span class="rail-num" aria-hidden="true">03</span><span class="rail-name">Agent pick</span></button></li>
+      <li><button type="button" class="rail-btn" data-go="4" data-state="upcoming"><span class="rail-mark" aria-hidden="true"></span><span class="rail-num" aria-hidden="true">04</span><span class="rail-name">Check results</span></button></li>
+    </ol>
+  </nav>
+</header>
+
+<main id="stations">
+  <p class="fallback-note">This browser can't draw the animated chart, so the route is laid out as field notes.</p>
+
+  <section class="card" id="card-0" data-station="0" aria-labelledby="t0">
+    <div class="card-scroll" tabindex="0">
+      <p class="card-label">Field notes · Waypoint</p>
+      <h1 id="t0">Chart the route before the build.</h1>
+      <p>Follow the ink from a note on your screen to finished work. Four checkpoints, one route.</p>
+      <p class="card-hint" id="start-hint">Scroll, press ↓ or select Set course to follow the ink.</p>
+    </div>
+  </section>
+
+  <section class="card" id="card-1" data-station="1" aria-labelledby="t1">
+    <div class="card-scroll" tabindex="0">
+      <p class="card-label">Checkpoint 01 · Annotate</p>
+      <h2 id="t1">Pin the note where the problem lives.</h2>
+      <p>Click an element in your running app and write what should change. Waypoint keeps the element, a screenshot and the page route with your words, so nobody has to describe the spot twice.</p>
+      <ul class="chips od-cluster" aria-label="Kept with every note">
+        <li>element</li>
+        <li>screenshot</li>
+        <li>page route</li>
+        <li>your words</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card" id="card-2" data-station="2" aria-labelledby="t2">
+    <div class="card-scroll" tabindex="0">
+      <p class="card-label">Checkpoint 02 · Queue</p>
+      <h2 id="t2">Every note joins the manifest.</h2>
+      <p>Annotations line up per project as open work. See what is waiting, what is being worked and what is done, without leaving the page you are reviewing.</p>
+      <ul class="queue" aria-label="Example queue">
+        <li class="od-row"><span class="status-mark" data-status="open" aria-hidden="true"></span><span class="od-field od-fill"><span class="q-status">Open</span><span class="q-title">Button label wraps on mobile</span></span></li>
+        <li class="od-row"><span class="status-mark" data-status="claimed" aria-hidden="true"></span><span class="od-field od-fill"><span class="q-status">Claimed</span><span class="q-title">Empty state needs a next step</span></span></li>
+        <li class="od-row"><span class="status-mark" data-status="resolved" aria-hidden="true"></span><span class="od-field od-fill"><span class="q-status">Resolved</span><span class="q-title">Header contrast on the pricing page</span></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card" id="card-3" data-station="3" aria-labelledby="t3">
+    <div class="card-scroll" tabindex="0">
+      <p class="card-label">Checkpoint 03 · Agent pick</p>
+      <h2 id="t3">An agent claims the next bearing.</h2>
+      <p>Your coding agent reads the queue over MCP and claims a note, so no two agents work it twice. It gets the full context: the element, the screenshot and what you asked for.</p>
+      <pre class="code" aria-label="An agent claims a note"><code><span class="dim">&gt;</span> claim_annotation
+  note:   "Button label wraps"
+  status: open → claimed</code></pre>
+    </div>
+  </section>
+
+  <section class="card" id="card-4" data-station="4" aria-labelledby="t4">
+    <div class="card-scroll" tabindex="0">
+      <p class="card-label">Checkpoint 04 · Check results</p>
+      <h2 id="t4">Check the work against the note.</h2>
+      <p>When the agent resolves a note, it says what changed. Review it on the live page, keep it, or release it back to the queue. Unsure which way to go? Ask for variants.</p>
+      <dl class="outcomes">
+        <div class="od-field"><dt>Resolved</dt><dd>Review the change where the note was pinned.</dd></div>
+        <div class="od-field"><dt>Released</dt><dd>The note goes back to the queue for another pass.</dd></div>
+        <div class="od-field"><dt>Variants</dt><dd>Compare options and keep the one that fits.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="card" id="card-5" data-station="5" aria-labelledby="t5">
+    <div class="card-scroll" tabindex="0">
+      <p class="card-label">End of route</p>
+      <h2 id="t5">The route, charted.</h2>
+      <p>Annotate, queue, pick, check. Every note keeps its bearing from the first mark to the finished change.</p>
+      <ol class="route-summary" aria-label="Checkpoints on this route">
+        <li><span class="num">01</span><span>Annotate</span></li>
+        <li><span class="num">02</span><span>Queue</span></li>
+        <li><span class="num">03</span><span>Agent pick</span></li>
+        <li><span class="num">04</span><span>Check results</span></li>
+      </ol>
+      <div class="attribution">
+        <p class="by">A tool from Logbook for Devs</p>
+        <p class="motto">Charting the technical seas, one commit at a time.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="controls" aria-label="Journey controls">
+  <button type="button" class="btn btn-secondary" id="back" aria-disabled="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+    <span class="btn-text">Back</span>
+  </button>
+  <p class="hint" id="hint">The ink is landing…</p>
+  <button type="button" class="btn btn-primary" id="next">
+    <span id="next-label">Skip intro</span>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path id="next-path" d="M9 6l6 6-6 6"/></svg>
+  </button>
+</footer>
+
+<p id="announce" class="sr-only" aria-live="polite"></p>
+
+<script src="vendor/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const body = document.body;
+  const canvas = document.getElementById('scene');
+
+  if (!window.THREE) { body.classList.add('no-webgl'); return; }
+
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  } catch (err) {
+    body.classList.add('no-webgl');
+    return;
+  }
+
+  const css = getComputedStyle(document.documentElement);
+  const tok = name => css.getPropertyValue(name).trim();
+  const C = {
+    paper: tok('--paper'), surface: tok('--surface'), ink: tok('--ink'), muted: tok('--muted'),
+    border: tok('--border'), verdigris: tok('--verdigris'), signal: tok('--signal'),
+    brass: tok('--brass'), lantern: tok('--lantern')
+  };
+  const col = hex => new THREE.Color(hex);
+
+  const MOTION = { introEnd: 2.8, impact: 1.3, penSpeed: 560, legMin: 3.6, legMax: 6.2, finalPenShare: 0.66, reverse: 1.7, chain: 2.6, hop: 1.6 };
+  const CAM = { fov: 35, stopH: 860, compactStopW: 560, followH: 1120, compactFollowW: 760, stopTilt: 0.24, compactStopTilt: 0.2, followTilt: 0.5, compactFollowTilt: 0.42, introTilt: 0.64 };
+  const ROUTE = { step: 3, width: 5.4, compactWidth: 6.6, dash: 22, gap: 14, minPx: 2.2 };
+  const DROP = { height: 230, radius: 8 };
+  const MARKER = { size: 72, minPx: 44, anchor: 36, splatAnchor: 50, splatR: 46 };
+  const STOP_YAW = [0, -0.04, 0.035, -0.03, 0.04];
+  const TAN_HALF = Math.tan(THREE.MathUtils.degToRad(CAM.fov / 2));
+
+  const STATIONS = ['Departure', 'Annotate', 'Queue', 'Agent pick', 'Check results', 'End of route'];
+  const NEXT_LABELS = ['Set course', 'Next checkpoint', 'Next checkpoint', 'Next checkpoint', 'Full route', 'Replay'];
+  const ICON_NEXT = 'M9 6l6 6-6 6';
+  const ICON_REPLAY = 'M4 12a8 8 0 1 0 2.4-5.7M4 4.5V8h3.5';
+
+  const STOPS = [[0, 0], [1100, 500], [2100, -350], [3300, 300], [4200, -600], [5000, 100]];
+  const LEGS = [
+    [['curve', [[170, -130], [380, -70]]], ['zig', [760, 120], 6, 55], ['loop', 70, 1], ['curve', [[900, 380], [1010, 560], [1100, 500]]]],
+    [['curve', [[1250, 640], [1420, 560]]], ['loop', 60, -1], ['zig', [1800, -80], 8, 45], ['curve', [[1900, -300], [2020, -430], [2100, -350]]]],
+    [['curve', [[2250, -250], [2360, -430], [2520, -380]]], ['zig', [2900, -40], 5, 70], ['loop', 90, 1], ['curve', [[3100, 380], [3220, 200], [3300, 300]]]],
+    [['curve', [[3450, 420], [3560, 250]]], ['zig', [3850, -300], 7, 50], ['loop', 65, -1], ['curve', [[4050, -520], [4150, -730], [4200, -600]]]],
+    [['curve', [[4350, -500], [4480, -640]]], ['loop', 75, 1], ['zig', [4820, -80], 6, 45], ['curve', [[4920, 130], [5000, 100]]]]
+  ];
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const easeInOut = t => 0.5 - 0.5 * Math.cos(Math.PI * clamp(t, 0, 1));
+  const easeOutCubic = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const easeOutBack = t => { t = clamp(t, 0, 1); const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+  const penEase = t => 0.18 * t + 0.82 * easeInOut(t);
+  const nowSec = () => performance.now() / 1000;
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  /* ——— route geometry ——— */
+
+  function buildRawRoute() {
+    const rand = mulberry32(20260925);
+    const raw = [[STOPS[0][0], STOPS[0][1]]];
+    const legEnds = [0];
+    const cur = () => raw[raw.length - 1];
+    const heading = () => {
+      const b = cur();
+      const a = raw.length > 1 ? raw[raw.length - 2] : [b[0] - 1, b[1]];
+      const dx = b[0] - a[0], dy = b[1] - a[1];
+      const l = Math.hypot(dx, dy) || 1;
+      return [dx / l, dy / l];
+    };
+
+    for (const leg of LEGS) {
+      for (const piece of leg) {
+        const kind = piece[0];
+
+        if (kind === 'curve') {
+          const ctrl = [cur(), ...piece[1]].map(p => new THREE.Vector3(p[0], p[1], 0));
+          const curve = new THREE.CatmullRomCurve3(ctrl, false, 'centripetal');
+          const n = Math.max(12, Math.ceil(curve.getLength() / 5));
+          const pts = curve.getPoints(n);
+          for (let i = 1; i < pts.length; i++) raw.push([pts[i].x, pts[i].y]);
+        } else if (kind === 'zig') {
+          const to = piece[1], count = piece[2], amp = piece[3];
+          const a = cur();
+          const dx = to[0] - a[0], dy = to[1] - a[1];
+          const l = Math.hypot(dx, dy) || 1;
+          const nx = -dy / l, ny = dx / l;
+          for (let k = 1; k < count; k++) {
+            const t = k / count;
+            const off = amp * (k % 2 ? 1 : -1) * (0.75 + rand() * 0.5);
+            raw.push([a[0] + dx * t + nx * off, a[1] + dy * t + ny * off]);
+          }
+          raw.push([to[0], to[1]]);
+        } else if (kind === 'loop') {
+          const r = piece[1], dir = piece[2];
+          const p = cur();
+          const h = heading();
+          const nx = -h[1], ny = h[0];
+          const cx = p[0] + nx * r * dir, cy = p[1] + ny * r * dir;
+          const a0 = Math.atan2(p[1] - cy, p[0] - cx);
+          const steps = 72;
+          for (let k = 1; k <= steps; k++) {
+            const f = k / steps;
+            const a = a0 + dir * f * Math.PI * 2;
+            const rr = r * (1 + 0.08 * Math.sin(f * Math.PI));
+            raw.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+          }
+        }
+      }
+      legEnds.push(raw.length - 1);
+    }
+
+    const cum = new Float64Array(raw.length);
+    for (let i = 1; i < raw.length; i++) cum[i] = cum[i - 1] + Math.hypot(raw[i][0] - raw[i - 1][0], raw[i][1] - raw[i - 1][1]);
+    return { raw, stopS: legEnds.map(i => cum[i]), total: cum[raw.length - 1] };
+  }
+
+  function resample(pts, step) {
+    const out = [[pts[0][0], pts[0][1]]];
+    let need = step;
+    for (let i = 1; i < pts.length; i++) {
+      let ax = pts[i - 1][0], ay = pts[i - 1][1];
+      const bx = pts[i][0], by = pts[i][1];
+      let segLen = Math.hypot(bx - ax, by - ay);
+      while (segLen >= need) {
+        const t = need / segLen;
+        ax += (bx - ax) * t;
+        ay += (by - ay) * t;
+        out.push([ax, ay]);
+        segLen -= need;
+        need = step;
+      }
+      need -= segLen;
+    }
+    const last = pts[pts.length - 1];
+    const tail = out[out.length - 1];
+    if (Math.hypot(last[0] - tail[0], last[1] - tail[1]) > 0.01) out.push([last[0], last[1]]);
+    return out;
+  }
+
+  function smoothArr(arr, w) {
+    const n = arr.length, out = new Float32Array(n), pre = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) pre[i + 1] = pre[i] + arr[i];
+    for (let i = 0; i < n; i++) {
+      const a = Math.max(0, i - w), b = Math.min(n - 1, i + w);
+      out[i] = (pre[b + 1] - pre[a]) / (b - a + 1);
+    }
+    return out;
+  }
+
+  const built = buildRawRoute();
+  const S = built.stopS;
+  const TOTAL = built.total;
+  const samples = resample(built.raw, ROUTE.step);
+  const N = samples.length;
+  const PX = new Float32Array(N), PY = new Float32Array(N);
+  samples.forEach((p, i) => { PX[i] = p[0]; PY[i] = p[1]; });
+
+  const CAMX = smoothArr(PX, 90), CAMY = smoothArr(PY, 90);
+  const HX = smoothArr(PX, 220), HY = smoothArr(PY, 220);
+  const HEAD = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const a = Math.max(0, i - 50), b = Math.min(N - 1, i + 50);
+    HEAD[i] = Math.atan2(HY[b] - HY[a], HX[b] - HX[a]);
+  }
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < N; i++) {
+    minX = Math.min(minX, PX[i]); maxX = Math.max(maxX, PX[i]);
+    minY = Math.min(minY, PY[i]); maxY = Math.max(maxY, PY[i]);
+  }
+  const BOUNDS = { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, spanX: maxX - minX + 220, spanY: maxY - minY + 220 };
+
+  function sampleIndex(s) {
+    s = clamp(s, 0, TOTAL);
+    let i = Math.floor(s / ROUTE.step);
+    if (i >= N - 1) i = N - 2;
+    const span = i === N - 2 ? TOTAL - i * ROUTE.step : ROUTE.step;
+    return [i, span > 0 ? clamp((s - i * ROUTE.step) / span, 0, 1) : 0];
+  }
+  function sampleArr(arr, s) {
+    const [i, t] = sampleIndex(s);
+    return arr[i] + (arr[i + 1] - arr[i]) * t;
+  }
+  const pointAt = s => [sampleArr(PX, s), sampleArr(PY, s)];
+
+  const LEG_DUR = [];
+  for (let L = 0; L < 5; L++) {
+    const d = clamp((S[L + 1] - S[L]) / MOTION.penSpeed, MOTION.legMin, MOTION.legMax);
+    LEG_DUR.push(L === 4 ? d / MOTION.finalPenShare : d);
+  }
+
+  /* ——— scene ——— */
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(CAM.fov, 1, 1, 50000);
+  const projCam = new THREE.PerspectiveCamera(CAM.fov, 1, 1, 50000);
+  renderer.setClearColor(col(C.paper), 1);
+
+  const NOISE_GLSL = `
+    float hash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * .1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+    float noise(vec2 p) {
+      vec2 i = floor(p), f = fract(p);
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+    }
+    float fbm(vec2 p) {
+      float v = 0.0, a = 0.5;
+      for (int i = 0; i < 4; i++) { v += a * noise(p); p = p * 2.03 + vec2(17.1, 9.2); a *= 0.5; }
+      return v;
+    }
+  `;
+
+  const paperMat = new THREE.ShaderMaterial({
+    extensions: { derivatives: true },
+    depthTest: false,
+    depthWrite: false,
+    uniforms: {
+      uPaper: { value: col(C.paper) },
+      uGrid: { value: col(C.border) },
+      uInk: { value: col(C.ink) },
+      uContour: { value: col(C.verdigris) },
+      uMuted: { value: col(C.muted) },
+      uSplat: { value: new THREE.Vector4(0, 0, 0, 0) },
+      uDrop: { value: new THREE.Vector4(0, 0, 0, 0) },
+      uRes: { value: new THREE.Vector2(1, 1) }
+    },
+    vertexShader: `
+      varying vec2 vWorld;
+      void main() {
+        vec4 w = modelMatrix * vec4(position, 1.0);
+        vWorld = w.xy;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uPaper, uGrid, uInk, uContour, uMuted;
+      uniform vec4 uSplat, uDrop;
+      uniform vec2 uRes;
+      varying vec2 vWorld;
+      ${NOISE_GLSL}
+
+      float gridLine(float coord, float spacing) {
+        float c = coord / spacing;
+        float fw = fwidth(c);
+        float d = abs(fract(c + 0.5) - 0.5);
+        float line = 1.0 - smoothstep(0.0, fw * 1.2, d);
+        return line * (1.0 - smoothstep(0.08, 0.25, fw));
+      }
+
+      void main() {
+        vec2 p = vWorld;
+        vec3 col = uPaper;
+
+        float mottle = fbm(p * 0.0016 + 3.1);
+        col *= 0.975 + 0.05 * mottle;
+
+        vec2 gp = mod(p, 640.0);
+        float grain = noise(gp * 0.85) * 0.6 + noise(gp * 2.3) * 0.4;
+        col *= 0.985 + 0.03 * grain;
+        float fib = noise(vec2(gp.x * 0.03, gp.y * 0.45));
+        col *= 1.0 - 0.014 * smoothstep(0.6, 0.95, fib);
+
+        float v = fbm(p * 0.00075 + vec2(4.0, 1.7)) * 9.0;
+        float fwv = fwidth(v);
+        float dv = abs(fract(v + 0.5) - 0.5);
+        float contour = (1.0 - smoothstep(0.0, fwv * 1.4, dv)) * (1.0 - smoothstep(0.05, 0.2, fwv));
+        col = mix(col, uContour, contour * 0.22);
+
+        float minor = max(gridLine(p.x, 100.0), gridLine(p.y, 100.0));
+        float major = max(gridLine(p.x, 500.0), gridLine(p.y, 500.0));
+        col = mix(col, uGrid, minor * 0.28);
+        col = mix(col, uGrid, major * 0.55);
+
+        if (uDrop.w > 0.0) {
+          float r = 9.0 + uDrop.z * 0.07;
+          float d = length(p - uDrop.xy - vec2(uDrop.z * 0.12, -uDrop.z * 0.18));
+          float sh = 1.0 - smoothstep(r * 0.35, r, d);
+          col = mix(col, uMuted, sh * uDrop.w * (0.55 - 0.35 * clamp(uDrop.z / 230.0, 0.0, 1.0)));
+        }
+
+        if (uSplat.z > 0.0) {
+          vec2 q = p - uSplat.xy;
+          float d = length(q);
+          vec2 dir = q / max(d, 0.001);
+          float R = uSplat.z;
+          float wob = noise(dir * 2.5 + 5.0) * 0.18 + noise(dir * 7.0 + 11.0) * 0.08;
+          float edgeR = R * (0.84 + wob);
+          float body = 1.0 - smoothstep(edgeR - 1.5, edgeR + 0.5, d);
+
+          float sat = 0.0;
+          for (int i = 0; i < 9; i++) {
+            float fi = float(i);
+            float a = hash(vec2(fi, 3.7)) * 6.2831;
+            float dist = R * (1.25 + hash(vec2(fi, 8.1)) * 1.1) * (0.6 + 0.4 * uSplat.w);
+            float rr = R * (0.04 + hash(vec2(fi, 1.9)) * 0.11);
+            vec2 c = vec2(cos(a), sin(a)) * dist;
+            sat = max(sat, 1.0 - smoothstep(rr - 1.0, rr + 0.5, length(q - c)));
+          }
+
+          float halo = (1.0 - smoothstep(edgeR, edgeR + R * 0.4 * uSplat.w + 2.0, d)) * (0.5 + 0.5 * fbm(p * 0.08));
+          float ring = smoothstep(edgeR - 6.0, edgeR - 1.0, d) * body;
+          col = mix(col, uMuted, halo * 0.35 * uSplat.w * (1.0 - body));
+          col = mix(col, uInk, max(body * (0.9 + 0.1 * ring), sat) * 0.97);
+        }
+
+        vec2 sc = gl_FragCoord.xy / uRes - 0.5;
+        float vig = smoothstep(0.35, 0.85, length(sc * vec2(1.0, 0.9)));
+        col = mix(col, uGrid, vig * 0.18);
+
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `
+  });
+  const paper = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000), paperMat);
+  paper.position.set(2500, 0, 0);
+  paper.renderOrder = 0;
+  scene.add(paper);
+
+  function buildRibbon() {
+    const pos = new Float32Array(N * 2 * 3);
+    const nrm = new Float32Array(N * 2 * 2);
+    const side = new Float32Array(N * 2);
+    const dist = new Float32Array(N * 2);
+    for (let i = 0; i < N; i++) {
+      const a = Math.max(i - 1, 0), b = Math.min(i + 1, N - 1);
+      const tx = PX[b] - PX[a], ty = PY[b] - PY[a];
+      const l = Math.hypot(tx, ty) || 1;
+      const nx = -ty / l, ny = tx / l;
+      const d = i === N - 1 ? TOTAL : i * ROUTE.step;
+      for (let k = 0; k < 2; k++) {
+        const v = i * 2 + k;
+        pos[v * 3] = PX[i]; pos[v * 3 + 1] = PY[i]; pos[v * 3 + 2] = 0.4;
+        nrm[v * 2] = nx; nrm[v * 2 + 1] = ny;
+        side[v] = k === 0 ? -1 : 1;
+        dist[v] = d;
+      }
+    }
+    const idx = [];
+    for (let i = 0; i < N - 1; i++) {
+      const v = i * 2;
+      idx.push(v, v + 1, v + 2, v + 1, v + 3, v + 2);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('aNormal', new THREE.BufferAttribute(nrm, 2));
+    g.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
+    g.setAttribute('aDist', new THREE.BufferAttribute(dist, 1));
+    g.setIndex(idx);
+    return g;
+  }
+
+  const N1_GLSL = `
+    float hash1(float n) { return fract(sin(n) * 43758.5453); }
+    float n1(float x) { float i = floor(x), f = fract(x); return mix(hash1(i), hash1(i + 1.0), f * f * (3.0 - 2.0 * f)); }
+  `;
+
+  const routeMat = new THREE.ShaderMaterial({
+    transparent: true,
+    side: THREE.DoubleSide,
+    depthTest: false,
+    depthWrite: false,
+    uniforms: {
+      uInk: { value: col(C.ink) },
+      uProgress: { value: 0 },
+      uWidth: { value: ROUTE.width },
+      uDash: { value: ROUTE.dash },
+      uGap: { value: ROUTE.gap },
+      uFadeStart: { value: 1e9 },
+      uFadeAlpha: { value: 1 }
+    },
+    vertexShader: `
+      attribute vec2 aNormal;
+      attribute float aSide;
+      attribute float aDist;
+      uniform float uWidth;
+      varying float vDist;
+      varying float vAcross;
+      varying float vHalfW;
+      ${N1_GLSL}
+      void main() {
+        float w = uWidth * (0.82 + 0.36 * n1(aDist * 0.018));
+        vHalfW = w * 0.5;
+        vDist = aDist;
+        vAcross = aSide * (vHalfW + 1.0);
+        vec3 p = position + vec3(aNormal * vAcross, 0.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uInk;
+      uniform float uProgress, uDash, uGap, uFadeStart, uFadeAlpha;
+      varying float vDist;
+      varying float vAcross;
+      varying float vHalfW;
+      ${N1_GLSL}
+      void main() {
+        if (vDist > uProgress) discard;
+        float m = mod(vDist, uDash + uGap);
+        if (m > uDash) discard;
+        float hw = vHalfW;
+        float e = min(min(m, uDash - m), uProgress - vDist);
+        float d = e < hw ? length(vec2(hw - e, vAcross)) : abs(vAcross);
+        float rough = n1(vDist * 0.6 + sign(vAcross) * 37.0) * 0.9;
+        float a = 1.0 - smoothstep(hw - 1.0 - rough, hw + 0.3 - rough * 0.5, d);
+        float fade = vDist > uFadeStart ? uFadeAlpha : 1.0;
+        float alpha = a * fade * (0.88 + 0.12 * n1(vDist * 0.09));
+        if (alpha < 0.01) discard;
+        gl_FragColor = vec4(uInk, alpha);
+      }
+    `
+  });
+  const route = new THREE.Mesh(buildRibbon(), routeMat);
+  route.renderOrder = 2;
+  route.frustumCulled = false;
+  scene.add(route);
+
+  /* ink bead at the drawing tip, so the leading edge of the route reads while it moves */
+  const bead = new THREE.Mesh(
+    new THREE.CircleGeometry(1, 24),
+    new THREE.MeshBasicMaterial({ color: col(C.ink), side: THREE.DoubleSide, depthTest: false, depthWrite: false })
+  );
+  bead.renderOrder = 2;
+  bead.visible = false;
+  scene.add(bead);
+
+  const dropMat = new THREE.ShaderMaterial({
+    depthTest: false,
+    depthWrite: false,
+    uniforms: { uInk: { value: col(C.ink) }, uLantern: { value: col(C.lantern) } },
+    vertexShader: `
+      varying vec3 vN;
+      void main() { vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+    `,
+    fragmentShader: `
+      uniform vec3 uInk, uLantern;
+      varying vec3 vN;
+      void main() {
+        float l = clamp(dot(normalize(vN), normalize(vec3(-0.4, 0.5, 0.8))), 0.0, 1.0);
+        vec3 c = mix(uInk, uLantern, pow(l, 24.0) * 0.8);
+        gl_FragColor = vec4(c, 1.0);
+      }
+    `
+  });
+  const drop = new THREE.Mesh(new THREE.SphereGeometry(8, 24, 16), dropMat);
+  drop.renderOrder = 14;
+  drop.visible = false;
+  scene.add(drop);
+
+  /* chart marginalia and checkpoint markers (drawn once fonts are ready) */
+  const markers = [];
+  const MONO = '"IBM Plex Mono", SFMono-Regular, Consolas, monospace';
+
+  function canvasTexture(w, h, draw) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    draw(g, w, h);
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    return t;
+  }
+  function flatPlane(tex, w, h, order, opacity) {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, opacity: opacity === undefined ? 1 : opacity })
+    );
+    m.renderOrder = order;
+    return m;
+  }
+
+  function drawMarker(g, label, isEnd) {
+    g.translate(128, 128);
+    g.lineCap = 'round';
+    g.strokeStyle = C.ink;
+    g.lineWidth = 5;
+    for (let k = 0; k < 4; k++) {
+      g.save();
+      g.rotate(k * Math.PI / 2);
+      g.beginPath(); g.moveTo(0, -122); g.lineTo(0, -100); g.stroke();
+      g.restore();
+    }
+    g.beginPath(); g.arc(0, 0, 86, 0, Math.PI * 2);
+    g.fillStyle = C.surface; g.fill();
+    g.lineWidth = 10; g.strokeStyle = C.signal; g.stroke();
+    if (isEnd) {
+      g.beginPath(); g.arc(0, 0, 58, 0, Math.PI * 2);
+      g.lineWidth = 5; g.strokeStyle = C.ink; g.stroke();
+      g.beginPath(); g.arc(0, 0, 26, 0, Math.PI * 2);
+      g.fillStyle = C.ink; g.fill();
+    } else {
+      g.fillStyle = C.ink;
+      g.font = '500 76px ' + MONO;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(label, 0, 6);
+    }
+  }
+
+  function drawCompass(g) {
+    g.translate(256, 256);
+    g.strokeStyle = C.ink;
+    g.lineCap = 'round';
+    g.globalAlpha = 0.75;
+    g.lineWidth = 2;
+    [200, 176, 110].forEach(r => { g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.stroke(); });
+    for (let k = 0; k < 72; k++) {
+      const a = k / 72 * Math.PI * 2;
+      const len = k % 18 === 0 ? 30 : (k % 6 === 0 ? 18 : 9);
+      g.beginPath();
+      g.moveTo(Math.sin(a) * 200, -Math.cos(a) * 200);
+      g.lineTo(Math.sin(a) * (200 - len), -Math.cos(a) * (200 - len));
+      g.stroke();
+    }
+    for (let k = 0; k < 8; k++) {
+      const a = k / 8 * Math.PI * 2;
+      const len = k % 2 === 0 ? 150 : 90;
+      const wd = k % 2 === 0 ? 20 : 12;
+      for (let s = -1; s <= 1; s += 2) {
+        g.beginPath();
+        g.moveTo(Math.sin(a) * len, -Math.cos(a) * len);
+        g.lineTo(Math.sin(a + s * Math.PI / 2) * wd, -Math.cos(a + s * Math.PI / 2) * wd);
+        g.lineTo(0, 0);
+        g.closePath();
+        if (s < 0) { g.fillStyle = k % 2 === 0 ? C.ink : C.verdigris; g.fill(); }
+        else { g.lineWidth = 2; g.stroke(); }
+      }
+    }
+    g.globalAlpha = 0.9;
+    g.fillStyle = C.ink;
+    g.font = '500 28px ' + MONO;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    [['N', 0], ['E', 1], ['S', 2], ['W', 3]].forEach(([l, k]) => {
+      const a = k * Math.PI / 2;
+      g.fillText(l, Math.sin(a) * 228, -Math.cos(a) * 228);
+    });
+  }
+
+  function drawLabel(g, w, h, text, align) {
+    g.fillStyle = C.ink;
+    g.globalAlpha = 0.72;
+    g.font = '500 34px ' + MONO;
+    g.textBaseline = 'middle';
+    g.textAlign = align || 'center';
+    g.fillText(text, align === 'left' ? 8 : w / 2, h / 2);
+  }
+
+  function buildDecor() {
+    const compass = flatPlane(canvasTexture(512, 512, drawCompass), 460, 460, 1, 0.55);
+    compass.position.set(2650, 860, 0.1);
+    compass.rotation.z = 0.12;
+    scene.add(compass);
+
+    const title = flatPlane(canvasTexture(1024, 128, (g, w, h) => drawLabel(g, w, h, 'WAYPOINT · ROUTE BRIEFING · SHEET 01', 'left')), 512, 64, 1, 0.9);
+    title.position.set(116, -330, 0.1);
+    scene.add(title);
+
+    for (let i = 0; i < 5; i++) {
+      const a = STOPS[i], b = STOPS[i + 1];
+      const dx = b[0] - a[0], dy = b[1] - a[1];
+      const ang = Math.atan2(dy, dx);
+      const brg = Math.round(((90 - ang * 180 / Math.PI) % 360 + 360) % 360);
+      const text = 'LEG ' + String(i + 1).padStart(2, '0') + ' · BRG ' + String(brg).padStart(3, '0') + '°';
+      const lbl = flatPlane(canvasTexture(640, 80, (g, w, h) => drawLabel(g, w, h, text)), 320, 40, 1, 0.9);
+      const l = Math.hypot(dx, dy);
+      lbl.position.set((a[0] + b[0]) / 2 + (dy / l) * 250, (a[1] + b[1]) / 2 - (dx / l) * 250, 0.1);
+      lbl.rotation.z = ang;
+      scene.add(lbl);
+    }
+
+    for (let i = 1; i <= 5; i++) {
+      const tex = canvasTexture(256, 256, g => drawMarker(g, String(i).padStart(2, '0'), i === 5));
+      const m = flatPlane(tex, MARKER.size, MARKER.size, 3, 1);
+      m.position.set(STOPS[i][0], STOPS[i][1], 0.8);
+      m.visible = false;
+      scene.add(m);
+      markers[i] = { mesh: m, on: false, t0: 0 };
+    }
+  }
+
+  const fontWait = document.fonts && document.fonts.load
+    ? Promise.all([document.fonts.load('500 40px "IBM Plex Mono"'), document.fonts.ready]).catch(() => null)
+    : Promise.resolve();
+  Promise.race([fontWait, new Promise(r => setTimeout(r, 1800))]).then(buildDecor);
+
+  /* ——— camera ——— */
+
+  let VW = innerWidth, VH = innerHeight;
+  const isCompact = () => VW / VH < 0.9;
+
+  function frameAt(ax, ay, fx, fy, h, tilt, yaw) {
+    const w = h * (VW / VH);
+    const Rx = Math.cos(yaw), Ry = Math.sin(yaw);
+    const Ux = -Math.sin(yaw), Uy = Math.cos(yaw);
+    const ox = (fx - 0.5) * w, oy = (0.5 - fy) * h;
+    return { tx: ax - Rx * ox - Ux * oy, ty: ay - Ry * ox - Uy * oy, h, tilt, yaw };
+  }
+
+  function stopCam(i) {
+    const compact = isCompact();
+    const h = compact ? CAM.compactStopW / (VW / VH) : CAM.stopH;
+    return frameAt(STOPS[i][0], STOPS[i][1], compact ? 0.5 : 0.32, compact ? 0.27 : 0.52, h, compact ? CAM.compactStopTilt : CAM.stopTilt, STOP_YAW[i]);
+  }
+
+  function overviewCam() {
+    const aspect = VW / VH;
+    if (isCompact()) {
+      const h = Math.max(BOUNDS.spanX / 0.52, BOUNDS.spanY / (0.9 * aspect));
+      return frameAt(BOUNDS.cx, BOUNDS.cy, 0.5, 0.33, h, 0.1, -Math.PI / 2);
+    }
+    const h = Math.max(BOUNDS.spanY / 0.62, BOUNDS.spanX / (0.54 * aspect));
+    return frameAt(BOUNDS.cx, BOUNDS.cy, 0.66, 0.5, h, 0.1, 0);
+  }
+
+  function introCam() {
+    const compact = isCompact();
+    return { tx: 0, ty: 90, h: compact ? 520 / (VW / VH) : 560, tilt: CAM.introTilt, yaw: -0.12 };
+  }
+
+  function followCam(s, q) {
+    const compact = isCompact();
+    const la = s + (compact ? 90 : 170);
+    const hd = clamp(sampleArr(HEAD, s), -1.1, 1.1);
+    const base = compact ? CAM.compactFollowW / (VW / VH) : CAM.followH;
+    return {
+      tx: sampleArr(CAMX, la),
+      ty: sampleArr(CAMY, la),
+      h: base * (1 + 0.16 * Math.sin(Math.PI * q)),
+      tilt: compact ? CAM.compactFollowTilt : CAM.followTilt,
+      yaw: hd * 0.3
+    };
+  }
+
+  function mixState(a, b, t) {
+    return {
+      tx: lerp(a.tx, b.tx, t),
+      ty: lerp(a.ty, b.ty, t),
+      h: Math.exp(lerp(Math.log(a.h), Math.log(b.h), t)),
+      tilt: lerp(a.tilt, b.tilt, t),
+      yaw: lerp(a.yaw, b.yaw, t)
+    };
+  }
+
+  function legS(L, q) {
+    const qq = L === 4 ? Math.min(1, q / MOTION.finalPenShare) : q;
+    return lerp(S[L], S[L + 1], penEase(qq));
+  }
+
+  function legCam(L, q) {
+    const A = stopCam(L);
+    const B = L === 4 ? overviewCam() : stopCam(L + 1);
+    const F = followCam(legS(L, q), q);
+    const wF = smoothstep(0, 0.24, q);
+    const wB = smoothstep(L === 4 ? 0.58 : 0.74, 1, q);
+    return mixState(mixState(A, F, wF), B, wB);
+  }
+
+  function addDrift(st, t) {
+    const k = st.h / CAM.stopH;
+    st.tx += (Math.sin(t * 0.31) * 3.2 + Math.sin(t * 0.83 + 1.3) * 1.4) * k;
+    st.ty += (Math.cos(t * 0.27) * 3.0 + Math.sin(t * 0.61 + 0.4) * 1.2) * k;
+    st.yaw += Math.sin(t * 0.19) * 0.004;
+  }
+
+  function applyCam(cam, st) {
+    const d = st.h / (2 * TAN_HALF);
+    const Ux = -Math.sin(st.yaw), Uy = Math.cos(st.yaw);
+    const back = d * Math.sin(st.tilt);
+    cam.position.set(st.tx - Ux * back, st.ty - Uy * back, d * Math.cos(st.tilt));
+    cam.up.set(Ux, Uy, 0);
+    cam.lookAt(st.tx, st.ty, 0);
+    cam.near = Math.max(1, d * 0.02);
+    cam.far = d * 8 + 2000;
+    cam.updateProjectionMatrix();
+    cam.updateMatrixWorld();
+  }
+
+  const tmpV = new THREE.Vector3();
+  function projectWith(cam, x, y) {
+    tmpV.set(x, y, 0).project(cam);
+    return { x: (tmpV.x + 1) / 2 * VW, y: (1 - tmpV.y) / 2 * VH };
+  }
+
+  /* ——— DOM ——— */
+
+  const cards = [0, 1, 2, 3, 4, 5].map(i => document.getElementById('card-' + i));
+  const leader = document.getElementById('leader');
+  const leaderLine = document.getElementById('leader-line');
+  const topbar = document.querySelector('.topbar');
+  const controls = document.querySelector('.controls');
+  const nextBtn = document.getElementById('next');
+  const nextLabel = document.getElementById('next-label');
+  const nextPath = document.getElementById('next-path');
+  const backBtn = document.getElementById('back');
+  const hint = document.getElementById('hint');
+  const startHint = document.getElementById('start-hint');
+  const announcer = document.getElementById('announce');
+  const railBtns = Array.from(document.querySelectorAll('.rail-btn'));
+  const mq = matchMedia('(prefers-reduced-motion: reduce)');
+
+  cards.forEach(card => {
+    card.setAttribute('inert', '');
+    card.setAttribute('aria-hidden', 'true');
+    Array.from(card.querySelector('.card-scroll').children).forEach((el, i) => el.style.setProperty('--i', i));
+  });
+
+  /* ——— journey state ——— */
+
+  let mode = 'intro';
+  let station = 0;
+  let leg = null;
+  let pendingTarget = null;
+  let introT0 = nowSec();
+  let progress = 0;
+  let fadeT0 = -1;
+  let reduceMotion = mq.matches;
+  let visibleCard = -1;
+  let leaderStart = null;
+  let needsResize = true;
+  let requireQuiet = false;
+  let lastWheelT = 0;
+  let wheelAcc = 0;
+
+  function placeCard(i) {
+    const card = cards[i];
+    const scroller = card.querySelector('.card-scroll');
+    const topLimit = topbar.getBoundingClientRect().bottom + 12;
+    const bottomLimit = controls.getBoundingClientRect().top - 12;
+    scroller.style.maxHeight = Math.max(160, bottomLimit - topLimit) + 'px';
+
+    const w = card.offsetWidth, h = card.offsetHeight;
+    const compact = isCompact();
+    let left, top;
+
+    if (i === 5) {
+      card.removeAttribute('data-tail');
+      left = compact ? (VW - w) / 2 : Math.max(24, VW * 0.06);
+      top = compact ? bottomLimit - h : clamp((VH - h) / 2, topLimit, Math.max(topLimit, bottomLimit - h));
+      leaderStart = null;
+    } else {
+      applyCam(projCam, stopCam(i));
+      const a = projectWith(projCam, STOPS[i][0], STOPS[i][1]);
+      if (!compact) {
+        left = Math.min(a.x + 64, VW - w - 24);
+        top = clamp(a.y - h * 0.42, topLimit, Math.max(topLimit, bottomLimit - h));
+        const tail = clamp(a.y - top, 24, h - 24);
+        card.dataset.tail = 'left';
+        card.style.setProperty('--tail', tail + 'px');
+        leaderStart = [left - 9, top + tail];
+      } else {
+        left = clamp((VW - w) / 2, 16, Math.max(16, VW - w - 16));
+        top = clamp(a.y + 56, topLimit, Math.max(topLimit, bottomLimit - h));
+        const tail = clamp(a.x - left, 24, w - 24);
+        card.dataset.tail = 'top';
+        card.style.setProperty('--tail', tail + 'px');
+        leaderStart = [left + tail, top - 9];
+      }
+    }
+    card.style.left = Math.round(left) + 'px';
+    card.style.top = Math.round(top) + 'px';
+  }
+
+  function showCard(i) {
+    hideCards();
+    const card = cards[i];
+    placeCard(i);
+    card.removeAttribute('inert');
+    card.removeAttribute('aria-hidden');
+    card.classList.add('is-visible');
+    visibleCard = i;
+    leader.classList.toggle('is-visible', i < 5);
+  }
+
+  function hideCards() {
+    cards.forEach(card => {
+      card.classList.remove('is-visible');
+      card.setAttribute('inert', '');
+      card.setAttribute('aria-hidden', 'true');
+    });
+    visibleCard = -1;
+    leaderStart = null;
+    leader.classList.remove('is-visible');
+  }
+
+  function updateUI() {
+    const compact = isCompact();
+    const idle = mode === 'idle';
+
+    nextBtn.setAttribute('aria-disabled', mode === 'leg' ? 'true' : 'false');
+    nextLabel.textContent = mode === 'intro' ? 'Skip intro' : mode === 'leg' ? 'Charting…' : NEXT_LABELS[station];
+    nextPath.setAttribute('d', idle && station === 5 ? ICON_REPLAY : ICON_NEXT);
+    backBtn.setAttribute('aria-disabled', idle && station > 0 ? 'false' : 'true');
+
+    if (mode === 'intro') hint.textContent = 'The ink is landing…';
+    else if (mode === 'leg') hint.textContent = 'Charting the route…';
+    else if (station === 5) hint.textContent = 'Replay draws the route again from the first mark.';
+    else hint.textContent = 'Scroll or press ↓ to continue · ↑ to go back';
+
+    startHint.textContent = compact
+      ? 'Swipe up or tap Set course to follow the ink.'
+      : 'Scroll, press ↓ or select Set course to follow the ink.';
+
+    railBtns.forEach(btn => {
+      const k = Number(btn.dataset.go);
+      let state = 'upcoming';
+      if (idle && station === k) state = 'current';
+      else if (station > k || (station === k && !idle)) state = 'done';
+      btn.dataset.state = state;
+      const name = STATIONS[k];
+      const suffix = state === 'current' ? ', current' : state === 'done' ? ', visited' : '';
+      btn.setAttribute('aria-label', 'Checkpoint ' + k + ': ' + name + suffix);
+      if (state === 'current') btn.setAttribute('aria-current', 'step');
+      else btn.removeAttribute('aria-current');
+    });
+  }
+
+  function announce(i) {
+    if (i === 0) announcer.textContent = 'Departure. Chart the route before the build.';
+    else if (i === 5) announcer.textContent = 'End of route. The route, charted.';
+    else announcer.textContent = 'Checkpoint ' + i + ' of 4: ' + STATIONS[i] + '. ' + cards[i].querySelector('h2').textContent;
+  }
+
+  function resetMarkers() {
+    markers.forEach(m => { if (m) { m.on = false; m.mesh.visible = false; } });
+  }
+
+  function startIntro() {
+    hideCards();
+    leg = null;
+    pendingTarget = null;
+    station = 0;
+    progress = 0;
+    routeMat.uniforms.uFadeStart.value = 1e9;
+    resetMarkers();
+    introT0 = nowSec() - (reduceMotion ? MOTION.introEnd : 0);
+    mode = 'intro';
+    updateUI();
+  }
+
+  function finishIntro() {
+    introT0 = Math.min(introT0, nowSec() - MOTION.introEnd);
+  }
+
+  function startLeg(from, to, speed) {
+    const dir = to > from ? 1 : -1;
+    const L = Math.min(from, to);
+    hideCards();
+
+    if (reduceMotion) {
+      const prev = progress;
+      progress = S[to];
+      if (dir > 0) {
+        routeMat.uniforms.uFadeStart.value = prev;
+        routeMat.uniforms.uFadeAlpha.value = 0;
+        fadeT0 = nowSec();
+      }
+      if (canvas.animate) canvas.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' });
+      arriveAt(to);
+      return;
+    }
+
+    leg = { L, dir, t0: nowSec(), dur: LEG_DUR[L] / ((speed || 1) * (dir < 0 ? MOTION.reverse : 1)) };
+    mode = 'leg';
+    updateUI();
+  }
+
+  function arriveAt(to) {
+    station = to;
+    leg = null;
+
+    if (pendingTarget !== null && pendingTarget !== to) {
+      const remaining = Math.abs(pendingTarget - to);
+      startLeg(to, to + Math.sign(pendingTarget - to), remaining > 1 ? MOTION.chain : MOTION.hop);
+      return;
+    }
+
+    pendingTarget = null;
+    mode = 'idle';
+    requireQuiet = true;
+    showCard(to);
+    updateUI();
+    announce(to);
+  }
+
+  function goNext() {
+    if (mode === 'intro') { finishIntro(); return; }
+    if (mode !== 'idle') return;
+    if (station === 5) { startIntro(); return; }
+    startLeg(station, station + 1, 1);
+  }
+
+  function goPrev() {
+    if (mode !== 'idle' || station === 0) return;
+    startLeg(station, station - 1, 1);
+  }
+
+  function goTo(k) {
+    if (mode === 'intro') { finishIntro(); return; }
+    if (mode !== 'idle' || k === station) return;
+    pendingTarget = k;
+    const hops = Math.abs(k - station);
+    startLeg(station, station + Math.sign(k - station), hops > 1 ? MOTION.chain : 1);
+  }
+
+  /* ——— input ——— */
+
+  function scrollerCanScroll(target, dy) {
+    const sc = target && target.closest ? target.closest('.card-scroll') : null;
+    if (!sc || sc.scrollHeight <= sc.clientHeight + 1) return false;
+    return dy > 0 ? sc.scrollTop + sc.clientHeight < sc.scrollHeight - 1 : sc.scrollTop > 0;
+  }
+
+  nextBtn.addEventListener('click', () => { if (nextBtn.getAttribute('aria-disabled') !== 'true') goNext(); });
+  backBtn.addEventListener('click', () => { if (backBtn.getAttribute('aria-disabled') !== 'true') goPrev(); });
+  railBtns.forEach(btn => btn.addEventListener('click', () => goTo(Number(btn.dataset.go))));
+
+  window.addEventListener('wheel', e => {
+    const t = nowSec();
+    const gap = t - lastWheelT;
+    lastWheelT = t;
+    const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * VH : e.deltaY;
+    if (scrollerCanScroll(e.target, dy)) return;
+    e.preventDefault();
+
+    if (mode === 'intro') {
+      if (!requireQuiet) { finishIntro(); requireQuiet = true; }
+      return;
+    }
+    if (mode !== 'idle') { wheelAcc = 0; return; }
+    if (requireQuiet) {
+      if (gap < 0.22) return;
+      requireQuiet = false;
+    }
+    if (gap > 0.3) wheelAcc = 0;
+    wheelAcc += dy;
+    if (wheelAcc > 45) { wheelAcc = 0; requireQuiet = true; goNext(); }
+    else if (wheelAcc < -45) { wheelAcc = 0; requireQuiet = true; goPrev(); }
+  }, { passive: false });
+
+  let touch = null;
+  window.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) { touch = null; return; }
+    const t = e.touches[0];
+    touch = { x: t.clientX, y: t.clientY, target: e.target };
+  }, { passive: true });
+  window.addEventListener('touchmove', e => {
+    if (!touch || e.touches.length !== 1) return;
+    const sc = touch.target.closest ? touch.target.closest('.card-scroll') : null;
+    if (sc && sc.scrollHeight > sc.clientHeight + 1) return;
+    e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchend', e => {
+    if (!touch) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touch.x, dy = t.clientY - touch.y;
+    const start = touch;
+    touch = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 44) return;
+    if (Math.abs(dy) >= Math.abs(dx)) {
+      if (scrollerCanScroll(start.target, -dy)) return;
+      if (dy < 0) goNext(); else goPrev();
+    } else if (dx < 0) goNext(); else goPrev();
+  }, { passive: true });
+
+  window.addEventListener('keydown', e => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.repeat) return;
+    const onButton = e.target.closest && e.target.closest('button');
+    const k = e.key;
+    const forward = k === 'ArrowDown' || k === 'ArrowRight' || k === 'PageDown' || (k === ' ' && !onButton);
+    const backward = k === 'ArrowUp' || k === 'ArrowLeft' || k === 'PageUp';
+    if (!forward && !backward) return;
+    const dy = forward ? 1 : -1;
+    if ((k === 'ArrowDown' || k === 'ArrowUp' || k === 'PageDown' || k === 'PageUp' || k === ' ') && scrollerCanScroll(e.target, dy)) return;
+    e.preventDefault();
+    if (forward) goNext(); else goPrev();
+  });
+
+  window.addEventListener('resize', () => { needsResize = true; });
+  const onMotionPref = () => { reduceMotion = mq.matches; };
+  if (mq.addEventListener) mq.addEventListener('change', onMotionPref); else mq.addListener(onMotionPref);
+
+  function resize() {
+    VW = innerWidth;
+    VH = innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, isCompact() ? 1.75 : 2);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(VW, VH, false);
+    camera.aspect = projCam.aspect = VW / VH;
+    paperMat.uniforms.uRes.value.set(VW * dpr, VH * dpr);
+    if (visibleCard >= 0) placeCard(visibleCard);
+    updateUI();
+  }
+
+  /* ——— frame ——— */
+
+  function dropState(ti) {
+    if (ti < 0.3 || ti >= MOTION.impact) return null;
+    const f = (ti - 0.3) / (MOTION.impact - 0.3);
+    return { z: DROP.height * (1 - f * f), s: easeOutCubic(f * 4), stretch: 1 + 0.9 * f };
+  }
+
+  function frame(ms) {
+    requestAnimationFrame(frame);
+    if (needsResize) { needsResize = false; resize(); }
+
+    const t = ms / 1000;
+    let cam;
+    let ds = null;
+
+    if (mode === 'intro') {
+      const ti = t - introT0;
+      cam = mixState(introCam(), stopCam(0), easeInOut((ti - 0.15) / (MOTION.introEnd - 0.15)));
+      if (!reduceMotion) ds = dropState(ti);
+      if (ti >= MOTION.introEnd) {
+        mode = 'idle';
+        station = 0;
+        requireQuiet = true;
+        showCard(0);
+        updateUI();
+        announce(0);
+      }
+    } else if (mode === 'leg' && leg) {
+      const raw = clamp((t - leg.t0) / leg.dur, 0, 1);
+      const q = leg.dir > 0 ? raw : 1 - raw;
+      progress = legS(leg.L, q);
+      cam = legCam(leg.L, q);
+      if (raw >= 1) arriveAt(leg.dir > 0 ? leg.L + 1 : leg.L);
+    } else {
+      cam = station === 5 ? overviewCam() : stopCam(station);
+    }
+
+    if (!reduceMotion) addDrift(cam, t);
+    applyCam(camera, cam);
+
+    const ppu = VH / cam.h;
+    const zoomScale = Math.max(1, MARKER.minPx / (MARKER.size * ppu));
+
+    const impactT = introT0 + MOTION.impact;
+    const since = t - impactT;
+    const splatR = since > 0 ? MARKER.splatR * easeOutCubic(since / 0.65) : 0;
+    const bleed = reduceMotion ? 1 : (since > 0 ? easeOutCubic(since / 2.6) : 0);
+    paperMat.uniforms.uSplat.value.set(0, 0, splatR, bleed);
+
+    if (ds) {
+      drop.visible = true;
+      drop.position.set(0, 0, ds.z + 8 * ds.s);
+      drop.scale.set(Math.max(ds.s, 0.001), Math.max(ds.s, 0.001), Math.max(ds.s * ds.stretch, 0.001));
+      paperMat.uniforms.uDrop.value.set(0, 0, ds.z, ds.s);
+    } else {
+      drop.visible = false;
+      paperMat.uniforms.uDrop.value.w = 0;
+    }
+
+    const routeWidth = Math.max(isCompact() ? ROUTE.compactWidth : ROUTE.width, ROUTE.minPx / ppu);
+    routeMat.uniforms.uProgress.value = progress;
+    routeMat.uniforms.uWidth.value = routeWidth;
+    if (fadeT0 >= 0) {
+      const f = clamp((t - fadeT0) / 0.3, 0, 1);
+      routeMat.uniforms.uFadeAlpha.value = f;
+      if (f >= 1) { fadeT0 = -1; routeMat.uniforms.uFadeStart.value = 1e9; routeMat.uniforms.uFadeAlpha.value = 1; }
+    }
+
+    const tip = pointAt(progress);
+    bead.visible = mode === 'leg' && progress > 1 && progress < TOTAL - 1;
+    bead.position.set(tip[0], tip[1], 0.5);
+    bead.scale.setScalar(routeWidth * 0.95);
+
+    for (let i = 1; i <= 5; i++) {
+      const m = markers[i];
+      if (!m) continue;
+      const on = progress >= S[i] - 1;
+      if (on !== m.on) { m.on = on; m.t0 = t; }
+      const k = on ? (reduceMotion ? 1 : easeOutBack((t - m.t0) / 0.4)) : 0;
+      m.mesh.visible = k > 0.001;
+      m.mesh.scale.setScalar(Math.max(k, 0.001) * zoomScale);
+    }
+
+    renderer.render(scene, camera);
+
+    if (visibleCard >= 0 && visibleCard < 5 && leaderStart) {
+      const a = projectWith(camera, STOPS[visibleCard][0], STOPS[visibleCard][1]);
+      const r = (visibleCard === 0 ? MARKER.splatAnchor : MARKER.anchor * zoomScale) * ppu;
+      const dx = a.x - leaderStart[0], dy = a.y - leaderStart[1];
+      const len = Math.hypot(dx, dy);
+      if (len > r + 8) {
+        const ex = a.x - dx / len * r, ey = a.y - dy / len * r;
+        leaderLine.setAttribute('x1', leaderStart[0].toFixed(1));
+        leaderLine.setAttribute('y1', leaderStart[1].toFixed(1));
+        leaderLine.setAttribute('x2', ex.toFixed(1));
+        leaderLine.setAttribute('y2', ey.toFixed(1));
+        leaderLine.style.display = '';
+      } else {
+        leaderLine.style.display = 'none';
+      }
+    }
+  }
+
+  startIntro();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
