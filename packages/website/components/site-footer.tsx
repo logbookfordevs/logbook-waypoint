@@ -14,6 +14,7 @@ export function SiteFooter() {
         <a href="https://logbookfordevs.com/">A tool from the Logbook for Devs</a>
         <a href="https://github.com/logbookfordevs/logbook-waypoint">Repository</a>
         <a href="/docs">Documentation</a>
+        <a href="/privacy">Privacy</a>
       </div>
     </footer>
   );

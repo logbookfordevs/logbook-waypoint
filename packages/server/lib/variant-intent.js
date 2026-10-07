@@ -83,6 +83,9 @@ function parseCount(value) {
 }
 
 export function requestedVariantCount(annotation) {
+  if (annotation?.variant_intent === undefined) {
+    throw new TypeError('Annotation has no active Variant Intent');
+  }
   const intent = assertVariantIntent(annotation?.variant_intent);
   const comment = typeof annotation?.comment === 'string' ? annotation.comment : '';
   const patterns = [

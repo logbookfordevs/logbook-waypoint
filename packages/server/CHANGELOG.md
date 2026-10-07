@@ -7,17 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.2.0] - 2026-09-30
+
+### Changed
+- The GitHub installer includes the Waypoint skill without prompting, using AFK when available or npx otherwise. Updates retain the `--skip-skill` preference; `--yes` re-enables installation. Skill failures leave the CLI installed and show a retry command.
+- npm-based `waypoint update` now runs the Skills CLI to refresh the global Waypoint skill after the package update. If that step fails, the CLI remains updated and prints a retry command.
+- `waypoint watch <url>` now emits lightweight current Pending and Claimed snapshots; use `--events` for detailed changes and `read_annotations` with an ID for Survey context.
+- `read_annotations` now requires an Annotation ID or URL scope.
+
+### Removed
+- Removed `watch_annotations` from MCP. Existing MCP callers should run `waypoint watch <url>` through the CLI.
+
+## [0.1.5] - 2026-09-16
+
+### Added
+- GitHub release installations now offer the model-invoked Waypoint workflow skill through the Skills CLI's agent selection.
+- Added a foreground `waypoint watch <url>` consumer with human-readable output, complete NDJSON MCP envelopes, `--once`, explicit cursor resumption, bounded reconnect backoff, backpressure, and clean signal handling.
+
+### Changed
+- MCP tool descriptions are concise by default; the Waypoint skill carries project inference, Survey-before-Inspect, claim-before-edit, lifecycle, and Variant cancellation guidance.
+- Explicit loopback scopes are documented and tested as successful empty Queue reads before a project has stored its first Annotation.
+- Whole-set cancellation publishes `change_type: "variant_cancelled"` through Watch.
+- Watch guidance now separates durable server capture, event consumption, and host-controlled agent attention; it does not renew Claims during human Variant review.
+
+### Fixed
+- Resolution Records now expose their Design Action-only MCP contract, report ordinary-Annotation misuse with a direct recovery step, and accept application routes and repository-relative source paths as portable evidence.
+
+## [0.1.4] - 2026-09-08
+
+### Changed
+- Variant requests now reject metadata-only implementations and require browser-presentable `pending_changes` or scoped CSS, while clarifying that coding agents reconcile temporary source Scaffold after Keep or Cancel.
+- Added atomic replacement for unresolved Variant Sets; cancellation now clearly ends comparison, and requesting another set without newly authored intent reports a direct error.
+
+## [0.1.3] - 2026-09-07
+
+### Added
+- Added `waypoint update` for npm global and GitHub installer installations, preserving the installation location and channel. GitHub updates download the installer over HTTPS before running it. Older GitHub installs need one rerun of their original installer to enable detection; restart the server or reconnect the MCP agent after updating.
+
+### Changed
+- Clarified that live annotation watching uses repeated cursor-based Watch calls and does not require a scheduled automation.
+- Watch now requires a URL scope on the first call and retains it in continuation cursors, avoiding unrelated project activity. Start a new scoped Watch to replace older cursors.
+- Scoped annotation operations treat `localhost` and `127.0.0.1` as aliases while preserving protocol, port, and path boundaries.
+- Clarified agent guidance to clean up temporary Variant code when the user cancels a set.
+
+## [0.1.2] - 2026-09-07
+
+### Fixed
+- `waypoint restart` starts the background server instead of failing with an unknown `node` command.
+- MCP project discovery includes only usable loopback scopes and never returns Annotation bodies when no supported projects remain.
+
+## [0.1.1] - 2026-08-28
+
 ### Added
 - Waypoint annotation lifecycle, Watch, Variant, Design Action, Work Notice, and Resolution Record contracts
 - MCP tools for durable annotation watching, screenshot retrieval, lifecycle updates, Variant delivery, and finalization
+- Batched `inspect_annotations` diagnostics for selected Annotation IDs
 - HTTP, JSON, and legacy SSE connection guidance for MCP clients
 - Version information in the health endpoint and package-derived CLI version output
+- Dual CLI distribution through npm and checksummed GitHub release archives from one tagged release
 
 ### Changed
+- Made `waypoint start` run in the background by default, with `--foreground` for terminal-attached sessions
 - Renamed the package and commands for Logbook Waypoint while retaining loopback port compatibility
 - Hardened host, origin, payload, attachment, annotation ID, and persistence validation
 - Made Watch recovery durable across server restarts and annotation recreation
+- Made `read_annotations` return compact project-scoped summaries, with project discovery before cross-project annotation bodies and one normalized Target shape
+- Made Watch deliver the same compact Survey context as scoped Queue reads while preserving revision and deduplication metadata
+- Made MCP Page URL filters include every query or hash View State on that pathname, while complete Captured URLs remain exact
 - Replaced remote update checks with local extension compatibility guidance
+- Clarified repository-based setup before publication, corrected streamable HTTP client guidance, and linked the complete MCP workflow and tool reference
 
 ### Fixed
 - Preserved lifecycle, Variant, screenshot, attachment, and Design Action state during full synchronization

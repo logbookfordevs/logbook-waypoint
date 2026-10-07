@@ -1,21 +1,25 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-We release patches for security vulnerabilities. Which versions are eligible for receiving such patches depends on the CVSS v3.0 Rating:
+Logbook Waypoint is still pre-1.0. Security fixes are released for the latest published minor line. Upgrade to the newest patch before reporting or reproducing an issue.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| Version | Supported |
+| ------- | --------- |
+| 0.1.x   | Yes       |
+| < 0.1   | No        |
 
 ## Reporting a Vulnerability
 
 We take the security of Logbook Waypoint seriously. If you have discovered a security vulnerability in our project, we appreciate your help in disclosing it to us in a responsible manner.
 
-### Reporting Process
+### Reporting process
 
-Please report security vulnerabilities by emailing the project maintainers directly. We will acknowledge your email within 48 hours, and send a more detailed response within 96 hours indicating the next steps in handling your report.
+Use GitHub's [private vulnerability reporting form](https://github.com/logbookfordevs/logbook-waypoint/security/advisories/new). Do not include vulnerability details in a public issue.
+
+If the private form is unavailable, open a public issue asking only for a private contact channel. Do not include technical details, proof-of-concept code, affected paths, or exploit information in that issue.
+
+We aim to acknowledge a report within 48 hours and provide an initial assessment within 96 hours.
 
 ### What to Include
 

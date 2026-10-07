@@ -2,7 +2,7 @@ import { ANNOTATION_ID_PREFIX } from './annotation-id.js';
 
 export const PRODUCT_IDENTITY = Object.freeze({
   productName: 'Logbook Waypoint',
-  description: 'Place visual annotations on local interfaces and route them to coding agents through MCP.',
+  description: 'Annotate web interfaces with personal journal notes or visual feedback for coding agents.',
   repositorySlug: 'logbook-waypoint',
   npmPackage: '@logbookfordevs/waypoint',
   cliCommand: 'waypoint',

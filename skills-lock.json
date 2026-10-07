@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "new-release": {
+      "source": "leoreisdias/productivity-skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/new-release/SKILL.md",
+      "computedHash": "c2b925cf4d9dee7838d7dc301d4d6853aa5a9aa8c768b906286bfc2c24f8e2db"
+    },
+    "update-changelog": {
+      "source": "leoreisdias/productivity-skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/update-changelog/SKILL.md",
+      "computedHash": "e9dd142f21af847b74c1fca3123a2b0b4c74374be55d61757fff47786b9018c3"
+    }
+  }
+}

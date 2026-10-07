@@ -1,0 +1,67 @@
+/* Reviewable docs experiment. Extension palette and control shapes mirror styles.js. */
+.waypoint-practice { margin-top: 2.5rem; }
+.practice-heading, .practice-footer, .practice-footer > div, .practice-panel-header, .practice-panel-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.docs-article .practice-heading h2 { margin: 0; }
+.practice-demo-label, .practice-step { font: 600 0.75rem/1.5 var(--font-sans); color: var(--walnut-muted); }
+.practice-intro { margin-top: 0.75rem; }
+.practice-guide { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem 0; min-height: 7rem; }
+.practice-guide strong { font: 600 0.95rem/1.5 var(--font-sans); }
+.practice-guide p { margin-top: 0.3rem; font-size: 0.9rem; line-height: 1.6; }
+.practice-step { flex: none; }
+.practice-browser { border: 1px solid var(--walnut-line); border-radius: 12px; overflow: hidden; background: #f7f8f8; color: #211d19; font-family: var(--font-sans); }
+.practice-address { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: #edf0ef; border-bottom: 1px solid #d9dfdc; padding: 0.75rem 1rem; font-size: 0.68rem; color: #52645d; }
+.practice-window-dots { display: flex; gap: 5px; }
+.practice-window-dots i { width: 7px; height: 7px; border-radius: 50%; background: #a1aca6; }
+.practice-workspace { position: relative; padding: 5rem 1.25rem 1.5rem; min-height: 27rem; }
+.practice-app { max-width: 23rem; margin: 0 auto; }
+.practice-app h3 { margin-top: 1rem; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+.practice-app > p { margin: 0.4rem 0 1.25rem; font-size: 0.8rem; color: #52645d; }
+.practice-app dl { margin-bottom: 1.5rem; }
+.practice-app dl > div { padding: 0.8rem 0; border-bottom: 1px solid #d9dfdc; }
+.practice-app dt { font-size: 0.7rem; color: #52645d; }
+.practice-app dd { margin-top: 0.25rem; font-size: 0.85rem; }
+.practice-target-wrap { position: relative; width: fit-content; }
+.practice-target { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-width: 10rem; min-height: 2.75rem; border: 0; border-radius: 6px; background: #244f43; color: #fff; font: 600 0.85rem var(--font-sans); cursor: pointer; }
+.practice-target[data-selecting="true"] { outline: 2px solid #3f8580; outline-offset: 5px; cursor: crosshair; }
+.practice-target svg { width: 1rem; height: 1rem; }
+.practice-app > small { display: block; margin-top: 1rem; font-size: 0.68rem; color: #52645d; line-height: 1.5; }
+.practice-toolbar { position: absolute; top: 1rem; right: 1rem; display: flex; align-items: center; gap: 4px; padding: 6px; background: #e9e1d3; border: 1px solid #bbaa99; border-radius: 12px; }
+.practice-toolbar button, .practice-panel-header button { display: grid; place-items: center; position: relative; width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: #211d19; cursor: pointer; }
+.practice-toolbar button:hover, .practice-panel-header button:hover { background: #102c2c12; }
+.practice-toolbar button[aria-pressed="true"] { background: #102c2c; color: #f4efde; }
+.practice-toolbar img { margin-inline: 5px; }
+.practice-toolbar-divider { height: 22px; width: 1px; background: #bbaa99; }
+.practice-toolbar svg, .practice-panel svg { width: 16px; height: 16px; flex: none; }
+.practice-count { position: absolute; top: -1px; right: 0; font: 600 10px/16px var(--font-sans); width: 16px; border-radius: 50%; background: #173f5f; color: white; }
+.practice-launcher { position: absolute; top: 1rem; right: 1rem; border: 0; border-radius: 10px; padding: 6px; background: #102c2c; cursor: pointer; }
+.practice-pin { position: absolute; top: -12px; right: -12px; width: 24px; height: 24px; border: 2px solid white; border-radius: 50%; background: #173f5f; color: white; font-size: 12px; cursor: pointer; }
+.practice-panel { position: relative; margin: 1.5rem auto 0; max-width: 25rem; padding: 1rem; border: 1px solid #bbaa99; border-radius: 12px; background: #f3ede3; color: #211d19; font-size: 0.8rem; line-height: 1.5; }
+.practice-panel-header { margin-bottom: 0.75rem; }
+.practice-panel-header strong { font-weight: 600; font-size: 0.9rem; }
+.practice-target-context { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem; margin-bottom: 0.9rem; border-radius: 6px; background: #102c2c0d; color: #6f6258; font-size: 0.75rem; }
+.practice-panel label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+.practice-panel textarea { display: block; width: 100%; min-height: 7rem; padding: 0.75rem; resize: vertical; border: 1px solid #bbaa99; border-radius: 8px; background: #102c2c0d; color: #211d19; font: inherit; }
+.practice-panel-note { margin-top: 0.65rem; color: #6f6258; font-size: 0.72rem; }
+.practice-panel-actions { margin-top: 1rem; justify-content: flex-end; }
+.practice-primary, .practice-panel-actions button, .practice-footer button { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: 0; border-radius: 8px; padding: 0.65rem 0.9rem; font: 600 0.8rem/1.5 var(--font-sans); cursor: pointer; }
+.practice-primary { background: #102c2c; color: #f4efde; }
+.practice-guide > button { flex: none; }
+.practice-panel-actions button:not(.practice-primary) { background: #102c2c0d; color: #211d19; }
+.waypoint-practice button:disabled { opacity: 0.45; cursor: not-allowed; }
+.waypoint-practice :is(button, textarea):focus-visible { outline: 2px solid #3f8580; outline-offset: 3px; }
+.practice-record-heading { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.7rem; }
+.practice-record-heading strong { color: #244f43; }
+.practice-saved-comment { margin: 0.75rem 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.practice-agent { border-top: 1px solid #bbaa99; padding-top: 0.9rem; }
+.practice-agent > p { margin: 0.4rem 0 0.8rem; color: #6f6258; font-size: 0.75rem; }
+.practice-success { display: flex; gap: 0.5rem; align-items: center; }
+.practice-footer { flex-wrap: wrap; margin-top: 0.65rem; font: 400 0.7rem/1.5 var(--font-sans); color: var(--walnut-muted); }
+.practice-footer button { padding: 0.5rem; background: transparent; color: var(--walnut-ink); font-size: 0.7rem; }
+.practice-footer svg { width: 13px; height: 13px; }
+.practice-complete { margin-top: 1rem; line-height: 1.7; }
+@media (max-width: 40rem) {
+  .practice-heading, .practice-guide { align-items: flex-start; flex-direction: column; }
+  .practice-workspace { padding-inline: 0.85rem; }
+  .practice-panel { padding: 0.8rem; }
+  .practice-address > span:first-child { display: none; }
+}

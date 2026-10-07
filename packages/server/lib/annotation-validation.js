@@ -2,6 +2,7 @@ import { isValidAnnotationId } from './annotation-id.js';
 import { assertAnnotationDesignIntent } from './design-intent.js';
 import { assertAnnotationResolutionRecord } from './resolution-record.js';
 import { assertAnnotationVariantIntent } from './variant-intent.js';
+import { normalizeAnnotationTargets } from './annotation-targets.js';
 
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
@@ -55,6 +56,7 @@ export function assertValidAnnotation(annotation) {
   if (!hasMeaningfulAnnotationContent(annotation)) {
     throw new TypeError('Annotation must have meaningful content');
   }
+  normalizeAnnotationTargets(annotation);
   assertAnnotationDesignIntent(annotation);
   assertAnnotationResolutionRecord(annotation);
   assertAnnotationVariantIntent(annotation);

@@ -14,6 +14,21 @@ test('project scopes are restricted to loopback URLs and preserve URL components
   assert.throws(() => createProjectScope('https://example.com/app'), /loopback/i);
 });
 
+test('a Page scope without view state includes query and hash variants', () => {
+  const scope = createProjectScope('http://localhost:3000/account');
+
+  assert.equal(matchesProjectScope('http://localhost:3000/account?active=Profile', scope), true);
+  assert.equal(matchesProjectScope('http://localhost:3000/account?active=Notifications#email', scope), true);
+  assert.equal(matchesProjectScope('http://localhost:3000/accounts', scope), false);
+});
+
+test('a scoped View State still requires its complete query and hash', () => {
+  const scope = createProjectScope('http://localhost:3000/account#details');
+
+  assert.equal(matchesProjectScope('http://localhost:3000/account#details', scope), true);
+  assert.equal(matchesProjectScope('http://localhost:3000/account?active=Profile#details', scope), false);
+});
+
 test('project scope wildcards respect host, port, and path boundaries', () => {
   const scope = createProjectScope('http://127.0.0.1:3000/app/*');
 
@@ -21,4 +36,14 @@ test('project scope wildcards respect host, port, and path boundaries', () => {
   assert.equal(matchesProjectScope('http://127.0.0.1:3000/apple', scope), false);
   assert.equal(matchesProjectScope('http://127.0.0.1:30000/app/settings', scope), false);
   assert.equal(matchesProjectScope('http://example.com/app/settings', scope), false);
+});
+
+test('localhost and IPv4 loopback scopes are aliases without merging ports or View States', () => {
+  for (const [host, alias] of [['localhost', '127.0.0.1'], ['127.0.0.1', 'localhost']]) {
+    const scope = createProjectScope(`http://${host}:3000/app?tab=open#note`);
+    assert.equal(matchesProjectScope(`http://${alias}:3000/app?tab=open#note`, scope), true);
+    assert.equal(matchesProjectScope(`http://${alias}:3001/app?tab=open#note`, scope), false);
+    assert.equal(matchesProjectScope(`https://${alias}:3000/app?tab=open#note`, scope), false);
+    assert.equal(matchesProjectScope(`http://${alias}:3000/app?tab=closed#note`, scope), false);
+  }
 });

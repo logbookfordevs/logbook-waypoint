@@ -6,7 +6,35 @@ var WaypointInspectionMode = (() => {
   let active = false;
   let highlightEl = null;
   let toastEl = null;
+  let scopeControlsEl = null;
   let hoveredElement = null;
+  let scopeAnchor = null;
+  let scopePath = [];
+  let scopeIndex = 0;
+  let showScopeControls = true;
+  let gestureTimer = null;
+
+  function releaseGesture() {
+    clearTimeout(gestureTimer);
+    document.removeEventListener('mousedown', swallowGesture, true);
+    document.removeEventListener('click', swallowGesture, true);
+    document.removeEventListener('pointerdown', releaseGesture, true);
+  }
+
+  function swallowGesture(event) {
+    if (isOurUI(event)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (event.type === 'click') releaseGesture();
+  }
+
+  function protectGesture() {
+    releaseGesture();
+    document.addEventListener('mousedown', swallowGesture, true);
+    document.addEventListener('click', swallowGesture, true);
+    document.addEventListener('pointerdown', releaseGesture, true);
+    gestureTimer = setTimeout(releaseGesture, 1500);
+  }
 
   // Bound handlers for removal
   let onMouseOver = null;
@@ -15,10 +43,15 @@ var WaypointInspectionMode = (() => {
   let onPointerDown = null;
   let onMouseDown = null;
   let onClick = null;
+  let onKeyDown = null;
 
   function init() {
     WaypointEvents.on('inspection:start', start);
     WaypointEvents.on('inspection:stop', stop);
+    WaypointEvents.on('inspection:scopeControlsVisibility', ({ visible }) => {
+      showScopeControls = visible !== false;
+      updateScopeControls();
+    });
   }
 
   function start() {
@@ -34,6 +67,8 @@ var WaypointInspectionMode = (() => {
     highlightEl.style.display = 'none';
     root.appendChild(highlightEl);
 
+    createScopeControls(root);
+
     // Show instruction toast
     showToast(root);
 
@@ -44,6 +79,7 @@ var WaypointInspectionMode = (() => {
     onPointerDown = handlePointerDown;
     onMouseDown = handleMouseDown;
     onClick = handleClick;
+    onKeyDown = handleKeyDown;
 
     document.addEventListener('mouseover', onMouseOver, true);
     document.addEventListener('mouseout', onMouseOut, true);
@@ -51,6 +87,7 @@ var WaypointInspectionMode = (() => {
     document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('mousedown', onMouseDown, true);
     document.addEventListener('click', onClick, true);
+    document.addEventListener('keydown', onKeyDown, true);
     listenersAttached = true;
 
     // Crosshair cursor on all host page elements
@@ -74,17 +111,19 @@ var WaypointInspectionMode = (() => {
       document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('mousedown', onMouseDown, true);
       document.removeEventListener('click', onClick, true);
+      document.removeEventListener('keydown', onKeyDown, true);
       listenersAttached = false;
     }
-    onMouseOver = onMouseOut = onPointerMove = onPointerDown = onMouseDown = onClick = null;
+    onMouseOver = onMouseOut = onPointerMove = onPointerDown = onMouseDown = onClick = onKeyDown = null;
 
     // Remove highlight
     if (highlightEl) { highlightEl.remove(); highlightEl = null; }
+    if (scopeControlsEl) { scopeControlsEl.remove(); scopeControlsEl = null; }
 
     // Remove toast
     if (toastEl) { toastEl.remove(); toastEl = null; }
 
-    hoveredElement = null;
+    resetScope();
 
     // Restore cursor
     const cursorStyle = document.querySelector('[data-waypoint-cursor]');
@@ -137,10 +176,11 @@ var WaypointInspectionMode = (() => {
       document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('mousedown', onMouseDown, true);
       document.removeEventListener('click', onClick, true);
+      document.removeEventListener('keydown', onKeyDown, true);
       listenersAttached = false;
     }
     if (highlightEl) highlightEl.style.display = 'none';
-    hoveredElement = null;
+    resetScope();
   }
 
   function reEnable() {
@@ -151,6 +191,7 @@ var WaypointInspectionMode = (() => {
     document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('mousedown', onMouseDown, true);
     document.addEventListener('click', onClick, true);
+    document.addEventListener('keydown', onKeyDown, true);
     listenersAttached = true;
   }
 
@@ -163,8 +204,7 @@ var WaypointInspectionMode = (() => {
     const target = getDeepTarget(e) || WaypointShadowDOMUtils.elementFromPointDeep(e.clientX, e.clientY);
     if (!target) return;
 
-    hoveredElement = target;
-    updateHighlight(target);
+    setScopeAnchor(target, e.clientX, e.clientY);
   }
 
   function handleMouseOut(e) {
@@ -174,7 +214,7 @@ var WaypointInspectionMode = (() => {
     // Ignore intermediate transitions between elements
     if (e.relatedTarget) return;
 
-    hoveredElement = null;
+    resetScope();
     if (highlightEl) highlightEl.style.display = 'none';
   }
 
@@ -183,13 +223,13 @@ var WaypointInspectionMode = (() => {
   // Throttled to ~60fps to avoid performance overhead.
   function handlePointerMove(e) {
     if (!active || isOurUI(e)) return;
+    if (isApproachingScopeControls(e)) return;
 
     const target = getDeepTarget(e) || WaypointShadowDOMUtils.elementFromPointDeep(e.clientX, e.clientY);
     if (!target || target === document.body || target === document.documentElement) return;
-    if (target === hoveredElement) return;
+    if (target === scopeAnchor) return;
 
-    hoveredElement = target;
-    updateHighlight(target);
+    setScopeAnchor(target, e.clientX, e.clientY);
   }
 
   // Element selection on pointerdown — fires before frameworks can react
@@ -199,11 +239,23 @@ var WaypointInspectionMode = (() => {
     e.preventDefault();
     e.stopImmediatePropagation();
 
-    const target = getDeepTarget(e);
-    if (!target || target === document.body || target === document.documentElement) return;
+    const pointerTarget = getDeepTarget(e);
+    if (!pointerTarget || pointerTarget === document.body || pointerTarget === document.documentElement) return;
+    const target = scopeAnchor === pointerTarget && hoveredElement ? hoveredElement : pointerTarget;
 
-    tempDisable();
-    WaypointEvents.emit('inspection:elementClicked', { element: target, clientX: e.clientX, clientY: e.clientY });
+    // Selection can stop synchronously; protect the rest of this same gesture.
+    protectGesture();
+    captureTarget(target, e);
+  }
+
+  function captureTarget(target, event) {
+    if (!WaypointMultiTargetSelection.shouldHandle(event.shiftKey)) tempDisable();
+    WaypointEvents.emit('inspection:elementClicked', {
+      element: target,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      shiftKey: event.shiftKey,
+    });
   }
 
   // Safety nets — swallow mousedown/click so frameworks never see the interaction
@@ -219,6 +271,80 @@ var WaypointInspectionMode = (() => {
     e.stopPropagation();
   }
 
+  function handleKeyDown(e) {
+    if (!active || !hoveredElement) return;
+    if (e.key !== 'Enter' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    if (isOurUI(e) && !isScopeControlEvent(e) && !isInspectionTriggerEvent(e)) return;
+    if (e.isComposing || (e.key === 'Enter' && e.repeat)) return;
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const bounds = hoveredElement.getBoundingClientRect();
+      captureTarget(hoveredElement, { clientX: bounds.left + bounds.width / 2, clientY: bounds.top + bounds.height / 2, shiftKey: e.shiftKey });
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    moveScope(e.key === 'ArrowRight' ? 1 : -1);
+  }
+
+  function isScopeControlEvent(e) {
+    if (!scopeControlsEl) return false;
+    return e.composedPath().includes(scopeControlsEl);
+  }
+
+  function isInspectionTriggerEvent(e) {
+    return e.composedPath().some(node => node?.matches?.('.waypoint-tb-annotate'));
+  }
+
+  function isApproachingScopeControls(e) {
+    if (!scopeControlsEl || scopeControlsEl.style.display === 'none') return false;
+    const rect = scopeControlsEl.getBoundingClientRect();
+    const approachGap = 8;
+    return e.clientX >= rect.left - approachGap
+      && e.clientX <= rect.right + approachGap
+      && e.clientY >= rect.top - approachGap
+      && e.clientY <= rect.bottom + approachGap;
+  }
+
+  function setScopeAnchor(element, clientX, clientY) {
+    scopeAnchor = element;
+    scopePath = [element];
+    scopeIndex = 0;
+
+    let parent = WaypointShadowDOMUtils.getParentElement(element);
+    const waypointHost = WaypointShadowHost.getHost();
+    while (parent && parent !== document.body && parent !== document.documentElement && parent !== waypointHost) {
+      scopePath.push(parent);
+      parent = WaypointShadowDOMUtils.getParentElement(parent);
+    }
+
+    positionScopeControls(clientX, clientY);
+    selectScope(0);
+  }
+
+  function moveScope(delta) {
+    selectScope(Math.max(0, Math.min(scopePath.length - 1, scopeIndex + delta)));
+  }
+
+  function selectScope(index) {
+    if (!scopePath[index]) return;
+    scopeIndex = index;
+    hoveredElement = scopePath[index];
+    updateHighlight(hoveredElement);
+    updateScopeControls();
+  }
+
+  function resetScope() {
+    hoveredElement = null;
+    scopeAnchor = null;
+    scopePath = [];
+    scopeIndex = 0;
+    updateScopeControls();
+  }
+
   // --- Visuals ---
 
   function updateHighlight(element) {
@@ -231,12 +357,55 @@ var WaypointInspectionMode = (() => {
     highlightEl.style.height = `${rect.height}px`;
   }
 
+  function createScopeControls(root) {
+    scopeControlsEl = document.createElement('div');
+    scopeControlsEl.className = 'waypoint-scope-controls';
+    scopeControlsEl.setAttribute('role', 'group');
+    scopeControlsEl.setAttribute('aria-label', 'Adjust selected target');
+    scopeControlsEl.innerHTML = `
+      <button type="button" data-scope="smaller" aria-label="Select a smaller target" title="Smaller target">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 3.5 6 8l4.5 4.5" /></svg>
+      </button>
+      <button type="button" data-scope="larger" aria-label="Select a larger target" title="Larger target">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 10 8l-4.5 4.5" /></svg>
+      </button>
+    `;
+    scopeControlsEl.querySelector('[data-scope="smaller"]').addEventListener('click', () => moveScope(-1));
+    scopeControlsEl.querySelector('[data-scope="larger"]').addEventListener('click', () => moveScope(1));
+    root.appendChild(scopeControlsEl);
+    updateScopeControls();
+  }
+
+  function positionScopeControls(clientX, clientY) {
+    if (!scopeControlsEl || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return;
+    const estimatedWidth = 68;
+    const estimatedHeight = 36;
+    const gap = 8;
+    const left = clientX + gap + estimatedWidth <= window.innerWidth
+      ? clientX + gap
+      : Math.max(gap, clientX - estimatedWidth - gap);
+    const top = clientY + gap + estimatedHeight <= window.innerHeight
+      ? clientY + gap
+      : Math.max(gap, clientY - estimatedHeight - gap);
+    scopeControlsEl.style.left = `${left}px`;
+    scopeControlsEl.style.top = `${top}px`;
+  }
+
+  function updateScopeControls() {
+    if (!scopeControlsEl) return;
+    scopeControlsEl.style.display = showScopeControls && hoveredElement ? 'flex' : 'none';
+    const smaller = scopeControlsEl.querySelector('[data-scope="smaller"]');
+    const larger = scopeControlsEl.querySelector('[data-scope="larger"]');
+    smaller.disabled = !hoveredElement || scopeIndex === 0;
+    larger.disabled = !hoveredElement || scopeIndex >= scopePath.length - 1;
+  }
+
   function showToast(root) {
     toastEl = document.createElement('div');
     toastEl.className = 'waypoint-toast';
     toastEl.innerHTML = `
-      <p>Click any element to annotate</p>
-      <p class="sub">Press ESC to exit</p>
+      <p>Click an element or hover and press Enter</p>
+      <p class="sub">Use &larr; and &rarr; to adjust the target · ESC to exit</p>
     `;
     root.appendChild(toastEl);
 

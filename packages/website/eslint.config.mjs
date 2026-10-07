@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+// The TypeScript 6 API serves ESLint; @typescript/native keeps `tsc` on 7.
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(

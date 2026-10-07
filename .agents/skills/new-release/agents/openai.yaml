@@ -1,0 +1,4 @@
+interface:
+  display_name: "New Release"
+  short_description: "Prepare and safely deliver repository releases"
+  default_prompt: "Use $new-release to prepare the next release using this repository's own conventions."

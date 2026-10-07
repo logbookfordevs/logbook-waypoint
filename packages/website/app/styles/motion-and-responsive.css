@@ -331,10 +331,13 @@
   }
 
   .docs-navigation {
-    position: relative;
     min-height: auto;
-    padding: 2rem 1.5rem;
     border-right: 0;
+  }
+
+  .docs-navigation__inner {
+    position: relative;
+    padding: 2rem 1.5rem;
   }
 
   .docs-navigation nav {
@@ -517,12 +520,29 @@
 
   .docs-index h1,
   .docs-article h1 {
-    font-size: clamp(2.6rem, 12vw, 3.4rem);
+    font-size: var(--docs-page-title);
   }
 
   .article-toc {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .article-toc strong,
+  .article-toc__links {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .article-toc__links {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: start;
+  }
+
+  .article-toc__links a {
+    font-size: 0.82rem;
+    white-space: normal;
   }
 
   .article-pagination {

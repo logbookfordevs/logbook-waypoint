@@ -9,6 +9,9 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { homedir } from 'os';
 import fs from 'fs';
+import { skillUpdateRetryCommand, updateInstallation } from '../lib/update.js';
+import { runWatch } from '../lib/cli-watch.js';
+import { runSnapshotWatch } from '../lib/cli-watch-snapshot.js';
 import { PRODUCT_IDENTITY } from '../lib/product-identity.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -69,7 +72,7 @@ program
 program
   .command('start')
   .description('Start the Logbook Waypoint server')
-  .option('-d, --daemon', 'Run as daemon (background process)')
+  .option('-f, --foreground', 'Keep the server attached to this terminal')
   .action(async (options) => {
     if (isServerRunning()) {
       console.log(chalk.yellow('✓ Server is already running'));
@@ -82,7 +85,7 @@ program
 
     const serverPath = join(dirname(__dirname), 'lib', 'server.js');
     
-    if (options.daemon) {
+    if (!options.foreground) {
       // Run as daemon
       const out = fs.openSync(LOG_FILE, 'a');
       const err = fs.openSync(LOG_FILE, 'a');
@@ -176,8 +179,8 @@ program
       }
     }
     
-    // Start with daemon flag
-    program.parse(['node', 'cli.js', 'start', '--daemon'], { from: 'user' });
+    // Start with the default background behavior
+    await program.parseAsync(['start'], { from: 'user' });
   });
 
 program
@@ -225,4 +228,61 @@ program
     }
   });
 
-program.parse(process.argv);
+program
+  .command('watch')
+  .description('Show current open Annotation IDs and keep watching for changes')
+  .argument('<url>', 'Loopback project, Page, or View State URL')
+  .option('--json', 'Write each current open-work snapshot as one JSON line')
+  .option('--events', 'Write detailed changes; without --cursor, replay full Watch history')
+  .option('--once', 'Return after the first snapshot (or one result with --events)')
+  .option('--cursor <cursor>', 'Resume a detailed --events stream from a processed cursor')
+  .option('--timeout <milliseconds>', 'Long-poll timeout from 0 to 30000', '25000')
+  .action(async (url, options) => {
+    if (options.cursor && !options.events) {
+      console.error(chalk.red('--cursor requires --events; current snapshots do not need a cursor'));
+      process.exitCode = 1;
+      return;
+    }
+    const timeoutMs = Number(options.timeout);
+    const controller = new AbortController();
+    const stop = () => controller.abort();
+    process.once('SIGINT', stop);
+    process.once('SIGTERM', stop);
+
+    try {
+      await (options.events ? runWatch : runSnapshotWatch)({
+        url,
+        cursor: options.cursor,
+        timeoutMs,
+        json: options.json === true,
+        once: options.once === true,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      console.error(chalk.red(`Waypoint Watch failed: ${error.message}`));
+      process.exitCode = 1;
+    } finally {
+      process.removeListener('SIGINT', stop);
+      process.removeListener('SIGTERM', stop);
+    }
+  });
+
+program
+  .command('update')
+  .description('Update this installation to the latest release')
+  .action(async () => {
+    try {
+      const result = await updateInstallation(dirname(__dirname));
+      console.log(chalk.green('Waypoint updated. Run waypoint restart to use the new server version.'));
+      console.log(chalk.gray('Reconnect your agent if it launches the MCP server directly.'));
+      if (result?.skillUpdated === false) {
+        console.log(chalk.yellow(`Waypoint skill update failed: ${result.skillError}`));
+        console.log(chalk.gray(`Retry with: ${skillUpdateRetryCommand}`));
+      }
+    } catch (error) {
+      console.error(chalk.red(error.message));
+      process.exitCode = 1;
+    }
+  });
+
+await program.parseAsync(process.argv);

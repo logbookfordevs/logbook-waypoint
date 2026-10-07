@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -207,6 +207,42 @@ test('server shares strict loopback project scope across read, context, deletion
   await assert.rejects(server.deleteProjectAnnotations({ url_pattern: 'https://example.com/*' }), /loopback/i);
 });
 
+test('Read requires a URL or ID and scopes a mixed local Queue', async () => {
+  const server = new LocalAnnotationsServer();
+  const annotations = [
+    { id, url: 'http://localhost:3000/', comment: 'Waypoint feedback', status: 'pending' },
+    {
+      id: 'waypoint_1750000000001_abcdefghi',
+      url: 'http://127.0.0.1:3001/firm',
+      comment: 'Firm feedback',
+      status: 'pending',
+    },
+  ];
+  server.loadAnnotations = async () => structuredClone(annotations);
+
+  await assert.rejects(server.readAnnotations({ status: 'pending' }), /requires id or url/);
+
+  const filtered = await server.readAnnotations({
+    status: 'pending',
+    url: 'http://localhost:3000/*',
+  });
+
+  assert.deepEqual(filtered.annotations.map(annotation => annotation.id), [id]);
+  assert.equal(filtered.multiProjectWarning, null);
+});
+
+test('Read rejects a missing ID or URL even when only one project exists', async () => {
+  const server = new LocalAnnotationsServer();
+  server.loadAnnotations = async () => [{
+    id,
+    url: 'http://localhost:3000/settings',
+    comment: 'Old project feedback',
+    status: 'pending',
+  }];
+
+  await assert.rejects(server.readAnnotations({ status: 'pending' }), /requires id or url/);
+});
+
 test('server file-backs screenshots and extension attachments while explicit retrieval controls bytes', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-capabilities-'));
   const annotationsFile = path.join(directory, 'annotations.json');
@@ -223,7 +259,13 @@ test('server file-backs screenshots and extension attachments while explicit ret
         url: 'http://localhost:3000/app',
         comment: 'Check visual hierarchy',
         status: 'pending',
-        screenshot: { data_url: 'data:image/png;base64,c2NyZWVuc2hvdA==', compression: 'png' },
+        targets: [{
+          selector: '#primary',
+          screenshot: { data_url: 'data:image/png;base64,c2NyZWVuc2hvdA==', compression: 'png' },
+        }, {
+          selector: '#secondary',
+          screenshot: { data_url: 'data:image/png;base64,c2Vjb25k', compression: 'png' },
+        }],
         attachments: [{
           name: 'detail.png',
           mime_type: 'image/png',
@@ -237,16 +279,19 @@ test('server file-backs screenshots and extension attachments while explicit ret
     const persisted = JSON.parse(await readFile(annotationsFile, 'utf8'))[0];
     const attachmentId = saved.attachments[0].id;
 
-    assert.equal('data_url' in persisted.screenshot, false);
+    assert.equal('data_url' in persisted.targets[0].screenshot, false);
     assert.equal('data_url' in persisted.attachments[0], false);
-    assert.match(persisted.screenshot.attachment_id, /^[a-f0-9-]{36}$/);
+    assert.match(persisted.targets[0].screenshot.attachment_id, /^[a-f0-9-]{36}$/);
     const metadata = await server.getAnnotationAttachment({ id, attachment_id: attachmentId });
     const content = await server.getAnnotationAttachment({ id, attachment_id: attachmentId, include_content: true });
     const screenshot = await server.getAnnotationScreenshot({ id });
+    const secondScreenshot = await server.getAnnotationScreenshot({ id, target_index: 1 });
 
     assert.equal(metadata.attachment.content, undefined);
     assert.equal(content.attachment.content, 'ZGV0YWls');
     assert.equal(screenshot.screenshot.data_url, 'data:image/png;base64,c2NyZWVuc2hvdA==');
+    assert.equal(secondScreenshot.target_index, 1);
+    assert.equal(secondScreenshot.screenshot.data_url, 'data:image/png;base64,c2Vjb25k');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -353,8 +398,8 @@ test('HTTP media writes roll back staged files and preserve superseded files unt
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ variants: [
-          { key: 'a', name: 'A', implementation: {} },
-          { key: 'b', name: 'B', implementation: {} },
+          { key: 'a', name: 'A', implementation: { css: '[data-variant="a"] { display: block; }' } },
+          { key: 'b', name: 'B', implementation: { css: '[data-variant="b"] { display: block; }' } },
         ] }),
       });
       assert.equal(requestVariants.status, 200);
@@ -460,6 +505,44 @@ test('HTTP attachment references require matching metadata in their canonical An
       });
       assert.equal(exactReference.status, 200);
     });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+
+test('ID and URL reads omit unsupported origins from a mixed Queue', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-local-discovery-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile: path.join(directory, 'watch.json') });
+  try {
+    await writeFile(annotationsFile, JSON.stringify([
+      { id, url: 'http://localhost:3002/search?q=*#results', comment: 'Local feedback', status: 'pending' },
+      { id: 'waypoint_1750000000001_abcdefghi', url: 'https://waypoint.logbookfordevs.com/docs/installation', comment: 'Production feedback', status: 'pending' },
+      { id: 'waypoint_1750000000002_abcdefghi', url: 'http://localhost.evil.test/page', comment: 'Lookalike host', status: 'pending' },
+    ]));
+    const scoped = await server.readAnnotations({ url: 'http://localhost:3002/*' });
+    assert.deepEqual(scoped.annotations.map(annotation => annotation.id), [id]);
+    const selected = await server.readAnnotations({ id });
+    assert.deepEqual(selected.annotations.map(annotation => annotation.id), [id]);
+    const production = await server.readAnnotations({ id: 'waypoint_1750000000001_abcdefghi' });
+    assert.deepEqual(production.annotations, []);
+    await assert.rejects(server.readAnnotations({ url: 'https://waypoint.logbookfordevs.com/*' }), /loopback/i);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('an ID for a production-only Annotation returns no Survey body', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-production-discovery-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile: path.join(directory, 'watch.json') });
+  try {
+    await writeFile(annotationsFile, JSON.stringify([
+      { id, url: 'https://waypoint.logbookfordevs.com/docs/installation', comment: 'Production feedback', status: 'pending' },
+    ]));
+    const result = await server.readAnnotations({ id });
+    assert.deepEqual(result.annotations, []);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

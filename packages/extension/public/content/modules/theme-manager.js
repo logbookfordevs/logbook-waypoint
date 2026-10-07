@@ -22,6 +22,8 @@ var WaypointThemeManager = (() => {
       'waypoint-danger': '#a63d32',
       'waypoint-danger-hover': '#a63d3214',
       'waypoint-highlight': '#3f8580',
+      'waypoint-selection': '#102c2c',
+      'waypoint-on-selection': '#f4efde',
       'waypoint-badge-bg': '#173f5f',
       'waypoint-tooltip-bg': '#102c2c'
     },
@@ -44,6 +46,8 @@ var WaypointThemeManager = (() => {
       'waypoint-danger': '#f08a73',
       'waypoint-danger-hover': '#f08a731a',
       'waypoint-highlight': '#69aaa4',
+      'waypoint-selection': '#69aaa4',
+      'waypoint-on-selection': '#071b1d',
       'waypoint-badge-bg': '#1b4668',
       'waypoint-tooltip-bg': '#071b1d'
     }

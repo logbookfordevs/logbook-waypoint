@@ -1,4 +1,6 @@
 import { assertAnnotationLifecycleState, assertAnnotationStatusFilter } from './annotation-lifecycle.js';
+import { annotationHasScreenshot, targetHasScreenshot } from './annotation-media.js';
+import { normalizeAnnotationTargets } from './annotation-targets.js';
 
 const SENSITIVE_EXPORT_KEYS = new Set([
   'attachments',
@@ -34,8 +36,13 @@ function routeFor(annotation) {
 }
 
 function exportedAnnotation(annotation) {
+  annotation = normalizeAnnotationTargets(annotation);
   assertAnnotationLifecycleState(annotation);
   const portable = portableValue(annotation);
+  const targets = annotation.targets.map(target => ({
+    ...portableValue(target),
+    has_screenshot: targetHasScreenshot(target),
+  }));
   let urlPath = annotation.url_path;
   try {
     urlPath = routeFor(annotation).route;
@@ -45,10 +52,11 @@ function exportedAnnotation(annotation) {
 
   return {
     ...portable,
+    targets,
     id: annotation.id,
     status: annotation.status,
     ...(urlPath ? { url_path: urlPath } : {}),
-    has_screenshot: Boolean(annotation.screenshot?.data_url || annotation.screenshot?.attachment_id || annotation.has_screenshot),
+    has_screenshot: annotationHasScreenshot(annotation, annotation.targets),
     has_attachments: Boolean(annotation.attachments?.length || annotation.has_attachments),
   };
 }
@@ -87,6 +95,11 @@ function markdownFor(groups) {
     lines.push('', `## \`${group.route}\``, '', `Source: ${group.origin}`);
     for (const annotation of group.annotations) {
       lines.push('', `- [${annotation.status ?? 'unknown'}] ${annotation.comment ?? ''}`, `  - ID: ${annotation.id}`);
+      annotation.targets.forEach((target, index) => {
+        const context = target.element_context || {};
+        const identity = [context.tag ? `<${context.tag}>` : '', context.text ? `“${context.text}”` : ''].filter(Boolean).join(' ');
+        lines.push(`  - Target ${String.fromCharCode(97 + index)}: ${identity || target.selector}`, `    - Selector: ${target.selector}`);
+      });
     }
   }
   return `${lines.join('\n')}\n`;

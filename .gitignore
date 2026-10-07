@@ -7,24 +7,36 @@ npm-debug.log*
 
 # Website build artifacts
 packages/website/.next/
+packages/website/public/install.sh
 *.tsbuildinfo
 
 # Extension build artifacts
 packages/extension/.output/
 packages/extension/.wxt/
 packages/extension/*.zip
+.release/
 
 # MCP Server
 mcp-server/logs/
 
 # Development
 .env
+.env.local
 .DS_Store
 *.log
+*.tsbuildinfo
+
+# Website build output and local deployment settings
+packages/website/.next/
+packages/website/.vercel/
 
 # IDE
 .vscode/
 .idea/
+
+# Local video projects
+# Keep sources, media, renders, caches, and renderer dependencies local.
+/videos/
 
 # Temporary files
 *.tmp

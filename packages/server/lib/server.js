@@ -21,6 +21,7 @@ import {
 } from './security.js';
 import { isValidAnnotationId } from './annotation-id.js';
 import { assertValidAnnotation } from './annotation-validation.js';
+import { normalizeAnnotationTargets } from './annotation-targets.js';
 import {
   applyDesignIntentUpdate,
   assertAnnotationDesignIntent,
@@ -41,7 +42,9 @@ import {
 } from './annotation-lifecycle.js';
 import { ALLOWED_IMAGE_MIME_TYPES, AttachmentStore } from './attachment-store.js';
 import { encodeAnnotationsExport } from './export-codec.js';
-import { createProjectScope, matchesProjectScope } from './project-scope.js';
+import { inspectAnnotation } from './annotation-inspection.js';
+import { summarizeAnnotation } from './annotation-summary.js';
+import { createProjectScope, isLoopbackProjectUrl, matchesProjectScope } from './project-scope.js';
 import { PRODUCT_IDENTITY } from './product-identity.js';
 import { PersistentWatchQueue, toReadAnnotation, toWatchAnnotation } from './watch-queue.js';
 import {
@@ -63,6 +66,7 @@ import {
   discardVariantRequest,
   discardVariant as discardVariantRecord,
   finalizeVariant as finalizeVariantRecord,
+  replaceVariantRequest,
 } from './variants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -101,13 +105,20 @@ function lifecycleToolSchema({ owner, reason = false, resolutionRecord = false }
       ...(resolutionRecord ? {
         resolution_record: {
           type: 'object',
+          description: 'Required completion evidence only when resolving an Impeccable Design Action. Omit this field for an ordinary Annotation.',
           properties: {
-            summary: { type: 'string', minLength: 1, maxLength: RESOLUTION_SUMMARY_MAX_LENGTH },
+            summary: {
+              type: 'string',
+              minLength: 1,
+              maxLength: RESOLUTION_SUMMARY_MAX_LENGTH,
+              description: 'Provider-neutral implementation outcome. Application routes and repository-relative paths are allowed; machine-specific absolute paths and provider-internal material are not.',
+            },
             verification: {
               type: 'array',
               minItems: 1,
               maxItems: RESOLUTION_VERIFICATION_MAX_ITEMS,
               items: { type: 'string', minLength: 1, maxLength: RESOLUTION_VERIFICATION_ITEM_MAX_LENGTH },
+              description: 'Provider-neutral checks that substantiate the completed Design Action.',
             },
           },
           required: ['summary', 'verification'],
@@ -117,6 +128,49 @@ function lifecycleToolSchema({ owner, reason = false, resolutionRecord = false }
     },
     required: owner ? ['id', 'owner'] : ['id'],
     additionalProperties: false,
+  };
+}
+
+function variantCandidatesToolSchema() {
+  return {
+    type: 'array',
+    minItems: 1,
+    maxItems: 6,
+    items: {
+      type: 'object',
+      properties: {
+        key: { type: 'string' },
+        name: { type: 'string' },
+        implementation: {
+          type: 'object',
+          description: 'Executable browser presentation for this candidate. Include non-empty pending_changes and/or scoped css; file paths, preview URLs, labels, and application state metadata are not presentation instructions.',
+          properties: {
+            pending_changes: {
+              type: 'object',
+              minProperties: 1,
+              description: 'Original-to-value DOM presentation changes understood by Waypoint.',
+            },
+            css: {
+              type: 'string',
+              minLength: 1,
+              description: 'Scoped CSS that visibly presents this candidate, including temporary structural Scaffold when needed.',
+            },
+          },
+          anyOf: [
+            { required: ['pending_changes'] },
+            { required: ['css'] },
+          ],
+          additionalProperties: false,
+        },
+        scaffold: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Stable identifiers for temporary source structures the coding agent must reconcile after selection or cancellation.',
+        },
+      },
+      required: ['key', 'name', 'implementation'],
+      additionalProperties: false,
+    },
   };
 }
 
@@ -180,7 +234,7 @@ export class LocalAnnotationsServer {
     this.mcpServer = new Server(
       {
         name: PRODUCT_IDENTITY.mcpConfigKey,
-        version: '0.1.0',
+        version: packageJson.version,
       },
       {
         capabilities: {
@@ -219,6 +273,16 @@ export class LocalAnnotationsServer {
         minExtensionVersion: '0.1.0',
         timestamp: new Date().toISOString() 
       });
+    });
+
+    this.app.post('/api/watch', async (req, res) => {
+      try {
+        const data = await this.watchAnnotations(req.body ?? {});
+        res.json({ type: 'watch_events', data_trust: 'untrusted', data });
+      } catch (error) {
+        const invalidCursor = /Watch cursor|Watch cursor belongs/.test(error.message);
+        res.status(invalidCursor ? 400 : requestErrorStatus(error)).json({ error: error.message });
+      }
     });
 
     // API endpoints for Chrome extension
@@ -394,6 +458,9 @@ export class LocalAnnotationsServer {
 
     this.app.post('/api/annotations/:id/variants/request', runVariantOperation(
       req => this.requestVariants({ id: req.params.id, variants: req.body?.variants }),
+    ));
+    this.app.post('/api/annotations/:id/variants/replace', runVariantOperation(
+      req => this.replaceVariants({ id: req.params.id, variants: req.body?.variants }),
     ));
     this.app.delete('/api/annotations/:id/variants', runVariantOperation(
       req => this.cancelVariantRequest({ id: req.params.id }),
@@ -617,7 +684,7 @@ export class LocalAnnotationsServer {
     const server = new Server(
       {
         name: PRODUCT_IDENTITY.mcpConfigKey,
-        version: '0.1.0',
+        version: packageJson.version,
       },
       {
         capabilities: {
@@ -640,32 +707,15 @@ export class LocalAnnotationsServer {
       return {
         tools: [
           {
-            name: 'watch_annotations',
-            description: 'Waits for new or changed Queue activity without changing lifecycle state or creating a Claim. Returns an opaque continuation cursor and untrusted annotation content. Reuse only the cursor from the last successful response to resume after reconnecting. Delivery is at least once: deduplicate changes by annotation id and revision.',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                cursor: {
-                  type: 'string',
-                  description: 'Opaque cursor from the last successful watch_annotations response'
-                },
-                timeout_ms: {
-                  type: 'number',
-                  minimum: 0,
-                  maximum: 30000,
-                  default: 25000,
-                  description: 'Maximum time to wait; timeout is a successful empty response'
-                }
-              },
-              additionalProperties: false
-            }
-          },
-          {
             name: 'read_annotations',
-            description: 'Retrieves user-created visual annotations with pagination support. Returns annotation data with has_screenshot flag instead of full screenshot data for token efficiency. Use url parameter to filter by project. MULTI-PROJECT SAFETY: This tool detects when annotations exist across multiple localhost projects and provides warnings with specific URL filtering guidance. CRITICAL WORKFLOW: (1) First call WITHOUT url parameter to see all projects, (2) Use get_project_context tool to determine current project, (3) Call again WITH url parameter (e.g., "http://localhost:3000/*") to filter for current project only. This prevents cross-project contamination where you might implement changes in wrong codebase. DESIGN CHANGES: Annotations may include pending_changes with original→new values for CSS properties. When implementing these changes, map values to the project design system (Tailwind classes, CSS variables, or design tokens) rather than using raw values. Use limit and offset parameters for pagination when handling large annotation sets. Use this tool when users mention: annotations, comments, feedback, suggestions, notes, marked changes, or visual issues they\'ve identified.',
+            description: 'Survey compact Annotation summaries by exact Annotation ID or loopback URL scope. Supply id or url. An unknown ID or empty scope succeeds with an empty list. Read is side-effect-free.',
             inputSchema: {
               type: 'object',
               properties: {
+                id: {
+                  type: 'string',
+                  description: 'Canonical Annotation ID for one exact Survey result. May be combined with url to verify its scope.'
+                },
                 status: {
                   type: 'string',
                   enum: ['pending', 'claimed', 'resolved', 'discarded', 'all'],
@@ -687,15 +737,37 @@ export class LocalAnnotationsServer {
                 },
                 url: {
                   type: 'string',
-                  description: 'Filter by specific localhost URL. Supports exact match (e.g., "http://localhost:3000/dashboard") or pattern match with base URL (e.g., "http://localhost:3000/" or "http://localhost:3000/*" to get all annotations from that project)'
+                  description: 'Filter by localhost scope. A Page URL without query or hash includes every View State on that pathname (e.g., "http://localhost:3000/account"). A complete Captured URL filters one exact View State. Use a project root or wildcard (e.g., "http://localhost:3000/" or "http://localhost:3000/*") for the entire project.'
                 }
               },
+              anyOf: [{ required: ['id'] }, { required: ['url'] }],
               additionalProperties: false
             }
           },
           {
+            name: 'inspect_annotations',
+            description: 'Diagnose one or more selected annotations using their complete captured context. Use multiple IDs for annotations being understood or implemented together. Useful when focused implementation context leaves layout, cascade, placement, source identity, or target relationships ambiguous.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                ids: {
+                  type: 'array',
+                  minItems: 1,
+                  uniqueItems: true,
+                  items: {
+                    type: 'string',
+                    description: 'Canonical Annotation ID',
+                  },
+                  description: 'Selected Annotation IDs to inspect together',
+                },
+              },
+              required: ['ids'],
+              additionalProperties: false,
+            },
+          },
+          {
             name: 'claim_annotation',
-            description: 'Claims one Pending Annotation for an owner. Competing active Claims are rejected; the same owner refreshes expiry. Reading and Watch never claim or refresh.',
+            description: 'Claim one Pending Annotation before editing. A competing active Claim is rejected; the same owner refreshes expiry.',
             inputSchema: lifecycleToolSchema({ owner: true }),
           },
           {
@@ -710,7 +782,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'resolve_annotation',
-            description: 'Marks an Annotation owned by the caller as Resolved and retains it as Queue history. Pending Annotations must be claimed first.',
+            description: 'Marks an Annotation owned by the caller as Resolved and retains it as Queue history. Pending Annotations must be claimed first. An Impeccable Design Action requires a Resolution Record as its completion evidence; an ordinary Annotation must omit resolution_record.',
             inputSchema: lifecycleToolSchema({ owner: true, resolutionRecord: true }),
           },
           {
@@ -797,26 +869,25 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'request_variants',
-            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active.',
+            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active. Structural alternatives must use Scaffold controlled by candidate presentation. If the user later cancels, clean up temporary variant code before considering the work complete.',
             inputSchema: {
               type: 'object',
               properties: {
                 id: { type: 'string', description: 'Annotation ID' },
-                variants: {
-                  type: 'array',
-                  minItems: 1,
-                  items: {
-                    type: 'object',
-                    properties: {
-                      key: { type: 'string' },
-                      name: { type: 'string' },
-                      implementation: { type: 'object' },
-                      scaffold: { type: 'array', items: { type: 'string' } },
-                    },
-                    required: ['key', 'name', 'implementation'],
-                    additionalProperties: false,
-                  },
-                },
+                variants: variantCandidatesToolSchema(),
+              },
+              required: ['id', 'variants'],
+              additionalProperties: false,
+            },
+          },
+          {
+            name: 'replace_variants',
+            description: 'Replaces every candidate in an unresolved Variant Set and makes the first replacement Active.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'Annotation ID' },
+                variants: variantCandidatesToolSchema(),
               },
               required: ['id', 'variants'],
               additionalProperties: false,
@@ -844,7 +915,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'cancel_variant_request',
-            description: 'Cancels an unresolved Variant Set, removes all candidate presentation and Scaffold, and preserves the Annotation as Pending.',
+            description: 'Cancels an unresolved Variant Set, removes candidate state, and returns the Annotation to Pending. Watch publishes change_type variant_cancelled.',
             inputSchema: {
               type: 'object',
               properties: { id: { type: 'string' } },
@@ -871,7 +942,13 @@ export class LocalAnnotationsServer {
                 id: {
                   type: 'string',
                   description: 'Annotation ID to get screenshot for'
-                }
+                },
+                target_index: {
+                  type: 'integer',
+                  minimum: 0,
+                  maximum: 7,
+                  description: 'Zero-based Target index; defaults to the first Target'
+                },
               },
               required: ['id'],
               additionalProperties: false
@@ -886,19 +963,9 @@ export class LocalAnnotationsServer {
 
       try {
         switch (name) {
-          case 'watch_annotations': {
-            const result = await this.watchAnnotations(args || {});
-            return {
-              content: [{
-                type: 'text',
-                text: JSON.stringify(createToolPayload('watch_annotations', result), null, 2)
-              }]
-            };
-          }
-
           case 'read_annotations': {
             const result = await this.readAnnotations(args || {});
-            const { annotations, projectInfo, multiProjectWarning } = result;
+            const { annotations, pagination, projectInfo, projectSelection, multiProjectWarning } = result;
 
             return {
               content: [
@@ -907,12 +974,28 @@ export class LocalAnnotationsServer {
                   text: JSON.stringify(createToolPayload('read_annotations', {
                     annotations,
                     count: annotations.length,
+                    pagination,
                     projects: projectInfo,
+                    project_selection: projectSelection,
                     multi_project_warning: multiProjectWarning,
-                    filter_applied: args?.url || 'none'
+                    filter_applied: args?.id || args?.url || 'none'
                   }), null, 2)
                 }
               ]
+            };
+          }
+
+          case 'inspect_annotations': {
+            const result = await this.inspectAnnotations(args || {});
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify(createToolPayload('inspect_annotations', {
+                  annotations: result.annotations,
+                  count: result.annotations.length,
+                  missing_ids: result.missingIds,
+                }), null, 2),
+              }],
             };
           }
 
@@ -1009,12 +1092,14 @@ export class LocalAnnotationsServer {
           }
 
           case 'request_variants':
+          case 'replace_variants':
           case 'activate_variant':
           case 'discard_variant':
           case 'cancel_variant_request':
           case 'finalize_variant': {
             const operations = {
               request_variants: () => this.requestVariants(args),
+              replace_variants: () => this.replaceVariants(args),
               activate_variant: () => this.activateVariant(args),
               discard_variant: () => this.discardVariant(args),
               cancel_variant_request: () => this.cancelVariantRequest(args),
@@ -1076,7 +1161,9 @@ export class LocalAnnotationsServer {
         return [];
       }
       if (!Array.isArray(annotations)) return [];
-      const validAnnotations = annotations.filter(annotation => isValidAnnotationId(annotation?.id));
+      const validAnnotations = annotations
+        .filter(annotation => isValidAnnotationId(annotation?.id))
+        .map(normalizeAnnotationTargets);
       validAnnotations.forEach(assertAnnotationLifecycleState);
       validAnnotations.forEach(assertAnnotationDesignIntent);
       validAnnotations.forEach(assertAnnotationResolutionRecord);
@@ -1096,6 +1183,7 @@ export class LocalAnnotationsServer {
     if (!Array.isArray(annotations) || annotations.some(annotation => !isValidAnnotationId(annotation?.id))) {
       throw new TypeError('Invalid Waypoint annotation ID');
     }
+    annotations = annotations.map(normalizeAnnotationTargets);
     annotations.forEach(assertAnnotationLifecycleState);
     annotations.forEach(assertAnnotationDesignIntent);
     annotations.forEach(assertAnnotationResolutionRecord);
@@ -1214,22 +1302,47 @@ export class LocalAnnotationsServer {
   async watchAnnotations(args) {
     const timeoutMs = args.timeout_ms ?? 25_000;
     if (!Number.isInteger(timeoutMs) || timeoutMs < 0 || timeoutMs > 30_000) {
-      throw new Error('timeout_ms must be an integer between 0 and 30000');
+      throw new TypeError('timeout_ms must be an integer between 0 and 30000');
     }
 
+    if (args.from_now === true && args.cursor !== undefined) {
+      throw new TypeError('from_now cannot be combined with cursor');
+    }
+    if (args.include_open_work === true && args.url === undefined) {
+      throw new TypeError('include_open_work requires url');
+    }
+    if (args.cursor === undefined || args.url !== undefined) createProjectScope(args.url);
     await this.loadCurrentAnnotations();
     const result = await this.watchQueue.watch(
-      { cursor: args.cursor, timeoutMs },
+      { cursor: args.cursor, fromNow: args.from_now === true, timeoutMs, url: args.url, scoped: true },
       () => this.loadAnnotations(),
     );
+    const needsOpenWork = args.include_open_work === true
+      && (args.from_now === true || result.changes.length > 0);
+    const openScope = needsOpenWork ? createProjectScope(args.url) : null;
+    const openWork = openScope
+      ? (await this.loadCurrentAnnotations())
+        .filter(annotation => annotationMatchesProjectScope(annotation, openScope))
+        .filter(annotation => annotation.status === 'pending' || annotation.status === 'claimed')
+        .map(annotation => ({
+          id: annotation.id,
+          status: annotation.status,
+          url: annotation.url,
+          ...(annotation.updated_at ? { updated_at: annotation.updated_at } : {}),
+          ...(annotation.claim?.owner ? { owner: annotation.claim.owner } : {}),
+        }))
+        .sort((left, right) => left.id.localeCompare(right.id))
+      : undefined;
     return {
       changes: result.changes.map(change => ({
-        annotation: change.annotation,
+        annotation: summarizeAnnotation(change.annotation),
         revision: change.revision,
         dedupe_key: `${change.annotation.id}:${change.revision}`,
+        ...(change.change_type ? { change_type: change.change_type } : {}),
       })),
       cursor: result.cursor,
       timed_out: result.changes.length === 0,
+      ...(openWork ? { open_work: openWork } : {}),
     };
   }
 
@@ -1247,6 +1360,10 @@ export class LocalAnnotationsServer {
 
   async requestVariants(args) {
     return this.updateVariantAnnotation(args?.id, annotation => createVariantRequest(annotation, args?.variants));
+  }
+
+  async replaceVariants(args) {
+    return this.updateVariantAnnotation(args?.id, annotation => replaceVariantRequest(annotation, args?.variants));
   }
 
   async activateVariant(args) {
@@ -1270,6 +1387,7 @@ export class LocalAnnotationsServer {
       throw new TypeError('Annotation must be an object');
     }
     if (!isValidAnnotationId(annotation.id)) throw new Error('Invalid annotation ID');
+    annotation = normalizeAnnotationTargets(annotation);
 
     const createdAttachments = stagedAttachments ?? [];
     const ownsStagedAttachments = stagedAttachments === undefined;
@@ -1333,38 +1451,40 @@ export class LocalAnnotationsServer {
         }
       }
 
-      if (annotation.screenshot?.data_url) {
-        const { data_url: dataUrl, attachment_id: ignoredAttachmentId, ...screenshot } = annotation.screenshot;
-        const mimeType = /^data:(image\/(?:png|jpeg|webp|gif));base64,/.exec(dataUrl)?.[1];
-        if (!mimeType) throw new TypeError('Screenshot must be a supported image data URL');
-        const saved = await saveAttachment({
-          annotationId: annotation.id,
-          kind: 'screenshot',
-          mimeType,
-          content: dataUrl,
-          name: 'screenshot',
-        });
-        normalized.screenshot = {
-          ...screenshot,
-          attachment_id: saved.id,
-          mime_type: saved.mime_type,
-          size_bytes: saved.byte_size,
-        };
-        normalized.has_screenshot = true;
-      } else if (annotation.screenshot?.attachment_id) {
-        const stored = await this.attachmentStore.get({
-          annotationId: annotation.id,
-          attachmentId: annotation.screenshot.attachment_id,
-        });
-        if (!stored || stored.kind !== 'screenshot') {
-          throw new TypeError('Screenshot reference does not exist for this Annotation');
+      normalized.targets = [];
+      for (const [targetIndex, target] of annotation.targets.entries()) {
+        const normalizedTarget = { ...target };
+        if (target.screenshot?.data_url) {
+          const { data_url: dataUrl, attachment_id: ignoredAttachmentId, ...screenshot } = target.screenshot;
+          const mimeType = /^data:(image\/(?:png|jpeg|webp|gif));base64,/.exec(dataUrl)?.[1];
+          if (!mimeType) throw new TypeError('Screenshot must be a supported image data URL');
+          const saved = await saveAttachment({
+            annotationId: annotation.id,
+            kind: 'screenshot',
+            mimeType,
+            content: dataUrl,
+            name: `screenshot-${targetIndex + 1}`,
+          });
+          normalizedTarget.screenshot = {
+            ...screenshot,
+            attachment_id: saved.id,
+            mime_type: saved.mime_type,
+            size_bytes: saved.byte_size,
+          };
+          normalized.has_screenshot = true;
+        } else if (target.screenshot?.attachment_id) {
+          const stored = await this.attachmentStore.get({
+            annotationId: annotation.id,
+            attachmentId: target.screenshot.attachment_id,
+          });
+          if (!stored || stored.kind !== 'screenshot') {
+            throw new TypeError('Screenshot reference does not exist for this Annotation');
+          }
+          if (stored.mime_type !== target.screenshot.mime_type || stored.byte_size !== target.screenshot.size_bytes) {
+            throw new TypeError('Screenshot reference metadata does not match stored media');
+          }
         }
-        if (
-          stored.mime_type !== annotation.screenshot.mime_type
-          || stored.byte_size !== annotation.screenshot.size_bytes
-        ) {
-          throw new TypeError('Screenshot reference metadata does not match stored media');
-        }
+        normalized.targets.push(normalizedTarget);
       }
 
       return normalized;
@@ -1376,8 +1496,10 @@ export class LocalAnnotationsServer {
 
   attachmentReferences(annotation) {
     const references = [];
-    if (annotation?.screenshot?.attachment_id) {
-      references.push({ annotationId: annotation.id, attachmentId: annotation.screenshot.attachment_id });
+    for (const target of annotation ? normalizeAnnotationTargets(annotation).targets : []) {
+      if (target.screenshot?.attachment_id) {
+        references.push({ annotationId: annotation.id, attachmentId: target.screenshot.attachment_id });
+      }
     }
     for (const attachment of annotation?.attachments ?? []) {
       if (attachment?.id) references.push({ annotationId: annotation.id, attachmentId: attachment.id });
@@ -1428,12 +1550,22 @@ export class LocalAnnotationsServer {
   }
 
   async readAnnotations(args) {
-    const annotations = await this.loadCurrentAnnotations();
-    const { status = 'pending', limit = 50, offset = 0, url } = args;
+    const { id, status = id ? 'all' : 'pending', limit = 50, offset = 0, url } = args;
+    if (id === undefined && url === undefined) {
+      throw new TypeError('read_annotations requires id or url');
+    }
+    if (id !== undefined && !isValidAnnotationId(id)) {
+      throw new TypeError('Invalid Waypoint annotation ID');
+    }
     assertAnnotationStatusFilter(status);
     const scope = url ? createProjectScope(url) : null;
+    const annotations = await this.loadCurrentAnnotations();
 
     let filtered = annotations;
+
+    if (id !== undefined) {
+      filtered = filtered.filter(annotation => annotation.id === id && isLoopbackProjectUrl(annotation.url));
+    }
 
     if (status !== 'all') {
       filtered = filtered.filter(a => a.status === status);
@@ -1447,8 +1579,9 @@ export class LocalAnnotationsServer {
     const groupedByProject = {};
     filtered.forEach(annotation => {
       try {
-        const urlObj = new URL(annotation.url);
-        const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+        const baseUrl = new URL(annotation.url).origin;
+        const projectScope = createProjectScope(`${baseUrl}/*`);
+        if (!annotationMatchesProjectScope(annotation, projectScope)) return;
         if (!groupedByProject[baseUrl]) {
           groupedByProject[baseUrl] = [];
         }
@@ -1457,22 +1590,6 @@ export class LocalAnnotationsServer {
         // Handle invalid URLs gracefully
       }
     });
-
-    // Add project context to response
-    const projectCount = Object.keys(groupedByProject).length;
-    let multiProjectWarning = null;
-
-    if (projectCount > 1 && !url) {
-      const projectSuggestions = Object.keys(groupedByProject).map(baseUrl => `"${baseUrl}/*"`).join(' or ');
-      multiProjectWarning = {
-        warning: `MULTI-PROJECT DETECTED: Found annotations from ${projectCount} different projects. This may cause cross-project contamination.`,
-        recommendation: `Use the 'url' parameter to filter annotations for your current project.`,
-        suggested_filters: Object.keys(groupedByProject).map(baseUrl => `${baseUrl}/*`),
-        guidance: `Example: Use url: "${Object.keys(groupedByProject)[0]}/*" to filter for the first project.`,
-        projects_detected: Object.keys(groupedByProject)
-      };
-      console.warn(`MULTI-PROJECT WARNING: Found annotations from ${projectCount} different projects. Use url parameter: ${projectSuggestions}`);
-    }
 
     // Build project info for better context
     const projectInfo = Object.entries(groupedByProject).map(([baseUrl, annotations]) => ({
@@ -1497,14 +1614,31 @@ export class LocalAnnotationsServer {
       has_more: (offset + limit) < total
     };
 
-    // Transform annotations to strip screenshot data and add has_screenshot flag
-    const annotationsWithScreenshotFlag = paginatedResults.map(annotation => toReadAnnotation(annotation));
+    const annotationSummaries = paginatedResults.map(annotation => summarizeAnnotation(annotation));
 
     return {
-      annotations: annotationsWithScreenshotFlag,
+      annotations: annotationSummaries,
       pagination: pagination,
       projectInfo: projectInfo,
-      multiProjectWarning: multiProjectWarning
+      projectSelection: null,
+      multiProjectWarning: null
+    };
+  }
+
+  async inspectAnnotations(args) {
+    const ids = args?.ids;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new TypeError('inspect_annotations requires at least one Annotation ID');
+    }
+    if (ids.some(id => !isValidAnnotationId(id))) {
+      throw new TypeError('Invalid annotation ID');
+    }
+
+    const annotations = await this.loadCurrentAnnotations();
+    const byId = new Map(annotations.map(annotation => [annotation.id, annotation]));
+    return {
+      annotations: ids.flatMap(id => byId.has(id) ? [inspectAnnotation(byId.get(id))] : []),
+      missingIds: ids.filter(id => !byId.has(id)),
     };
   }
 
@@ -1543,7 +1677,11 @@ export class LocalAnnotationsServer {
       }
       if (args.operation === 'resolve') {
         assertAnnotationDeletable(annotations[index]);
-        if (annotations[index].design_intent !== undefined) assertResolutionRecord(args.resolution_record);
+        if (annotations[index].design_intent !== undefined) {
+          assertResolutionRecord(args.resolution_record);
+        } else if (args.resolution_record !== undefined) {
+          throw new TypeError('resolution_record is only supported when resolving a Design Action; resolve this Annotation without resolution_record');
+        }
       }
       const lifecycleInput = args.operation === 'discard'
         ? discardVariantRequest(annotations[index])
@@ -1585,6 +1723,7 @@ export class LocalAnnotationsServer {
    */
   async getAnnotationScreenshot(args) {
     const id = args?.id;
+    const targetIndex = args?.target_index ?? 0;
 
     // Validate input
     if (!isValidAnnotationId(id)) {
@@ -1606,8 +1745,8 @@ export class LocalAnnotationsServer {
         };
       }
 
-      // Check if annotation has screenshot data
-      if (!annotation.screenshot) {
+      const target = normalizeAnnotationTargets(annotation).targets[targetIndex];
+      if (!target?.screenshot) {
         return {
           annotation_id: id,
           screenshot: null,
@@ -1615,11 +1754,11 @@ export class LocalAnnotationsServer {
         };
       }
 
-      let dataUrl = annotation.screenshot.data_url;
-      if (!dataUrl && annotation.screenshot.attachment_id) {
+      let dataUrl = target.screenshot.data_url;
+      if (!dataUrl && target.screenshot.attachment_id) {
         const attachment = await this.attachmentStore.get({
           annotationId: id,
-          attachmentId: annotation.screenshot.attachment_id,
+          attachmentId: target.screenshot.attachment_id,
           includeContent: true,
         });
         if (attachment) dataUrl = `data:${attachment.mime_type};base64,${attachment.content}`;
@@ -1635,13 +1774,14 @@ export class LocalAnnotationsServer {
       // Return screenshot data in the contract format
       return {
         annotation_id: id,
+        target_index: targetIndex,
         screenshot: {
           data_url: dataUrl,
-          compression: annotation.screenshot.compression,
-          crop_area: annotation.screenshot.crop_area,
-          element_bounds: annotation.screenshot.element_bounds,
-          timestamp: annotation.screenshot.timestamp,
-          viewport: annotation.viewport || null
+          compression: target.screenshot.compression,
+          crop_area: target.screenshot.crop_area,
+          element_bounds: target.screenshot.element_bounds,
+          timestamp: target.screenshot.timestamp,
+          viewport: target.viewport || null
         },
         message: 'Screenshot retrieved successfully'
       };

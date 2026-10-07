@@ -7,8 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- Journal notes open without waiting for Agent source detection or screenshot capture.
+- Journal selection resumes after saving a new note, so consecutive notes can be pinned without reactivating the pen.
+
+## [0.2.0] - 2026-09-30
+
+### Added
+- Added local Journal mode to the extension toolbar, with named journals, taped text notes, hand-drawn highlights and arrows, and reattachment for missing targets, kept separate from the agent Queue.
+- Data & Storage separates Agent and Journal maintenance, including confirmed deletion of all journals and notes without removing Agent data.
+- Journal mode can copy the visible page with its notes and drawings as a screenshot, with a short shutter sound after a successful copy.
+
+### Changed
+- Extension menus use more consistent typography, and hovering an element then pressing Enter starts an Agent annotation or Journal note.
+- The GitHub installer includes the Waypoint skill by default, preferring AFK and falling back to npx with the universal global target. It remembers `--skip-skill` for updates, accepts `--yes` to re-enable installation, and keeps CLI installation successful if the skill step fails.
+- npm-based `waypoint update` now refreshes the global Waypoint skill after updating the CLI and prints a retry command if the skill step fails; installation guidance recommends the curl installer for the bundled CLI and skill.
+- `waypoint watch <url>` now shows current Pending and Claimed IDs by default, with detailed changes available through `--events`; agents can read a selected ID for its full Survey context.
+- `read_annotations` now requires an Annotation ID or URL scope.
+
+### Removed
+- Removed the `watch_annotations` MCP tool. Run `waypoint watch <url>` to watch annotations.
+
+## [0.1.5] - 2026-09-16
+
+### Added
+- Added a guided practice exercise in Core Workflow and expanded the website documentation with setup verification, lifecycle decisions, and recovery steps.
+- GitHub release installations now recommend Waypoint's agent workflow skill and can open the Skills CLI for user-selected agent harnesses.
+- Added `waypoint watch <url>` as a foreground Queue consumer, with complete NDJSON envelopes, bounded one-result mode, explicit cursor resumption, and reconnect handling.
+
+### Changed
+- Scoped Queue reads now explicitly support optimistic empty project URLs, while MCP descriptions stay concise and the installed skill carries detailed workflow guidance.
+- Variant cancellation now publishes an explicit `variant_cancelled` Watch change so agents do not mistake a user decision for lost work.
+- The Waypoint skill now treats watching as a standing responsibility, uses background CLI output only when the agent harness can surface it, and falls back to cursor-based checks at workflow boundaries.
+
+### Fixed
+- Extension settings now close with Escape even when focus is outside the panel.
+- Data & Storage can delete Annotations with unfinished Variants after an explicit confirmation that includes discarding those Variants.
+- Documentation headings and reading widths are more comfortable, and section links and code blocks wrap on narrow screens.
+- Resolution Records now identify themselves as Impeccable Design Action artifacts, report invalid usage before inspecting evidence, and accept application routes and repository-relative source paths.
+
+## [0.1.4] - 2026-09-08
+
+### Changed
+- Variant Sets now accept only browser-presentable `pending_changes` or scoped CSS, keeping the Waypoint picker as the authoritative comparison control while agents remain free to build temporary structural alternatives.
+- Agents can atomically replace every candidate in an unresolved Variant Set without cancelling the comparison or losing its original presentation.
+
+### Fixed
+- Queue actions remain legible in Night Watch, including manual synchronization and opening an Annotation.
+- Unresolved Variant Sets remain accessible from the Queue when a redesigned Target can no longer be located on the page.
+- Queue synchronization now accepts server-side Variant cancellation instead of repeatedly pushing stale cached Variant state back to the server.
+
+## [0.1.3] - 2026-09-07
+
+### Added
+- Added `waypoint update` for npm global and GitHub installer installations, with installation-channel detection and preserved install locations.
+
+### Changed
+- Redesigned the Variant picker with a draggable panel, compact wheel navigation, a View all list, and clearer comparison and confirmation controls.
+- Live annotation watching now begins with an explicit URL scope and retains that scope in continuation cursors, while scoped operations treat `localhost` and `127.0.0.1` as aliases.
+- Clarified agent guidance for cleaning up temporary Variant code when a Variant Set is cancelled.
+
+### Fixed
+- Kept the Variant picker within the viewport, corrected clipped selection and hover styling, and added Escape navigation and dismissal.
+- Prevented periodic Queue refreshes from alternating between original and preview text or making annotation pins disappear.
+
+## [0.1.2] - 2026-09-07
+
+### Added
+- A responsive Waypoint marketing and documentation website with interactive workflow examples, complete product guides, Day Chart and Night Watch appearances, and honest pre-release status.
+
+### Changed
+- Redesigned the extension settings as an accessible route logbook and refined toolbar behavior, themed settings artwork, and responsive layout.
+
+### Fixed
+- Preserved copy previews when annotated pages rerender through their application framework.
+- Kept the settings panel within the available viewport on constrained screens.
+- Queue discovery no longer recommends production URLs that scoped MCP reads cannot accept.
+
+### Security
+- Hardened dependency updates, continuous integration, and tagged publishing with pinned automation, production audits, secret scanning, and workflow security checks.
+
+## [0.1.1] - 2026-08-28
+
 ### Added
 - Waypoint-branded extension, local server, CLI, storage, annotation IDs, and MCP configuration
+- Dual CLI distribution through npm and checksummed GitHub release archives from one tagged release
 - Annotation lifecycle with pending, claimed, resolved, and discarded states
 - Durable Watch delivery for agents, including restart recovery and revision-safe cursors
 - Named annotation variants with active selection, cancellation, finalization, and scaffold cleanup
@@ -17,23 +100,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Element screenshots, image attachments, and refined floating-toolbar controls
 - Optional JSON import/export, project context, bulk cleanup, keyboard inspection, and annotation appearance settings
 - A responsive Waypoint marketing and documentation website with interactive workflow examples, complete product guides, Day Chart and Night Watch appearances, and honest pre-release status
+- Batched MCP inspection for selected Annotations and complete diagnostic Target context
+- Multi-Target Annotations for one shared feedback request across two to eight ordered Targets on the same page
+- Queue sync status with manual retry for local changes awaiting the server
+- A global Data & Storage manager with project summaries, maintenance guidance, and confirmed project-wide or all-data deletion
+- Workflow-first MCP documentation with concrete calls, compact Survey guidance, diagnostic Inspect guidance, and a complete 19-tool reference
+- A basic-to-advanced user guide for annotation, Queue, copy/export, MCP, Design Actions, settings, and local-data behavior
+- Precise Target correction during inspection with arrow keys and optional compact Smaller and Larger pointer controls
 
 ### Changed
+- Made `waypoint start` run in the background by default, with `--foreground` for terminal-attached sessions
 - Rebuilt the product from the final MIT-licensed foundation under the Logbook Waypoint identity
 - Reworked the extension around the Atlantic Chartroom Driftwood palette, with Day Chart and Night Watch appearances and product-role colors for actions, navigation, signals, and pins
 - Reorganized Element edits below the annotation brief with an adaptive expanding rail, saved-change markers, and compact optional Variant and Design Action controls
 - Hardened the local server to loopback-only access with strict host, origin, request-size, and identifier validation
 - Made annotation routes preserve full paths, queries, and hashes
 - Improved selector portability, target re-anchoring, keyboard navigation, design rollback, and queues larger than 50 annotations
+- Made unscoped MCP Queue reads discovery-only so agents must select a project before annotation bodies are returned
+- Made Watch deliver the same compact Survey context as scoped Queue reads while preserving revision-safe reactive delivery
+- Made Queue follow-ups survive server outages by retaining unsynced saves, deletions, and Design or Variant Intent removals until synchronization recovers
 - Replaced remote update promotion with local extension/server compatibility guidance
 - Added HTTP and JSON MCP connection guidance for coding agents
+- Replaced the inherited contribution template with Waypoint-specific setup, validation, contract, pull request, and release guidance
+- Grouped annotation-experience preferences in an expanded-by-default disclosure, widened the settings surface, and let users hide pointer Target controls without disabling keyboard correction
 
 ### Fixed
 - Prevented deleted annotations from returning during synchronization
+- Made the connected extension automatically pull server lifecycle changes, while manual recovery reconciles them before reporting the Queue as up to date
+- Removed resolved and discarded pins from the active page canvas while retaining their Queue history
+- Refreshed the open Queue immediately after successful manual synchronization, without requiring it to be reopened
+- Updated canvas pins and toolbar counts immediately after permanently deleting an annotation from the Queue
+- Stopped annotation targeting when opening the Queue so background hover and Escape behavior no longer overlap Queue management
+- Matched annotations by Page across query and hash changes while showing pins only when their captured Targets resolve in the current View State
 - Preserved annotation lifecycle, Variant, screenshot, and attachment data across sync and restart boundaries
 - Kept unresolved Variant Sets protected from ordinary mutation or deletion
 - Restored target selection and badge placement across shadow DOM, repeated elements, and rerendered pages
 - Made hiding Design Actions affect authoring UI without invalidating existing requests
+- Kept manual Queue synchronization retryable while the server is unavailable and limited offline counts to locally proven unsynced changes
+- Made commentless text edits retain their pin, use a meaningful Queue label, and restore their original text when deleted
+- Made Site access settings show whether the current page is already enabled instead of always offering an unnecessary permission action
 
 ### Removed
 - Public page-world annotation automation and mutation APIs

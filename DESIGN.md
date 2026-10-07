@@ -76,8 +76,8 @@ components:
     rounded: "{rounded.sm}"
     padding: "0.8rem 1.15rem"
   button-launch:
-    backgroundColor: "{colors.rust}"
-    textColor: "#ffffff"
+    backgroundColor: "{colors.ocean}"
+    textColor: "#f4efde"
     rounded: "{rounded.sm}"
     padding: "0.65rem 1rem"
   workflow-instrument:
@@ -174,7 +174,7 @@ The default form is gently rounded and measured: small controls use the small ra
 ### Buttons
 
 - **Primary route action:** a compact Deep Ocean action on paper; it lifts slightly on fine-pointer hover.
-- **Launch action:** Signal Rust communicates the honest Coming soon posture and never impersonates an installer.
+- **Launch action:** Deep Ocean links directly to the official Chrome Web Store listing. Signal Rust remains reserved for warnings, field notes, and other attention states.
 - **Instrument action:** Verdigris resolves the illustrative Queue item while its disabled state preserves the visible lifecycle result.
 
 ### Navigation

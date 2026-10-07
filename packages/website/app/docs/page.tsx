@@ -1,14 +1,19 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Compass } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpen, Compass, Route } from 'lucide-react';
 
 import { documentationPages } from '@/lib/docs-content';
+import { chromeWebStoreUrl, createSocialMetadata, signalChartUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: 'Documentation',
-  description: 'The Logbook Waypoint field guide for local Annotation and agent workflows.',
+  description: 'The Logbook Waypoint field guide for local Annotations, personal journals, and agent workflows.',
   alternates: { canonical: '/docs' },
-  openGraph: { url: '/docs' },
+  ...createSocialMetadata({
+    title: 'Documentation — Logbook Waypoint',
+    description: 'The Logbook Waypoint field guide for local Annotations, personal journals, and agent workflows.',
+    url: '/docs',
+  }),
 };
 
 export default function DocumentationIndex() {
@@ -16,13 +21,23 @@ export default function DocumentationIndex() {
     <article className="docs-index">
       <h1>Waypoint field guide</h1>
       <p className="docs-lede">
-        Learn how a rendered Target becomes retained Queue activity, then connect an MCP-compatible
-        coding agent without widening the local boundary.
+        Point to something in your interface, explain what should change, and hand the feedback to
+        your coding agent, or keep personal thoughts on the page in Journal mode. Start with Installation,
+        then choose Core Workflow or Journal Mode for the way you want to work.
       </p>
       <div className="docs-notice">
         <Compass aria-hidden="true" />
-        <div><strong>Early-development documentation</strong><p>Public installation is coming soon. Source setup is available for contributors.</p></div>
+        <div><strong>Waypoint is available now</strong><p>Install the extension from the <a href={chromeWebStoreUrl} target="_blank" rel="noreferrer">Chrome Web Store</a>. For agent workflows, the recommended curl installer adds the local CLI and Waypoint skill together.</p></div>
       </div>
+      <a className="docs-signal-chart" href={signalChartUrl} target="_blank" rel="noreferrer">
+        <Route aria-hidden="true" />
+        <span>
+          <small>Visual route map</small>
+          <strong>Explore the Waypoint Signal Chart</strong>
+          <p>See how work travels from Annotation → Queue → agent, alongside Waypoint’s MCP tools and CLI Watch.</p>
+        </span>
+        <ArrowUpRight aria-hidden="true" />
+      </a>
       <div className="docs-index__routes">
         {documentationPages.map((page) => (
           <Link key={page.slug} href={`/docs/${page.slug}`}>

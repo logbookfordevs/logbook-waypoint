@@ -1,54 +1,47 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Waypoint Sans";
-  src: url("/fonts/inter-variable.woff2") format("woff2-variations");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 100 900;
-}
-
 @theme {
-  --font-sans: "Waypoint Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Besley Variable", "Besley", serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --color-ocean-950: #071f25;
-  --color-ocean-900: #0a2930;
-  --color-ocean-800: #103b40;
-  --color-chart: #f1f4f0;
-  --color-walnut: #eee6d7;
-  --color-verdigris: #167b78;
-  --color-rust: #b5482e;
-  --color-brass: #b99247;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-reading: "Literata", Georgia, serif;
+  --font-mono: "IBM Plex Mono", Consolas, monospace;
+  --color-ocean-950: #102c2c;
+  --color-ocean-900: #132f31;
+  --color-ocean-800: #193b3c;
+  --color-chart: #e9e5d8;
+  --color-walnut: #e4d8c7;
+  --color-verdigris: #3f8580;
+  --color-rust: #c94f35;
+  --color-brass: #bd9348;
   --ease-waypoint-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-waypoint-move: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 :root {
-  --page: #f1f4f0;
-  --page-raised: #f8faf7;
-  --page-soft: #e4ebe7;
-  --ink: #102c34;
-  --ink-muted: #546b70;
-  --line: #b9c8c4;
-  --line-strong: #829c98;
-  --ocean: #071f25;
-  --ocean-raised: #0b2a30;
-  --ocean-soft: #12373c;
-  --ocean-ink: #eef6f3;
-  --ocean-muted: #9cb3af;
-  --verdigris: #167b78;
-  --verdigris-soft: #c6e2dc;
-  --rust: #b5482e;
-  --rust-soft: #f2d6cc;
-  --brass: #b99247;
-  --brass-soft: #eadbb9;
-  --walnut: #eee6d7;
-  --walnut-raised: #f8f2e7;
+  --page: #e9e5d8;
+  --page-raised: #f3f0e7;
+  --page-soft: #dee2d8;
+  --ink: #17201e;
+  --ink-muted: #5f655f;
+  --line: #b8beb4;
+  --line-strong: #7c8b85;
+  --ocean: #102c2c;
+  --ocean-raised: #132f31;
+  --ocean-soft: #193b3c;
+  --ocean-ink: #f3f0e7;
+  --ocean-muted: #aabcb6;
+  --verdigris: #3f8580;
+  --verdigris-soft: #c9dfda;
+  --rust: #c94f35;
+  --rust-soft: #efd3c9;
+  --brass: #bd9348;
+  --brass-soft: #e9d9b7;
+  --walnut: #e4d8c7;
+  --walnut-raised: #eee3d4;
   --walnut-ink: #30271f;
   --walnut-muted: #6e6256;
-  --walnut-line: #cbbba6;
-  --focus: #e5913a;
+  --walnut-line: #c3b29d;
+  --focus: #3f8580;
   --shadow-raised: 0 16px 42px rgba(7, 31, 37, 0.12), 0 3px 10px rgba(7, 31, 37, 0.08);
   --shadow-instrument: 0 20px 54px rgba(0, 12, 15, 0.3), 0 4px 12px rgba(0, 12, 15, 0.18);
   --radius-sm: 0.5rem;

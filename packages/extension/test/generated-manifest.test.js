@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import { PRODUCT_IDENTITY } from '../../server/lib/product-identity.js';
@@ -12,6 +12,15 @@ test('generated manifest exposes the canonical product identity', async () => {
   assert.equal(manifest.description, PRODUCT_IDENTITY.description);
   assert.equal(manifest.homepage_url, PRODUCT_IDENTITY.homepageUrl);
   assert.equal(manifest.action.default_title, PRODUCT_IDENTITY.productName);
+});
+
+test('generated extension excludes the unreachable popup application but keeps intervention recovery', async () => {
+  await assert.rejects(
+    access(new URL('../.output/chrome-mv3/popup/popup.html', import.meta.url)),
+    error => error?.code === 'ENOENT',
+  );
+  const intervention = await readFile(new URL('../.output/chrome-mv3/intervention.html', import.meta.url), 'utf8');
+  assert.match(intervention, /popup-legacy\.js/);
 });
 
 test('generated background requests the complete Queue during smart sync', async () => {

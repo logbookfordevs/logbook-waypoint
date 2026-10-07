@@ -13,7 +13,10 @@ test('canonical product identity rejects a divergent public identifier', () => {
 test('toolbar uses Thelu as a functional settings icon without a decorative pet slot', async () => {
   const toolbar = await readFile(new URL('../public/content/modules/floating-toolbar.js', import.meta.url), 'utf8');
 
-  assert.match(toolbar, /assets\/thelu\/thelu-settings\.png/);
+  assert.match(toolbar, /assets\/thelu\/thelu-settings-day-smooth\.png/);
+  assert.match(toolbar, /assets\/thelu\/thelu-settings-night\.png/);
+  assert.match(toolbar, /waypoint-branded-settings-icon-day/);
+  assert.match(toolbar, /waypoint-branded-settings-icon-night/);
   assert.match(toolbar, /waypoint-tb-settings/);
   assert.doesNotMatch(toolbar, /data-waypoint-pet-slot|thelu-toolbar\.png/);
 });

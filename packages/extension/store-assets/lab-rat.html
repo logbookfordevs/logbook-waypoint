@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patchbay — UI Lab</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef2f7; color: #1d2733; font: 15px/1.45 Arial, sans-serif; }
+    header { height: 68px; display:flex; align-items:center; justify-content:space-between; padding:0 44px; background:#14233b; color:white; }
+    header strong { font-size:22px; } nav { display:flex; gap:28px; font-size:14px; }
+    main { width:min(1120px, calc(100% - 64px)); margin:40px auto; }
+    .hero { display:grid; grid-template-columns:1.4fr .8fr; gap:28px; align-items:stretch; }
+    .intro { padding:42px; background:white; border-radius:10px; box-shadow:0 8px 30px rgba(30,50,75,.08); }
+    h1 { margin:0 0 14px; font-size:52px; line-height:1.02; letter-spacing:-.04em; }
+    .intro p { max-width:570px; color:#59697a; font-size:18px; }
+    .actions { display:flex; gap:10px; margin-top:26px; }
+    button { border:0; border-radius:7px; padding:12px 18px; background:#2865d8; color:white; font-weight:700; }
+    button.alt { background:#e3e9f1; color:#364458; }
+    .summary { padding:28px; background:#fff7c8; border:2px dashed #e09128; border-radius:28px 4px 28px 4px; }
+    .summary h2 { margin:0 0 20px; color:#a63618; }
+    .meter { height:18px; background:#efc1d0; border-radius:9px; overflow:hidden; }
+    .meter span { display:block; width:74%; height:100%; background:#8e34c7; }
+    .summary b { display:block; margin-top:18px; font-size:36px; color:#70408c; }
+    .section-title { display:flex; justify-content:space-between; align-items:end; margin:42px 0 14px; }
+    .section-title h2 { margin:0; font-size:25px; }
+    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    article { min-height:170px; padding:22px; border:1px solid #d3dae4; background:white; border-radius:10px; }
+    article:nth-child(2) { background:#e9ffd6; border-color:#74c052; }
+    article:nth-child(3) { background:#f6e7ff; border-color:#b365d5; }
+    article h3 { margin:0 0 8px; } article p { color:#657487; }
+    .tag { display:inline-block; padding:3px 8px; border-radius:999px; background:#dce7f9; color:#31547e; font-size:11px; font-weight:700; }
+    footer { padding:26px 44px; margin-top:48px; background:#d7e0ea; color:#667484; }
+  </style>
+</head>
+<body>
+  <header><strong>Patchbay</strong><nav><span>Projects</span><span>Reports</span><span>Team</span><span>Settings</span></nav></header>
+  <main>
+    <section class="hero">
+      <div class="intro">
+        <span class="tag">BETA WORKSPACE</span>
+        <h1>Ship the next interface with fewer review loops.</h1>
+        <p>Collect design feedback, group the changes, and keep each release moving through one shared workspace.</p>
+        <div class="actions"><button>Start a review</button><button class="alt">View backlog</button></div>
+      </div>
+      <aside class="summary">
+        <h2>Weekly velocity!!!</h2>
+        <div class="meter"><span></span></div>
+        <b>74%</b>
+        <p>This panel is intentionally awkward. Annotate its color, shape, copy, spacing, or layout with Waypoint.</p>
+      </aside>
+    </section>
+    <div class="section-title"><h2>Active review queue</h2><a href="#">See everything →</a></div>
+    <section class="cards">
+      <article><span class="tag">READY</span><h3>Checkout refresh</h3><p>The payment summary needs a final visual pass before release.</p></article>
+      <article><span class="tag">BLOCKED</span><h3>Account setup</h3><p>Too much green, unclear hierarchy, and a suspiciously cheerful empty state.</p></article>
+      <article><span class="tag">DRAFT</span><h3>Usage dashboard</h3><p>Charts, controls, and labels are competing for the same level of attention.</p></article>
+    </section>
+  </main>
+  <footer>Patchbay UI Lab · Synthetic demonstration content for Logbook Waypoint</footer>
+</body>
+</html>

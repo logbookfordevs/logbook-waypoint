@@ -9,6 +9,12 @@ const requireFromWxt = createRequire(wxtPackage);
 const { parseHTML } = requireFromWxt('linkedom');
 
 async function loadScript(context, relativePath) {
+  if (['annotation-collection.js', 'annotation-validation.js', 'content/modules/api-bridge.js', 'content/modules/badge-manager.js', 'background/queue-sync.js'].includes(relativePath) && !context.WaypointAnnotationTargets) {
+    await loadScript(context, 'annotation-targets.js');
+  }
+  if (relativePath === 'content/modules/api-bridge.js' && !context.WaypointAnnotationPage) {
+    await loadScript(context, 'annotation-page.js');
+  }
   if ((relativePath === 'content/modules/api-bridge.js' || relativePath === 'background/queue-sync.js') && !context.WaypointAnnotationStatus) {
     await loadScript(context, 'annotation-status.js');
     await loadScript(context, 'annotation-collection.js');
@@ -37,6 +43,7 @@ function createBrowserContext(html = '<html><head></head><body></body></html>') 
     Node: window.Node,
     Element: window.Element,
     MutationObserver: window.MutationObserver,
+    URL,
     CSS: { escape: value => String(value).replace(/([^a-zA-Z0-9_-])/g, '\\$1') },
     console,
     setTimeout,
@@ -189,6 +196,31 @@ test('direct storage fallback rejects lifecycle state injection', async () => {
   assert.deepEqual(writes, []);
 });
 
+test('direct storage save fallback keeps new work pending for durable recovery', async () => {
+  const context = createBrowserContext();
+  const writes = [];
+  const id = 'waypoint_1750000000000_abc123xyz';
+  context.chrome = {
+    runtime: { sendMessage: async () => { throw new Error('background unavailable'); } },
+    storage: { local: {
+      get: async () => ({ waypointAnnotations: [] }),
+      set: async value => { writes.push(value); },
+    } },
+  };
+  context.WaypointVariantPolicy = { assertSaveAllowed: () => {} };
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  await context.WaypointAPI.saveAnnotation({
+    id,
+    url: 'http://localhost:3000/',
+    status: 'pending',
+    comment: 'Retry me',
+  });
+
+  assert.equal(writes[0].waypointAnnotations[0]._synced, false);
+});
+
 test('direct storage fallback keeps Annotation identity immutable', async () => {
   const context = createBrowserContext();
   const writes = [];
@@ -250,6 +282,7 @@ test('direct storage fallback records explicit Design Intent removal', async () 
   await context.WaypointAPI.updateAnnotation(id, { design_intent: null });
 
   assert.equal('design_intent' in writes[0].waypointAnnotations[0], false);
+  assert.equal(writes[0].waypointAnnotations[0]._synced, false);
   assert.deepEqual(Array.from(writes[0].waypointDesignIntentRemovalIds), [id]);
 });
 
@@ -312,6 +345,29 @@ test('direct storage delete fallback rejects non-Waypoint Annotation IDs', async
   assert.deepEqual(writes, []);
 });
 
+test('direct storage delete fallback retains a tombstone for durable recovery', async () => {
+  const context = createBrowserContext();
+  const writes = [];
+  const id = 'waypoint_1750000000000_abc123xyz';
+  context.chrome = {
+    runtime: { sendMessage: async () => { throw new Error('background unavailable'); } },
+    storage: { local: {
+      get: async () => ({
+        waypointAnnotations: [{ id, url: 'http://localhost:3000/', status: 'pending', comment: 'Delete me' }],
+        waypointDeletedAnnotationIds: [],
+      }),
+      set: async value => { writes.push(value); },
+    } },
+  };
+  context.WaypointVariantPolicy = { assertDeleteAllowed: () => {} };
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  await context.WaypointAPI.deleteAnnotation(id);
+
+  assert.deepEqual(Array.from(writes[0].waypointDeletedAnnotationIds), [id]);
+});
+
 test('storage reads ignore predecessor Annotation IDs', async () => {
   const context = createBrowserContext();
   context.window.location = {
@@ -338,6 +394,33 @@ test('storage reads ignore predecessor Annotation IDs', async () => {
 
   assert.deepEqual(annotations.map(annotation => annotation.id), [
     'waypoint_1750000000000_abc123xyz',
+  ]);
+});
+
+test('storage reads include every View State on the current Page', async () => {
+  const context = createBrowserContext();
+  context.window.location = new URL('http://localhost:3001/account?active=Notifications');
+  context.chrome = {
+    storage: {
+      local: {
+        get: async () => ({
+          waypointAnnotations: [
+            { id: 'waypoint_1750000000000_profile', url: 'http://localhost:3001/account?active=Profile', status: 'pending' },
+            { id: 'waypoint_1750000000001_notifications', url: 'http://localhost:3001/account?active=Notifications', status: 'pending' },
+            { id: 'waypoint_1750000000002_dashboard', url: 'http://localhost:3001/dashboard', status: 'pending' },
+          ],
+        }),
+      },
+    },
+  };
+  await loadScript(context, 'annotation-id.js');
+  await loadScript(context, 'content/modules/api-bridge.js');
+
+  const annotations = await context.WaypointAPI.loadAnnotations();
+
+  assert.deepEqual(annotations.map(annotation => annotation.id), [
+    'waypoint_1750000000000_profile',
+    'waypoint_1750000000001_notifications',
   ]);
 });
 
@@ -476,13 +559,13 @@ test('Queue sync retains migrated terminal history missing from the server', asy
   };
 
   const result = context.WaypointQueueSync.merge([migrated], [], []);
-  assert.deepEqual(JSON.parse(JSON.stringify(result.annotations)), [migrated]);
+  assert.deepEqual(JSON.parse(JSON.stringify(result.annotations)), [{ ...migrated, targets: [{}] }]);
 
   const background = await readFile(new URL('../public/background/background.js', import.meta.url), 'utf8');
   assert.match(background, /serverIds\.has\(annotation\.id\) \|\| annotation\.status === 'pending'/);
 });
 
-test('Queue conflict resolution preserves Variant-owned state from ordinary records', async () => {
+test('Queue conflict resolution accepts server cancellation of locally cached Variant state', async () => {
   const context = createBrowserContext();
   await loadScript(context, 'annotation-id.js');
   await loadScript(context, 'background/queue-sync.js');
@@ -502,8 +585,10 @@ test('Queue conflict resolution preserves Variant-owned state from ordinary reco
   };
 
   const localOwned = context.WaypointQueueSync.merge([unresolved], [newerOrdinary], []);
-  assert.deepEqual(localOwned.annotations[0].variant_request, unresolved.variant_request);
-  assert.equal(localOwned.changed, false);
+  assert.equal('variant_request' in localOwned.annotations[0], false);
+  assert.equal('variant_presentation' in localOwned.annotations[0], false);
+  assert.equal(localOwned.annotations[0]._synced, true);
+  assert.equal(localOwned.changed, true);
 
   const serverOwned = context.WaypointQueueSync.merge([newerOrdinary], [unresolved], []);
   assert.deepEqual(serverOwned.annotations[0].variant_request, unresolved.variant_request);
@@ -624,70 +709,6 @@ test('Queue lifecycle reconciliation rejects stale notice snapshots and preserve
   assert.equal('work_notice' in concurrent, false);
 });
 
-test('rendered Queue shows recovery guidance and dismisses Work Notices through lifecycle', async () => {
-  const context = createBrowserContext();
-  const messages = [];
-  context.chrome = {
-    runtime: {
-      onMessage: { addListener() {} },
-      sendMessage: async message => {
-        messages.push(message);
-        return { success: true, annotation: { id: message.id, status: 'pending' } };
-      },
-    },
-    storage: { onChanged: { addListener() {} } },
-  };
-  const popupSource = await readFile(new URL('../.output/chrome-mv3/popup/popup.js', import.meta.url), 'utf8');
-  vm.runInContext(`${popupSource}\nglobalThis.WaypointAnnotationsPopup = AnnotationsPopup;`, context, {
-    filename: 'popup/popup.js',
-  });
-  const popup = Object.create(context.WaypointAnnotationsPopup.prototype);
-  popup.annotations = [{
-    id: 'waypoint_1750000000001_abcdefghi',
-    status: 'pending',
-    comment: 'Make this easier to scan',
-    created_at: '2026-08-19T12:00:00.000Z',
-    work_notice: {
-      code: 'execution_failed',
-      summary: 'The design workflow stopped before producing a result. Claim to retry.',
-      created_at: '2026-08-19T12:05:00.000Z',
-    },
-  }];
-  popup.getTimeAgo = () => 'now';
-  popup.render = () => {};
-
-  const container = context.document.createElement('div');
-  container.id = 'annotations-list';
-  context.document.body.appendChild(container);
-  container.innerHTML = popup.renderAnnotationItem(popup.annotations[0]);
-  const notice = container.querySelector('.work-notice');
-  assert.match(notice.textContent, /Design workflow needs attention/);
-  assert.match(notice.textContent, /The design workflow stopped before producing a result/);
-
-  popup.setupAnnotationListeners();
-  container.querySelector('.work-notice-dismiss').click();
-  await new Promise(resolve => setImmediate(resolve));
-  assert.deepEqual(JSON.parse(JSON.stringify(messages)), [{
-    action: 'dismissWorkNotice',
-    id: 'waypoint_1750000000001_abcdefghi',
-  }]);
-  assert.equal('work_notice' in popup.annotations[0], false);
-
-  let editCount = 0;
-  popup.serverOnline = true;
-  popup.startInlineEdit = () => { editCount += 1; };
-  popup.annotations = [{
-    id: 'waypoint_1750000000001_abcdefghi',
-    status: 'claimed',
-    comment: 'Claimed contract',
-    created_at: '2026-08-19T12:00:00.000Z',
-  }];
-  container.innerHTML = popup.renderAnnotationItem(popup.annotations[0]);
-  popup.setupAnnotationListeners();
-  container.querySelector('.annotation-item').click();
-  assert.equal(editCount, 0);
-});
-
 test('Queue rerender rolls back removed previews without replacing unchanged CSS rules', async () => {
   const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="target">Old</button></body></html>');
   const target = context.document.querySelector('#target');
@@ -701,6 +722,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   const overlay = context.document.querySelector('#overlay');
   const annotation = {
     id: 'waypoint_1750000000001_abcdefghi',
+    selector: '#target',
     comment: 'Change it',
     status: 'pending',
     created_at: '2026-01-01T00:00:00.000Z',
@@ -712,7 +734,7 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   };
   context.WaypointShadowHost = { getRoot: () => overlay };
   let resolvedTarget = target;
-  context.WaypointElementContext = { findElementBySelector: candidate => candidate.id === annotation.id ? resolvedTarget : null };
+  context.WaypointElementContext = { findElementBySelector: candidate => candidate.selector === '#target' ? resolvedTarget : null };
   await loadScript(context, 'annotation-status.js');
   await loadScript(context, 'content/modules/event-bus.js');
   await loadScript(context, 'content/modules/badge-manager.js');
@@ -739,4 +761,186 @@ test('Queue rerender rolls back removed previews without replacing unchanged CSS
   assert.equal(replacement.style.backgroundColor, 'yellow');
   assert.equal(replacement.textContent, 'Old');
   assert.equal(context.document.querySelector('[data-waypoint-style]'), null);
+});
+
+test('Variant CSS switches temporary structural Scaffold after its captured Target disappears', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><section data-route-variant="branch"></section><section data-route-variant="ring"></section></body></html>');
+  context.WaypointShadowHost = { getRoot: () => context.document.querySelector('#overlay') };
+  context.WaypointElementContext = { findElementBySelector: () => null };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  const annotation = {
+    id: 'waypoint_1750000000001_structural',
+    selector: '#removed-target',
+    comment: 'Compare structural routes',
+    status: 'pending',
+    created_at: '2026-01-01T00:00:00.000Z',
+    css: '[data-route-variant] { display: none; } [data-route-variant="branch"] { display: block; }',
+  };
+
+  context.WaypointBadgeManager.render([annotation]);
+  const style = context.document.querySelector('[data-waypoint-style]');
+  assert.match(style.textContent, /route-variant="branch"/);
+  assert.equal(context.document.querySelector('.waypoint-badge'), null);
+
+  context.WaypointBadgeManager.render([{
+    ...annotation,
+    css: '[data-route-variant] { display: none; } [data-route-variant="ring"] { display: block; }',
+  }]);
+  assert.equal(context.document.querySelector('[data-waypoint-style]'), style);
+  assert.match(style.textContent, /route-variant="ring"/);
+  assert.doesNotMatch(style.textContent, /route-variant="branch"/);
+});
+
+test('live copy preview survives a host rerender of the same Target', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><h1 id="target">Old</h1></body></html>');
+  const target = context.document.querySelector('#target');
+  const overlay = context.document.querySelector('#overlay');
+  const annotation = {
+    id: 'waypoint_1750000000001_copyrerender',
+    selector: '#target',
+    status: 'pending',
+    created_at: '2026-01-01T00:00:00.000Z',
+    pending_changes: { copyChange: { original: 'Old', value: 'New' } },
+  };
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  context.WaypointElementContext = { findElementBySelector: () => target };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  context.WaypointBadgeManager.init();
+  context.WaypointBadgeManager.render([annotation]);
+  assert.equal(target.textContent, 'New');
+
+  target.textContent = 'Old';
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  assert.equal(target.textContent, 'New');
+});
+
+test('deleting an earlier Annotation preserves shared Target badge ordinals', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="single"></button><button id="first"></button><button id="second"></button></body></html>');
+  const overlay = context.document.querySelector('#overlay');
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  context.WaypointElementContext = {
+    findElementBySelector: candidate => context.document.querySelector(candidate.selector),
+  };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  const single = {
+    id: 'waypoint_1750000000000_abcdefghi', status: 'pending', comment: 'Single', created_at: '2026-01-01T00:00:00.000Z', targets: [{ selector: '#single' }],
+  };
+  const shared = {
+    id: 'waypoint_1750000000001_abcdefghi', status: 'pending', comment: 'Shared', created_at: '2026-01-01T00:00:01.000Z', targets: [{ selector: '#first' }, { selector: '#second' }],
+  };
+  context.WaypointBadgeManager.init();
+  context.WaypointBadgeManager.render([single, shared]);
+  context.WaypointEvents.emit('annotation:deleted', { id: single.id, annotation: single });
+
+  assert.deepEqual(
+    [...overlay.querySelectorAll('.waypoint-badge')].map(badge => badge.childNodes[0].textContent),
+    ['1a', '1b'],
+  );
+});
+
+test('commentless text edits render a labeled pin and deleting all restores the original text', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="target">Old</button></body></html>');
+  const target = context.document.querySelector('#target');
+  const overlay = context.document.querySelector('#overlay');
+  const annotation = {
+    id: 'waypoint_1750000000002_commentless',
+    status: 'pending',
+    created_at: '2026-01-01T00:00:00.000Z',
+    selector: '#target',
+    element_context: { tag: 'button', text: 'Old' },
+    pending_changes: {
+      copyChange: { original: 'Old', value: 'New' },
+    },
+  };
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  context.WaypointElementContext = { findElementBySelector: () => null };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  context.WaypointBadgeManager.init();
+
+  target.textContent = 'New';
+  context.WaypointEvents.emit('annotation:saved', { annotation, element: target });
+  context.WaypointEvents.emit('annotations:render', [annotation]);
+
+  const badge = overlay.querySelector('.waypoint-badge');
+  assert.notEqual(badge, null);
+  assert.equal(badge.querySelector('.waypoint-badge-tooltip').textContent, 'Text content edit');
+  assert.equal(target.textContent, 'New');
+
+  context.WaypointBadgeManager.clearAll([annotation]);
+
+  assert.equal(target.textContent, 'Old');
+  assert.equal(overlay.querySelector('.waypoint-badge'), null);
+});
+
+test('Page annotations render pins only for Targets present in the current View State', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><button id="notifications">Email alerts</button></body></html>');
+  const overlay = context.document.querySelector('#overlay');
+  const notificationsTarget = context.document.querySelector('#notifications');
+  const annotations = [
+    {
+      id: 'waypoint_1750000000003_profile',
+      url: 'http://localhost:3001/account?active=Profile',
+      status: 'pending',
+      created_at: '2026-01-01T00:00:00.000Z',
+      comment: 'Profile request',
+      selector: '#profile',
+    },
+    {
+      id: 'waypoint_1750000000004_notifications',
+      url: 'http://localhost:3001/account?active=Notifications',
+      status: 'pending',
+      created_at: '2026-01-01T00:00:01.000Z',
+      comment: 'Notifications request',
+      selector: '#notifications',
+    },
+  ];
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  context.WaypointElementContext = {
+    findElementBySelector: annotation => annotation.selector === '#notifications' ? notificationsTarget : null,
+  };
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+
+  context.WaypointBadgeManager.render(annotations);
+
+  const badges = overlay.querySelectorAll('.waypoint-badge');
+  assert.equal(badges.length, 1);
+  assert.equal(badges[0].dataset.annotationId, annotations[1].id);
+});
+
+test('copy Variant remains matched across repeated Queue refreshes with the real resolver', async () => {
+  const context = createBrowserContext('<html><head></head><body><div id="overlay"></div><section><h3 id="target">Original heading</h3></section></body></html>');
+  const overlay = context.document.querySelector('#overlay');
+  const target = context.document.querySelector('#target');
+  context.WaypointShadowHost = { getRoot: () => overlay };
+  await loadScript(context, 'content/modules/shadow-dom-utils.js');
+  await loadScript(context, 'content/modules/element-context.js');
+  await loadScript(context, 'annotation-status.js');
+  await loadScript(context, 'content/modules/event-bus.js');
+  await loadScript(context, 'content/modules/badge-manager.js');
+  const annotation = {
+    id: 'waypoint_1750000000001_variantrefresh', status: 'pending',
+    created_at: '2026-01-01T00:00:00.000Z',
+    targets: [{ selector: '#target', element_context: { tag: 'h3', text: 'Original heading', classes: [] } }],
+    pending_changes: { copyChange: { original: 'Original heading', value: 'Chosen variant' } },
+  };
+  context.WaypointBadgeManager.render([annotation]);
+  const pin = overlay.querySelector('.waypoint-badge');
+  for (let cycle = 0; cycle < 4; cycle++) {
+    context.WaypointBadgeManager.render([annotation]);
+    assert.equal(target.textContent, 'Chosen variant', `refresh ${cycle} preserves copy`);
+    assert.equal(overlay.querySelector('.waypoint-badge'), pin, `refresh ${cycle} preserves pin`);
+  }
+  context.WaypointBadgeManager.render([]);
+  assert.equal(target.textContent, 'Original heading');
 });

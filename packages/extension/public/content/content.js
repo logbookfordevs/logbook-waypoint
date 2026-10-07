@@ -16,7 +16,9 @@ console.log('[Waypoint] content.js loaded');
     const style = document.createElement('style');
     style.setAttribute('data-waypoint-font', 'true');
     const fontUrl = chrome.runtime.getURL('assets/fonts/InterVariable.woff2');
+    const journalFont = chrome.runtime.getURL('assets/fonts/caveat/Caveat.ttf');
     style.textContent = `
+      @font-face { font-family: 'Waypoint Journal'; src: url('${journalFont}') format('truetype'); font-weight: 400 700; font-display: swap; }
       @font-face {
         font-family: 'Inter';
         src: url('${fontUrl}') format('woff2-variations');
@@ -43,9 +45,11 @@ console.log('[Waypoint] content.js loaded');
     annotations = await WaypointAPI.loadAnnotations();
 
     // 4. Initialize modules
+    WaypointMultiTargetSelection.init();
     WaypointBadgeManager.init();
     WaypointInspectionMode.init();
     WaypointAnnotationPopover.init();
+    await WaypointJournal.init();
     await WaypointToolbar.init();
 
     // 5. Set up message listener (popup ↔ content)
@@ -145,6 +149,7 @@ console.log('[Waypoint] content.js loaded');
     function onRouteChange() {
       const newURL = window.location.href;
       if (newURL === currentURL) return;
+      WaypointMultiTargetSelection.handleRouteChange(newURL);
       currentURL = newURL;
       console.log('[Waypoint] SPA route change detected:', newURL);
       reloadAnnotationsForCurrentRoute();
@@ -186,7 +191,7 @@ console.log('[Waypoint] content.js loaded');
         localSaveCount--;
         return;
       }
-      annotations = (allAnnotations || []).filter(a => a.url === window.location.href);
+      annotations = (allAnnotations || []).filter(a => WaypointAnnotationPage.matches(a.url, window.location.href));
       // Don't re-render if overlay is closed (styles should stay stripped)
       if (WaypointShadowHost.isVisible()) {
         WaypointEvents.emit('annotations:render', annotations);
@@ -213,6 +218,8 @@ console.log('[Waypoint] content.js loaded');
 
       // ESC — stop annotation mode
       if (e.key === 'Escape' && WaypointInspectionMode.isActive()) {
+        if (WaypointMultiTargetSelection.isComposing()) return;
+        if (WaypointMultiTargetSelection.handleEscape()) return;
         WaypointEvents.emit('inspection:stop');
         return;
       }
