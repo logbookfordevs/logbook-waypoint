@@ -51,12 +51,12 @@ fi
 
 if [[ "$(basename "$0")" = "npx" ]]; then
   printf '%s\n' "$*" >> "$FAKE_NPX_LOG"
-  exit 0
+  exit "${FAKE_SKILL_EXIT:-0}"
 fi
 
 if [[ "$(basename "$0")" = "afk" ]]; then
   printf '%s\n' "$*" >> "$FAKE_AFK_LOG"
-  exit "${FAKE_SKILL_EXIT:-0}"
+  exit 0
 fi
 
 if [[ "$(basename "$0")" = "node" ]]; then
@@ -134,17 +134,17 @@ ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/afk"
 npx_calls="$(wc -l < "$FAKE_NPX_LOG")"
 PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
   WAYPOINT_INSTALL_SKILL=ask bash "$ROOT_DIR/scripts/install.sh" -y >/dev/null
-grep -Fxq -- "skills add $INSTALL_ROOT/releases/v0.1.4/skills/waypoint --global --agent universal --skill waypoint --yes" "$FAKE_AFK_LOG"
-test "$(wc -l < "$FAKE_NPX_LOG")" = "$npx_calls"
-afk_calls="$(wc -l < "$FAKE_AFK_LOG")"
+test ! -e "$FAKE_AFK_LOG"
+test "$(wc -l < "$FAKE_NPX_LOG")" -gt "$npx_calls"
+npx_calls="$(wc -l < "$FAKE_NPX_LOG")"
 PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
   WAYPOINT_INSTALL_SKILL=auto bash "$ROOT_DIR/scripts/install.sh" --skip-skill >/dev/null
-test "$(wc -l < "$FAKE_AFK_LOG")" = "$afk_calls"
+test "$(wc -l < "$FAKE_NPX_LOG")" = "$npx_calls"
 
 # A later installer invocation (including waypoint update) preserves the opt-out.
 PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
   WAYPOINT_INSTALL_SKILL=auto bash "$ROOT_DIR/scripts/install.sh" >/dev/null
-test "$(wc -l < "$FAKE_AFK_LOG")" = "$afk_calls"
+test "$(wc -l < "$FAKE_NPX_LOG")" = "$npx_calls"
 
 # Explicit opt-in overrides the preference; a failed skill does not fail the CLI.
 failure_output="$(PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
@@ -153,10 +153,11 @@ failure_output="$(PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOI
 test -f "$INSTALL_ROOT/releases/v0.1.4/.waypoint-install.json"
 grep -Fxq yes "$INSTALL_ROOT/.waypoint-skill-preference"
 "$BIN_DIR/waypoint" --version | grep -q '^0.1.4$'
-afk_calls="$(wc -l < "$FAKE_AFK_LOG")"
+npx_calls="$(wc -l < "$FAKE_NPX_LOG")"
 PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
   WAYPOINT_INSTALL_SKILL=auto bash "$ROOT_DIR/scripts/install.sh" >/dev/null
-test "$(wc -l < "$FAKE_AFK_LOG")" -gt "$afk_calls"
+test "$(wc -l < "$FAKE_NPX_LOG")" -gt "$npx_calls"
+test ! -e "$FAKE_AFK_LOG"
 
 printf '0%.0s' {1..64} > "$TEST_DIR/bad-checksum"
 if PATH="$FAKE_BIN:$PATH" \

@@ -177,12 +177,6 @@ install_skill() {
   if [[ ! -f "$source_dir/SKILL.md" ]]; then
     info "release has no bundled skill; CLI installed. Retry with: npx --yes skills@latest add logbookfordevs/logbook-waypoint --global --agent universal --skill waypoint --yes"
     return 0
-  elif command -v afk >/dev/null 2>&1; then
-    info "installing the Waypoint skill globally with AFK"
-    if afk skills add "$source_dir" --global --agent universal --skill waypoint --yes; then
-      info "Waypoint skill installed in the shared global library (~/.agents/skills)"
-      return 0
-    fi
   elif command -v npx >/dev/null 2>&1; then
     info "installing the Waypoint skill globally with the Skills CLI"
     if npx --yes skills@latest add "$source_dir" --global --agent universal --skill waypoint --yes; then
