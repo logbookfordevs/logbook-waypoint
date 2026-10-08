@@ -354,7 +354,8 @@
 .code-block pre {
   margin: 0;
   padding: 1.1rem 1.2rem 0.35rem;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   color: var(--walnut-ink);
   font: 0.78rem/1.65 var(--font-mono);
 }
@@ -379,13 +380,6 @@
 .code-block button svg {
   width: 0.85rem;
   height: 0.85rem;
-}
-
-@media (max-width: 38rem) {
-  .code-block pre {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
 }
 
 .field-note p {
