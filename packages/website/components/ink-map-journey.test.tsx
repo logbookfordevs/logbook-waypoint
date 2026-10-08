@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { InkMapAudio } from '@/components/ink-map-audio';
 import { InkMapJourney } from '@/components/ink-map-journey';
 
 const gpu = vi.hoisted(() => ({
@@ -186,6 +187,47 @@ describe('OpenDesign ink map journey', () => {
     expect(screen.getByRole('button', { name: 'Checkpoint 3: Agent pick, current' })).toHaveAttribute('aria-current', 'step');
   });
 
+  it('keeps sound off until asked, cues the journey, and silences it when the map is left', () => {
+    let intersectionChanged: ((ratio: number) => void) | undefined;
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: IntersectionObserverCallback) {
+        intersectionChanged = ratio => callback([{ isIntersecting: ratio > 0, intersectionRatio: ratio } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      }
+      observe() {}
+      disconnect() {}
+    });
+    vi.stubGlobal('AudioContext', class {});
+    const cue = vi.spyOn(InkMapAudio.prototype, 'cue').mockImplementation(() => {});
+    const setEnabled = vi.spyOn(InkMapAudio.prototype, 'setEnabled').mockImplementation(() => {});
+    const setActive = vi.spyOn(InkMapAudio.prototype, 'setActive');
+    const onExit = vi.fn();
+    render(<InkMapJourney inline onContinue={vi.fn()} onExit={onExit} />);
+
+    expect(screen.getByRole('button', { name: 'Sound off' })).toHaveAttribute('aria-pressed', 'false');
+    expect(setEnabled).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Sound off' }));
+    expect(setEnabled).toHaveBeenLastCalledWith(true);
+    expect(screen.getByRole('button', { name: 'Sound on' })).toHaveAttribute('aria-pressed', 'true');
+
+    frame(0);
+    frame(400);
+    frame(1400);
+    frame(3000);
+    expect(cue.mock.calls.map(([name]) => name).filter(name => name !== 'tick')).toEqual(['drip', 'blob', 'card']);
+    fireEvent.click(screen.getByRole('button', { name: 'Set course' }));
+    frame(3100);
+    frame(10000);
+    expect(cue).toHaveBeenCalledWith('checkpoint');
+
+    intersectionChanged?.(0.4);
+    expect(setActive).toHaveBeenLastCalledWith(false);
+    intersectionChanged?.(0.9);
+    expect(setActive).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Skip to details' }));
+    expect(setActive).toHaveBeenLastCalledWith(false);
+    expect(onExit).toHaveBeenCalledOnce();
+  });
+
   it('removes input listeners and disposes the GPU when unmounted', () => {
     const view = render(<InkMapJourney />);
     frame(3000);
@@ -211,5 +253,148 @@ describe('OpenDesign ink map journey', () => {
     expect(active.container.firstChild).toHaveClass('no-webgl');
     expect(screen.getAllByRole('heading')).toHaveLength(6);
     expect(gpu.dispose).toHaveBeenCalledOnce();
+  });
+
+  describe('Let the ink fall entrance', () => {
+    function stubAudio() {
+      vi.stubGlobal('AudioContext', class {});
+      return {
+        cue: vi.spyOn(InkMapAudio.prototype, 'cue').mockImplementation(() => {}),
+        setEnabled: vi.spyOn(InkMapAudio.prototype, 'setEnabled').mockImplementation(() => {}),
+        preload: vi.spyOn(InkMapAudio.prototype, 'preload').mockImplementation(() => {}),
+      };
+    }
+    const cues = (cue: ReturnType<typeof stubAudio>['cue']) => cue.mock.calls.map(([name]) => name).filter(name => name !== 'tick');
+
+    it('holds the ink and the sound until the visitor presses', () => {
+      const audio = stubAudio();
+      const view = render(<InkMapJourney inline entrance onContinue={vi.fn()} />);
+      const root = view.container.firstElementChild as HTMLElement;
+
+      frame(0);
+      frame(5000);
+      expect(root).toHaveClass('is-poised');
+      expect(screen.getByRole('button', { name: 'Let the ink fall' })).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Begin without sound' })).toBeVisible();
+      expect(screen.queryByRole('heading', { name: 'Chart the route before the build.' })).toBeNull();
+      expect(audio.preload).toHaveBeenCalled();
+      expect(audio.setEnabled).not.toHaveBeenCalled();
+      expect(cues(audio.cue)).toEqual([]);
+    });
+
+    it('hands keyboard focus to the journey control when the entrance is pressed', async () => {
+      stubAudio();
+      render(<InkMapJourney inline entrance onContinue={vi.fn()} />);
+      frame(0);
+      const press = screen.getByRole('button', { name: 'Let the ink fall' });
+      press.focus();
+      fireEvent.click(press);
+      await act(async () => {});
+      expect(screen.queryByRole('button', { name: 'Let the ink fall' })).toBeNull();
+      expect(document.activeElement).toHaveAttribute('id', 'next');
+    });
+
+    it('turns sound on within the press and cues the drip and the blob', () => {
+      const audio = stubAudio();
+      const view = render(<InkMapJourney inline entrance onContinue={vi.fn()} />);
+      const root = view.container.firstElementChild as HTMLElement;
+
+      frame(0);
+      fireEvent.click(screen.getByRole('button', { name: 'Let the ink fall' }));
+      expect(audio.setEnabled).toHaveBeenCalledWith(true);
+      expect(screen.getByRole('button', { name: 'Sound on' })).toHaveAttribute('aria-pressed', 'true');
+      expect(root).not.toHaveClass('is-poised');
+      expect(screen.queryByRole('button', { name: 'Let the ink fall' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Begin without sound' })).toBeNull();
+
+      frame(400);
+      frame(1400);
+      frame(3000);
+      expect(cues(audio.cue)).toEqual(['drip', 'blob', 'card']);
+      expect(screen.getByRole('heading', { name: 'Chart the route before the build.' })).toBeVisible();
+    });
+
+    it.each([
+      ['Begin without sound', () => fireEvent.click(screen.getByRole('button', { name: 'Begin without sound' }))],
+      ['a wheel scroll', () => fireEvent.wheel(window, { deltaY: 100 })],
+      ['a navigation key', () => fireEvent.keyDown(window, { key: 'ArrowDown' })],
+    ])('begins silently with %s', (_label, begin) => {
+      const audio = stubAudio();
+      render(<InkMapJourney inline entrance onContinue={vi.fn()} />);
+      frame(0);
+      begin();
+      expect(audio.setEnabled).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Sound off' })).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'Let the ink fall' })).toBeNull();
+      frame(100);
+      frame(3200);
+      expect(screen.getByRole('heading', { name: 'Chart the route before the build.' })).toBeVisible();
+    });
+
+    it('begins silently after eight seconds of engine time, not while paused', () => {
+      let intersectionChanged: ((ratio: number) => void) | undefined;
+      vi.stubGlobal('IntersectionObserver', class {
+        constructor(callback: IntersectionObserverCallback) {
+          intersectionChanged = ratio => callback([{ isIntersecting: ratio > 0, intersectionRatio: ratio } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+        }
+        observe() {}
+        disconnect() {}
+      });
+      const audio = stubAudio();
+      const view = render(<InkMapJourney inline entrance onContinue={vi.fn()} />);
+      const root = view.container.firstElementChild as HTMLElement;
+
+      frame(0);
+      frame(5000);
+      time = 5000;
+      intersectionChanged?.(0);
+      frame(60000);
+      time = 60000;
+      intersectionChanged?.(1);
+      frame(62000);
+      expect(root).toHaveClass('is-poised');
+
+      frame(66000);
+      expect(root).not.toHaveClass('is-poised');
+      expect(screen.queryByRole('button', { name: 'Let the ink fall' })).toBeNull();
+      expect(audio.setEnabled).not.toHaveBeenCalled();
+    });
+
+    it('goes straight to the first card with reduced motion, and replays without the entrance', () => {
+      reducedMotion = true;
+      const audio = stubAudio();
+      render(<InkMapJourney inline entrance onContinue={vi.fn()} />);
+      frame(0);
+      expect(screen.getByRole('button', { name: 'Let the ink fall' })).toBeVisible();
+      fireEvent.click(screen.getByRole('button', { name: 'Let the ink fall' }));
+      frame(100);
+      expect(screen.getByRole('heading', { name: 'Chart the route before the build.' })).toBeVisible();
+      expect(audio.setEnabled).toHaveBeenCalledWith(true);
+
+      for (let i = 0; i < 5; i++) fireEvent.keyDown(window, { key: 'ArrowDown' });
+      fireEvent.click(screen.getByRole('button', { name: 'Replay the journey' }));
+      frame(200);
+      expect(screen.getByRole('button', { name: 'Set course' })).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'Let the ink fall' })).toBeNull();
+    });
+
+    it('lets the visitor skip to details while the ink is poised', () => {
+      stubAudio();
+      const onExit = vi.fn();
+      render(<InkMapJourney inline entrance onContinue={vi.fn()} onExit={onExit} />);
+      frame(0);
+      fireEvent.click(screen.getByRole('button', { name: 'Skip to details' }));
+      expect(onExit).toHaveBeenCalledOnce();
+    });
+
+    it('shows no entrance, and loads no sound, when WebGL is unavailable', () => {
+      gpu.fails = true;
+      const audio = stubAudio();
+      const view = render(<InkMapJourney inline entrance onContinue={vi.fn()} />);
+      expect(view.container.firstChild).toHaveClass('no-webgl');
+      expect(screen.queryByRole('button', { name: 'Let the ink fall' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Begin without sound' })).toBeNull();
+      expect(audio.preload).not.toHaveBeenCalled();
+    });
   });
 });

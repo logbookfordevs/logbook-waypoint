@@ -1,27 +1,83 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { ArrowLeft, RotateCcw } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowLeft, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { InkMapAudio } from '@/components/ink-map-audio';
 import { createInkMapJourney } from '@/components/ink-map-engine';
 
 export interface InkMapJourneyProps {
   onContinue?: () => void;
   onExit?: () => void;
   inline?: boolean;
+  /** Hold the opening until the visitor lets the ink fall. */
+  entrance?: boolean;
 }
 
-export function InkMapJourney({ onContinue, onExit, inline = false }: InkMapJourneyProps) {
+export function InkMapJourney({ onContinue, onExit, inline = false, entrance = false }: InkMapJourneyProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const [audio] = useState(() => new InkMapAudio());
+  const [soundOn, setSoundOn] = useState(false);
+  const [entranceOpen, setEntranceOpen] = useState(entrance);
+  const awaitingBegin = useRef(entrance);
+
+  const leaveMap = useCallback((leave?: () => void) => {
+    audio.setActive(false);
+    leave?.();
+  }, [audio]);
+  const continueOnward = useCallback(() => leaveMap(onContinue), [leaveMap, onContinue]);
+  const exitMap = useCallback(() => leaveMap(onExit), [leaveMap, onExit]);
+  const hasContinuation = Boolean(onContinue);
+  const canPlaySound = InkMapAudio.isSupported();
+
+  const begin = useCallback((withSound: boolean) => {
+    awaitingBegin.current = false;
+    const root = rootRef.current;
+    const hadFocus = Boolean(root?.querySelector('.map-entrance')?.contains(document.activeElement));
+    // The entrance unmounts; keyboard focus moves to the control that continues the journey.
+    if (hadFocus) queueMicrotask(() => root?.querySelector<HTMLButtonElement>('#next')?.focus({ preventScroll: true }));
+    setEntranceOpen(false);
+    if (!withSound || !canPlaySound) return;
+    audio.setActive(true);
+    audio.setEnabled(true);
+    setSoundOn(true);
+  }, [audio, canPlaySound]);
 
   useEffect(() => {
     if (!rootRef.current) return;
-    const dispose = createInkMapJourney(rootRef.current, { onContinue, inline });
+    const waiting = awaitingBegin.current;
+    const dispose = createInkMapJourney(rootRef.current, { onContinue: hasContinuation ? continueOnward : undefined, inline, sound: audio, entrance: waiting, onBegin: begin });
+    if (waiting && dispose) audio.preload();
+    if (waiting && !dispose) setEntranceOpen(false);
     if (!inline) rootRef.current.querySelector<HTMLButtonElement>('.map-home-link')?.focus({ preventScroll: true });
     return dispose;
-  }, [onContinue, inline]);
+  }, [audio, begin, continueOnward, hasContinuation, inline]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const tick = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest('button') && !event.target.closest('.map-entrance')) audio.cue('tick');
+    };
+
+    root.addEventListener('click', tick);
+
+    return () => {
+      root.removeEventListener('click', tick);
+      audio.dispose();
+    };
+  }, [audio]);
+
+  const toggleSound = () => {
+    const next = !soundOn;
+    audio.setActive(true);
+    audio.setEnabled(next);
+    setSoundOn(next);
+  };
 
   const canExit = Boolean(onExit);
-  const canContinue = Boolean(onContinue);
+  const canContinue = hasContinuation;
+  const soundLabel = soundOn ? 'Sound on' : 'Sound off';
   const exitLabel = inline ? 'Skip to details' : 'Back to homepage';
   const continueLabel = inline ? 'More details' : 'Make your own mark';
 
@@ -31,8 +87,13 @@ export function InkMapJourney({ onContinue, onExit, inline = false }: InkMapJour
 <svg id="leader" aria-hidden="true" focusable="false"><line id="leader-line" x1="0" y1="0" x2="0" y2="0"/></svg>
 
 <header className="topbar">
-  {canExit && <button type="button" className="wordmark map-home-link" onClick={onExit} aria-label={exitLabel}><ArrowLeft aria-hidden="true" /><span className="wordmark-name">{inline ? 'Skip to details' : 'Waypoint'}</span></button>}
+  {canExit && <button type="button" className="wordmark map-home-link" onClick={exitMap} aria-label={exitLabel}><ArrowLeft aria-hidden="true" /><span className="wordmark-name">{inline ? 'Skip to details' : 'Waypoint'}</span></button>}
   {!canExit && <p className="wordmark"><span className="wordmark-name">Waypoint</span><span className="wordmark-sub">Route briefing</span></p>}
+  {canPlaySound && <button type="button" className="map-sound" aria-pressed={soundOn} onClick={toggleSound}>
+    {soundOn && <Volume2 aria-hidden="true" />}
+    {!soundOn && <VolumeX aria-hidden="true" />}
+    <span className="map-sound-label">{soundLabel}</span>
+  </button>}
   <nav aria-label="Checkpoints">
     <ol className="rail">
       <li><button type="button" className="rail-btn" data-go="1" data-state="upcoming"><span className="rail-mark" aria-hidden="true"></span><span className="rail-num" aria-hidden="true">01</span><span className="rail-name">Annotate</span></button></li>
@@ -125,8 +186,13 @@ export function InkMapJourney({ onContinue, onExit, inline = false }: InkMapJour
       {canContinue && <button type="button" className="map-replay" data-replay><RotateCcw aria-hidden="true" /> Replay the journey</button>}
     </div>
   </section>
-  {canContinue && <button type="button" className="btn btn-primary map-fallback-continue" onClick={onContinue}>{continueLabel}</button>}
+  {canContinue && <button type="button" className="btn btn-primary map-fallback-continue" onClick={continueOnward}>{continueLabel}</button>}
 </div>
+
+{entranceOpen && <div className="map-entrance">
+  <button type="button" className="map-entrance-press" data-begin><span className="map-entrance-title">Let the ink fall</span></button>
+  <button type="button" className="map-entrance-silent" data-begin-silent>Begin without sound</button>
+</div>}
 
 <footer className="controls" aria-label="Journey controls">
   <button type="button" className="btn btn-secondary" id="back" aria-disabled="true">

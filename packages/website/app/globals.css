@@ -90,6 +90,10 @@ html {
   overflow-x: hidden;
 }
 
+/* The page still scrolls; only the bar itself is hidden. */
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
+
 body {
   margin: 0;
   background: var(--page);

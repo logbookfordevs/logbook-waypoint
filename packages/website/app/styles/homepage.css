@@ -41,6 +41,10 @@
 .home-map-unavailable p { margin: 1rem 0 2rem; line-height: 1.7; }
 .ink-map .map-home-link { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
 .map-home-link > svg { width: 18px; height: 18px; }
+.ink-map .map-sound { display: flex; align-items: center; gap: 8px; min-height: 44px; margin-left: auto; padding: 0 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--ink); font: 500 14px/1 var(--font-display); white-space: nowrap; cursor: pointer; }
+.ink-map .map-sound > svg { width: 18px; height: 18px; flex: none; }
+.ink-map .map-sound[aria-pressed="true"] { background: var(--selected-bg); border-color: var(--selected-bg); color: var(--selected-fg); }
+.ink-map.no-webgl .map-sound { display: none; }
 .ink-map .map-replay { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 1rem; color: var(--ink); font: 500 14px var(--font-display); cursor: pointer; }
 .map-replay > svg { width: 16px; height: 16px; }
 .ink-map .map-fallback-continue { display: none; }

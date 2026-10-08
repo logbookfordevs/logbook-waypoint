@@ -43,7 +43,7 @@ export function WaypointHome() {
     <div className="ink-route-home waypoint-home">
       <main id="main-content">
         <section id="waypoint-journey" className="home-opening" aria-label="Waypoint Ink Map Journey">
-          <LazyInkMap inline onContinue={continueJourney} onExit={continueJourney} />
+          <LazyInkMap inline entrance onContinue={continueJourney} onExit={continueJourney} />
           <noscript><div className="home-map-unavailable"><h2>Follow the route through Waypoint.</h2><p>The animated chart needs JavaScript. The full website continues below.</p><a className="ink-button" href="#waypoint-details">More details <ArrowRight aria-hidden="true" /></a></div></noscript>
         </section>
         <section id="waypoint-details" className="home-prologue" aria-labelledby="ink-hero-title">

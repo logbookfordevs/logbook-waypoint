@@ -493,3 +493,54 @@ body:has(.ink-map.no-webgl:not(.ink-map--inline)) { overflow: auto; }
 .ink-map.no-webgl .fallback-note { display: block; max-width: 60ch; margin: 0; font: 400 14px/1.5 var(--font-mono); color: var(--muted); }
 .ink-map.no-webgl .card { position: static; visibility: visible; opacity: 1; transform: none; width: min(560px, 100%); max-width: 100%; }
 .ink-map.no-webgl .card::before { display: none; }
+
+/* ——— entrance: the visitor's press releases the ink ——— */
+.ink-map.is-poised .controls { display: none; }
+.ink-map.no-webgl .map-entrance { display: none; }
+
+.ink-map .map-entrance { position: absolute; inset: 0; z-index: 2; }
+.ink-map .map-entrance-press {
+  position: absolute; inset: 0;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 0 var(--s5) calc(var(--s7) + var(--s7) + var(--s3));
+  background: transparent; border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ink-map .map-entrance-press:focus-visible { outline: none; }
+.ink-map .map-entrance-title {
+  padding: var(--s2) var(--s3);
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 2px dashed var(--signal);
+  font: 600 clamp(26px, 4vw + 12px, 44px)/1.12 var(--font-display);
+  letter-spacing: -0.02em;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--ink);
+  transition: border-color var(--dur-fast) ease-out;
+}
+.ink-map .map-entrance-press:focus-visible .map-entrance-title { outline: 2px solid var(--focus); outline-offset: 6px; border-radius: var(--radius); }
+.ink-map .map-entrance-press:active .map-entrance-title { border-bottom-style: solid; }
+@media (hover: hover) {
+  .ink-map .map-entrance-press:hover .map-entrance-title { border-bottom-style: solid; }
+}
+
+.ink-map .map-entrance-silent {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: max(var(--s5), env(safe-area-inset-bottom));
+  min-height: 44px; padding: 0 var(--s4);
+  background: color-mix(in srgb, var(--paper) 90%, transparent); border: 0; border-radius: var(--radius);
+  font: 500 14px/1 var(--font-display);
+  color: var(--muted);
+  text-decoration: underline; text-underline-offset: 5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ink-map .map-entrance-silent:hover { color: var(--ink); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ink-map .map-entrance-title { transition: none; }
+}

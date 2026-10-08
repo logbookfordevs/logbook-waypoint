@@ -1,10 +1,21 @@
 import * as THREE from 'three';
+import type { InkMapSound } from '@/components/ink-map-audio';
 
 type Point = [number, number];
 type RoutePiece = ['curve', Point[]] | ['zig', Point, number, number] | ['loop', number, number];
 interface CameraFrame { tx: number; ty: number; h: number; tilt: number; yaw: number }
 
-export function createInkMapJourney(root: HTMLElement, options: { onContinue?: () => void; inline?: boolean } = {}): (() => void) | undefined {
+export interface InkMapJourneyOptions {
+  onContinue?: () => void;
+  inline?: boolean;
+  sound?: InkMapSound;
+  /** Hold the ink above the chart until the visitor presses to release it. */
+  entrance?: boolean;
+  /** Runs synchronously inside the visitor's gesture, before the intro starts. */
+  onBegin?: (withSound: boolean) => void;
+}
+
+export function createInkMapJourney(root: HTMLElement, options: InkMapJourneyOptions = {}): (() => void) | undefined {
 
 
   const body = root;
@@ -46,6 +57,9 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
   const CAM = { fov: 35, stopH: 860, compactStopW: 560, followH: 1120, compactFollowW: 760, stopTilt: 0.24, compactStopTilt: 0.2, followTilt: 0.5, compactFollowTilt: 0.42, introTilt: 0.64 };
   const ROUTE = { step: 3, width: 5.4, compactWidth: 6.6, dash: 22, gap: 14, minPx: 2.2 };
   const DROP = { height: 230, radius: 8 };
+  const HANG = { scale: 1.4, swell: 0.18, bob: 3, idleSeconds: 8, easing: 9 };
+  // Sound stops once less than half of the inline map remains on screen.
+  const AUDIBLE_RATIO = 0.5;
   const MARKER = { size: 72, minPx: 44, anchor: 36, splatAnchor: 50, splatR: 46 };
   const STOP_YAW = [0, -0.04, 0.035, -0.03, 0.04];
   const TAN_HALF = Math.tan(THREE.MathUtils.degToRad(CAM.fov / 2));
@@ -741,11 +755,17 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
 
   /* ——— journey state ——— */
 
-  let mode: 'intro' | 'leg' | 'idle' = 'intro';
+  let mode: 'poised' | 'intro' | 'leg' | 'idle' = 'intro';
   let station = 0;
   let leg: { L: number; dir: number; t0: number; dur: number } | null = null;
   let pendingTarget: number | null = null;
   let introT0 = nowSec();
+  let poisedT0 = introT0;
+  let hungDrop = false;
+  let wink = 0;
+  let winkHover = false;
+  let winkPress = false;
+  let lastFrameT = 0;
   let progress = 0;
   let fadeT0 = -1;
   let reduceMotion = mq.matches;
@@ -756,7 +776,12 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
   let lastWheelT = 0;
   let wheelAcc = 0;
   let inView = true;
+  let mostlyInView = true;
   let pausedAt: number | null = null;
+  let dripCued = false;
+  let blobCued = false;
+  let penLevel = 0;
+  let penSample: { t: number; progress: number } | null = null;
 
   const ownsViewport = () => !options.inline || Math.abs(root.getBoundingClientRect().top) <= 2;
   const canScrollOnward = () => Boolean(options.inline && options.onContinue && mode === 'idle' && station === 5);
@@ -827,7 +852,7 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     const compact = isCompact();
     const idle = mode === 'idle';
 
-    nextBtn.setAttribute('aria-disabled', mode === 'leg' ? 'true' : 'false');
+    nextBtn.setAttribute('aria-disabled', mode === 'leg' || mode === 'poised' ? 'true' : 'false');
     const atEnd = idle && station === 5;
     const continuationLabel = options.inline ? 'More details' : 'Make your own mark';
     const idleLabel = atEnd && options.onContinue ? continuationLabel : NEXT_LABELS[station];
@@ -864,6 +889,12 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     else announcer.textContent = 'Checkpoint ' + i + ' of 4: ' + STATIONS[i] + '. ' + cards[i].querySelector('h2')!.textContent;
   }
 
+  function setPen(level: number) {
+    if (level === penLevel) return;
+    penLevel = level;
+    options.sound?.setPen(level);
+  }
+
   function resetMarkers() {
     markers.forEach(m => { if (m) { m.on = false; m.mesh.visible = false; } });
   }
@@ -877,8 +908,26 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     routeMat.uniforms.uFadeStart.value = 1e9;
     resetMarkers();
     introT0 = nowSec() - (reduceMotion ? MOTION.introEnd : 0);
+    hungDrop = false;
+    dripCued = blobCued = reduceMotion;
     mode = 'intro';
     updateUI();
+  }
+
+  function enterPoised() {
+    hideCards();
+    mode = 'poised';
+    poisedT0 = nowSec();
+    root.classList.add('is-poised');
+    updateUI();
+  }
+
+  function beginJourney(withSound: boolean) {
+    if (mode !== 'poised') return;
+    options.onBegin?.(withSound);
+    root.classList.remove('is-poised');
+    startIntro();
+    hungDrop = true;
   }
 
   function finishIntro() {
@@ -921,6 +970,9 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     pendingTarget = null;
     mode = 'idle';
     requireQuiet = true;
+    if (to === 5) options.sound?.cue('complete');
+    else if (to > 0) options.sound?.cue('checkpoint');
+    options.sound?.cue('card');
     showCard(to);
     updateUI();
     announce(to);
@@ -959,6 +1011,14 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
   }
 
   nextBtn.addEventListener('click', () => { if (nextBtn.getAttribute('aria-disabled') !== 'true') goNext(); }, { signal: abort.signal });
+  const pressTarget = root.querySelector('[data-begin]');
+  pressTarget?.addEventListener('click', () => beginJourney(true), { signal: abort.signal });
+  pressTarget?.addEventListener('pointerenter', () => { winkHover = true; }, { signal: abort.signal });
+  pressTarget?.addEventListener('pointerleave', () => { winkHover = false; }, { signal: abort.signal });
+  pressTarget?.addEventListener('pointerdown', () => { winkPress = true; }, { signal: abort.signal });
+  listen(window, 'pointerup', () => { winkPress = false; });
+  listen(window, 'pointercancel', () => { winkPress = false; });
+  root.querySelector('[data-begin-silent]')?.addEventListener('click', () => beginJourney(false), { signal: abort.signal });
   root.querySelector('[data-replay]')?.addEventListener('click', startIntro, { signal: abort.signal });
   backBtn.addEventListener('click', () => { if (backBtn.getAttribute('aria-disabled') !== 'true') goPrev(); }, { signal: abort.signal });
   railBtns.forEach(btn => btn.addEventListener('click', () => goTo(Number(btn.dataset.go)), { signal: abort.signal }));
@@ -969,6 +1029,11 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     const gap = t - lastWheelT;
     lastWheelT = t;
     const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * VH : e.deltaY;
+    if (mode === 'poised') {
+      e.preventDefault();
+      if (dy !== 0) { requireQuiet = true; beginJourney(false); }
+      return;
+    }
     if (scrollerCanScroll(e.target, dy)) return;
     if (canScrollOnward() && dy > 0 && (!requireQuiet || gap >= 0.22)) {
       requireQuiet = false;
@@ -1013,6 +1078,7 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     touch = null;
     if (!ownsViewport() || (canScrollOnward() && dy < 0)) return;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 44) return;
+    if (mode === 'poised') { beginJourney(false); return; }
     if (Math.abs(dy) >= Math.abs(dx)) {
       if (scrollerCanScroll(start.target, -dy)) return;
       if (dy < 0) goNext(); else goPrev();
@@ -1031,6 +1097,11 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     const forward = k === 'ArrowDown' || k === 'ArrowRight' || k === 'PageDown' || (k === ' ' && !onButton);
     const backward = k === 'ArrowUp' || k === 'ArrowLeft' || k === 'PageUp';
     if (!forward && !backward) return;
+    if (mode === 'poised') {
+      e.preventDefault();
+      beginJourney(false);
+      return;
+    }
     const dy = forward ? 1 : -1;
     if ((k === 'ArrowDown' || k === 'ArrowUp' || k === 'PageDown' || k === 'PageUp' || k === ' ') && scrollerCanScroll(e.target, dy)) return;
     e.preventDefault();
@@ -1055,10 +1126,20 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
 
   /* ——— frame ——— */
 
-  function dropState(ti: number) {
-    if (ti < 0.3 || ti >= MOTION.impact) return null;
+  const swelling = () => 1 + HANG.swell * wink;
+
+  function hangingDrop(t: number) {
+    const bob = reduceMotion ? 0 : Math.sin(t * 1.7) * HANG.bob;
+    return { z: DROP.height + bob, s: HANG.scale * swelling(), stretch: 1 };
+  }
+
+  function dropState(ti: number, t: number) {
+    if (ti < 0.3) return hungDrop ? hangingDrop(t) : null;
+    if (ti >= MOTION.impact) return null;
     const f = (ti - 0.3) / (MOTION.impact - 0.3);
-    return { z: DROP.height * (1 - f * f), s: easeOutCubic(f * 4), stretch: 1 + 0.9 * f };
+    const grow = easeOutCubic(f * 4);
+    const s = hungDrop ? lerp(HANG.scale, 1, grow) * swelling() : grow;
+    return { z: DROP.height * (1 - f * f), s, stretch: 1 + 0.9 * f };
   }
 
   function frame(ms: number) {
@@ -1071,14 +1152,26 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     let cam: CameraFrame;
     let ds: { z: number; s: number; stretch: number } | null = null;
 
-    if (mode === 'intro') {
+    const winkTarget = mode === 'poised' && !reduceMotion && (winkHover || winkPress) ? 1 : 0;
+    wink += (winkTarget - wink) * (1 - Math.exp(-clamp(t - lastFrameT, 0, 0.1) * HANG.easing));
+    lastFrameT = t;
+
+    if (mode === 'poised') {
+      cam = introCam();
+      ds = hangingDrop(t);
+      if (t - poisedT0 >= HANG.idleSeconds) beginJourney(false);
+    } else if (mode === 'intro') {
       const ti = t - introT0;
       cam = mixState(introCam(), stopCam(0), easeInOut((ti - 0.15) / (MOTION.introEnd - 0.15)));
-      if (!reduceMotion) ds = dropState(ti);
+      if (!reduceMotion) ds = dropState(ti, t);
+      // A skipped intro jumps past these marks; only cue a mark crossed in real time.
+      if (!dripCued && ti >= 0.3) { dripCued = true; if (ti < 0.5) options.sound?.cue('drip'); }
+      if (!blobCued && ti >= MOTION.impact) { blobCued = true; if (ti < MOTION.impact + 0.2) options.sound?.cue('blob'); }
       if (ti >= MOTION.introEnd) {
         mode = 'idle';
         station = 0;
         requireQuiet = true;
+        options.sound?.cue('card');
         showCard(0);
         updateUI();
         announce(0);
@@ -1088,10 +1181,13 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
       const q = leg.dir > 0 ? raw : 1 - raw;
       progress = legS(leg.L, q);
       cam = legCam(leg.L, q);
+      if (leg.dir > 0 && penSample && t > penSample.t) setPen(clamp((progress - penSample.progress) / (t - penSample.t) / MOTION.penSpeed, 0, 1));
+      penSample = { t, progress };
       if (raw >= 1) arriveAt(leg.dir > 0 ? leg.L + 1 : leg.L);
     } else {
       cam = station === 5 ? overviewCam() : stopCam(station);
     }
+    if (mode !== 'leg') { penSample = null; setPen(0); }
 
     if (!reduceMotion) addDrift(cam, t);
     applyCam(camera, cam);
@@ -1100,7 +1196,7 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     const zoomScale = Math.max(1, MARKER.minPx / (MARKER.size * ppu));
 
     const impactT = introT0 + MOTION.impact;
-    const since = t - impactT;
+    const since = mode === 'poised' ? -1 : t - impactT;
     const splatR = since > 0 ? MARKER.splatR * easeOutCubic(since / 0.65) : 0;
     const bleed = reduceMotion ? 1 : (since > 0 ? easeOutCubic(since / 2.6) : 0);
     paperMat.uniforms.uSplat.value.set(0, 0, splatR, bleed);
@@ -1159,19 +1255,23 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     }
   }
 
-  startIntro();
+  if (options.entrance) enterPoised(); else startIntro();
   frameId = requestAnimationFrame(frame);
 
   function updatePlayback() {
     if (disposed) return;
     const shouldPlay = inView && !document.hidden;
+    options.sound?.setActive(mostlyInView && !document.hidden);
     if (!shouldPlay && pausedAt === null) {
       pausedAt = nowSec();
+      penSample = null;
+      setPen(0);
       cancelAnimationFrame(frameId);
       frameId = 0;
     } else if (shouldPlay && pausedAt !== null) {
       const pauseDuration = nowSec() - pausedAt;
       introT0 += pauseDuration;
+      poisedT0 += pauseDuration;
       if (leg) leg.t0 += pauseDuration;
       if (fadeT0 >= 0) fadeT0 += pauseDuration;
       markers.forEach(marker => { if (marker) marker.t0 += pauseDuration; });
@@ -1184,8 +1284,9 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
   const viewportObserver = options.inline && typeof IntersectionObserver !== 'undefined'
     ? new IntersectionObserver(entries => {
       inView = entries.some(entry => entry.isIntersecting && entry.intersectionRatio > 0);
+      mostlyInView = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= AUDIBLE_RATIO);
       updatePlayback();
-    }, { threshold: [0, 0.001] }) : null;
+    }, { threshold: [0, 0.001, AUDIBLE_RATIO] }) : null;
   viewportObserver?.observe(root);
   document.addEventListener('visibilitychange', updatePlayback, { signal: abort.signal });
   updatePlayback();
@@ -1216,6 +1317,7 @@ export function createInkMapJourney(root: HTMLElement, options: { onContinue?: (
     event.preventDefault();
     cleanup();
     root.classList.add('no-webgl');
+    root.classList.remove('is-poised');
     cards.forEach(card => {
       card.removeAttribute('inert');
       card.removeAttribute('aria-hidden');

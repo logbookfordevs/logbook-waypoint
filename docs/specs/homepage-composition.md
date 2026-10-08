@@ -4,7 +4,7 @@ Approved scope: start directly inside the OpenDesign Ink Map Journey, continue i
 
 ## Visitor flow
 
-1. **Opening map:** The first viewport starts the existing ink-drop sequence automatically, without a discovery click or modal. Preserve the chart, camera, route, and checkpoint cards. Skip to details remains available, including while the engine loads or fails. Docs lives in the hero reached by Skip, not in the immersive map. The journey progresses through scroll, swipe, keyboard or checkpoint controls.
+1. **Opening map:** The first viewport shows the chart with a bead of ink hanging and the journey not started. The bottom journey controls are hidden while poised; the top bar stays. A large "Let the ink fall" target covers the chart. Pressing it (click, tap, Enter or Space) releases the ink and turns sound on in that gesture. A small "Begin without sound" button, a scroll or swipe on the map, a journey navigation key, or 8 seconds without input starts the journey silently; those 8 seconds do not elapse while the map is off screen or the tab is hidden. Preserve the chart, camera, route, and checkpoint cards. Skip to details remains available, including while the engine loads or fails and while the entrance waits. Docs lives in the hero reached by Skip, not in the immersive map. The journey progresses through scroll, swipe, keyboard or checkpoint controls.
 2. **Continuation and hero:** At the full-route overview, a fresh downward scroll flows natively into the hero. Leftover momentum does not skip the overview. More details or Skip to details scrolls to and focuses the hero. The map remains in the document; scrolling back up returns to the same chart, without a redundant hero return link. Replay in the overview explicitly restarts the ink sequence. Hero installation and setup links remain available immediately after skipping.
 3. **Editorial:** A small mark. A clear direction. Visitors select a sample heading, edit a brief, pin it, and send the same note to a demo Queue. Native scrolling stays available. Demo context is synthetic and clearly labeled; nothing is persisted or sent, and no agent execution is fabricated. Replay resets only this example.
 4. **Local by default:** Retain the existing security/lifecycle explanation, extension and CLI setup links, docs, source, and official footer.
@@ -17,13 +17,18 @@ Approved scope: start directly inside the OpenDesign Ink Map Journey, continue i
 - Map input is captured only while its inline viewport is fully at the top; it must not intercept the hero, Editorial or docs links. Native document scrolling remains available outside it. Explicit continuation transfers focus to the hero; ordinary scrolling does not force focus. The hands-on form has accessible labels, blank-note validation, and visible focus.
 - A custom note and its target context survive the pin-to-Queue transition. Long notes remain fully readable, and replay restores the example.
 - Promote the actual Editorial source, including Motion 13.4.0 choreography: animated copy, specimen tilt/departure, drawn brackets, form arrival/exit, shared-layout retained-note transfer and progress draw. Do not substitute a CSS-only reconstruction. Verification must inspect live temporal behavior, not only still captures.
-- No Labs index, other experiment engines, storage calls, analytics, or audio are added.
+- The entrance shows a poised bead with the bottom journey controls hidden. "Let the ink fall" releases the ink and turns sound on in one gesture. "Begin without sound", a map scroll or swipe, a journey navigation key, or 8 idle seconds starts silently, with idle time paused while the map is off screen or the page is hidden. Reduced motion skips the bead swell, and beginning jumps straight to the first card. Without WebGL or after context loss, no entrance appears and the field-notes fallback is unchanged.
+- No Labs index, other experiment engines, storage calls, or analytics are added. Audio is limited to the sound described under Sound (trial).
 
 ## Deferred
 
-Sound effects and narration are a final creative decision, not part of this composition pass. Labs discovery, source ownership and deployment architecture will be discussed separately.
+The owner reversed the no-gate rule in favour of the "Let the ink fall" entrance, which also turns sound on when pressed (see Sound (trial)). Narration remains deferred to the final creative decision. Labs discovery, source ownership and deployment architecture will be discussed separately.
 
-The opening runs silently for now. A later optional sound-enabling interaction belongs in the opening, without reinstating a required gate to discover the journey. Do not autoplay audio, add fake sound controls, or assume a page refresh grants audio permission. Audio content, narration and consent mechanics remain at the final sound gate.
+## Sound (trial)
+
+Sound starts off. Pressing "Let the ink fall" turns it on in the same gesture, and the top-bar Sound toggle controls it afterward. No audio context is created before a gesture, and sound files are fetched while the bead hangs so the first drip is not delayed. Nothing is persisted, so every visit starts at the entrance with sound off. Do not autoplay audio, add fake sound controls, or assume a page refresh grants audio permission.
+
+With sound on, the engine cues the ink drip and blob, the quill while a leg is drawn forward, a checkpoint arrival, the card turning in and the end-of-route flourish, over a shoreline bed and an original jig loop. All sound stops once the visitor leaves the map: on Skip to details or More details, when less than half of the inline map remains on screen, and when the page is hidden. It resumes on return. Reduced motion skips the drip and blob with the drop animation. Assets and their generator live in `packages/website/public/sfx` and `packages/website/scripts/sfx`. Narration remains out of scope.
 
 ## Design-system reconciliation
 
@@ -49,7 +54,7 @@ The inline composition was verified at 1440×1000 and 390×844. A fresh wheel ge
 
 At the exact map/hero boundary (map bottom at zero), GPU draw calls remained unchanged during the observation interval; scrolling back resumed drawing. A regression covers zero-area intersection and continuation of the same unfinished leg. Context loss reveals all six checkpoint cards in readable document flow, with no horizontal overflow at 390px. A blocked lazy map bundle preserves Docs and Skip; Skip still focuses the hero.
 
-Website verification: 45 tests across 16 files, repository typecheck, website lint and production build passed. Mobile inspection uses viewport emulation; physical-device touch is not claimed. Sound remains unimplemented and deferred.
+Website verification: 45 tests across 16 files, repository typecheck, website lint and production build passed. Mobile inspection uses viewport emulation; physical-device touch is not claimed.
 
 The supplied finish reviewer verdict is `ship`: zero-area GPU pause/resume, six-card context-loss fallback readability and lazy-bundle failure exits were scored resolved. That verdict covers those three fixes. The scoped specification and surface brief now describe the finished extension; root design-system files remain preserved.
 
