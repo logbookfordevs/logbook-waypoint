@@ -226,10 +226,12 @@ test('persistent Watch makes a delivered cursor durable before waking its caller
 
   try {
     const initial = await watch.watch({ timeoutMs: 0 }, async () => []);
-    const waiting = watch.watch({ cursor: initial.cursor, timeoutMs: 100 }, async () => []);
+    // This checks persistence ordering, not journal-write latency on the runner.
+    const waiting = watch.watch({ cursor: initial.cursor, timeoutMs: 10_000 }, async () => []);
     await new Promise(resolve => setImmediate(resolve));
     const recording = watch.recordChanges([annotation()]);
     const delivered = await waiting;
+    assert.equal(delivered.changes.length, 1);
     const restored = new PersistentWatchQueue({ historyFile });
 
     const resumed = await restored.watch(
