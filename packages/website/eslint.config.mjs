@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   { ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts'] },
   {
-    files: ['components/ink-map-*.ts', 'components/ink-map-*.tsx', 'components/site-chrome.tsx'],
+    files: ['components/ink-map-*.ts', 'components/ink-map-*.tsx', 'components/site-chrome.tsx', 'components/waypoint-home*.tsx', 'components/editorial-demo*.tsx'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       globals: {

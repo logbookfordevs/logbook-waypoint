@@ -99,8 +99,8 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html:has(.ink-map) { scroll-behavior: auto; }
-body:has(.ink-map) { overflow: hidden; }
-body:has(.ink-map.no-webgl) { overflow: auto; }
+body:has(.ink-map:not(.ink-map--inline)) { overflow: hidden; }
+body:has(.ink-map.no-webgl:not(.ink-map--inline)) { overflow: auto; }
 
 .ink-map {
   position: fixed; inset: 0; z-index: 30;
@@ -489,7 +489,7 @@ body:has(.ink-map.no-webgl) { overflow: auto; }
 .ink-map.no-webgl { position: relative; min-height: 100dvh; overflow: auto; }
 .ink-map.no-webgl #scene, .ink-map.no-webgl #leader, .ink-map.no-webgl .controls, .ink-map.no-webgl .rail { display: none; }
 .ink-map.no-webgl .topbar { position: static; padding-bottom: var(--s4); }
-.ink-map.no-webgl main { padding: var(--s4) var(--s4) var(--s7); display: grid; gap: var(--s5); justify-items: center; }
+.ink-map.no-webgl .ink-map-notes { padding: var(--s4) var(--s4) var(--s7); display: grid; gap: var(--s5); justify-items: center; }
 .ink-map.no-webgl .fallback-note { display: block; max-width: 60ch; margin: 0; font: 400 14px/1.5 var(--font-mono); color: var(--muted); }
 .ink-map.no-webgl .card { position: static; visibility: visible; opacity: 1; transform: none; width: min(560px, 100%); max-width: 100%; }
 .ink-map.no-webgl .card::before { display: none; }

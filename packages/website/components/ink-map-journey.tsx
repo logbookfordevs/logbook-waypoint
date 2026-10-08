@@ -1,23 +1,38 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { createInkMapJourney } from '@/components/ink-map-engine';
 
-export function InkMapJourney() {
+export interface InkMapJourneyProps {
+  onContinue?: () => void;
+  onExit?: () => void;
+  inline?: boolean;
+}
+
+export function InkMapJourney({ onContinue, onExit, inline = false }: InkMapJourneyProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!rootRef.current) return;
-    return createInkMapJourney(rootRef.current);
-  }, []);
+    const dispose = createInkMapJourney(rootRef.current, { onContinue, inline });
+    if (!inline) rootRef.current.querySelector<HTMLButtonElement>('.map-home-link')?.focus({ preventScroll: true });
+    return dispose;
+  }, [onContinue, inline]);
+
+  const canExit = Boolean(onExit);
+  const canContinue = Boolean(onContinue);
+  const exitLabel = inline ? 'Skip to details' : 'Back to homepage';
+  const continueLabel = inline ? 'More details' : 'Make your own mark';
 
   return (
-    <div ref={rootRef} className="ink-map no-webgl">
+    <div ref={rootRef} className={`ink-map no-webgl${inline ? ' ink-map--inline' : ''}`}>
 <canvas id="scene" aria-hidden="true" />
 <svg id="leader" aria-hidden="true" focusable="false"><line id="leader-line" x1="0" y1="0" x2="0" y2="0"/></svg>
 
 <header className="topbar">
-  <p className="wordmark"><span className="wordmark-name">Waypoint</span><span className="wordmark-sub">Route briefing</span></p>
+  {canExit && <button type="button" className="wordmark map-home-link" onClick={onExit} aria-label={exitLabel}><ArrowLeft aria-hidden="true" /><span className="wordmark-name">{inline ? 'Skip to details' : 'Waypoint'}</span></button>}
+  {!canExit && <p className="wordmark"><span className="wordmark-name">Waypoint</span><span className="wordmark-sub">Route briefing</span></p>}
   <nav aria-label="Checkpoints">
     <ol className="rail">
       <li><button type="button" className="rail-btn" data-go="1" data-state="upcoming"><span className="rail-mark" aria-hidden="true"></span><span className="rail-num" aria-hidden="true">01</span><span className="rail-name">Annotate</span></button></li>
@@ -28,13 +43,14 @@ export function InkMapJourney() {
   </nav>
 </header>
 
-<main id="main-content">
+<div className="ink-map-notes">
   <p className="fallback-note">This browser can't draw the animated chart, so the route is laid out as field notes.</p>
 
   <section className="card" id="card-0" data-station="0" aria-labelledby="t0">
     <div className="card-scroll" tabIndex={0}>
       <p className="card-label">Field notes · Waypoint</p>
-      <h1 id="t0">Chart the route before the build.</h1>
+      {inline && <h2 id="t0">Chart the route before the build.</h2>}
+      {!inline && <h1 id="t0">Chart the route before the build.</h1>}
       <p>Follow the ink from a note on your screen to finished work. Four checkpoints, one route.</p>
       <p className="card-hint" id="start-hint">Scroll, press ↓ or select Set course to follow the ink.</p>
     </div>
@@ -106,9 +122,11 @@ export function InkMapJourney() {
         <p className="by">A tool from Logbook for Devs</p>
         <p className="motto">Charting the technical seas, one commit at a time.</p>
       </div>
+      {canContinue && <button type="button" className="map-replay" data-replay><RotateCcw aria-hidden="true" /> Replay the journey</button>}
     </div>
   </section>
-</main>
+  {canContinue && <button type="button" className="btn btn-primary map-fallback-continue" onClick={onContinue}>{continueLabel}</button>}
+</div>
 
 <footer className="controls" aria-label="Journey controls">
   <button type="button" className="btn btn-secondary" id="back" aria-disabled="true">

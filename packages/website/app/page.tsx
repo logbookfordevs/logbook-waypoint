@@ -1,5 +1,5 @@
-import { InkMapJourney } from '@/components/ink-map-journey';
+import { WaypointHome } from '@/components/waypoint-home';
 
 export default function HomePage() {
-  return <InkMapJourney />;
+  return <WaypointHome />;
 }

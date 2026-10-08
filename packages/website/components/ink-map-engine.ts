@@ -4,7 +4,7 @@ type Point = [number, number];
 type RoutePiece = ['curve', Point[]] | ['zig', Point, number, number] | ['loop', number, number];
 interface CameraFrame { tx: number; ty: number; h: number; tilt: number; yaw: number }
 
-export function createInkMapJourney(root: HTMLElement): (() => void) | undefined {
+export function createInkMapJourney(root: HTMLElement, options: { onContinue?: () => void; inline?: boolean } = {}): (() => void) | undefined {
 
 
   const body = root;
@@ -755,12 +755,18 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
   let requireQuiet = false;
   let lastWheelT = 0;
   let wheelAcc = 0;
+  let inView = true;
+  let pausedAt: number | null = null;
+
+  const ownsViewport = () => !options.inline || Math.abs(root.getBoundingClientRect().top) <= 2;
+  const canScrollOnward = () => Boolean(options.inline && options.onContinue && mode === 'idle' && station === 5);
 
   function placeCard(i: number) {
     const card = cards[i];
     const scroller = card.querySelector<HTMLElement>('.card-scroll')!;
-    const topLimit = topbar.getBoundingClientRect().bottom + 12;
-    const bottomLimit = controls.getBoundingClientRect().top - 12;
+    const origin = options.inline ? root.getBoundingClientRect().top : 0;
+    const topLimit = topbar.getBoundingClientRect().bottom - origin + 12;
+    const bottomLimit = controls.getBoundingClientRect().top - origin - 12;
     scroller.style.maxHeight = Math.max(160, bottomLimit - topLimit) + 'px';
 
     const w = card.offsetWidth, h = card.offsetHeight;
@@ -822,13 +828,16 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
     const idle = mode === 'idle';
 
     nextBtn.setAttribute('aria-disabled', mode === 'leg' ? 'true' : 'false');
-    nextLabel.textContent = mode === 'intro' ? 'Skip intro' : mode === 'leg' ? 'Charting…' : NEXT_LABELS[station];
-    nextPath.setAttribute('d', idle && station === 5 ? ICON_REPLAY : ICON_NEXT);
+    const atEnd = idle && station === 5;
+    const continuationLabel = options.inline ? 'More details' : 'Make your own mark';
+    const idleLabel = atEnd && options.onContinue ? continuationLabel : NEXT_LABELS[station];
+    nextLabel.textContent = mode === 'intro' ? 'Skip intro' : mode === 'leg' ? 'Charting…' : idleLabel;
+    nextPath.setAttribute('d', atEnd && !options.onContinue ? ICON_REPLAY : ICON_NEXT);
     backBtn.setAttribute('aria-disabled', idle && station > 0 ? 'false' : 'true');
 
     if (mode === 'intro') hint.textContent = 'The ink is landing…';
     else if (mode === 'leg') hint.textContent = 'Charting the route…';
-    else if (station === 5) hint.textContent = 'Replay draws the route again from the first mark.';
+    else if (station === 5) hint.textContent = options.onContinue ? 'Scroll onward to discover Waypoint.' : 'Replay draws the route again from the first mark.';
     else hint.textContent = 'Scroll or press ↓ to continue · ↑ to go back';
 
     startHint.textContent = compact
@@ -920,7 +929,11 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
   function goNext() {
     if (mode === 'intro') { finishIntro(); return; }
     if (mode !== 'idle') return;
-    if (station === 5) { startIntro(); return; }
+    if (station === 5) {
+      if (options.onContinue) options.onContinue();
+      else startIntro();
+      return;
+    }
     startLeg(station, station + 1, 1);
   }
 
@@ -946,15 +959,21 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
   }
 
   nextBtn.addEventListener('click', () => { if (nextBtn.getAttribute('aria-disabled') !== 'true') goNext(); }, { signal: abort.signal });
+  root.querySelector('[data-replay]')?.addEventListener('click', startIntro, { signal: abort.signal });
   backBtn.addEventListener('click', () => { if (backBtn.getAttribute('aria-disabled') !== 'true') goPrev(); }, { signal: abort.signal });
   railBtns.forEach(btn => btn.addEventListener('click', () => goTo(Number(btn.dataset.go)), { signal: abort.signal }));
 
   listen(window, 'wheel', e => {
+    if (!ownsViewport() || e.ctrlKey) return;
     const t = nowSec();
     const gap = t - lastWheelT;
     lastWheelT = t;
     const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * VH : e.deltaY;
     if (scrollerCanScroll(e.target, dy)) return;
+    if (canScrollOnward() && dy > 0 && (!requireQuiet || gap >= 0.22)) {
+      requireQuiet = false;
+      return;
+    }
     e.preventDefault();
 
     if (mode === 'intro') {
@@ -974,6 +993,7 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
 
   let touch: { x: number; y: number; target: EventTarget | null } | null = null;
   listen(window, 'touchstart', e => {
+    if (!ownsViewport()) { touch = null; return; }
     if (e.touches.length !== 1) { touch = null; return; }
     const t = e.touches[0];
     touch = { x: t.clientX, y: t.clientY, target: e.target };
@@ -982,6 +1002,7 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
     if (!touch || e.touches.length !== 1) return;
     const sc = touch.target instanceof Element ? touch.target.closest('.card-scroll') : null;
     if (sc && sc.scrollHeight > sc.clientHeight + 1) return;
+    if (canScrollOnward() && e.touches[0].clientY < touch.y) return;
     e.preventDefault();
   }, { passive: false });
   listen(window, 'touchend', e => {
@@ -990,6 +1011,7 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
     const dx = t.clientX - touch.x, dy = t.clientY - touch.y;
     const start = touch;
     touch = null;
+    if (!ownsViewport() || (canScrollOnward() && dy < 0)) return;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 44) return;
     if (Math.abs(dy) >= Math.abs(dx)) {
       if (scrollerCanScroll(start.target, -dy)) return;
@@ -998,6 +1020,9 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
   }, { passive: true });
 
   listen(window, 'keydown', e => {
+    if (!ownsViewport()) return;
+    const focusOutsideMap = e.target instanceof Element && e.target !== document.body && e.target !== document.documentElement && !root.contains(e.target);
+    if (options.inline && focusOutsideMap) return;
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.repeat) return;
     const onButton = e.target instanceof Element && e.target.closest('button');
     const editingText = e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable]');
@@ -1017,8 +1042,8 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
   if (mq.addEventListener) mq.addEventListener('change', onMotionPref); else mq.addListener(onMotionPref);
 
   function resize() {
-    VW = innerWidth;
-    VH = innerHeight;
+    VW = options.inline ? root.clientWidth || innerWidth : innerWidth;
+    VH = options.inline ? root.clientHeight || innerHeight : innerHeight;
     const dpr = Math.min(window.devicePixelRatio || 1, isCompact() ? 1.75 : 2);
     renderer.setPixelRatio(dpr);
     renderer.setSize(VW, VH, false);
@@ -1037,7 +1062,8 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
   }
 
   function frame(ms: number) {
-    if (disposed) return;
+    frameId = 0;
+    if (disposed || pausedAt !== null) return;
     frameId = requestAnimationFrame(frame);
     if (needsResize) { needsResize = false; resize(); }
 
@@ -1136,10 +1162,39 @@ export function createInkMapJourney(root: HTMLElement): (() => void) | undefined
   startIntro();
   frameId = requestAnimationFrame(frame);
 
+  function updatePlayback() {
+    if (disposed) return;
+    const shouldPlay = inView && !document.hidden;
+    if (!shouldPlay && pausedAt === null) {
+      pausedAt = nowSec();
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+    } else if (shouldPlay && pausedAt !== null) {
+      const pauseDuration = nowSec() - pausedAt;
+      introT0 += pauseDuration;
+      if (leg) leg.t0 += pauseDuration;
+      if (fadeT0 >= 0) fadeT0 += pauseDuration;
+      markers.forEach(marker => { if (marker) marker.t0 += pauseDuration; });
+      pausedAt = null;
+      needsResize = true;
+      frameId = requestAnimationFrame(frame);
+    }
+  }
+
+  const viewportObserver = options.inline && typeof IntersectionObserver !== 'undefined'
+    ? new IntersectionObserver(entries => {
+      inView = entries.some(entry => entry.isIntersecting && entry.intersectionRatio > 0);
+      updatePlayback();
+    }, { threshold: [0, 0.001] }) : null;
+  viewportObserver?.observe(root);
+  document.addEventListener('visibilitychange', updatePlayback, { signal: abort.signal });
+  updatePlayback();
+
   function cleanup() {
     if (disposed) return;
     disposed = true;
     abort.abort();
+    viewportObserver?.disconnect();
     cancelAnimationFrame(frameId);
     window.clearTimeout(fontTimeout);
     mq.removeEventListener('change', onMotionPref);

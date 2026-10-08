@@ -1,0 +1,71 @@
+.waypoint-home {
+  --editorial-direction: color-mix(in srgb, var(--ink-rust) 82%, var(--ink-ocean));
+}
+
+.waypoint-home ::selection { background: var(--ink-ocean); color: var(--ink-lantern); }
+.waypoint-home :focus-visible { outline: 3px solid var(--editorial-direction); outline-offset: 5px; }
+.waypoint-home :where(button, a) { touch-action: manipulation; }
+.waypoint-home .home-prologue { position: relative; overflow: clip; }
+.waypoint-home .ink-masthead nav > a { display: inline-flex; }
+.waypoint-home .ink-hero h1 { font-size: clamp(3.2rem, 6.2vw, 5.6rem); letter-spacing: -0.04em; line-height: 1.02; text-wrap: balance; }
+.waypoint-home .ink-button--primary,
+.waypoint-home .ink-button--primary:hover { box-shadow: 0 8px 24px color-mix(in srgb, var(--ink-ocean) 16%, transparent); }
+.home-explore { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem; margin-top: 1rem; }
+.home-explore > a { color: var(--ink-muted); font-size: 0.85rem; text-underline-offset: 5px; }
+.waypoint-home .ink-payoff h2 { font-size: clamp(2.5rem, 4.5vw, 4.3rem); letter-spacing: -0.04em; text-wrap: balance; }
+.waypoint-home .ink-payoff__note { font: 400 0.8rem/1.7 var(--ink-display); }
+.waypoint-home .ink-payoff li small { font-size: 0.85rem; line-height: 1.5; }
+.waypoint-home .site-footer { border: 0; background: var(--ink-ocean); color: var(--ink-lantern); }
+.waypoint-home .site-footer__thelu { display: none; }
+.waypoint-home .site-footer p,
+.waypoint-home .site-footer a { color: color-mix(in srgb, var(--ink-lantern) 82%, var(--ink-ocean)); }
+
+.home-opening { position: relative; min-height: 100dvh; background: #e9e5d8; }
+.home-opening .ink-map--inline { position: relative; inset: auto; z-index: 0; height: 100dvh; overflow: clip; overscroll-behavior: auto; }
+.ink-map--inline #scene,
+.ink-map--inline #leader,
+.ink-map--inline .topbar,
+.ink-map--inline .card,
+.ink-map--inline .controls { position: absolute; }
+.ink-map--inline #scene { width: 100%; height: 100%; }
+.ink-map--inline .map-home-link .wordmark-name { font-size: 14px; font-weight: 500; }
+.home-opening .ink-map--inline.no-webgl { height: auto; overflow: visible; }
+.home-map-pending nav { position: absolute; inset: 24px 24px auto; display: flex; justify-content: space-between; font: 500 14px var(--ink-display); }
+.home-map-pending :is(a, button) { display: inline-flex; align-items: center; min-height: 44px; text-underline-offset: 5px; }
+.ink-map--inline #card-0 h2 { font-size: clamp(28px, 2.2vw + 12px, 42px); line-height: 1.12; letter-spacing: -0.02em; }
+.ink-map--inline.no-webgl .topbar { position: static; }
+.ink-map--inline.no-webgl .card { position: static; }
+.home-map-loading { position: absolute; inset: 45% 1.5rem auto; text-align: center; font-family: var(--ink-reading); font-size: 1.5rem; }
+.home-map-unavailable { padding: 20vh 24px; max-width: 40rem; margin: auto; }
+.home-map-unavailable h2 { font-size: 2rem; }
+.home-map-unavailable p { margin: 1rem 0 2rem; line-height: 1.7; }
+.ink-map .map-home-link { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.map-home-link > svg { width: 18px; height: 18px; }
+.ink-map .map-replay { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 1rem; color: var(--ink); font: 500 14px var(--font-display); cursor: pointer; }
+.map-replay > svg { width: 16px; height: 16px; }
+.ink-map .map-fallback-continue { display: none; }
+.ink-map.no-webgl .map-fallback-continue { display: flex; }
+.ink-map.no-webgl .map-replay { display: none; }
+
+@media (max-width: 832px) {
+  .waypoint-home .ink-hero { grid-template-rows: auto auto; padding-top: 7rem; padding-bottom: 3rem; gap: 1.5rem; }
+  .waypoint-home .ink-hero h1 { font-size: clamp(3rem, 10.5vw, 4.5rem); }
+  .waypoint-home .ink-hero__thelu { height: 22rem; }
+  .waypoint-home .ink-hero__thelu > img { height: 100%; transform: none; }
+  .waypoint-home .ink-brand strong { font-size: 0.7rem; }
+  .waypoint-home .ink-masthead nav { font-size: 0.8rem; }
+  .home-explore { gap: 0.25rem 1rem; }
+  .waypoint-home .ink-payoff { padding-top: 3.5rem; }
+}
+@media (max-width: 360px) {
+  .ink-map .map-home-link .wordmark-name { font-size: 16px; }
+  .waypoint-home .ink-masthead nav { gap: 0.6rem; }
+}
+@media (max-aspect-ratio: 9/10) {
+  .ink-map--inline .topbar { flex-wrap: wrap; gap: 10px; padding-right: 16px; }
+  .ink-map--inline .topbar nav { flex-basis: 100%; }
+  .ink-map--inline .rail { width: fit-content; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .waypoint-home { scroll-behavior: auto; }
+}

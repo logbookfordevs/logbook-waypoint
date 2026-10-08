@@ -26,6 +26,8 @@ import '@/app/styles/docs.css';
 import '@/app/styles/waypoint-practice.css';
 import '@/app/styles/motion-and-responsive.css';
 import '@/app/styles/ink-map.css';
+import '@/app/styles/homepage.css';
+import '@/app/styles/editorial.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
