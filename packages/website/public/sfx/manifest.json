@@ -1,0 +1,74 @@
+[
+  {
+    "file": "ink-drip.mp3",
+    "role": "The bead of ink letting go of the nib. The fall itself is silent.",
+    "loop": false,
+    "channels": 2,
+    "seconds": 0.3,
+    "bytes": 5894
+  },
+  {
+    "file": "ink-blob.mp3",
+    "role": "A drop of thin ink landing: one short liquid plip.",
+    "loop": false,
+    "channels": 2,
+    "seconds": 0.6,
+    "bytes": 10492
+  },
+  {
+    "file": "pen-draw-loop.mp3",
+    "role": "Quill on parchment while the route is drawn. Drive gain from pen velocity.",
+    "loop": true,
+    "channels": 2,
+    "seconds": 4.8,
+    "bytes": 68066
+  },
+  {
+    "file": "checkpoint-arrive.mp3",
+    "role": "Dropping anchor in a sunny cove: a small splash and two plucked notes.",
+    "loop": false,
+    "channels": 2,
+    "seconds": 1.9,
+    "bytes": 31390
+  },
+  {
+    "file": "route-complete.mp3",
+    "role": "A rising plucked flourish landing on a bright chord.",
+    "loop": false,
+    "channels": 2,
+    "seconds": 3.6,
+    "bytes": 58557
+  },
+  {
+    "file": "paper-rustle.mp3",
+    "role": "A checkpoint card turning in.",
+    "loop": false,
+    "channels": 2,
+    "seconds": 0.75,
+    "bytes": 12999
+  },
+  {
+    "file": "ui-tick.mp3",
+    "role": "Small tick for buttons.",
+    "loop": false,
+    "channels": 2,
+    "seconds": 0.2,
+    "bytes": 4222
+  },
+  {
+    "file": "harbour-ambience.mp3",
+    "role": "Sunny shoreline bed: small waves, foam and a light breeze. Seamless loop.",
+    "loop": true,
+    "channels": 2,
+    "seconds": 40,
+    "bytes": 561049
+  },
+  {
+    "file": "shanty-loop.mp3",
+    "role": "Optional music bed: an original cheerful jig on plucked strings. Seamless loop.",
+    "loop": true,
+    "channels": 2,
+    "seconds": 16.32,
+    "bytes": 229346
+  }
+]

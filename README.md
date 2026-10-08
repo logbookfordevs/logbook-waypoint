@@ -81,13 +81,28 @@ pnpm build
 
 ### Marketing and documentation website
 
-The website is part of the pnpm workspace and remains unpublished while Waypoint is in development. Its package-level checks are:
+The website is part of the pnpm workspace and remains unpublished while Waypoint is in development. The homepage is the React port of the approved OpenDesign **Waypoint Ink Map Journey**; the existing documentation routes remain available at `/docs`.
+
+Run the local site from the repository root:
+
+```bash
+pnpm site:dev
+```
+
+Open the localhost URL printed by Next.js (normally `http://localhost:3000`). To choose a specific port, use `pnpm site:dev --hostname 127.0.0.1 --port 3041`.
+
+Its package-level checks are:
 
 ```bash
 pnpm --filter @logbookfordevs/waypoint-website test
 pnpm --filter @logbookfordevs/waypoint-website check
+pnpm --filter @logbookfordevs/waypoint-website lint
 pnpm --filter @logbookfordevs/waypoint-website build
 ```
+
+After a build, preview the production site with `pnpm --filter @logbookfordevs/waypoint-website start --hostname 127.0.0.1 --port 3042`.
+
+The [OpenDesign source reference](docs/references/waypoint-opendesign/README.md) records provenance and the port boundaries. The homepage supports checkpoint navigation, scroll/swipe and keyboard-triggered travel, replay, reduced motion, and a readable no-WebGL fallback.
 
 ## CLI installation
 

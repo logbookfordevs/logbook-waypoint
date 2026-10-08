@@ -46,3 +46,7 @@ Choose the shortest route for what you need to understand or change.
 
 - [Product changelog](../CHANGELOG.md) — extension, workflow, UX, and whole-product changes.
 - [Server changelog](../packages/server/CHANGELOG.md) — MCP server and package-specific changes.
+
+## Creative experiments
+
+- [Waypoint experiment archive](references/waypoint-labs/README.md) — preserved website experiment branches, snapshot commits, source and evidence locations, and the deferred Logbook Labs publishing decision.

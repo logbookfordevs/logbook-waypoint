@@ -7,5 +7,5 @@ export default function nextConfig(phase: string): NextConfig {
   if (phase === PHASE_DEVELOPMENT_SERVER || phase === PHASE_PRODUCTION_BUILD) {
     copyFileSync(resolve(process.cwd(), '../../scripts/install.sh'), resolve(process.cwd(), 'public/install.sh'));
   }
-  return { output: 'standalone' };
+  return { output: 'standalone', devIndicators: false };
 }

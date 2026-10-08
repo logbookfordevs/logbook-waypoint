@@ -1,70 +1,72 @@
-# Route Logbook settings design QA
+# OpenDesign → React fidelity QA
 
-## Evidence
+Date: 2026-10-07  
+Final result: **passed**
 
-- Source visual truth: `.impeccable/review/route-logbook-reference.png`
-- Implementation: `.impeccable/review/route-logbook-implementation.png`
-- Combined comparison: `.impeccable/review/route-logbook-comparison.png`
-- Responsive captures: `.impeccable/review/desktop-final.png` and `.impeccable/review/mobile-final.png`
-- Source pixels: 380 × 640 at device scale factor 1
-- Implementation pixels: 380 × 751 at device scale factor 1
-- Desktop viewport: 1280 × 900 CSS px
-- Mobile viewport: 375 × 812 CSS px
-- State: Day Chart theme, settings open, site access enabled, MCP server offline
+## Comparison target
 
-The comparison uses the same 380 px component width and aligns both surfaces at the top. The implementation is taller because it retains product-required site-access guidance, the Impeccable dependency link, and the explicit Close Logbook Waypoint action that were abbreviated or absent in the concept mockup.
+Source: OpenDesign project `7333dca3-2b63-4c9a-b836-70106cf96726`, served unchanged at `http://127.0.0.1:3040`. Production reference copies live under `docs/references/waypoint-opendesign/`.
 
-## Required fidelity surfaces
+Implementation: existing Next.js / React / TypeScript website, homepage `/`, development preview at `http://127.0.0.1:3041`, built standalone preview at `http://127.0.0.1:3042`.
 
-- **Fonts and typography:** Public Sans and IBM Plex Mono preserve the approved sans/monospace hierarchy. Product name, route, section titles, labels, and descriptions retain the mockup's optical roles without truncating essential copy.
-- **Spacing and layout rhythm:** Masthead, route strip, three ruled sections, two utility rows, and footer action reproduce the approved topology. The extra height is an intentional consequence of retained product content rather than spacing drift.
-- **Colors and visual tokens:** The implementation uses the existing Driftwood Day Chart tokens: Atlantic green masthead, warm paper surfaces, teal active controls, brown rules, and semantic offline/danger colors.
-- **Image and icon fidelity:** The production Thelu settings asset replaces the mockup's temporary W mark. Existing Waypoint SVG icons remain consistent and sharp. No new raster or approximate decorative asset was introduced.
-- **Copy and content:** Connection, Capture, and Workflow match the selected direction. Data & Storage sits beside Documentation; Import sits beside Export. Existing permissions, Design Actions guidance, hotkey, and close behavior remain findable.
+Comparisons use the same checkpoint, light theme, copy, 1× screenshot density, and viewport. In each combined image, **source is left, React is right**:
 
-## Full-view comparison
+- [Desktop Annotate: 1280 × 720 per side](docs/references/waypoint-opendesign/qa/desktop-annotate-comparison.png)
+- [Portrait Check results: 390 × 844 per side](docs/references/waypoint-opendesign/qa/mobile-results-comparison.png)
 
-The combined 760 × 751 comparison confirms the same visual thesis, section order, component width, density, color balance, and utility grouping. The production version is intentionally more explicit about real states and uses the shipped brand asset.
+The map has continuous subtle camera drift. Separately timed captures therefore have a small background phase difference; this is not claimed to be a bit-identical animation-frame comparison. Authored geometry, shaders, motion constants, font families/weights, and CSS are preserved.
 
-## Focused-region comparison
+## Findings and iteration history
 
-The component-only comparison is sufficient because every label, icon, switch, route, divider, and utility action remains readable at native scale. The 375 px capture separately verifies narrow wrapping, the five-color selector, toggle clearance, and the two-column utility rows.
+1. **[P2, fixed] Portrait rules lost precedence during CSS scoping.** Desktop `.ink-map` selectors outweighed the original unscoped portrait selectors, leaving desktop-sized controls on a narrow viewport. Scoped portrait rules consistently, recaptured both implementations at 390 × 844, and compared the combined image. Card boundaries, text wrapping, rail density, and bottom controls now match.
+2. **[P2, fixed] Agent code block lost an authored newline in JSX.** JSX whitespace normalization joined lines. Restored the literal string inside `<code>` and verified the separate command, note, and status lines in the browser.
+3. A source portrait capture initially used mismatched browser screenshot metrics. Recreated the source tab using the browser's viewport control, verified `innerWidth=390` / `innerHeight=844`, and replaced the invalid capture before judging fidelity.
 
-## Findings
+No remaining actionable P0/P1/P2 visual differences were found in the final comparisons.
 
-No actionable P0, P1, or P2 mismatch remains.
+## Fidelity surfaces
 
-Accepted differences:
+- **Typography:** Poppins, Literata, and IBM Plex Mono, source weights and sizing, heading wrapping, and body measure match. Fonts are locally served rather than fetched from Google.
+- **Spacing/layout:** floating card placement, leader, checkpoint rail, lower controls, responsive card width, padding, and dividers match at the compared viewports.
+- **Colors/tokens:** paper, surface, dark ink, signal, verdigris, borders, and selected-state values retain the source tokens. The journey remains light regardless of documentation theme.
+- **Art/assets:** original procedural paper/contour shader, splat geometry, route geometry, Three.js version r149, marker textures, and inline SVG are retained. No screenshots or newly generated approximations replace live scene content. Reference HTML and vendor script hashes match the source files exactly.
+- **Copy/content:** authored station copy, headings, labels, chips, queue, code example, outcomes, attribution, and replay text are retained. This fidelity pass does not silently rewrite product vocabulary.
 
-- The real Thelu settings asset replaces the concept's provisional W mark.
-- The live site-access and server states use truthful runtime content.
-- Production preserves dependency guidance and the close action, increasing the component height.
+## Behavioral verification
 
-## Interaction and runtime checks
+- Browser: intro, Set course, timed travel and hold at Annotate, Queue, Agent pick, Check results, Full route, Replay, and direct checkpoint navigation.
+- Browser: reduced-motion checkpoint navigation is immediate; corrected code block retains its lines.
+- Browser: production preview loads real WebGL and locally served assets; no console warnings/errors observed in the inspected page states.
+- Browser: with JavaScript disabled, all six stations remain readable as static field notes.
+- Regression tests: destination holds, back/replay, checkpoint/keyboard navigation, reduced motion, renderer/listener/frame cleanup, and unavailable/lost WebGL fallback.
 
-- Opened settings from the extension toolbar.
-- Opened Documentation and returned to the Route Logbook shell.
-- Opened Data & Storage from the paired utility row.
-- Confirmed keyboard-accessible controls in the accessibility snapshot.
-- Confirmed Settings exposes `aria-expanded` and `aria-controls`, the popover has a named region, Escape closes it, and focus returns to its trigger.
-- Confirmed every pin swatch has a human-readable name and pressed state, and compact controls retain 44 px interaction targets.
-- Browser console contained only the expected Waypoint module load logs and no errors.
+## Mechanical verification
 
-## Comparison history
+All passed:
 
-The first narrow capture wrapped the fifth pin color and crowded the inspection-control description. The responsive implementation was updated to place all five colors on one deliberate row and allow description text to shrink and wrap without colliding with toggles. A final polish pass added named color states, keyboard disclosure behavior, and touch-ready targets. The post-fix evidence is `.impeccable/review/mobile-final.png`.
+```bash
+pnpm --filter @logbookfordevs/waypoint-website check
+pnpm --filter @logbookfordevs/waypoint-website lint
+pnpm --filter @logbookfordevs/waypoint-website test
+pnpm --filter @logbookfordevs/waypoint-website build
+pnpm --filter @logbookfordevs/waypoint-website start --hostname 127.0.0.1 --port 3042
+```
 
-## Follow-up polish
+Tests: **10 files, 25 tests passed**. Lint is intentionally scoped to the new journey implementation and site-chrome integration, not a claim of repository-wide lint coverage. Production build generated the homepage and existing documentation routes.
 
-No blocking polish remains. A future pass could add a dedicated compact presentation for unusually long compatibility messages, but current content wraps safely.
+## Open questions and residual gaps
+
+None blocking the faithful port. Physical iOS/Android devices, Safari/Firefox, sustained GPU performance, and assistive-technology user testing were not exercised. Portrait checks are browser viewport tests, not claims of physical-device coverage. This pass does not add narration, change the approved art direction, publish a release, or integrate a live annotation queue.
 
 ## Implementation checklist
 
-- [x] Preserve settings behavior and event handlers.
-- [x] Reorganize controls into Connection, Capture, and Workflow.
-- [x] Pair Data & Storage with Documentation.
-- [x] Pair Import with Export.
-- [x] Verify desktop and 375 px layouts.
-- [x] Verify Documentation and Data & Storage navigation.
+- [x] Preserve the original source as a provenance reference.
+- [x] Port to real React markup and a typed renderer with resource cleanup.
+- [x] Fix and recapture portrait specificity and code-block whitespace regressions.
+- [x] Compare source and implementation together at matching desktop/portrait states.
+- [x] Run website tests, typecheck, scoped lint, and production build.
+- [x] Verify the standalone production preview with locally served assets.
 
-final result: passed
+## Follow-up polish
+
+None required for the supplied design's fidelity. Any new install/docs navigation, copy corrections, narration, or art-direction changes should be evaluated separately rather than folded into this port.

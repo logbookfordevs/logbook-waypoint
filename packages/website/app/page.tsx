@@ -1,9 +1,5 @@
-import { RouteJourney } from '@/components/route-journey';
+import { WaypointHome } from '@/components/waypoint-home';
 
 export default function HomePage() {
-  return (
-    <main id="main-content">
-      <RouteJourney />
-    </main>
-  );
+  return <WaypointHome />;
 }
