@@ -2,7 +2,12 @@ packages:
   - packages/*
 
 overrides:
-  sharp: 0.35.4
+  fast-uri: 3.1.7
+  hono: 4.12.25
+  ip-address: 10.3.1
+  proxy-addr: 2.0.8
+  sharp: 0.35.5
+  source-map-js: 1.2.2
 
 allowBuilds:
   esbuild: true
