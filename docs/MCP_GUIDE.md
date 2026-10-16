@@ -99,6 +99,16 @@ Retrieve a screenshot when exact visual hierarchy, positioning, color, or surrou
 request each screenshot that earns its context cost rather than retrieving every
 Target image automatically.
 
+The result carries no image bytes by default. `screenshot.path` is an absolute
+local image file, returned with `mime_type`, `size_bytes`, `crop_area`,
+`element_bounds`, `viewport`, `timestamp`, and `compression`. Open the file with
+your own image reader only when you need to look at it. The file lives in the
+Annotation's attachment directory and is removed when the Annotation is deleted.
+
+Set `"include_data": true` only when your client cannot read local files. The
+result then also carries the image as a base64 `data_url`, which can cost tens of
+thousands of tokens.
+
 Retrieve an uploaded attachment separately. Metadata is the default; content requires explicit consent in the call:
 
 ```json
@@ -215,7 +225,7 @@ Resolve and discard retain history. Delete is a separate destructive operation. 
 
 | Tool | Main inputs | Use it for | Changes state? |
 | --- | --- | --- | --- |
-| `get_annotation_screenshot` | `id`, `target_index?` | Retrieve one captured Target screenshot when visual evidence is needed. | No |
+| `get_annotation_screenshot` | `id`, `target_index?`, `include_data?` | Return a local file path for one captured Target screenshot, or inline base64 when explicitly requested. | No |
 | `get_annotation_attachment` | `id`, `attachment_id`, `include_content?` | Retrieve attachment metadata or explicitly request its content. | No |
 | `export_annotations` | `format?`, `status?`, `url?` | Export scoped Queue records as JSON or Markdown without media bytes. | No |
 | `delete_project_annotations` | `url_pattern`, `confirm?` | Preview, then permanently delete all Annotations in one project scope. | **Yes, irreversible when confirmed** |

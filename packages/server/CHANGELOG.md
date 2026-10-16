@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- `get_annotation_screenshot` now returns `screenshot.path`, a local image file, instead of inline base64 by default. Set `include_data: true` to receive the previous `data_url` as well.
+
 ## [0.2.0] - 2026-09-30
 
 ### Changed

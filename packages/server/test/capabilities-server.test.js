@@ -285,13 +285,23 @@ test('server file-backs screenshots and extension attachments while explicit ret
     const metadata = await server.getAnnotationAttachment({ id, attachment_id: attachmentId });
     const content = await server.getAnnotationAttachment({ id, attachment_id: attachmentId, include_content: true });
     const screenshot = await server.getAnnotationScreenshot({ id });
-    const secondScreenshot = await server.getAnnotationScreenshot({ id, target_index: 1 });
+    const secondScreenshot = await server.getAnnotationScreenshot({ id, target_index: 1, include_data: true });
 
     assert.equal(metadata.attachment.content, undefined);
     assert.equal(content.attachment.content, 'ZGV0YWls');
-    assert.equal(screenshot.screenshot.data_url, 'data:image/png;base64,c2NyZWVuc2hvdA==');
+    assert.equal('data_url' in screenshot.screenshot, false);
+    assert.equal(path.isAbsolute(screenshot.screenshot.path), true);
+    assert.equal(path.dirname(screenshot.screenshot.path), path.join(directory, 'attachments', id));
+    assert.equal(await readFile(screenshot.screenshot.path, 'utf8'), 'screenshot');
+    assert.equal(screenshot.screenshot.mime_type, 'image/png');
+    assert.equal(screenshot.screenshot.size_bytes, 10);
+    assert.equal(screenshot.screenshot.compression, 'png');
     assert.equal(secondScreenshot.target_index, 1);
     assert.equal(secondScreenshot.screenshot.data_url, 'data:image/png;base64,c2Vjb25k');
+    assert.equal(await readFile(secondScreenshot.screenshot.path, 'utf8'), 'second');
+
+    await server.cleanupAnnotationAttachments(id);
+    await assert.rejects(readFile(screenshot.screenshot.path), { code: 'ENOENT' });
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

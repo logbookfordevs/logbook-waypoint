@@ -14,6 +14,7 @@ export const DEFAULT_MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const ATTACHMENT_ID_PATTERN = /^[a-f0-9-]{36}$/;
 const KIND_PATTERN = /^[a-z0-9_-]{1,48}$/;
+const DERIVED_STEM_PATTERN = /^[a-z0-9-]{1,64}$/;
 
 function assertAnnotationId(annotationId) {
   if (!isValidAnnotationId(annotationId)) throw new TypeError('Invalid Waypoint annotation ID');
@@ -146,6 +147,41 @@ export class AttachmentStore {
       result.content = (await readFile(contentPath)).toString('base64');
     }
     return result;
+  }
+
+  async contentPath({ annotationId, attachmentId } = {}) {
+    const metadata = await this.get({ annotationId, attachmentId });
+    if (!metadata) return null;
+    const contentPath = path.join(this.annotationDirectory(annotationId), metadata.filename);
+    try {
+      if (!(await stat(contentPath)).isFile()) throw new TypeError('Invalid attachment content');
+    } catch (error) {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    }
+    return { ...metadata, path: contentPath };
+  }
+
+  // Derived files live beside the Annotation's attachments so Annotation cleanup removes them.
+  async writeDerived({ annotationId, stem, mimeType, content } = {}) {
+    assertAnnotationId(annotationId);
+    if (typeof stem !== 'string' || !DERIVED_STEM_PATTERN.test(stem)) throw new TypeError('Invalid derived file name');
+    const extension = ALLOWED_IMAGE_MIME_TYPES.get(mimeType);
+    if (!extension) throw new TypeError('Unsupported image MIME type');
+    const data = contentBuffer(content, mimeType);
+    if (data.byteLength > this.maxBytes) throw new RangeError('Attachment exceeds size limit');
+
+    const directory = this.annotationDirectory(annotationId);
+    await mkdir(directory, { recursive: true });
+    const contentPath = path.join(directory, `${stem}.${extension}`);
+    const temporaryContent = path.join(directory, `.${stem}.${randomUUID()}.tmp`);
+    try {
+      await writeFile(temporaryContent, data, { flag: 'wx' });
+      await rename(temporaryContent, contentPath);
+    } finally {
+      await rm(temporaryContent, { force: true }).catch(() => {});
+    }
+    return { path: contentPath, mime_type: mimeType, byte_size: data.byteLength };
   }
 
   async cleanup(annotationId) {

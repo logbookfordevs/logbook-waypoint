@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -49,6 +49,32 @@ test('AttachmentStore rejects invalid IDs, traversal attempts, unsupported media
       /size/i,
     );
     await assert.rejects(store.get({ annotationId, attachmentId: '../secret' }), /attachment id/i);
+  } finally {
+    await rm(rootDir, { recursive: true, force: true });
+  }
+});
+
+test('AttachmentStore resolves content paths and confines derived files to the Annotation directory', async () => {
+  const rootDir = await mkdtemp(path.join(os.tmpdir(), 'waypoint-attachments-'));
+  const store = new AttachmentStore({ rootDir, maxBytes: 16 });
+
+  try {
+    const saved = await store.save({ annotationId, kind: 'screenshot', mimeType: 'image/png', content: Buffer.from('stored') });
+    const resolved = await store.contentPath({ annotationId, attachmentId: saved.id });
+    const derived = await store.writeDerived({ annotationId, stem: 'screenshot-target-0', mimeType: 'image/png', content: 'ZGVyaXZlZA==' });
+
+    assert.equal(resolved.path, path.join(rootDir, annotationId, saved.filename));
+    assert.equal(await readFile(resolved.path, 'utf8'), 'stored');
+    assert.equal(derived.path, path.join(rootDir, annotationId, 'screenshot-target-0.png'));
+    assert.equal(await readFile(derived.path, 'utf8'), 'derived');
+    assert.equal(await store.contentPath({ annotationId, attachmentId: '00000000-0000-4000-8000-000000000000' }), null);
+    await assert.rejects(
+      store.writeDerived({ annotationId, stem: '../escape', mimeType: 'image/png', content: 'AA==' }),
+      /derived file name/i,
+    );
+
+    await store.cleanup(annotationId);
+    await assert.rejects(readFile(derived.path), { code: 'ENOENT' });
   } finally {
     await rm(rootDir, { recursive: true, force: true });
   }

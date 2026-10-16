@@ -43,7 +43,7 @@ Waypoint accepts both the inherited single-Target record shape and the multi-Tar
 
 ## Visual evidence
 
-Survey and Inspect expose `has_screenshot` and `has_attachments` without embedding their bytes. Use `get_annotation_screenshot` only when layout, styling, position, or visual hierarchy remains ambiguous after reading the available text context. Use the attachment tool for a selected attachment, requesting content explicitly only when that evidence is needed.
+Survey and Inspect expose `has_screenshot` and `has_attachments` without embedding their bytes. Use `get_annotation_screenshot` only when layout, styling, position, or visual hierarchy remains ambiguous after reading the available text context. It returns `screenshot.path`, an absolute local image file, with the capture metadata; the base64 `data_url` is included only when the call sets `include_data: true`. Screenshot files live in the Annotation's attachment directory and are removed with the Annotation. Use the attachment tool for a selected attachment, requesting content explicitly only when that evidence is needed.
 
 ## Trust boundary
 
