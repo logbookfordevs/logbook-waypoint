@@ -179,7 +179,7 @@ install_skill() {
     return 0
   elif command -v npx >/dev/null 2>&1; then
     info "installing the Waypoint skill globally with the Skills CLI"
-    if npx --yes skills@latest add "$source_dir" --global --agent universal --skill waypoint --yes; then
+    if npx --yes skills@latest add "$source_dir" --global --agent universal --skill waypoint --yes </dev/null; then
       info "Waypoint skill installed in the shared global library (~/.agents/skills)"
       return 0
     fi
