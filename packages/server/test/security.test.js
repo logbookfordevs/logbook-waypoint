@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
@@ -30,6 +30,7 @@ describe('local HTTP security boundary', () => {
     return new LocalAnnotationsServer({
       annotationsFile: path.join(isolationDirectory, `annotations-${runtimeSequence}.json`),
       watchHistoryFile: path.join(isolationDirectory, `watch-${runtimeSequence}.json`),
+      attachmentRoot: path.join(isolationDirectory, `attachments-${runtimeSequence}`),
     });
   }
 
@@ -432,8 +433,18 @@ describe('local HTTP security boundary', () => {
         arguments: { id: 'waypoint_1750000000000_abc123xyz' }
       });
       const screenshotPayload = JSON.parse(screenshot.content[0].text);
-      assert.equal(screenshotPayload.data.screenshot.data_url, 'data:image/png;base64,AAAA');
+      assert.equal('data_url' in screenshotPayload.data.screenshot, false);
+      assert.doesNotMatch(screenshot.content[0].text, /base64/);
+      assert.deepEqual(await readFile(screenshotPayload.data.screenshot.path), Buffer.from('AAAA', 'base64'));
       assert.deepEqual(screenshotPayload.data.screenshot.viewport, { width: 1280, height: 720 });
+
+      const repeated = await client.callTool({
+        name: 'get_annotation_screenshot',
+        arguments: { id: 'waypoint_1750000000000_abc123xyz', include_data: true }
+      });
+      const repeatedPayload = JSON.parse(repeated.content[0].text);
+      assert.equal(repeatedPayload.data.screenshot.data_url, 'data:image/png;base64,AAAA');
+      assert.equal(repeatedPayload.data.screenshot.path, screenshotPayload.data.screenshot.path);
     } finally {
       await client.close().catch(() => {});
       server.closeAllConnections();

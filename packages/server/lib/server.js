@@ -935,7 +935,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'get_annotation_screenshot',
-            description: 'Retrieves screenshot data for a specific annotation when visual context is needed to understand and implement the user\'s feedback. The read_annotations tool returns a has_screenshot flag to indicate availability. WHEN TO USE THIS TOOL: (1) Annotation mentions visual/layout/styling/positioning issues (e.g., "make it look better", "spacing is off", "layout is broken"), (2) You need to see exact element positioning, colors, or visual hierarchy, (3) The element_context text data seems insufficient to implement the fix accurately. WHEN TO SKIP: (1) Simple text content changes, (2) Clear functional bugs with sufficient text description, (3) Cases where element_context (tag, classes, styles, position) provides enough implementation detail. The screenshot includes viewport dimensions, element bounds, and visual context that complements the text-based element_context data.',
+            description: 'Retrieves one Target screenshot when visual context is needed and read_annotations reports has_screenshot. By default it returns screenshot.path, an absolute local image file to open with your own image reader, plus crop area, element bounds, viewport, timestamp, and compression; no image bytes enter the result. Set include_data to true only when you cannot read local files; screenshot.data_url then carries the base64 image. Use it for layout, styling, positioning, color, or visual hierarchy that element_context and text cannot settle; skip it for text changes and clearly described functional bugs.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -948,6 +948,11 @@ export class LocalAnnotationsServer {
                   minimum: 0,
                   maximum: 7,
                   description: 'Zero-based Target index; defaults to the first Target'
+                },
+                include_data: {
+                  type: 'boolean',
+                  default: false,
+                  description: 'Also return the image inline as a base64 data_url. Use only when the local file path cannot be read.'
                 },
               },
               required: ['id'],
@@ -1754,16 +1759,8 @@ export class LocalAnnotationsServer {
         };
       }
 
-      let dataUrl = target.screenshot.data_url;
-      if (!dataUrl && target.screenshot.attachment_id) {
-        const attachment = await this.attachmentStore.get({
-          annotationId: id,
-          attachmentId: target.screenshot.attachment_id,
-          includeContent: true,
-        });
-        if (attachment) dataUrl = `data:${attachment.mime_type};base64,${attachment.content}`;
-      }
-      if (!dataUrl) {
+      const file = await this.resolveScreenshotFile(id, targetIndex, target.screenshot);
+      if (!file) {
         return {
           annotation_id: id,
           screenshot: null,
@@ -1771,18 +1768,25 @@ export class LocalAnnotationsServer {
         };
       }
 
-      // Return screenshot data in the contract format
+      const screenshot = {
+        path: file.path,
+        mime_type: file.mime_type,
+        size_bytes: file.byte_size,
+        compression: target.screenshot.compression,
+        crop_area: target.screenshot.crop_area,
+        element_bounds: target.screenshot.element_bounds,
+        timestamp: target.screenshot.timestamp,
+        viewport: target.viewport || null,
+      };
+      if (args?.include_data === true) {
+        const content = await readFile(file.path);
+        screenshot.data_url = `data:${file.mime_type};base64,${content.toString('base64')}`;
+      }
+
       return {
         annotation_id: id,
         target_index: targetIndex,
-        screenshot: {
-          data_url: dataUrl,
-          compression: target.screenshot.compression,
-          crop_area: target.screenshot.crop_area,
-          element_bounds: target.screenshot.element_bounds,
-          timestamp: target.screenshot.timestamp,
-          viewport: target.viewport || null
-        },
+        screenshot,
         message: 'Screenshot retrieved successfully'
       };
 
@@ -1793,6 +1797,22 @@ export class LocalAnnotationsServer {
         message: `Failed to retrieve screenshot: ${error.message}`
       };
     }
+  }
+
+  async resolveScreenshotFile(annotationId, targetIndex, screenshot) {
+    if (screenshot.attachment_id) {
+      return this.attachmentStore.contentPath({ annotationId, attachmentId: screenshot.attachment_id });
+    }
+    if (!screenshot.data_url) return null;
+
+    const mimeType = /^data:(image\/(?:png|jpeg|webp|gif));base64,/.exec(screenshot.data_url)?.[1];
+    if (!mimeType) throw new TypeError('Screenshot must be a supported image data URL');
+    return this.attachmentStore.writeDerived({
+      annotationId,
+      stem: `screenshot-target-${targetIndex}`,
+      mimeType,
+      content: screenshot.data_url,
+    });
   }
 
   async deleteProjectAnnotations(args) {

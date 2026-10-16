@@ -20,7 +20,7 @@ Treat `localhost` and `127.0.0.1` as aliases. Preserve the port. Use a project r
 
 ## Intake without payload waste
 
-Start with `read_annotations` for one Watch ID or an explicit URL scope. Its Survey summary contains the selector, comment, compact styles, Target context, and source identity normally needed to locate the source. Call `inspect_annotations` only when layout, cascade, placement, ancestry, or source identity remains ambiguous. Retrieve screenshots only when visual evidence is necessary.
+Start with `read_annotations` for one Watch ID or an explicit URL scope. Its Survey summary contains the selector, comment, compact styles, Target context, and source identity normally needed to locate the source. Call `inspect_annotations` only when layout, cascade, placement, ancestry, or source identity remains ambiguous. Retrieve screenshots only when visual evidence is necessary. `get_annotation_screenshot` returns a local file path; open it with your image reader only when you need to see it, and request `include_data: true` only when you cannot read local files.
 
 ## Keep a Watch request alive
 
