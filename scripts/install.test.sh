@@ -51,6 +51,7 @@ fi
 
 if [[ "$(basename "$0")" = "npx" ]]; then
   printf '%s\n' "$*" >> "$FAKE_NPX_LOG"
+  [[ -z "${FAKE_NPX_DRAIN_STDIN:-}" ]] || cat >/dev/null
   exit "${FAKE_SKILL_EXIT:-0}"
 fi
 
@@ -129,6 +130,17 @@ test -f "$INSTALL_ROOT/releases/v0.1.4/lib/server.js"
 test -x "$BIN_DIR/waypoint"
 grep -Fxq -- "--yes skills@latest add $INSTALL_ROOT/releases/v0.1.4/skills/waypoint --global --agent universal --skill waypoint --yes" "$FAKE_NPX_LOG"
 "$BIN_DIR/waypoint" --version | grep -q '^0.1.4$'
+
+# curl | bash serves the script on stdin; a skill installer that reads stdin must not consume the rest of it.
+piped_output="$(
+  PATH="$TEST_PATH" FAKE_NPX_DRAIN_STDIN=1 \
+  WAYPOINT_INSTALL_ROOT="$TEST_DIR/piped-install" \
+  WAYPOINT_BIN_DIR="$TEST_DIR/piped-bin" \
+  WAYPOINT_INSTALL_SKILL=auto \
+  bash < "$ROOT_DIR/scripts/install.sh" 2>&1
+)"
+[[ "$piped_output" = *"Waypoint v0.1.4 is ready."* ]]
+test -f "$TEST_DIR/piped-install/releases/v0.1.4/.waypoint-install.json"
 
 ln -s "$ROOT_DIR/scripts/install.test.sh" "$FAKE_BIN/afk"
 npx_calls="$(wc -l < "$FAKE_NPX_LOG")"

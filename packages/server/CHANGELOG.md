@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Fixed
+- `curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash` now completes after installing the skill, writing the installation metadata that `waypoint update` requires. Previously the Skills CLI consumed the piped script, so `waypoint update` reported "Cannot identify this installation"; re-run the installer once to repair an affected install.
+
 ## [0.2.1] - 2026-10-16
 
 ### Changed
