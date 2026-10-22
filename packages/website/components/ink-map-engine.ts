@@ -254,7 +254,6 @@ export function createInkMapJourney(root: HTMLElement, options: InkMapJourneyOpt
   `;
 
   const paperMat = new THREE.ShaderMaterial({
-    extensions: { derivatives: true },
     depthTest: false,
     depthWrite: false,
     uniforms: {
