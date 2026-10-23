@@ -6,6 +6,8 @@ The original work is copyright © 2025 Raphaël Régnier. Its MIT license and co
 
 Logbook Waypoint does not include commits made after that MIT-licensed foundation. New Logbook Waypoint work is copyright © 2026 Leonardo Reis Dias and contributors and is distributed under the same MIT License unless a file states otherwise.
 
+The Waypoint skill's `references/variant-craft.md` is derived from the `prototype` skill in [emilkowalski/skills](https://github.com/emilkowalski/skills) at commit `2d228630ba1446365f614a108cb8252f1feda202`, copyright © 2026 Emil Kowalski, released under the MIT License. It is maintained as a fork: Waypoint replaces the original picker, prototype route, and promotion commands with its own Variant Set lifecycle and does not track later upstream changes.
+
 “Vibe Annotations” and its original name, logo, and brand identity are not Logbook Waypoint assets. Logbook Waypoint is not affiliated with or endorsed by Raphael Regnier or Spellbind Creative Studio.
 
 Logbook Waypoint is a tool from [Logbook for Devs](https://logbookfordevs.com/).

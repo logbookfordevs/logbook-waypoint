@@ -13,6 +13,7 @@ import {
   finalizeVariant,
   replaceVariantRequest,
 } from '../lib/variants.js';
+import { summarizeAnnotation } from '../lib/annotation-summary.js';
 
 const annotation = () => ({
   id: 'waypoint_1750000000000_abc123xyz',
@@ -43,6 +44,28 @@ test('request creates named stable candidates with exactly one Active Variant', 
     () => createVariantRequest(annotation(), [candidates[0], { ...candidates[1], name: 'compact' }]),
     /unique/i,
   );
+});
+
+test('candidate summaries reach the Survey and stay with the kept Variant', () => {
+  const summarized = [
+    { ...candidates[0], summary: '  Tight rhythm for daily scanning.  ' },
+    { ...candidates[1] },
+  ];
+  const requested = createVariantRequest(annotation(), summarized);
+
+  assert.deepEqual(summarizeAnnotation(requested).variant_request.variants, [
+    { key: 'compact', name: 'Compact', summary: 'Tight rhythm for daily scanning.', state: 'active' },
+    { key: 'spacious', name: 'Spacious', state: 'inactive' },
+  ]);
+  const kept = finalizeVariant(activateVariant(requested, 'spacious'), 'compact');
+  assert.equal(kept.variant_request.variants[0].summary, 'Tight rhythm for daily scanning.');
+
+  for (const summary of ['   ', 42, 'x'.repeat(201)]) {
+    assert.throws(
+      () => createVariantRequest(annotation(), [{ ...candidates[0], summary }, candidates[1]]),
+      /summaries/,
+    );
+  }
 });
 
 test('request rejects candidate metadata that Waypoint cannot present', () => {

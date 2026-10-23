@@ -46,6 +46,8 @@ Ordinary Annotations resolve without a Resolution Record. Design Actions require
 
 ## Variants
 
+Before calling `request_variants` or `replace_variants`, read [references/variant-craft.md](references/variant-craft.md). It covers choosing divergent directions and building them in the project's styling system.
+
 Variant cancellation is a user decision, not lost work. Watch can publish `change_type: "variant_cancelled"`; a previously known unresolved Variant Set that returns to Pending without `variant_request` means the same thing. Remove temporary Variant Scaffold and do not recreate candidates until the user authors new Variant Intent.
 
-Finalize only the chosen Variant, clean the other implementations and Scaffold, then complete the Annotation lifecycle.
+Finalize only the chosen Variant, then turn it into owned code: remove the other implementations, the Scaffold, and its variant markers, and fit the survivor to the project's file layout, naming, and tokens. Review it as code you would ship, because it was built for comparison: fix hard-coded values that belong in tokens, duplication, dead branches, accessibility, and types. Then complete the Annotation lifecycle.

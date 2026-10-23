@@ -67,6 +67,7 @@ import {
   discardVariant as discardVariantRecord,
   finalizeVariant as finalizeVariantRecord,
   replaceVariantRequest,
+  VARIANT_SUMMARY_MAX_LENGTH,
 } from './variants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -141,6 +142,12 @@ function variantCandidatesToolSchema() {
       properties: {
         key: { type: 'string' },
         name: { type: 'string' },
+        summary: {
+          type: 'string',
+          minLength: 1,
+          maxLength: VARIANT_SUMMARY_MAX_LENGTH,
+          description: 'One sentence shown to the user beside this candidate: its design axis and when it is the right choice.',
+        },
         implementation: {
           type: 'object',
           description: 'Executable browser presentation for this candidate. Include non-empty pending_changes and/or scoped css; file paths, preview URLs, labels, and application state metadata are not presentation instructions.',
@@ -153,7 +160,7 @@ function variantCandidatesToolSchema() {
             css: {
               type: 'string',
               minLength: 1,
-              description: 'Scoped CSS that visibly presents this candidate, including temporary structural Scaffold when needed.',
+              description: 'Scoped CSS that visibly presents this candidate, typically by showing its source-built Scaffold and hiding the other candidates.',
             },
           },
           anyOf: [
@@ -869,7 +876,7 @@ export class LocalAnnotationsServer {
           },
           {
             name: 'request_variants',
-            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active. Structural alternatives must use Scaffold controlled by candidate presentation. If the user later cancels, clean up temporary variant code before considering the work complete.',
+            description: 'Creates explicit named Variants for one Annotation and makes the first candidate Active. Build structural alternatives in source as temporary Scaffold using the project styling system, with candidate presentation selecting between them. If the user later cancels, clean up temporary variant code before considering the work complete.',
             inputSchema: {
               type: 'object',
               properties: {

@@ -18,6 +18,7 @@ var WAYPOINT_STYLES = `
   --waypoint-outline: #bbaa99;
   --waypoint-outline-highlight: #6f6258;
   --waypoint-accent: #102c2c;
+  --waypoint-accent-ink: #102c2c;
   --waypoint-on-accent: #f4efde;
   --waypoint-surface-hover: #102c2c12;
   --waypoint-secondary-btn-bg: #102c2c0d;
@@ -453,7 +454,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
   tab-size: 2;
   box-sizing: border-box;
 }
-.waypoint-raw-css:focus { border-color: var(--waypoint-accent); }
+.waypoint-raw-css:focus { border-color: var(--waypoint-accent-ink); }
 
 /* Raw CSS panel sections */
 .waypoint-raw-css-section { margin-bottom: 8px; }
@@ -507,7 +508,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
   tab-size: 2;
   box-sizing: border-box;
 }
-.waypoint-css-rules:focus { border-color: var(--waypoint-accent); }
+.waypoint-css-rules:focus { border-color: var(--waypoint-accent-ink); }
 
 /* Design toolbar */
 .waypoint-design-toolbar {
@@ -598,7 +599,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
   resize: none;
   overflow-y: auto;
 }
-.waypoint-content-input:focus { border-color: var(--waypoint-accent); }
+.waypoint-content-input:focus { border-color: var(--waypoint-accent-ink); }
 
 .waypoint-align-group {
   display: flex;
@@ -734,20 +735,20 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-matrix-cell:hover { background:var(--waypoint-surface-hover); }
 .waypoint-matrix-cell.active { background:var(--waypoint-surface-hover); }
 .waypoint-matrix-dot { width:4px; height:4px; border-radius:50%; background:var(--waypoint-text-secondary); opacity:0.5; transition:all .12s; }
-.waypoint-matrix-cell.active .waypoint-matrix-dot { background:var(--waypoint-accent); opacity:1; transform:scale(1.4); }
+.waypoint-matrix-cell.active .waypoint-matrix-dot { background:var(--waypoint-accent-ink); opacity:1; transform:scale(1.4); }
 
 /* T/R/B/L labels */
 .waypoint-design-icon-label { display:flex; align-items:center; justify-content:center; color:var(--waypoint-text-secondary); font-family:var(--waypoint-font-mono); font-size:9px; font-weight:600; width:12px; flex-shrink:0; }
 .waypoint-design-icon-label-wide { width:auto; }
 .waypoint-scrubbable-label { cursor: ew-resize; touch-action: none; border-radius: 3px; }
 .waypoint-scrubbable-label:hover,
-.waypoint-scrubbable-label.scrubbing { color: var(--waypoint-accent); background: var(--waypoint-surface-hover); }
+.waypoint-scrubbable-label.scrubbing { color: var(--waypoint-accent-ink); background: var(--waypoint-surface-hover); }
 
 .waypoint-annotation-options { display:grid; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--waypoint-outline); }
 .waypoint-annotation-attachments { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:8px; min-height:32px; }
 .waypoint-attachment-button { position:relative; display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:6px 10px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-sm); background:var(--waypoint-surface-1); color:var(--waypoint-text-primary); font-size: var(--waypoint-type-meta); line-height:1; font-weight:600; white-space:nowrap; cursor:pointer; transition:border-color .15s ease, background .15s ease, color .15s ease; }
-.waypoint-attachment-button:hover { border-color:var(--waypoint-outline-highlight); background:var(--waypoint-surface-hover); color:var(--waypoint-accent); }
-.waypoint-attachment-button:focus-within { outline:2px solid var(--waypoint-accent); outline-offset:2px; }
+.waypoint-attachment-button:hover { border-color:var(--waypoint-outline-highlight); background:var(--waypoint-surface-hover); color:var(--waypoint-accent-ink); }
+.waypoint-attachment-button:focus-within { outline:2px solid var(--waypoint-accent-ink); outline-offset:2px; }
 .waypoint-attachment-button-icon { display:grid; place-items:center; flex:0 0 auto; }
 .waypoint-image-attachment-input { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
 .waypoint-attachment-status { min-width:0; color:var(--waypoint-text-secondary); font-size:10px; line-height:1.3; }
@@ -760,12 +761,12 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-variant-intent-label { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:6px; min-height:40px; padding:6px 7px; border:1px solid transparent; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); cursor:pointer; transition:border-color .15s ease, background .15s ease; }
 .waypoint-variant-intent-label:only-child { grid-column:1 / -1; }
 .waypoint-variant-intent-label:hover { border-color:var(--waypoint-outline); background:var(--waypoint-surface-hover); }
-.waypoint-agent-direction-icon { display:grid; place-items:center; width:22px; height:22px; border-radius:var(--waypoint-radius-xs); color:var(--waypoint-accent); background:var(--waypoint-surface-hover); }
+.waypoint-agent-direction-icon { display:grid; place-items:center; width:22px; height:22px; border-radius:var(--waypoint-radius-xs); color:var(--waypoint-accent-ink); background:var(--waypoint-surface-hover); }
 :host([data-lfd-theme="night"]) .waypoint-agent-direction-icon { color:var(--waypoint-highlight); }
 .waypoint-agent-direction-icon svg { width:12px; height:12px; }
 .waypoint-design-intent-row { display:grid; gap:7px; }
-.waypoint-design-intent-dependency { justify-self:start; color:var(--waypoint-accent); font-size: var(--waypoint-type-meta); line-height:1.35; text-underline-offset:2px; }
-.waypoint-design-intent-dependency:focus-visible { outline:2px solid var(--waypoint-accent); outline-offset:2px; border-radius:2px; }
+.waypoint-design-intent-dependency { justify-self:start; color:var(--waypoint-accent-ink); font-size: var(--waypoint-type-meta); line-height:1.35; text-underline-offset:2px; }
+.waypoint-design-intent-dependency:focus-visible { outline:2px solid var(--waypoint-accent-ink); outline-offset:2px; border-radius:2px; }
 .waypoint-variant-intent-title { min-width:0; overflow:hidden; color:var(--waypoint-text-primary); font-size:10px; line-height:1.2; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
 .waypoint-variant-intent { appearance:none; -webkit-appearance:none; width:18px; height:18px; flex:0 0 auto; border:1.5px solid var(--waypoint-outline-highlight); border-radius:5px; background:var(--waypoint-surface-1); cursor:pointer; position:relative; transition:background .15s ease, border-color .15s ease; }
 .waypoint-variant-intent:checked { border-color:var(--waypoint-highlight); background:var(--waypoint-highlight); }
@@ -773,7 +774,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-variant-intent:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }
 .waypoint-variant-intent-note { display:flex; align-items:center; gap:6px; padding:7px 8px; border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-hover); color:var(--waypoint-text-secondary); font-size:9px; line-height:1.35; }
 .waypoint-variant-intent-note[hidden] { display:none; }
-.waypoint-variant-intent-note svg { width:12px; height:12px; flex:0 0 auto; color:var(--waypoint-accent); }
+.waypoint-variant-intent-note svg { width:12px; height:12px; flex:0 0 auto; color:var(--waypoint-accent-ink); }
 .waypoint-design-actions { display:grid; gap:8px; }
 .waypoint-design-action-catalog { display:grid; gap:7px; padding:9px; border-radius:var(--waypoint-radius-sm); background:var(--waypoint-textarea-bg); }
 .waypoint-design-action-catalog[hidden] { display:none; }
@@ -783,7 +784,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-design-action-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
 .waypoint-design-action { min-width:0; min-height:32px; padding:6px 5px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-xs); background:var(--waypoint-surface-1); color:var(--waypoint-text-primary); font:600 9.5px/1.2 var(--waypoint-font); text-align:center; cursor:pointer; transition:border-color .15s ease,background .15s ease,color .15s ease; }
 .waypoint-design-action:hover { border-color:var(--waypoint-outline-highlight); background:var(--waypoint-surface-hover); }
-.waypoint-design-action[aria-pressed="true"] { border-color:var(--waypoint-accent); background:var(--waypoint-accent); color:var(--waypoint-on-accent); }
+.waypoint-design-action[aria-pressed="true"] { border-color:var(--waypoint-accent-ink); background:var(--waypoint-accent); color:var(--waypoint-on-accent); }
 .waypoint-design-action:focus-visible { outline:2px solid var(--waypoint-highlight); outline-offset:2px; }
 .waypoint-design-action-description { min-height:14px; color:var(--waypoint-text-secondary); font-size:9px; line-height:1.4; }
 
@@ -792,14 +793,14 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-color-swatch { width:20px; height:20px; border-radius:4px; border:1px solid var(--waypoint-outline); cursor:pointer; padding:0; flex-shrink:0; position:relative; }
 .waypoint-color-swatch:hover { border-color:var(--waypoint-outline-highlight); }
 .waypoint-color-input { width:70px; height:22px; border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-xs); background:var(--waypoint-textarea-bg); font-family:var(--waypoint-font-mono); font-size:10px; color:var(--waypoint-text-primary); padding:0 6px; outline:none; }
-.waypoint-color-input:focus { border-color:var(--waypoint-accent); }
+.waypoint-color-input:focus { border-color:var(--waypoint-accent-ink); }
 .waypoint-color-input-inline { width:58px; }
 
 /* Color palette dropdown */
 .waypoint-color-palette { position:absolute; bottom:calc(100% + 4px); left:0; background:var(--waypoint-surface); border:1px solid var(--waypoint-outline); border-radius:var(--waypoint-radius-sm); padding:6px; display:grid; grid-template-columns:repeat(auto-fill,22px); gap:4px; z-index:10; box-shadow:0 4px 12px rgba(0,0,0,.12); min-width:120px; max-width:240px; }
 .waypoint-color-palette-swatch { width:22px; height:22px; border-radius:4px; border:1px solid var(--waypoint-outline); cursor:pointer; padding:0; transition:transform .1s; }
 .waypoint-color-palette-swatch:hover { transform:scale(1.15); border-color:var(--waypoint-outline-highlight); }
-.waypoint-color-palette-swatch.active { outline:2px solid var(--waypoint-accent); outline-offset:1px; }
+.waypoint-color-palette-swatch.active { outline:2px solid var(--waypoint-accent-ink); outline-offset:1px; }
 .waypoint-resolution-record { margin-bottom:12px; padding:12px; border:1px solid var(--waypoint-outline); border-radius:8px; background:var(--waypoint-surface-hover); }
 .waypoint-resolution-label { font-size: var(--waypoint-type-meta); font-weight:600; color:var(--waypoint-text-secondary); text-transform:uppercase; letter-spacing:.04em; }
 .waypoint-resolution-summary { margin:4px 0 10px; color:var(--waypoint-text-primary); }
@@ -1356,7 +1357,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 }
 
 .waypoint-queue-sync-now:hover:not(:disabled) { background: var(--waypoint-surface-3); }
-.waypoint-queue-sync-now:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
+.waypoint-queue-sync-now:focus-visible { outline: 2px solid var(--waypoint-accent-ink); outline-offset: 2px; }
 .waypoint-queue-sync-now:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .waypoint-queue-views {
@@ -1383,7 +1384,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 }
 
 .waypoint-queue-views button:focus-visible {
-  outline: 2px solid var(--waypoint-accent);
+  outline: 2px solid var(--waypoint-accent-ink);
   outline-offset: -2px;
 }
 
@@ -1428,7 +1429,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
   align-items: center;
   gap: 4px;
 }
-.waypoint-queue-other-routes, .waypoint-queue-current-route { min-height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--waypoint-accent); font-size: var(--waypoint-type-meta); font-weight: 600; cursor: pointer; }
+.waypoint-queue-other-routes, .waypoint-queue-current-route { min-height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--waypoint-accent-ink); font-size: var(--waypoint-type-meta); font-weight: 600; cursor: pointer; }
 .waypoint-queue-other-routes:hover,
 .waypoint-queue-current-route:hover {
   background: var(--waypoint-surface-2);
@@ -1453,7 +1454,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-queue-close:focus-visible,
 .waypoint-queue-open:focus-visible,
 .waypoint-queue-select:focus-visible {
-  outline: 2px solid var(--waypoint-accent);
+  outline: 2px solid var(--waypoint-accent-ink);
   outline-offset: 2px;
 }
 
@@ -1475,7 +1476,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 
 .waypoint-queue-select {
   margin: 3px 0 0;
-  accent-color: var(--waypoint-accent);
+  accent-color: var(--waypoint-accent-ink);
 }
 
 .waypoint-queue-copy {
@@ -1528,7 +1529,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-queue-copy-feedback { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .waypoint-queue-actions button { min-height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--waypoint-text-primary); font-size: var(--waypoint-type-support); font-weight: 600; cursor: pointer; }
 .waypoint-queue-actions button:hover:not(:disabled) { background: var(--waypoint-surface-3); }
-.waypoint-queue-actions button:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
+.waypoint-queue-actions button:focus-visible { outline: 2px solid var(--waypoint-accent-ink); outline-offset: 2px; }
 .waypoint-queue-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
 .waypoint-queue-discard-selected { color: var(--waypoint-danger) !important; }
 .waypoint-queue-copy-selected { min-width: 72px; margin-left: auto; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: var(--waypoint-accent) !important; color: var(--waypoint-on-accent) !important; }
@@ -1544,7 +1545,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-queue-cleanup-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .waypoint-queue-cleanup-fields label { display: grid; gap: 4px; color: var(--waypoint-text-secondary); font-size: 10px; font-weight: 600; }
 .waypoint-queue-cleanup-fields select { min-width: 0; height: 36px; padding: 0 30px 0 10px; border: 1px solid var(--waypoint-outline); border-radius: 8px; background: var(--waypoint-surface-1); color: var(--waypoint-text-primary); font: 600 11px var(--waypoint-font-sans); }
-.waypoint-queue-cleanup-fields select:focus-visible { outline: 2px solid var(--waypoint-accent); outline-offset: 2px; }
+.waypoint-queue-cleanup-fields select:focus-visible { outline: 2px solid var(--waypoint-accent-ink); outline-offset: 2px; }
 .waypoint-queue-cleanup-confirmation { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; }
 .waypoint-queue-cleanup-preview { color: var(--waypoint-text-secondary); font-size: var(--waypoint-type-meta); line-height: 1.4; }
 .waypoint-queue-cleanup-confirmation button { min-width: 70px; }
@@ -1891,7 +1892,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-data-delete-project:focus-visible,
 .waypoint-data-delete-history:focus-visible,
 .waypoint-data-delete-all:focus-visible {
-  outline: 2px solid var(--waypoint-accent);
+  outline: 2px solid var(--waypoint-accent-ink);
   outline-offset: 2px;
 }
 
@@ -2111,7 +2112,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-guide-tab.active {
   background: var(--waypoint-accent);
   color: #fff;
-  border-color: var(--waypoint-accent);
+  border-color: var(--waypoint-accent-ink);
 }
 .waypoint-guide-panel {
   display: none;
@@ -2183,7 +2184,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
   text-align: center;
 }
 .waypoint-shortcut-btn:hover { border-color: var(--waypoint-text-secondary); color: var(--waypoint-text-primary); }
-.waypoint-shortcut-btn.recording { border-color: var(--waypoint-accent); color: var(--waypoint-accent); }
+.waypoint-shortcut-btn.recording { border-color: var(--waypoint-accent-ink); color: var(--waypoint-accent-ink); }
 
 /* ===== Target highlight (around element being annotated) ===== */
 .waypoint-target-selection-tray {
@@ -2502,208 +2503,209 @@ input, textarea { caret-color: var(--waypoint-selection); }
   opacity: 0.9;
 }
 
-.waypoint-variant-picker-anchor {
-  pointer-events: none;
-}
-.waypoint-variant-picker {
+.waypoint-variant-dock {
   position: fixed;
-  width: min(360px, calc(100vw - 24px));
-  max-height: calc(100dvh - 24px);
-  box-sizing: border-box;
+  left: 50%;
+  bottom: 16px;
+  z-index: 11;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  animation: none;
-  border-color: transparent;
-  box-shadow: 0 12px 36px rgba(33, 29, 25, 0.16), 0 2px 6px rgba(33, 29, 25, 0.08);
-}
-.waypoint-variant-header {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 20px 16px 16px 20px;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-}
-.waypoint-variant-header h2 {
-  margin: 0;
-  font-size: var(--waypoint-type-title);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.waypoint-variant-header p, .waypoint-variant-status {
-  margin: 4px 0 0;
-  color: var(--waypoint-text-secondary);
-  font-size: var(--waypoint-type-support);
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-.waypoint-variant-list {
-  display: grid;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  gap: 4px;
-  padding: 0 12px 16px;
-}
-.waypoint-variant-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 36px;
-  align-items: center;
-  gap: 4px;
-  border-radius: var(--waypoint-radius-sm);
-}
-.waypoint-variant-picker .waypoint-variant-activate {
-  justify-content: space-between;
-  min-width: 0;
-  padding: 10px 12px;
-  border-radius: var(--waypoint-radius-sm);
-  text-align: left;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  min-height: 44px;
-  background: transparent;
-  color: var(--waypoint-text-primary);
-  font-weight: 500;
-}
-.waypoint-variant-activate > span:first-child {
-  min-width: 0;
-}
-.waypoint-variant-active-label {
-  font-size: var(--waypoint-type-meta);
-  flex-shrink: 0;
-  color: var(--waypoint-text-secondary);
-  font-weight: 500;
-}
-.waypoint-variant-picker .waypoint-btn-icon {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-}
-.waypoint-variant-picker button:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-.waypoint-variant-picker button:focus-visible {
-  outline: 2px solid var(--waypoint-accent);
-  outline-offset: 2px;
-}
-.waypoint-variant-footer {
-  flex-shrink: 0;
-  border-top: 1px solid var(--waypoint-outline);
-  padding: 14px 20px 20px;
-  border-top-color: var(--waypoint-secondary-btn-bg);
-}
-.waypoint-variant-status {
-  margin: 0 0 12px;
-  font-size: var(--waypoint-type-meta);
-  margin-bottom: 14px;
-}
-.waypoint-variant-status[role="alert"] {
-  color: var(--waypoint-text-primary);
-}
-.waypoint-variant-actions {
-  display: grid;
-  grid-template-columns: auto auto;
-  justify-content: space-between;
-  gap: 16px;
-}
-.waypoint-variant-actions .waypoint-btn {
-  min-width: 0;
-  min-height: 40px;
-  padding: 8px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  border-radius: var(--waypoint-radius-sm);
-  padding-inline: 16px;
-}
-.waypoint-variant-row:has([aria-pressed="true"]) {
-  background: var(--waypoint-secondary-btn-bg);
-}
-.waypoint-variant-row:has(.waypoint-variant-activate:hover) {
-  background: var(--waypoint-surface-hover);
-}
-.waypoint-variant-picker .waypoint-variant-activate:hover {
-  background: transparent;
-  opacity: 1;
-}
-.waypoint-variant-picker .waypoint-variant-activate[aria-pressed="true"] {
-  font-weight: 600;
-}
-.waypoint-variant-picker .waypoint-variant-discard:disabled {
-  visibility: hidden;
-}
-.waypoint-variant-picker .waypoint-variant-discard:not(:disabled):hover {
-  color: var(--waypoint-danger);
-  background: var(--waypoint-danger-hover);
-}
-.waypoint-variant-picker .waypoint-variant-cancel {
-  padding-inline: 0;
-}
-.waypoint-variant-header:active {
-  cursor: grabbing;
-}
-.waypoint-variant-compact {
-  padding: 0 16px;
-}
-.waypoint-variant-wheel {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
-  align-items: center;
-  background: var(--waypoint-secondary-btn-bg);
-  border-radius: var(--waypoint-radius-sm);
-}
-.waypoint-variant-name {
-  min-height: 56px;
-  display: grid;
-  place-items: center;
-  perspective: 180px;
-  overflow: hidden;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-.waypoint-variant-name span {
-  transform-origin: center center -28px;
-  backface-visibility: hidden;
-}
-.waypoint-variant-counter {
-  padding-block: 6px;
-  display: flex;
-  justify-content: center;
   align-items: center;
   gap: 8px;
-  font-size: var(--waypoint-type-support);
-  color: var(--waypoint-text-secondary);
-  font-variant-numeric: tabular-nums;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  font-family: var(--waypoint-font);
+  color: var(--waypoint-text-primary);
 }
-.waypoint-variant-counter .waypoint-btn {
-  font-size: var(--waypoint-type-support);
-  padding: 8px;
+.waypoint-variant-dock[data-position="top"] {
+  top: 16px;
+  bottom: auto;
+  flex-direction: column-reverse;
 }
-.waypoint-variant-expanded {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+.waypoint-variant-dock [hidden] {
+  display: none !important;
 }
-.waypoint-variant-list-heading {
+.waypoint-variant-pill {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 16px 8px;
-  font-size: var(--waypoint-type-support);
-  color: var(--waypoint-text-secondary);
+  gap: 2px;
+  max-width: 100%;
+  padding: 4px;
+  border-radius: var(--waypoint-radius-full);
+  background: color-mix(in srgb, var(--waypoint-surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow: 0 0 0 1px var(--waypoint-surface-hover), 0 10px 28px rgba(33, 29, 25, 0.18), 0 2px 6px rgba(33, 29, 25, 0.08);
+  pointer-events: auto;
 }
-.waypoint-variant-picker [hidden] {
+.waypoint-variant-tabs {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-radius: var(--waypoint-radius-full);
+}
+.waypoint-variant-tabs::-webkit-scrollbar {
   display: none;
 }
-.waypoint-variant-picker .waypoint-variant-activate:focus-visible {
+.waypoint-variant-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 32px;
+  border-radius: var(--waypoint-radius-full);
+  background: var(--waypoint-surface-1);
+  box-shadow: 0 1px 3px rgba(33, 29, 25, 0.16), 0 0 0 1px var(--waypoint-surface-hover);
+  will-change: transform;
+}
+.waypoint-variant-dock[data-ready] .waypoint-variant-highlight {
+  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1), width 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.waypoint-variant-tab,
+.waypoint-variant-keep,
+.waypoint-variant-more {
+  position: relative;
+  flex-shrink: 0;
+  height: 32px;
+  border: 0;
+  border-radius: var(--waypoint-radius-full);
+  font: inherit;
+  font-size: var(--waypoint-type-control);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.waypoint-variant-tab {
+  max-width: 160px;
+  padding: 0 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+  color: var(--waypoint-text-secondary);
+  font-weight: 500;
+  transition: color 150ms ease-out;
+}
+.waypoint-variant-tab:hover,
+.waypoint-variant-tab[aria-pressed="true"] {
+  color: var(--waypoint-text-primary);
+}
+.waypoint-variant-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: var(--waypoint-outline);
+  opacity: 0.6;
+}
+.waypoint-variant-keep {
+  max-width: 180px;
+  padding: 0 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--waypoint-primary-btn);
+  color: var(--waypoint-on-accent);
+  font-weight: 600;
+  transition: opacity 150ms ease-out;
+}
+.waypoint-variant-keep:hover {
+  opacity: 0.9;
+}
+.waypoint-variant-more {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  padding: 0;
+  background: transparent;
+  color: var(--waypoint-text-secondary);
+}
+.waypoint-variant-more:hover,
+.waypoint-variant-more[aria-expanded="true"] {
+  background: var(--waypoint-surface-hover);
+  color: var(--waypoint-text-primary);
+}
+.waypoint-variant-tab:active,
+.waypoint-variant-keep:active,
+.waypoint-variant-more:active {
+  transform: scale(0.97);
+}
+.waypoint-variant-dock button:focus-visible {
+  outline: 2px solid var(--waypoint-highlight);
+  outline-offset: 2px;
+}
+.waypoint-variant-dock .waypoint-variant-tab:focus-visible {
   outline-offset: -2px;
 }
+.waypoint-variant-dock button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.waypoint-variant-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  display: grid;
+  min-width: 190px;
+  padding: 4px;
+  border-radius: var(--waypoint-radius-md);
+  background: var(--waypoint-surface-1);
+  box-shadow: 0 0 0 1px var(--waypoint-surface-hover), 0 10px 28px rgba(33, 29, 25, 0.18);
+}
+.waypoint-variant-dock[data-position="top"] .waypoint-variant-menu {
+  top: calc(100% + 8px);
+  bottom: auto;
+}
+.waypoint-variant-menu-item {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--waypoint-radius-sm);
+  background: transparent;
+  color: var(--waypoint-text-primary);
+  font: inherit;
+  font-size: var(--waypoint-type-control);
+  text-align: left;
+  cursor: pointer;
+}
+.waypoint-variant-menu-item:not(:disabled):hover {
+  background: var(--waypoint-surface-hover);
+}
+.waypoint-variant-cancel {
+  color: var(--waypoint-danger);
+}
+.waypoint-variant-menu-divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--waypoint-surface-hover);
+}
+.waypoint-variant-menu-divider:first-child {
+  display: none;
+}
+.waypoint-variant-summary,
+.waypoint-variant-status {
+  max-width: min(380px, 100%);
+  padding: 7px 12px;
+  border-radius: var(--waypoint-radius-sm);
+  background: var(--waypoint-surface-1);
+  box-shadow: 0 0 0 1px var(--waypoint-surface-hover), 0 6px 18px rgba(33, 29, 25, 0.12);
+  color: var(--waypoint-text-secondary);
+  font-size: var(--waypoint-type-support);
+  line-height: 1.45;
+  text-align: center;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+}
+.waypoint-variant-status[role="alert"] {
+  color: var(--waypoint-danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  .waypoint-variant-dock[data-ready] .waypoint-variant-highlight { transition: none; }
+}
 @media (max-width: 480px) {
-  .waypoint-variant-picker { width: calc(100vw - 24px); }
+  .waypoint-variant-keep-name { display: none; }
 }
 
 `;
@@ -2735,7 +2737,7 @@ WAYPOINT_STYLES += `
 .waypoint-journal-heading button { font-size: var(--waypoint-type-support); }
 .waypoint-journal-muted { font-size: var(--waypoint-type-support); color: var(--waypoint-text-secondary); }
 .waypoint-journal-save {
-  background: var(--waypoint-accent); color: var(--waypoint-on-accent); border-color: var(--waypoint-accent);
+  background: var(--waypoint-accent); color: var(--waypoint-on-accent); border-color: var(--waypoint-accent-ink);
 }
 .waypoint-journal-save:hover { background: var(--waypoint-accent); filter: brightness(1.15); }
 .waypoint-journal-panel label { display: block; margin-top: 16px; font-size: var(--waypoint-type-support); font-weight: 600; }

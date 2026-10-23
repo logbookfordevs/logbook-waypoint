@@ -106,12 +106,8 @@ console.log('[Waypoint] content.js loaded');
           break;
 
         case 'toggleAnnotate':
-          if (WaypointInspectionMode.isActive()) {
-            WaypointEvents.emit('inspection:stop');
-          } else {
-            WaypointEvents.emit('inspection:start');
-          }
-          sendResponse({ success: true });
+          WaypointInspectionMode.toggleFromShortcut();
+          sendResponse({ success: true, visible: WaypointShadowHost.isVisible() });
           break;
 
         case 'highlightAnnotation':
@@ -227,11 +223,7 @@ console.log('[Waypoint] content.js loaded');
       // Custom shortcut — toggle annotation mode
       if (customShortcut && matchesShortcut(e, customShortcut)) {
         e.preventDefault();
-        if (WaypointInspectionMode.isActive()) {
-          WaypointEvents.emit('inspection:stop');
-        } else {
-          WaypointEvents.emit('inspection:start');
-        }
+        WaypointInspectionMode.toggleFromShortcut();
       }
     });
   }

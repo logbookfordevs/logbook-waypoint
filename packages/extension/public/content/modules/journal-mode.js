@@ -1,6 +1,9 @@
 var WaypointJournal = (() => {
   let data = { version: 1, journals: [] };
+  const MODE_STORAGE_KEY = 'waypointAnnotationModeByHost';
+  const DEFAULT_MODE_BY_HOST = { dev: 'agent', site: 'journal' };
   let mode = 'agent';
+  let modeByHost = {};
   let activeId = null;
   let root, toolbar, modeButton, visibilityButton, panel, note, drawing, cardsLayer, cardsDrawing;
   let cards = [];
@@ -41,6 +44,7 @@ var WaypointJournal = (() => {
     delete: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7',
     close: 'm6 6 12 12M6 18 18 6',
     eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12M9 12a3 3 0 1 0 6 0 3 3 0 1 0-6 0',
+    eyeOff: 'M10.7 5.1A10 10 0 0 1 22 12a13 13 0 0 1-1.7 2.7M14.1 14.2a3 3 0 0 1-4.3-4.3M17.5 17.5A10 10 0 0 1 2 12a13 13 0 0 1 4.5-5.5M2 2l20 20',
   };
   function iconButton(label, icon, action) {
     const control = button('', action, 'waypoint-journal-icon');
@@ -51,6 +55,8 @@ var WaypointJournal = (() => {
     svg.appendChild(path); control.appendChild(svg);
     return control;
   }
+  function visibilityIcon() { return hiddenJournals.has(activeId) ? 'eyeOff' : 'eye'; }
+  function setIcon(control, icon) { control.querySelector('path')?.setAttribute('d', icons[icon]); }
   function toggleVisibility() {
     if (!closeNote()) return;
     if (hiddenJournals.has(activeId)) hiddenJournals.delete(activeId);
@@ -157,7 +163,8 @@ var WaypointJournal = (() => {
       if (!isActive() && WaypointShadowHost.isVisible()) WaypointEvents.emit('annotations:render', items);
     });
     refresh();
-    try { await chrome.storage.local.set({ waypointAnnotationMode: mode }); }
+    modeByHost = { ...modeByHost, [WaypointAnnotationPage.hostClass(window.location.href)]: mode };
+    try { await chrome.storage.local.set({ [MODE_STORAGE_KEY]: modeByHost }); }
     catch (error) { openMenu(); report(error); }
   }
 
@@ -201,7 +208,7 @@ var WaypointJournal = (() => {
         const selectWrap = element('span', 'waypoint-journal-select-wrap');
         selectWrap.appendChild(select); label.appendChild(selectWrap);
         const row = element('div', 'waypoint-journal-picker');
-        const visibility = iconButton(hiddenJournals.has(activeId) ? 'Show journal' : 'Hide journal', 'eye', toggleVisibility);
+        const visibility = iconButton(hiddenJournals.has(activeId) ? 'Show journal' : 'Hide journal', visibilityIcon(), toggleVisibility);
         visibility.setAttribute('aria-pressed', String(!hiddenJournals.has(activeId)));
         row.append(label, visibility); panel.appendChild(row);
       }
@@ -332,6 +339,7 @@ var WaypointJournal = (() => {
       const label = hiddenJournals.has(activeId) ? 'Show journal' : 'Hide journal';
       visibilityButton.setAttribute('aria-label', label); visibilityButton.title = label;
       visibilityButton.setAttribute('aria-pressed', String(shown));
+      setIcon(visibilityButton, visibilityIcon());
     }
     if (shown) {
       entries().forEach((entry, index) => {
@@ -709,9 +717,11 @@ var WaypointJournal = (() => {
     drawing = document.createElementNS(ns, 'svg');
     drawing.classList.add('waypoint-journal-drawing'); drawing.setAttribute('aria-hidden', 'true'); root.appendChild(drawing);
     try {
-      const stored = await chrome.storage.local.get([WaypointJournalModel.STORAGE_KEY, 'waypointAnnotationMode']);
+      const stored = await chrome.storage.local.get([WaypointJournalModel.STORAGE_KEY, MODE_STORAGE_KEY]);
       data = WaypointJournalModel.read(stored[WaypointJournalModel.STORAGE_KEY]);
-      mode = stored.waypointAnnotationMode === 'journal' ? 'journal' : 'agent';
+      modeByHost = stored[MODE_STORAGE_KEY] || {};
+      const hostClass = WaypointAnnotationPage.hostClass(window.location.href);
+      mode = (modeByHost[hostClass] ?? DEFAULT_MODE_BY_HOST[hostClass]) === 'journal' ? 'journal' : 'agent';
     } catch (error) { storageError = error; }
     chooseJournal();
     WaypointEvents.on('inspection:elementClicked', capture);
@@ -743,6 +753,7 @@ var WaypointJournal = (() => {
     WaypointEvents.on('overlay:closed', () => { closeNote(true); closePanel(); refresh(); });
     WaypointEvents.on('overlay:opened', refresh);
     chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes[MODE_STORAGE_KEY]) modeByHost = changes[MODE_STORAGE_KEY].newValue || {};
       if (area !== 'local' || !changes[WaypointJournalModel.STORAGE_KEY]) return;
       try {
         data = WaypointJournalModel.read(changes[WaypointJournalModel.STORAGE_KEY].newValue);

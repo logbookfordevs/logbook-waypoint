@@ -11,6 +11,8 @@ The screenshot shows the actual extension on a sample page. The [website Journal
 ## Start a journal
 
 1. Open an enabled page and choose **Journal** in the toolbar's Agent / Journal switch. Switching mode does not open a menu.
+
+   Waypoint opens in Agent mode on local development hosts (`localhost`, `127.*`, `*.local`, `*.test`, `*.localhost`, local files, and private network addresses) and in Journal mode on other sites. It remembers your last choice separately for development hosts and for other sites, so a reviewer who switches to Agent on staging keeps it there.
 2. Choose the pen. If the page has no journal, Waypoint creates one with a playful name automatically.
 3. Hover an element and click it, or press **Enter** to select the highlighted element. Selection blocks the page's normal click action. Left and right arrow keys adjust the selection scope.
 4. Write your note on the taped paper. Use the save checkmark or **Cmd/Ctrl+Enter**. Plain Enter inserts a new line in the editor. After saving a new note, selection resumes so you can pin the next element immediately.

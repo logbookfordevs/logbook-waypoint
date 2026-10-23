@@ -7,7 +7,7 @@ import vm from 'node:vm';
 const require = createRequire(await realpath(new URL('../node_modules/wxt/package.json', import.meta.url)));
 const { parseHTML } = require('linkedom');
 
-async function harness(stored = {}) {
+async function harness(stored = {}, href = 'https://example.com/app?page=1') {
   const { window } = parseHTML('<html><body><h1 id="target">Title</h1><div id="host"></div></body></html>');
   const root = window.document.querySelector('#host').attachShadow({ mode: 'open' });
   const listeners = [], events = new Map(), messages = [];
@@ -19,7 +19,7 @@ async function harness(stored = {}) {
   window.HTMLElement.prototype.setCustomValidity = () => {};
   window.HTMLElement.prototype.reportValidity = () => true;
   window.getComputedStyle = () => ({ overflowX: 'visible', overflowY: 'visible' });
-  window.location = new URL('https://example.com/app?page=1');
+  window.location = new URL(href);
   window.innerWidth = 1000; window.innerHeight = 800; window.confirm = () => true;
   const ctx = vm.createContext({
     window, document: window.document, URL, structuredClone, console,
@@ -54,7 +54,7 @@ async function harness(stored = {}) {
     },
   });
   ctx.globalThis = ctx;
-  for (const path of ['journal-model.js', 'content/modules/journal-geometry.js', 'content/modules/journal-mode.js']) {
+  for (const path of ['annotation-page.js', 'journal-model.js', 'content/modules/journal-geometry.js', 'content/modules/journal-mode.js']) {
     vm.runInContext(await readFile(new URL(`../public/${path}`, import.meta.url), 'utf8'), ctx);
   }
   await ctx.WaypointJournal.init();
@@ -68,6 +68,23 @@ async function harness(stored = {}) {
   };
   return { ctx, window, root, storage, messages, click, flush };
 }
+
+test('Waypoint opens in Agent mode on dev hosts and Journal mode on other sites, remembering each choice separately', async () => {
+  const local = await harness({}, 'http://localhost:5173/settings');
+  assert.equal(local.ctx.WaypointJournal.isActive(), false, 'dev hosts default to Agent');
+
+  const site = await harness({}, 'https://staging.example.com/settings');
+  assert.equal(site.ctx.WaypointJournal.isActive(), true, 'other sites default to Journal');
+  await site.click('Agent');
+  assert.deepEqual({ ...site.storage.waypointAnnotationModeByHost }, { site: 'agent' });
+
+  const reviewer = await harness(site.storage, 'https://www.example.org/');
+  assert.equal(reviewer.ctx.WaypointJournal.isActive(), false, 'a reviewer who chose Agent keeps it on other sites');
+  const developer = await harness(site.storage, 'http://127.0.0.1:3000/');
+  assert.equal(developer.ctx.WaypointJournal.isActive(), false);
+  await developer.click('Journal');
+  assert.deepEqual({ ...developer.storage.waypointAnnotationModeByHost }, { site: 'agent', dev: 'journal' });
+});
 
 async function createJournal(h, name = 'Personal') {
   const form = h.root.querySelector('form');
@@ -109,11 +126,16 @@ test('journal notes stay open across click-away and reload, and hide together wi
   assert.equal(h.root.querySelector('[aria-label="Edit note"]'), null, 'no separate pencil control');
   h.window.document.dispatchEvent(new h.window.Event('pointerdown'));
   assert.equal(h.root.querySelectorAll('.waypoint-journal-saved').length, 1);
+  const visibilityIcon = () => h.root.querySelector('[aria-label="Hide journal"], [aria-label="Show journal"]').querySelector('path').getAttribute('d');
+  const openEye = visibilityIcon();
   await h.click('Hide journal');
   assert.equal(h.root.querySelector('.waypoint-journal-note'), null);
   assert.equal(h.root.querySelectorAll('.waypoint-journal-pin').length, 0);
+  assert.notEqual(visibilityIcon(), openEye, 'a hidden journal shows a closed eye');
+  assert.match(visibilityIcon(), /M2 2l20 20/);
   await h.click('Show journal');
   assert.equal(h.root.querySelectorAll('.waypoint-journal-saved').length, 1);
+  assert.equal(visibilityIcon(), openEye);
   const reloaded = await harness(h.storage);
   assert.equal(reloaded.ctx.WaypointJournal.isActive(), true);
   assert.equal(reloaded.root.querySelectorAll('.waypoint-journal-pin').length, 1);
@@ -124,7 +146,7 @@ test('journal notes stay open across click-away and reload, and hide together wi
 });
 
 test('missing Targets remain manageable and reattach without deleting their note', async () => {
-  const state = { waypointAnnotationMode: 'journal', waypointJournals: { version: 1, journals: [{ id: 'j', name: 'Personal', scope: 'https://example.com/app?page=1', entries: [{ id: 'e', comment: 'Keep me', seed: 1, targets: [{ selector: '#gone' }] }] }] } };
+  const state = { waypointAnnotationModeByHost: { site: 'journal' }, waypointJournals: { version: 1, journals: [{ id: 'j', name: 'Personal', scope: 'https://example.com/app?page=1', entries: [{ id: 'e', comment: 'Keep me', seed: 1, targets: [{ selector: '#gone' }] }] }] } };
   const h = await harness(state);
   h.ctx.WaypointJournal.openMenu();
   assert.match(h.root.querySelector('.waypoint-journal-panel').textContent, /Target 1 is missing/);
@@ -148,7 +170,7 @@ test('a rejected save leaves the draft open with an actionable error', async () 
 });
 
 test('all entries render together and global visibility, editing, and deletion preserve the other notes', async () => {
-  const state = { waypointAnnotationMode: 'journal', waypointJournals: { version: 1, journals: [{ id: 'j', name: 'Personal', scope: 'https://example.com/app?page=1', entries: ['First note', 'Second note'].map((comment, index) => ({ id: `e${index}`, comment, seed: index, targets: [{ selector: '#target' }] })) }] } };
+  const state = { waypointAnnotationModeByHost: { site: 'journal' }, waypointJournals: { version: 1, journals: [{ id: 'j', name: 'Personal', scope: 'https://example.com/app?page=1', entries: ['First note', 'Second note'].map((comment, index) => ({ id: `e${index}`, comment, seed: index, targets: [{ selector: '#target' }] })) }] } };
   const h = await harness(state);
   assert.equal(h.root.querySelectorAll('.waypoint-journal-saved').length, 2);
   await h.click('Hide journal');
@@ -171,7 +193,7 @@ test('all entries render together and global visibility, editing, and deletion p
 
 
 test('dragging a note header retains its new position without changing its text', async () => {
-  const h = await harness({ waypointAnnotationMode: 'journal', waypointJournals: { version: 1, journals: [{ id: 'j', name: 'Personal', scope: 'https://example.com/app?page=1', entries: [{ id: 'e', comment: 'Move me', seed: 1, targets: [{ selector: '#target' }] }] }] } });
+  const h = await harness({ waypointAnnotationModeByHost: { site: 'journal' }, waypointJournals: { version: 1, journals: [{ id: 'j', name: 'Personal', scope: 'https://example.com/app?page=1', entries: [{ id: 'e', comment: 'Move me', seed: 1, targets: [{ selector: '#target' }] }] }] } });
   const card = h.root.querySelector('.waypoint-journal-saved');
   const dispatch = (target, type, x, y) => {
     const event = new h.window.Event(type, { bubbles: true });
@@ -211,7 +233,7 @@ test('journal menu prioritizes selection and reveals creation only when requeste
 });
 
 test('first journal pen click creates a collection and resumes selection without a stuck toolbar', async () => {
-  const h = await harness({ waypointAnnotationMode: 'journal' });
+  const h = await harness({ waypointAnnotationModeByHost: { site: 'journal' } });
   let active = false;
   h.ctx.WaypointInspectionMode.isActive = () => active;
   h.ctx.WaypointEvents.on('inspection:start', () => { active = true; h.ctx.WaypointEvents.emit('inspection:started'); });
@@ -263,7 +285,7 @@ function imageClipboard(h, write) {
 }
 
 test('clear all Journal data requires confirmation and preserves Agent storage across all page scopes', async () => {
-  const h = await harness({ waypointAnnotationMode: 'journal', waypointAnnotations: [{ id: 'agent-note' }], waypointJournals: {
+  const h = await harness({ waypointAnnotationModeByHost: { site: 'journal' }, waypointAnnotations: [{ id: 'agent-note' }], waypointJournals: {
     version: 1, journals: [
       { id: 'one', name: 'Here', scope: 'https://example.com/app?page=1', url: 'https://example.com/app?page=1', entries: [{ id: 'note', comment: 'A saved note', targets: [{ selector: '#target' }], seed: 1 }] },
       { id: 'two', name: 'Elsewhere', scope: 'https://elsewhere.test/', url: 'https://elsewhere.test/', entries: [] },
@@ -286,7 +308,7 @@ test('clear all Journal data requires confirmation and preserves Agent storage a
 });
 
 test('journal copy captures PNG artwork with controls hidden and restores them before delivering the image', async () => {
-  const h = await harness({ waypointAnnotationMode: 'journal' });
+  const h = await harness({ waypointAnnotationModeByHost: { site: 'journal' } });
   let copied;
   imageClipboard(h, async items => { copied = await items[0].data['image/png']; });
   h.ctx.chrome.runtime.sendMessage = async request => {
@@ -303,7 +325,7 @@ test('journal copy captures PNG artwork with controls hidden and restores them b
 
 test('failed capture or clipboard write restores journal controls and reports a recoverable error', async () => {
   for (const failsCapture of [true, false]) {
-    const h = await harness({ waypointAnnotationMode: 'journal' });
+    const h = await harness({ waypointAnnotationModeByHost: { site: 'journal' } });
     imageClipboard(h, async items => {
       if (!failsCapture) throw new Error('Clipboard permission denied.');
       await items[0].data['image/png'];

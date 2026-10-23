@@ -1320,39 +1320,7 @@ class WaypointAnnotationsBackground {
 
 
   isLocalhostUrl(url) {
-    if (!url) return false;
-
-    try {
-      const urlObj = new URL(url);
-
-      // Check localhost URLs
-      if (urlObj.hostname === 'localhost' ||
-          urlObj.hostname === '127.0.0.1' ||
-          urlObj.hostname === '0.0.0.0') {
-        return true;
-      }
-
-      // Check .local, .test, .localhost development domains
-      if (urlObj.hostname.endsWith('.local') ||
-          urlObj.hostname.endsWith('.test') ||
-          urlObj.hostname.endsWith('.localhost')) {
-        return true;
-      }
-
-      // Check file URLs - only allow HTML files
-      if (urlObj.protocol === 'file:') {
-        const path = urlObj.pathname.toLowerCase();
-        const htmlExtensions = ['.html', '.htm'];
-
-        // Allow .html/.htm files or files with no extension
-        return htmlExtensions.some(ext => path.endsWith(ext)) ||
-               (!path.includes('.') || path.endsWith('/'));
-      }
-
-      return false;
-    } catch {
-      return false;
-    }
+    return WaypointAnnotationPage.isLocalDevUrl(url);
   }
 
   async isEnabledSite(url) {

@@ -11,6 +11,7 @@ var WaypointThemeManager = (() => {
       'waypoint-outline': '#bbaa99',
       'waypoint-outline-highlight': '#6f6258',
       'waypoint-accent': '#102c2c',
+      'waypoint-accent-ink': '#102c2c',
       'waypoint-on-accent': '#f4efde',
       'waypoint-surface-hover': '#102c2c12',
       'waypoint-secondary-btn-bg': '#102c2c0d',
@@ -25,7 +26,8 @@ var WaypointThemeManager = (() => {
       'waypoint-selection': '#102c2c',
       'waypoint-on-selection': '#f4efde',
       'waypoint-badge-bg': '#173f5f',
-      'waypoint-tooltip-bg': '#102c2c'
+      'waypoint-tooltip-bg': '#102c2c',
+      'waypoint-primary-btn': '#102c2c'
     },
     dark: {
       'waypoint-surface': '#152827',
@@ -34,7 +36,8 @@ var WaypointThemeManager = (() => {
       'waypoint-text-secondary': '#baa894',
       'waypoint-outline': '#665548',
       'waypoint-outline-highlight': '#baa894',
-      'waypoint-accent': '#0a2325',
+      'waypoint-accent': '#387571',
+      'waypoint-accent-ink': '#7fbab3',
       'waypoint-on-accent': '#f4efde',
       'waypoint-surface-hover': '#f4efde12',
       'waypoint-secondary-btn-bg': '#f4efde0d',
@@ -49,7 +52,8 @@ var WaypointThemeManager = (() => {
       'waypoint-selection': '#69aaa4',
       'waypoint-on-selection': '#071b1d',
       'waypoint-badge-bg': '#1b4668',
-      'waypoint-tooltip-bg': '#071b1d'
+      'waypoint-tooltip-bg': '#071b1d',
+      'waypoint-primary-btn': '#387571'
     }
   };
 

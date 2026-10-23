@@ -79,12 +79,19 @@ export default defineConfig({
       },
     ],
     commands: {
+      _execute_action: {
+        suggested_key: {
+          default: 'Alt+Shift+W',
+          mac: 'MacCtrl+Shift+W',
+        },
+        description: 'Show or hide Waypoint',
+      },
       'toggle-annotate': {
         suggested_key: {
-          default: 'Ctrl+Shift+Comma',
-          mac: 'Command+Shift+Comma',
+          default: 'Ctrl+Shift+Period',
+          mac: 'MacCtrl+Shift+Period',
         },
-        description: 'Toggle annotation mode',
+        description: 'Open Waypoint and toggle pin mode',
       },
     },
     background: {

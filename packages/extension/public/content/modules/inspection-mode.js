@@ -419,5 +419,16 @@ var WaypointInspectionMode = (() => {
     }, 3000);
   }
 
-  return { init, start, stop, isActive, tempDisable, reEnable };
+  function toggleFromShortcut() {
+    if (!WaypointShadowHost.isVisible()) {
+      WaypointShadowHost.show();
+      WaypointEvents.emit('overlay:opened');
+      start();
+      return;
+    }
+    if (active) stop();
+    else start();
+  }
+
+  return { init, start, stop, isActive, tempDisable, reEnable, toggleFromShortcut };
 })();
