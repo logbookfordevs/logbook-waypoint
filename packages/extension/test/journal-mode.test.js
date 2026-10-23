@@ -126,11 +126,16 @@ test('journal notes stay open across click-away and reload, and hide together wi
   assert.equal(h.root.querySelector('[aria-label="Edit note"]'), null, 'no separate pencil control');
   h.window.document.dispatchEvent(new h.window.Event('pointerdown'));
   assert.equal(h.root.querySelectorAll('.waypoint-journal-saved').length, 1);
+  const visibilityIcon = () => h.root.querySelector('[aria-label="Hide journal"], [aria-label="Show journal"]').querySelector('path').getAttribute('d');
+  const openEye = visibilityIcon();
   await h.click('Hide journal');
   assert.equal(h.root.querySelector('.waypoint-journal-note'), null);
   assert.equal(h.root.querySelectorAll('.waypoint-journal-pin').length, 0);
+  assert.notEqual(visibilityIcon(), openEye, 'a hidden journal shows a closed eye');
+  assert.match(visibilityIcon(), /M2 2l20 20/);
   await h.click('Show journal');
   assert.equal(h.root.querySelectorAll('.waypoint-journal-saved').length, 1);
+  assert.equal(visibilityIcon(), openEye);
   const reloaded = await harness(h.storage);
   assert.equal(reloaded.ctx.WaypointJournal.isActive(), true);
   assert.equal(reloaded.root.querySelectorAll('.waypoint-journal-pin').length, 1);

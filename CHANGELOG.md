@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Dark mode accent text, borders, focus rings, and indicators are readable again, including the Queue's "other routes" link. A dedicated foreground accent replaces the fill color those elements were using.
 - Dark mode accent buttons, active tabs, and other accent fills now stand apart from the surface instead of blending into it.
+- The Journal visibility button shows a closed eye while the journal is hidden, instead of the same open eye in both states.
 
 ## [0.2.0] - 2026-09-30
 
