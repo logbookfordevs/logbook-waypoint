@@ -32,7 +32,7 @@ var WaypointToolbar = (() => {
   }
 
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-  const defaultShortcutHint = isMac ? '\u2318\u21E7,' : 'Ctrl+Shift+,';
+  const defaultShortcutHint = isMac ? '\u2303\u21E7.' : 'Ctrl+Shift+.';
   let shortcutHint = defaultShortcutHint;
   let customShortcut = null;
 

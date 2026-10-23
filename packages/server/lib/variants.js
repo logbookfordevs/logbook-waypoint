@@ -3,6 +3,7 @@ import { requestedVariantCount } from './variant-intent.js';
 
 const VARIANT_KEY = /^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$/;
 const PRESENTATION_FIELDS = new Set(['pending_changes', 'css']);
+export const VARIANT_SUMMARY_MAX_LENGTH = 200;
 
 export class VariantContractError extends Error {
   constructor(message, remainingCleanup = []) {
@@ -49,6 +50,12 @@ function validatePresentation(implementation) {
   }
 }
 
+function isValidSummary(summary) {
+  if (typeof summary !== 'string') return false;
+  const trimmed = summary.trim();
+  return trimmed.length > 0 && trimmed.length <= VARIANT_SUMMARY_MAX_LENGTH;
+}
+
 function validateCandidates(candidates) {
   if (!Array.isArray(candidates) || candidates.length === 0) fail('A variant request requires at least one Variant');
   if (candidates.length > 6) fail('A Variant Set contains at most 6 complete Variants');
@@ -60,6 +67,9 @@ function validateCandidates(candidates) {
   for (const candidate of candidates) validatePresentation(candidate.implementation);
   if (candidates.some(candidate => candidate.scaffold !== undefined && (!Array.isArray(candidate.scaffold) || candidate.scaffold.some(key => typeof key !== 'string' || !key)))) {
     fail('Variant Scaffold keys must be non-empty strings');
+  }
+  if (candidates.some(candidate => candidate.summary !== undefined && !isValidSummary(candidate.summary))) {
+    fail(`Variant summaries must be non-empty text of at most ${VARIANT_SUMMARY_MAX_LENGTH} characters`);
   }
   const normalizedNames = names.map(name => name.toLocaleLowerCase());
   if (new Set(keys).size !== keys.length || new Set(normalizedNames).size !== normalizedNames.length) fail('Variant keys and names must be unique within the request');
@@ -123,6 +133,7 @@ function buildVariantRequest(candidates, requestedCount, originPresentation) {
     variants: candidates.map((candidate, index) => ({
       key: candidate.key,
       name: candidate.name.trim(),
+      ...(candidate.summary === undefined ? {} : { summary: candidate.summary.trim() }),
       state: index === 0 ? 'active' : 'inactive',
       implementation: clone(candidate.implementation),
       scaffold: unique(candidate.scaffold ?? []),

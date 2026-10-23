@@ -10,6 +10,7 @@ The Variant module exposes Variant Set creation, atomic replacement, activation,
 
 - A variant request belongs to exactly one Annotation.
 - Every Variant has a stable implementation key and a human-readable name unique within that request.
+- A Variant may carry a trimmed summary of at most 200 characters; it travels with the Variant through activation and Finalization.
 - Every Variant has a browser-presentable implementation containing non-empty `pending_changes` and/or scoped `css`; arbitrary metadata cannot stand in for presentation.
 - Structural alternatives may use temporary source Scaffold as long as each candidate is visibly selected through its Waypoint presentation.
 - Creating a variant request activates one candidate before the request becomes visible.

@@ -243,11 +243,11 @@ Always call `delete_project_annotations` without `confirm: true` first and revie
 | `cancel_variant_request` | `id` | Remove an unresolved set and return the Annotation to Pending. | Yes |
 | `finalize_variant` | `id`, `key` | Keep one presentation and remove all other stored presentations and Scaffold references. | Yes |
 
-`request_variants` is the delivery boundary for complete candidates; it is not a request for Waypoint itself to generate them. Every `implementation` must contain non-empty `pending_changes` and/or scoped `css` that the extension can visibly apply. File paths, preview URLs, labels, and application state are metadata rather than presentation instructions and are rejected inside `implementation`.
+`request_variants` is the delivery boundary for complete candidates; it is not a request for Waypoint itself to generate them. Each candidate may carry a one-sentence `summary` of its axis and when it wins; Waypoint shows it to the user beside the Variant and returns it in Survey. Every `implementation` must contain non-empty `pending_changes` and/or scoped `css` that the extension can visibly apply. File paths, preview URLs, labels, and application state are metadata rather than presentation instructions and are rejected inside `implementation`.
 
 Use `replace_variants` when generated candidates need revision. Replacement validates the complete new set before swapping it in, preserves the original pre-comparison presentation, and leaves the old set unchanged on failure. `cancel_variant_request` ends comparison and requires a newly authored Variant Intent before another set can begin.
 
-Candidate generation and source edits belong to the coding agent. Structural alternatives may use temporary source Scaffold, with each candidate's scoped CSS selecting its presentation. Waypoint owns the stored set and the Keep or Cancel decision; the coding agent removes temporary source and comparison logic before completing the work. The application should not add an independent variant selector.
+Candidate generation and source edits belong to the coding agent. Structural alternatives may use temporary source Scaffold written in the project's styling system, such as Tailwind classes or styled-components, with each candidate's scoped CSS only selecting which candidate is visible. Waypoint owns the stored set and the Keep or Cancel decision; the coding agent removes temporary source and comparison logic before completing the work. The application should not add an independent variant selector.
 
 ## Related contracts
 

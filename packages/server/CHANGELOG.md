@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Added
+- `request_variants` and `replace_variants` accept an optional per-candidate `summary` (up to 200 characters) that the extension shows beside the Variant and Survey returns.
+
+### Changed
+- `request_variants` now asks agents to build structural Variants in source with the project's styling system and to use candidate CSS to select between them.
+
 ### Fixed
 - `curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash` now completes after installing the skill, writing the installation metadata that `waypoint update` requires. Previously the Skills CLI consumed the piped script, so `waypoint update` reported "Cannot identify this installation"; re-run the installer once to repair an affected install.
 

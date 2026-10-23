@@ -1347,7 +1347,7 @@ var WaypointAnnotationPopover = (() => {
         const isActive = r === activeRow && c === activeCol;
         const cx = 4 + c * 5;
         const cy = 4 + r * 5;
-        dots += `<circle cx="${cx}" cy="${cy}" r="1.4" fill="${isActive ? 'var(--waypoint-accent)' : 'currentColor'}" opacity="${isActive ? '1' : '0.35'}"/>`;
+        dots += `<circle cx="${cx}" cy="${cy}" r="1.4" fill="${isActive ? 'var(--waypoint-accent-ink)' : 'currentColor'}" opacity="${isActive ? '1' : '0.35'}"/>`;
       }
     }
     return `<svg width="14" height="14" viewBox="0 0 18 18" class="waypoint-align-dots">${dots}</svg>`;

@@ -23,19 +23,22 @@ globalThis.WaypointVariantPicker = (() => {
     return node.innerHTML;
   }
 
-  function getPosition(target, panel, viewport) {
-    const inset = 12;
-    const gap = 16;
-    const clamp = (value, max) => Math.max(inset, Math.min(value, max));
-    const fitsRight = target.right + gap + panel.width <= viewport.width - inset;
-    const fitsLeft = target.left - gap - panel.width >= inset;
-    const preferredLeft = fitsRight ? target.right + gap : target.left - gap - panel.width;
-    const left = fitsRight || fitsLeft ? preferredLeft : target.left;
-    const top = fitsRight || fitsLeft ? target.top : target.bottom + gap;
-    return {
-      left: clamp(left, viewport.width - panel.width - inset),
-      top: clamp(top, viewport.height - panel.height - inset),
-    };
+  const DOCK_INSET = 16;
+  const DOCK_CLEARANCE = 12;
+  const MORE_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="19" cy="12" r="1.75"/></svg>';
+
+  function getPlacement(target, dock, viewport) {
+    if (!target) return 'bottom';
+    const dockLeft = (viewport.width - dock.width) / 2;
+    const overlapsHorizontally = target.left < dockLeft + dock.width && target.right > dockLeft;
+    const bottomZoneTop = viewport.height - DOCK_INSET - dock.height - DOCK_CLEARANCE;
+    const coversBottomZone = overlapsHorizontally && target.bottom > bottomZoneTop;
+    const coversTopZone = overlapsHorizontally && target.top < DOCK_INSET + dock.height + DOCK_CLEARANCE;
+    return coversBottomZone && !coversTopZone ? 'top' : 'bottom';
+  }
+
+  function isTypingTarget(element) {
+    return Boolean(element?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(element?.tagName || ''));
   }
 
   function show(annotation, targetElement, view = {}) {
@@ -43,133 +46,137 @@ globalThis.WaypointVariantPicker = (() => {
     if (!root || !handles(annotation)) return false;
 
     closeCurrent?.();
-    root.querySelector('.waypoint-variant-picker-anchor')?.remove();
+    root.querySelector('.waypoint-variant-dock')?.remove();
     const request = annotation.variant_request;
-    const activeIndex = request.variants.findIndex(variant => variant.key === request.active_variant_key);
-    let expanded = Boolean(view.expanded);
-    let draggedPosition = view.position || null;
+    const variants = request.variants;
+    const activeIndex = variants.findIndex(variant => variant.key === request.active_variant_key);
+    const active = variants[activeIndex];
+    const canDiscard = variants.length > 2;
+    const discardItems = canDiscard
+      ? variants
+        .filter(variant => variant.state !== 'active')
+        .map(variant => `<button class="waypoint-variant-menu-item waypoint-variant-discard" type="button" role="menuitem" data-variant-key="${escapeHTML(variant.key)}">Discard ${escapeHTML(variant.name)}</button>`)
+        .join('')
+      : '';
+    const tabs = variants
+      .map((variant, index) => `<button class="waypoint-variant-tab" type="button" data-variant-key="${escapeHTML(variant.key)}" aria-pressed="${index === activeIndex}" aria-keyshortcuts="${index + 1}">${escapeHTML(variant.name)}</button>`)
+      .join('');
     let closed = false;
-    const anchor = document.createElement('div');
-    anchor.className = 'waypoint-popover-anchor waypoint-variant-picker-anchor';
-    anchor.innerHTML = `
-      <section class="waypoint-popover waypoint-variant-picker" aria-label="Variants">
-        <header class="waypoint-variant-header">
-          <div><h2>Variants</h2><p>Preview an option on the page.</p></div>
-          <button class="waypoint-btn-icon waypoint-variant-close" type="button" aria-label="Close variants">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-          </button>
-        </header>
-        <div class="waypoint-variant-compact">
-          <div class="waypoint-variant-wheel">
-            <button type="button" class="waypoint-btn-icon waypoint-variant-prev" aria-label="Previous variant"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
-            <div class="waypoint-variant-name" aria-live="polite"><span>${escapeHTML(request.variants[activeIndex].name)}</span></div>
-            <button type="button" class="waypoint-btn-icon waypoint-variant-next" aria-label="Next variant"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
-          </div>
-          <div class="waypoint-variant-counter"><span>${activeIndex + 1} / ${request.variants.length}</span><button type="button" class="waypoint-btn waypoint-btn-secondary waypoint-variant-view-all" aria-expanded="false">View all</button></div>
+    let menuOpen = false;
+    const dock = document.createElement('section');
+    dock.className = 'waypoint-variant-dock';
+    dock.setAttribute('aria-label', 'Variants');
+    dock.innerHTML = `
+      <p class="waypoint-variant-summary" ${active.summary ? '' : 'hidden'}>${escapeHTML(active.summary || '')}</p>
+      <p class="waypoint-variant-status" role="status" aria-live="polite" hidden></p>
+      <div class="waypoint-variant-pill">
+        <div class="waypoint-variant-tabs" role="group" aria-label="Variant to preview">
+          <span class="waypoint-variant-highlight" aria-hidden="true"></span>
+          ${tabs}
         </div>
-        <div class="waypoint-variant-expanded" hidden>
-        <div class="waypoint-variant-list-heading"><span>All variants</span><button type="button" class="waypoint-btn waypoint-btn-secondary waypoint-variant-back">Back to wheel</button></div>
-        <div class="waypoint-variant-list">
-          ${request.variants.map(variant => `
-            <div class="waypoint-variant-row" data-variant-key="${escapeHTML(variant.key)}">
-              <button class="waypoint-btn ${variant.state === 'active' ? 'waypoint-btn-primary' : 'waypoint-btn-secondary'} waypoint-variant-activate" type="button" aria-pressed="${variant.state === 'active'}">
-                <span>${escapeHTML(variant.name)}</span>${variant.state === 'active' ? '<span class="waypoint-variant-active-label">Active</span>' : ''}
-              </button>
-              <button class="waypoint-btn-icon waypoint-variant-discard" type="button" title="Discard ${escapeHTML(variant.name)}" aria-label="Discard ${escapeHTML(variant.name)}" ${variant.state === 'active' || request.variants.length <= 2 ? 'disabled' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button>
-            </div>
-          `).join('')}
+        <span class="waypoint-variant-divider" aria-hidden="true"></span>
+        <button class="waypoint-variant-keep" type="button">Keep<span class="waypoint-variant-keep-name"> ${escapeHTML(active.name)}</span></button>
+        <button class="waypoint-variant-more" type="button" aria-label="More variant actions" aria-haspopup="menu" aria-expanded="false">${MORE_ICON}</button>
+        <div class="waypoint-variant-menu" role="menu" hidden>
+          ${discardItems}
+          <span class="waypoint-variant-menu-divider" aria-hidden="true"></span>
+          <button class="waypoint-variant-menu-item waypoint-variant-cancel" type="button" role="menuitem">Cancel set</button>
+          <button class="waypoint-variant-menu-item waypoint-variant-close" type="button" role="menuitem">Hide picker</button>
         </div>
-        </div>
-        <footer class="waypoint-variant-footer">
-          <p class="waypoint-variant-status" role="status" aria-live="polite">Keep the selected option to finish comparing.</p>
-          <div class="waypoint-variant-actions">
-            <button class="waypoint-btn waypoint-btn-secondary waypoint-variant-cancel" type="button">Cancel set</button>
-            <button class="waypoint-btn waypoint-btn-primary waypoint-variant-finalize" type="button">Keep selected</button>
-          </div>
-        </footer>
-      </section>`;
-    root.appendChild(anchor);
+      </div>`;
+    root.appendChild(dock);
 
-    const panel = anchor.querySelector('.waypoint-variant-picker');
-    const previousFocus = root.activeElement || document.activeElement;
-    const position = () => {
-      const target = targetElement?.getBoundingClientRect?.() || { left: 12, right: 12, top: 12, bottom: 12 };
-      const bounds = panel.getBoundingClientRect();
-      const point = draggedPosition ? {
-        left: Math.max(12, Math.min(draggedPosition.left, window.innerWidth - bounds.width - 12)),
-        top: Math.max(12, Math.min(draggedPosition.top, window.innerHeight - bounds.height - 12)),
-      } : getPosition(target, bounds, { width: window.innerWidth, height: window.innerHeight });
-      panel.style.left = `${point.left}px`;
-      panel.style.top = `${point.top}px`;
+    const previousFocus = view.returnFocus || root.activeElement || document.activeElement;
+    const tabButtons = [...dock.querySelectorAll('.waypoint-variant-tab')];
+    const highlight = dock.querySelector('.waypoint-variant-highlight');
+    const menu = dock.querySelector('.waypoint-variant-menu');
+    const moreButton = dock.querySelector('.waypoint-variant-more');
+    const status = dock.querySelector('.waypoint-variant-status');
+
+    const moveHighlight = index => {
+      const tab = tabButtons[index];
+      if (!tab) return;
+      highlight.style.width = `${tab.offsetWidth}px`;
+      highlight.style.transform = `translateX(${tab.offsetLeft}px)`;
+    };
+    const place = () => {
+      const target = targetElement?.getBoundingClientRect?.() || null;
+      const bounds = dock.getBoundingClientRect();
+      dock.dataset.position = getPlacement(target, bounds, { width: window.innerWidth, height: window.innerHeight });
+    };
+    const setMenuOpen = value => {
+      menuOpen = value;
+      menu.hidden = !value;
+      moreButton.setAttribute('aria-expanded', String(value));
+      if (value) menu.querySelector('.waypoint-variant-menu-item:not(:disabled)')?.focus?.({ preventScroll: true });
+    };
+    const onResize = () => {
+      moveHighlight(activeIndex);
+      place();
     };
     const onKeyDown = event => {
-      if (['ArrowLeft', 'ArrowRight'].includes(event.key) && !expanded && event.composedPath().includes(panel)) {
+      const insideDock = event.composedPath?.().includes(dock) ?? dock.contains(event.target);
+      if (event.key === 'Escape') {
         event.preventDefault();
-        step(event.key === 'ArrowLeft' ? -1 : 1);
+        event.stopImmediatePropagation();
+        if (menuOpen) {
+          setMenuOpen(false);
+          moreButton.focus?.({ preventScroll: true });
+        } else close();
         return;
       }
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (expanded) setExpanded(false);
-      else close();
+      if (!insideDock || menuOpen || event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return;
+      const number = Number.parseInt(event.key, 10);
+      if (number >= 1 && number <= variants.length) {
+        event.preventDefault();
+        activateIndex(number - 1);
+      } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        step(event.key === 'ArrowLeft' ? -1 : 1);
+      }
     };
-    const close = () => {
+    const onPointerDown = event => {
+      const path = event.composedPath?.() ?? [event.target];
+      const insideMenuControls = path.includes(menu) || path.includes(moreButton) || menu.contains(event.target) || moreButton.contains(event.target);
+      if (menuOpen && !insideMenuControls) setMenuOpen(false);
+    };
+    const close = ({ restoreFocus = true } = {}) => {
       closed = true;
       document.removeEventListener('keydown', onKeyDown, true);
-      window.removeEventListener('resize', position);
-      window.removeEventListener('scroll', position, true);
-      anchor.remove();
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('scroll', place, true);
+      dock.remove();
       closeCurrent = null;
-      previousFocus?.focus?.({ preventScroll: true });
+      if (restoreFocus) previousFocus?.focus?.({ preventScroll: true });
     };
     closeCurrent = close;
-    position();
-    window.addEventListener('resize', position);
-    window.addEventListener('scroll', position, true);
-    document.addEventListener('keydown', onKeyDown, true);
-    const setExpanded = value => {
-      expanded = value;
-      anchor.querySelector('.waypoint-variant-compact').hidden = expanded;
-      anchor.querySelector('.waypoint-variant-expanded').hidden = !expanded;
-      anchor.querySelector('.waypoint-variant-view-all').setAttribute('aria-expanded', String(expanded));
-      position();
-      const focusSelector = expanded ? '.waypoint-variant-activate[aria-pressed="true"]' : '.waypoint-variant-view-all';
-      anchor.querySelector(focusSelector)?.focus?.({ preventScroll: true });
-    };
-    setExpanded(expanded);
-    anchor.querySelector('.waypoint-variant-view-all').addEventListener('click', () => setExpanded(true));
-    anchor.querySelector('.waypoint-variant-back').addEventListener('click', () => setExpanded(false));
-    const header = anchor.querySelector('.waypoint-variant-header');
-    header.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || event.target.closest('button')) return;
-      const bounds = panel.getBoundingClientRect();
-      const offset = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
-      header.setPointerCapture(event.pointerId);
-      header.onpointermove = move => {
-        draggedPosition = { left: move.clientX - offset.x, top: move.clientY - offset.y };
-        position();
-      };
-      const endDrag = () => { header.onpointermove = null; };
-      header.onpointerup = endDrag;
-      header.onpointercancel = endDrag;
-      header.onlostpointercapture = endDrag;
+
+    const fromIndex = variants.findIndex(variant => variant.key === view.fromKey);
+    moveHighlight(fromIndex >= 0 ? fromIndex : activeIndex);
+    place();
+    window.requestAnimationFrame?.(() => {
+      dock.dataset.ready = '';
+      moveHighlight(activeIndex);
     });
-    const wheelLabel = anchor.querySelector('.waypoint-variant-name span');
-    if (view.direction && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      wheelLabel.animate?.([{ transform: `rotateX(${-view.direction * 85}deg)`, opacity: 0.2 }, { transform: 'rotateX(0deg)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.16,1,.3,1)' });
-    }
+    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', place, true);
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('pointerdown', onPointerDown, true);
+    tabButtons[activeIndex]?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    if (view.focus !== false) tabButtons[activeIndex]?.focus?.({ preventScroll: true });
+
     let busy = false;
-    const status = anchor.querySelector('.waypoint-variant-status');
     const showError = error => {
       status.textContent = error.message;
       status.setAttribute('role', 'alert');
+      status.hidden = false;
     };
     const applyOperation = async operation => {
       if (busy) return null;
       busy = true;
-      panel.setAttribute('aria-busy', 'true');
-      const buttons = [...anchor.querySelectorAll('button')];
+      dock.setAttribute('aria-busy', 'true');
+      const buttons = [...dock.querySelectorAll('button')];
       const disabled = buttons.map(button => button.disabled);
       buttons.forEach(button => { button.disabled = true; });
       try {
@@ -179,42 +186,40 @@ globalThis.WaypointVariantPicker = (() => {
         return null;
       } finally {
         busy = false;
-        panel.removeAttribute('aria-busy');
+        dock.removeAttribute('aria-busy');
         buttons.forEach((button, index) => { button.disabled = disabled[index]; });
-        position();
       }
     };
+    const reopen = (updated, nextView = {}) => {
+      WaypointEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
+      if (closed) return;
+      close({ restoreFocus: false });
+      show(updated, targetElement, { ...nextView, returnFocus: previousFocus });
+    };
+    const activateIndex = async index => {
+      const key = variants[index]?.key;
+      if (!key || key === request.active_variant_key) return;
+      const updated = await applyOperation(() => WaypointAPI.activateVariant(annotation.id, key));
+      if (updated) reopen(updated, { fromKey: request.active_variant_key });
+    };
+    const step = direction => activateIndex((activeIndex + direction + variants.length) % variants.length);
 
-    anchor.querySelector('.waypoint-variant-close').addEventListener('click', close);
-    anchor.querySelector('.waypoint-variant-cancel').addEventListener('click', async () => {
+    tabButtons.forEach((tab, index) => tab.addEventListener('click', () => activateIndex(index)));
+    moreButton.addEventListener('click', () => setMenuOpen(!menuOpen));
+    dock.querySelector('.waypoint-variant-close').addEventListener('click', () => close());
+    dock.querySelector('.waypoint-variant-cancel').addEventListener('click', async () => {
+      setMenuOpen(false);
       const updated = await applyOperation(() => WaypointAPI.cancelVariantRequest(annotation.id));
       if (!updated) return;
       close();
       WaypointEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
     });
-    const activate = async (key, direction = 0) => {
-      if (key === request.active_variant_key) { setExpanded(false); return; }
-      const updated = await applyOperation(() => WaypointAPI.activateVariant(annotation.id, key));
-      if (!updated) return;
-      WaypointEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
-      if (closed) return;
-      close();
-      show(updated, targetElement, { position: draggedPosition, direction });
-    };
-    const step = direction => activate(request.variants[(activeIndex + direction + request.variants.length) % request.variants.length].key, direction);
-    anchor.querySelector('.waypoint-variant-prev').addEventListener('click', () => step(-1));
-    anchor.querySelector('.waypoint-variant-next').addEventListener('click', () => step(1));
-    anchor.querySelectorAll('.waypoint-variant-activate').forEach(button => button.addEventListener('click', () => activate(button.closest('[data-variant-key]').dataset.variantKey)));
-    anchor.querySelectorAll('.waypoint-variant-discard').forEach(button => button.addEventListener('click', async () => {
-      const key = button.closest('[data-variant-key]').dataset.variantKey;
-      const updated = await applyOperation(() => WaypointAPI.discardVariant(annotation.id, key));
-      if (!updated) return;
-      WaypointEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
-      if (closed) return;
-      close();
-      show(updated, targetElement, { position: draggedPosition, expanded: true });
+    dock.querySelectorAll('.waypoint-variant-discard').forEach(button => button.addEventListener('click', async () => {
+      setMenuOpen(false);
+      const updated = await applyOperation(() => WaypointAPI.discardVariant(annotation.id, button.dataset.variantKey));
+      if (updated) reopen(updated);
     }));
-    anchor.querySelector('.waypoint-variant-finalize').addEventListener('click', async () => {
+    dock.querySelector('.waypoint-variant-keep').addEventListener('click', async () => {
       const updated = await applyOperation(() => WaypointAPI.finalizeVariant(annotation.id, request.active_variant_key));
       if (!updated) return;
       WaypointEvents.emit('annotation:variant-updated', { annotation: updated, element: targetElement });
@@ -223,5 +228,5 @@ globalThis.WaypointVariantPicker = (() => {
     return true;
   }
 
-  return { buildAnnotationUpdates, getPosition, handles, locksPresentation, show };
+  return { buildAnnotationUpdates, getPlacement, handles, locksPresentation, show };
 })();

@@ -28,6 +28,19 @@ test('Waypoint skill includes OpenAI discovery metadata', async () => {
   assert.match(metadata, /allow_implicit_invocation: true/);
 });
 
+test('Waypoint skill links resolve inside the packaged skill directory', async () => {
+  const skillDirectory = path.join(repositoryRoot, 'skills/waypoint');
+  const skill = await readFile(path.join(skillDirectory, 'SKILL.md'), 'utf8');
+  const relativeLinks = [...skill.matchAll(/\]\((?!https?:|#)([^)]+)\)/g)].map(([, target]) => target);
+
+  assert.ok(relativeLinks.includes('references/variant-craft.md'));
+  for (const target of relativeLinks) {
+    const resolved = path.resolve(skillDirectory, target);
+    assert.ok(resolved.startsWith(skillDirectory + path.sep), `${target} must stay inside the skill directory`);
+    await assert.doesNotReject(readFile(resolved), `${target} must exist`);
+  }
+});
+
 test('tagged release workflow publishes npm and GitHub assets from one validation job', async () => {
   const workflow = await readFile(path.join(repositoryRoot, '.github/workflows/publish.yml'), 'utf8');
 

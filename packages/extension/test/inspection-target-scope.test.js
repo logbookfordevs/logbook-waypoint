@@ -47,9 +47,12 @@ async function createHarness() {
     on(name, handler) { handlers.set(name, handler); },
     emit(name, payload) { emitted.push({ name, payload }); },
   };
+  const overlay = { visible: true };
   context.WaypointShadowHost = {
     getRoot: () => root,
     getHost: () => host,
+    isVisible: () => overlay.visible,
+    show: () => { overlay.visible = true; },
   };
   context.WaypointMultiTargetSelection = { shouldHandle: () => false };
 
@@ -69,7 +72,7 @@ async function createHarness() {
     window.document.querySelector(`#${id}`).getBoundingClientRect = () => rect;
   }
 
-  return { context, documentListeners, emitted, handlers, inspectButton, root, window };
+  return { context, documentListeners, emitted, handlers, inspectButton, overlay, root, window };
 }
 
 test('selection consumes the completing click even when journal capture immediately stops inspection', async () => {
@@ -202,4 +205,26 @@ test('moving to another element resets the target scope to that exact element', 
   dispatch(window, outer, 'mouseover');
   assert.equal(highlight.style.width, '180px');
   assert.equal(root.querySelector('[data-scope="smaller"]').disabled, true);
+});
+
+test('the annotate shortcut opens a hidden overlay straight into pin mode, then toggles', async () => {
+  const { context, emitted, overlay } = await createHarness();
+  const inspection = context.WaypointInspectionMode;
+  inspection.stop();
+  overlay.visible = false;
+  emitted.length = 0;
+
+  inspection.toggleFromShortcut();
+  assert.equal(overlay.visible, true);
+  assert.equal(inspection.isActive(), true);
+  assert.deepEqual(emitted.map(event => event.name).filter(name => ['overlay:opened', 'inspection:started'].includes(name)), ['overlay:opened', 'inspection:started']);
+
+  inspection.toggleFromShortcut();
+  assert.equal(inspection.isActive(), false, 'a visible overlay toggles pin mode off');
+  assert.equal(overlay.visible, true, 'stopping pin mode keeps the overlay open');
+
+  emitted.length = 0;
+  inspection.toggleFromShortcut();
+  assert.equal(inspection.isActive(), true);
+  assert.equal(emitted.some(event => event.name === 'overlay:opened'), false, 'an open overlay is not reopened');
 });

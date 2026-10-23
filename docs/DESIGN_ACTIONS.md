@@ -47,6 +47,8 @@ Freeform is useful when your comment already gives a clear design direction that
 
 The initial request asks for three candidates by default. You can ask for a different count in the comment, within Waypoint's supported range of two to six. Each candidate must include presentation changes the extension can visibly apply. Once candidates exist, Waypoint owns which Variant is active, individual discard, cancellation, and the final cleanup decision; the coding agent reconciles temporary source after that decision.
 
+Variants open in a dock at the bottom edge of the page, which moves to the top when the annotated element sits underneath it. Switch candidates by clicking a name, or with number keys and the left and right arrows while the dock has focus. The agent's one-line rationale for the active Variant appears above the dock. **Keep** finalizes the active Variant; the ⋯ menu discards inactive candidates, cancels the set, or hides the dock.
+
 An Annotation with unfinished Variants cannot be resolved. Finalize the chosen Variant first so Waypoint can remove the temporary scaffold safely.
 
 ## Follow the result

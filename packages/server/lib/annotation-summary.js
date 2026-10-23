@@ -122,7 +122,7 @@ function compactVariantRequest(request) {
     ['status', request.status],
     ['active_variant_key', request.active_variant_key],
     ['variants', Array.isArray(request.variants)
-      ? request.variants.map(({ key, name, state }) => ({ key, name, state }))
+      ? request.variants.map(({ key, name, summary, state }) => ({ key, name, ...(summary === undefined ? {} : { summary }), state }))
       : undefined],
   ]);
 }
