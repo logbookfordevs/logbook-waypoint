@@ -30,3 +30,18 @@ test('invalid captured URLs never match a Page', async () => {
   assert.equal(page.matches('not a URL', 'http://localhost:3001/account'), false);
   assert.equal(page.key('not a URL'), null);
 });
+
+test('host classes keep Agent defaults on dev servers and LAN addresses without widening automatic access', async () => {
+  const page = await loadPageIdentity();
+  for (const url of ['http://localhost:5173/', 'http://127.0.0.1:3000/', 'http://127.0.0.2:3000/', 'http://192.168.1.24:5173/', 'http://10.0.0.8/', 'http://172.20.4.1/', 'http://[::1]:8080/', 'https://app.test/', 'http://shop.localhost/', 'file:///Users/me/site/index.html']) {
+    assert.equal(page.hostClass(url), 'dev', url);
+  }
+  for (const url of ['https://example.com/', 'https://staging.myapp.vercel.app/', 'http://172.32.0.1/', 'not a url']) {
+    assert.equal(page.hostClass(url), 'site', url);
+  }
+
+  assert.equal(page.isLocalDevUrl('http://localhost:5173/'), true);
+  assert.equal(page.isLocalDevUrl('http://192.168.1.24:5173/'), false, 'LAN addresses need explicit site access');
+  assert.equal(page.isLocalDevUrl('http://127.0.0.2/'), false);
+  assert.equal(page.isLocalDevUrl('file:///Users/me/report.pdf'), false);
+});

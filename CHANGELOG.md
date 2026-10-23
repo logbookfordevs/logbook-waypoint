@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - The annotate shortcut now opens a hidden Waypoint toolbar and starts pin mode in one press; when the toolbar is already open, it toggles pin mode. New installs default to ⌃⇧. (Ctrl+Shift+. on Windows and Linux), and ⌃⇧W (Alt+Shift+W) shows or hides Waypoint. Existing installs keep their current bindings; change them at `chrome://extensions/shortcuts`.
+- Waypoint now opens in Agent mode on local development hosts and private network addresses, and in Journal mode on other sites. Each of those two groups remembers your last mode choice, so Agent mode remains one click away for reviewers annotating staging or production. A previously saved global mode is not carried over.
 - Variants open in a compact dock at the bottom edge of the page instead of a popover beside the element. Every candidate is one click or number key away, the agent's one-line rationale shows above the dock, Keep names the Variant it will keep, and discard, cancel, and hide live in a ⋯ menu.
 - The Waypoint skill now guides agents to build divergent, named Variants in the project's own styling system (Tailwind, CSS Modules, styled-components, or plain CSS), using candidate CSS only to switch between them, and to review the kept Variant as production code before resolving.
 - Journal notes open without waiting for Agent source detection or screenshot capture.

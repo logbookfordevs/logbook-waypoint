@@ -1,6 +1,9 @@
 var WaypointJournal = (() => {
   let data = { version: 1, journals: [] };
+  const MODE_STORAGE_KEY = 'waypointAnnotationModeByHost';
+  const DEFAULT_MODE_BY_HOST = { dev: 'agent', site: 'journal' };
   let mode = 'agent';
+  let modeByHost = {};
   let activeId = null;
   let root, toolbar, modeButton, visibilityButton, panel, note, drawing, cardsLayer, cardsDrawing;
   let cards = [];
@@ -157,7 +160,8 @@ var WaypointJournal = (() => {
       if (!isActive() && WaypointShadowHost.isVisible()) WaypointEvents.emit('annotations:render', items);
     });
     refresh();
-    try { await chrome.storage.local.set({ waypointAnnotationMode: mode }); }
+    modeByHost = { ...modeByHost, [WaypointAnnotationPage.hostClass(window.location.href)]: mode };
+    try { await chrome.storage.local.set({ [MODE_STORAGE_KEY]: modeByHost }); }
     catch (error) { openMenu(); report(error); }
   }
 
@@ -709,9 +713,11 @@ var WaypointJournal = (() => {
     drawing = document.createElementNS(ns, 'svg');
     drawing.classList.add('waypoint-journal-drawing'); drawing.setAttribute('aria-hidden', 'true'); root.appendChild(drawing);
     try {
-      const stored = await chrome.storage.local.get([WaypointJournalModel.STORAGE_KEY, 'waypointAnnotationMode']);
+      const stored = await chrome.storage.local.get([WaypointJournalModel.STORAGE_KEY, MODE_STORAGE_KEY]);
       data = WaypointJournalModel.read(stored[WaypointJournalModel.STORAGE_KEY]);
-      mode = stored.waypointAnnotationMode === 'journal' ? 'journal' : 'agent';
+      modeByHost = stored[MODE_STORAGE_KEY] || {};
+      const hostClass = WaypointAnnotationPage.hostClass(window.location.href);
+      mode = (modeByHost[hostClass] ?? DEFAULT_MODE_BY_HOST[hostClass]) === 'journal' ? 'journal' : 'agent';
     } catch (error) { storageError = error; }
     chooseJournal();
     WaypointEvents.on('inspection:elementClicked', capture);
@@ -743,6 +749,7 @@ var WaypointJournal = (() => {
     WaypointEvents.on('overlay:closed', () => { closeNote(true); closePanel(); refresh(); });
     WaypointEvents.on('overlay:opened', refresh);
     chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes[MODE_STORAGE_KEY]) modeByHost = changes[MODE_STORAGE_KEY].newValue || {};
       if (area !== 'local' || !changes[WaypointJournalModel.STORAGE_KEY]) return;
       try {
         data = WaypointJournalModel.read(changes[WaypointJournalModel.STORAGE_KEY].newValue);
