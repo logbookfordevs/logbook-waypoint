@@ -175,7 +175,7 @@ test('pinned editor routes explicit Variants to named selection and ordinary com
   assert.equal(backgroundSource.match(/WaypointVariantPolicy\.assertSaveAllowed/g).length >= 2, true);
   assert.match(
     backgroundSource,
-    /agent-setup-config\.js[\s\S]*background\/variant-policy\.js[\s\S]*content\/modules\/api-bridge\.js[\s\S]*content\/modules\/variant-picker\.js[\s\S]*content\/modules\/annotation-popover\.js/,
+    /export-codec\.js[\s\S]*background\/variant-policy\.js[\s\S]*content\/modules\/api-bridge\.js[\s\S]*content\/modules\/variant-picker\.js[\s\S]*content\/modules\/annotation-popover\.js/,
   );
   context.WaypointVariantPicker.show(variants, context.document.querySelector('#target'));
   context.document.querySelector('.waypoint-variant-more').click();

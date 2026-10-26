@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-The product consists of a WXT browser extension and a local Node.js MCP server. The planned marketing and documentation website will use Next.js with React, TypeScript, Tailwind CSS v4, and Vercel.
+The product consists of a WXT browser extension and a local Node.js server with the `waypoint` agent CLI. The planned marketing and documentation website will use Next.js with React, TypeScript, Tailwind CSS v4, and Vercel.
 
 ## Users
 
@@ -16,30 +16,30 @@ The primary users are developers building interfaces with coding agents who need
 
 ## Product Purpose
 
-Logbook Waypoint connects feedback placed directly on a development interface to coding agents. A developer annotates a page or element, Waypoint preserves the relevant context in a local Queue, and an MCP-compatible agent can watch, inspect, claim, and resolve that work.
+Logbook Waypoint connects feedback placed directly on a development interface to coding agents. A developer annotates a page or element, Waypoint preserves the relevant context in a local Queue, and a coding agent can read, inspect, claim, and resolve that work through the `waypoint` CLI.
 
 Success means the developer can stay close to the rendered interface while the agent receives enough structured context to act without the developer manually translating every visual observation into a separate prompt.
 
 ## Positioning
 
-Waypoint turns precise visual feedback into a local, lifecycle-aware Queue that coding agents can watch and resolve. It combines in-page annotation with agent-readable context, retained work state, and explicit design workflows rather than treating feedback as disposable clipboard text.
+Waypoint turns precise visual feedback into a local, lifecycle-aware Queue that coding agents can read and resolve. It combines in-page annotation with agent-readable context, retained work state, and explicit design workflows rather than treating feedback as disposable clipboard text.
 
 ## Operating Context
 
 - A developer runs a local web application and enables the Waypoint browser extension for the relevant routes.
 - The developer places point or element Annotations, optionally adding screenshots, attachments, element edits, Design Intent, or Variant Intent.
-- A loopback-only local server persists the Queue and exposes it to MCP-compatible coding agents.
-- Agents can Watch for work, inspect complete Annotation context, Claim work, and retain Resolved or Discarded history.
+- A loopback-only local server persists the Queue, and coding agents reach it through the `waypoint` CLI and its skill.
+- Agents read the Queue when asked, inspect complete Annotation context, Claim work, and retain Resolved or Discarded history.
 - Waypoint owns Variant evaluation, Active Variant state, Scaffold cleanup, and Finalization.
 
 ## Capabilities and Constraints
 
 - Waypoint is local-first. Its server binds to IPv4 loopback and keeps its active security boundary local.
-- The current product has a WXT Chromium extension and a local Node.js MCP server.
-- Annotations support targets, comments, screenshots, attachments, element-edit context, lifecycle state, Watch delivery, Design Actions, and named Variants.
+- The current product has a WXT Chromium extension and a local Node.js server with a `waypoint` agent CLI.
+- Annotations support targets, comments, screenshots, attachments, element-edit context, lifecycle state, Design Actions, and named Variants.
 - Design Actions depend on Impeccable but remain inside Waypoint's Queue and lifecycle model.
 - Waypoint begins with fresh storage and does not migrate data from predecessor products.
-- The browser extension is published in the Chrome Web Store. The CLI and local MCP server are published through npm and checksummed GitHub Releases; the website keeps these installation paths distinct.
+- The browser extension is published in the Chrome Web Store. The CLI and local server are published through npm and checksummed GitHub Releases; the website keeps these installation paths distinct.
 - The planned first website scope is a Persuade landing page plus a coherent documentation shell. A project-progress-led homepage remains a future variation, not the initial conversion thesis.
 
 ## Brand Commitments

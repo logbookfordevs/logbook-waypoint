@@ -30,7 +30,6 @@ const CONTENT_MODULES = [
   'annotation-validation.js',
   'data-management.js',
   'export-codec.js',
-  'agent-setup-config.js',
   'content/modules/event-bus.js',
   'content/modules/styles.js',
   'content/modules/shadow-host.js',

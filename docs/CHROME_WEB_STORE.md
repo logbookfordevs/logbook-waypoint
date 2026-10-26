@@ -47,8 +47,8 @@ agents.
 
 Place an Annotation directly on an element in a local or preview interface.
 Waypoint preserves the page, selected Target, requested visual changes, and
-optional screenshot, then keeps the request in a local Queue. Connect the local
-Waypoint MCP server to a compatible coding agent so it can inspect, claim, and
+optional screenshot, then keeps the request in a local Queue. Give a compatible coding
+agent the `waypoint` CLI and skill so it can inspect, claim, and
 resolve that work with the original interface context.
 
 Waypoint includes:
@@ -59,7 +59,7 @@ Waypoint includes:
 - local Queue persistence and recovery;
 - explicit Pending, Claimed, Resolved, and Discarded history;
 - Design Actions and requested Variants; and
-- a local MCP interface for compatible coding agents.
+- a local command-line interface for compatible coding agents.
 
 Waypoint is local-first. Annotation data is stored in browser extension storage
 and may synchronize with the Waypoint server on `127.0.0.1:3846`. It does not
@@ -180,7 +180,7 @@ Recommended screenshot sequence:
 1. selecting a Target on a realistic development interface;
 2. authoring a focused Annotation with visual context;
 3. reviewing Pending work in the Queue;
-4. a coding agent reading or resolving the Annotation through MCP;
+4. a coding agent reading or resolving the Annotation through the Waypoint CLI;
 5. the resolved result in the interface and Queue history.
 
 ## Dashboard sequence

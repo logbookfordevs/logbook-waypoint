@@ -41,9 +41,29 @@ Motion meets a minimum bar unless the project's own easing and duration tokens s
 
 ## 5. Verify and present
 
-Activate each Variant with `activate_variant` and confirm it renders, its interactions respond, and the console is clean; capture a screenshot of each when browser tooling is available. Return to the first Variant before handing off. If two Variants converged while you built them, cut one before submitting and say so: two distinct directions beat three padded ones.
+Activate each Variant with `waypoint variants activate <id> <key>` and confirm it renders, its interactions respond, and the console is clean; capture a screenshot of each when browser tooling is available. Return to the first Variant before handing off. If two Variants converged while you built them, cut one before submitting and say so: two distinct directions beat three padded ones.
 
 Give every Variant a `summary`: one sentence naming its axis and when it wins. Waypoint shows it beside the Variant while the user flips through the set, so write it for the person choosing rather than for the code.
+
+Submit the set as JSON on stdin through a quoted heredoc, so the shell passes quotes, `$` and backticks in CSS and copy through unchanged. The first Variant becomes Active:
+
+```bash
+waypoint variants request <id> --input - <<'JSON'
+{"variants": [
+  {"key": "quiet", "name": "Quiet", "summary": "Borders over shadows for a calm daily-use tool.",
+   "implementation": {"css": "[data-waypoint-scaffold=\"pricing-card\"] > [data-waypoint-variant]:not([data-waypoint-variant=\"quiet\"]) { display: none !important; }"},
+   "scaffold": ["pricing-card"]},
+  {"key": "editorial", "name": "Editorial", "summary": "Large type and whitespace when the moment deserves weight.",
+   "implementation": {"css": "[data-waypoint-scaffold=\"pricing-card\"] > [data-waypoint-variant]:not([data-waypoint-variant=\"editorial\"]) { display: none !important; }"},
+   "scaffold": ["pricing-card"]},
+  {"key": "dense", "name": "Dense", "summary": "Compact rows when users compare many plans at once.",
+   "implementation": {"css": "[data-waypoint-scaffold=\"pricing-card\"] > [data-waypoint-variant]:not([data-waypoint-variant=\"dense\"]) { display: none !important; }"},
+   "scaffold": ["pricing-card"]}
+]}
+JSON
+```
+
+Submit one entry per requested Variant. Each needs `key`, `name`, and an `implementation` with `css` and/or non-empty `pending_changes`. A rejected submission names the invalid field; fix it and resubmit.
 
 Present the set and wait for the user's choice in Waypoint:
 
@@ -56,7 +76,7 @@ Sell each Variant honestly, with one line on when it wins and one on what it cos
 
 ## 6. Riff
 
-When the user wants another round around one direction, generate a fresh set that diverges around it and submit it with `replace_variants`.
+When the user wants another round around one direction, generate a fresh set that diverges around it and submit it with `waypoint variants replace <id> --input -`, in the same format.
 
 ---
 

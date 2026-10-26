@@ -125,7 +125,7 @@ export function WorkflowDemo() {
         <h2 id="workflow-title">One signal. A complete working route.</h2>
         <p className="workflow-field__description">
           Place precise feedback on the rendered page. Waypoint retains the context, then lets an
-          MCP-compatible coding agent Watch, Claim, and Resolve it.
+          coding agent Read, Claim, and Resolve it through the Waypoint CLI.
         </p>
         <p className="workflow-field__evidence">
           <span>Illustrative workflow</span>

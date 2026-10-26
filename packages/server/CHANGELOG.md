@@ -7,11 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Removed
+- The MCP server and its tools are retired. Agents now use the `waypoint` CLI, guided by the bundled `waypoint` skill, so no tool definitions load into agent context when nobody is annotating. The legacy MCP code remains for one release behind `WAYPOINT_ENABLE_MCP=1` as a rollback path only.
+- `waypoint watch`, `--events`, `--cursor`, the Watch HTTP route, and the Watch journal are removed. Ask the agent to read Waypoint (`waypoint read <url>`); it detects Variant cancellation by re-reading an Annotation that returns to Pending without `variant_request`.
+
+### Migration
+- Run the installer again, or run `waypoint cleanup-mcp` for npm installs, to remove the old `logbook-waypoint` MCP registration from global agent configurations. The installer skips this with `WAYPOINT_SKIP_MCP_CLEANUP=1`.
+- Update the `waypoint` skill (the installer and `waypoint update` do this). `get_project_context` has no CLI equivalent.
+
 ### Added
-- `request_variants` and `replace_variants` accept an optional per-candidate `summary` (up to 200 characters) that the extension shows beside the Variant and Survey returns.
+- `waypoint read`, `inspect`, `claim`, `release`, `resolve`, `discard`, `dismiss-notice`, `delete`, `delete-project`, `export`, `screenshot`, `attachment`, `variants`, and `cleanup-mcp` commands for agents; each prints one JSON payload.
+- `waypoint variants request` and `replace` accept an optional per-candidate `summary` (up to 200 characters) that the extension shows beside the Variant and Survey returns.
 
 ### Changed
-- `request_variants` now asks agents to build structural Variants in source with the project's styling system and to use candidate CSS to select between them.
+- `waypoint variants request` now asks agents to build structural Variants in source with the project's styling system and to use candidate CSS to select between them.
 
 ### Fixed
 - `curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash` now completes after installing the skill, writing the installation metadata that `waypoint update` requires. Previously the Skills CLI consumed the piped script, so `waypoint update` reported "Cannot identify this installation"; re-run the installer once to repair an affected install.

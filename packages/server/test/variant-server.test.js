@@ -515,24 +515,15 @@ test('MCP Variant failures retain structured remaining cleanup work', async () =
   assert.deepEqual(payload.data.remaining_cleanup, [{ kind: 'scaffold_missing', key: '<malicious-cleanup-key>' }]);
 });
 
-test('committed Variant mutations publish safe Watch activity and survive Watch failure', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-watch-'));
+test('committed Variant mutations persist to the Queue file', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-persist-'));
   const annotationsFile = path.join(directory, 'annotations.json');
-  const watchHistoryFile = path.join(directory, 'watch-history.json');
   const initial = createServer().read();
   await writeFile(annotationsFile, JSON.stringify(initial));
-  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
+  const server = new LocalAnnotationsServer({ annotationsFile });
 
   try {
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     await server.requestVariants({ id: initial[0].id, variants: candidates });
-    const activity = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-
-    assert.equal(activity.changes.length, 1);
-    assert.equal(activity.changes[0].annotation.variant_request.status, 'unresolved');
-    assert.doesNotMatch(JSON.stringify(activity), /implementation|scaffold|pending_changes/);
-
-    server.watchQueue.recordChanges = async () => { throw new Error('watch unavailable'); };
     const activated = await server.activateVariant({ id: initial[0].id, key: 'b' });
     const committed = JSON.parse(await readFile(annotationsFile, 'utf8'));
     assert.equal(activated.variant_request.active_variant_key, 'b');
@@ -542,41 +533,34 @@ test('committed Variant mutations publish safe Watch activity and survive Watch 
   }
 });
 
-test('Variant Set cancellation publishes Pending state through Watch without candidate data', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-cancel-watch-'));
+test('Variant Set cancellation reads back as Pending without candidate data', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-cancel-'));
   const annotationsFile = path.join(directory, 'annotations.json');
-  const watchHistoryFile = path.join(directory, 'watch-history.json');
   const initial = createServer().read();
   await writeFile(annotationsFile, JSON.stringify(initial));
-  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
+  const server = new LocalAnnotationsServer({ annotationsFile });
 
   try {
     await server.requestVariants({ id: initial[0].id, variants: candidates });
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     await server.cancelVariantRequest({ id: initial[0].id });
-    const cancellation = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
+    const { annotations: [read] } = await server.runAgentOperation('read_annotations', { id: initial[0].id });
 
-    assert.equal(cancellation.changes.length, 1);
-    assert.equal(cancellation.changes[0].change_type, 'variant_cancelled');
-    assert.equal(cancellation.changes[0].annotation.status, 'pending');
-    assert.equal('variant_request' in cancellation.changes[0].annotation, false);
-    assert.doesNotMatch(JSON.stringify(cancellation), /implementation|scaffold|pending_changes/);
+    assert.equal(read.status, 'pending');
+    assert.equal('variant_request' in read, false);
+    assert.doesNotMatch(JSON.stringify(read), /implementation|scaffold/);
   } finally {
     await rm(directory, { recursive: true });
   }
 });
 
-test('explicit inspection retains selected Variant presentation while Watch stays portable', async () => {
+test('explicit inspection retains selected Variant presentation', async () => {
   const { server } = createServer();
   const requested = await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
   server.loadAnnotations = async () => [requested];
 
   const inspection = await server.inspectAnnotations({ ids: ['waypoint_1750000000000_abc123xyz'] });
-  const watched = server.portableAnnotation(requested);
 
   assert.deepEqual(inspection.annotations[0].variant_presentation, candidates[0].implementation);
   assert.deepEqual(inspection.annotations[0].pending_changes, candidates[0].implementation.pending_changes);
-  assert.equal('variant_presentation' in watched, false);
-  assert.equal('pending_changes' in watched, false);
   assert.doesNotMatch(JSON.stringify(inspection.annotations[0]), /scaffold/);
 });

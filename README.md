@@ -9,13 +9,13 @@
 
 **Pin the point. Chart the change.**
 
-Logbook Waypoint is a local-first visual feedback tool for developers and coding agents. Place annotations directly on a development interface, preserve the surrounding element context, and let an MCP-compatible agent read and resolve the resulting queue.
+Logbook Waypoint is a local-first visual feedback tool for developers and coding agents. Place annotations directly on a development interface, preserve the surrounding element context, and let a coding agent read and resolve the resulting queue through the `waypoint` CLI and skill.
 
 > [!NOTE]
 > The Waypoint CLI is available through npm and checksummed GitHub Releases. Install the browser extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/logbook-waypoint/fgondknhkpekdhbbkgodokmpnpadfedo).
 
 > [!TIP]
-> **Prefer a visual tour?** Open the interactive [Waypoint Signal Chart](https://tot.page/I3pC-z9cCejNITMc7Mk96Q/index.html@b5f1d9e0955ce3411ccf9709e3d05bd89415a8bd) for the extension, Queue, and agent workflow. Its MCP tool map may lag the current CLI Watch interface.
+> **Prefer a visual tour?** Open the interactive [Waypoint Signal Chart](https://tot.page/I3pC-z9cCejNITMc7Mk96Q/index.html@b5f1d9e0955ce3411ccf9709e3d05bd89415a8bd) for the extension, Queue, and agent workflow. Its agent-integration map may predate the current CLI and skill workflow.
 
 ## Current foundation
 
@@ -25,11 +25,11 @@ The initial MIT foundation already provides:
 - Multi-page annotation capture
 - Local browser and server persistence
 - Optional screenshots and element context
-- An MCP server over HTTP and SSE
-- Tools for surveying, inspecting, watching, claiming, releasing, resolving, discarding, deleting, and grouping annotations
+- A local server with an HTTP API
+- Commands for surveying, inspecting, claiming, releasing, resolving, discarding, deleting, and exporting annotations
 - A Chrome-compatible unpacked extension
 
-Waypoint now adds a Logbook-native experience, a clearer work queue, Watch, Variants, Source Identity, and coding-agent setup on top of that foundation.
+Waypoint now adds a Logbook-native experience, a clearer work queue, an agent CLI and skill, Variants, Source Identity, and coding-agent setup on top of that foundation.
 
 Annotations move from Pending to Claimed before agent work. Release or inactivity expiry returns them to Pending; resolve and discard retain terminal history. Permanent deletion remains a separate explicit operation.
 
@@ -37,7 +37,7 @@ The Queue shows whether local changes are up to date, waiting to sync, or blocke
 
 ## Journal mode
 
-Switch to **Journal** for personal notes displayed as taped paper with hand-drawn highlights and arrows. Pin with a click or Enter, edit in place, drag notes, hide the whole journal, or copy the visible page as an image. Named journals remain on your device, separate from Agent requests and MCP.
+Switch to **Journal** for personal notes displayed as taped paper with hand-drawn highlights and arrows. Pin with a click or Enter, edit in place, drag notes, hide the whole journal, or copy the visible page as an image. Named journals remain on your device, separate from Agent requests and the agent CLI.
 
 See the [Journal guide](docs/JOURNAL_MODE.md) for setup, screenshot permissions, URL matching, and storage cleanup.
 
@@ -46,16 +46,16 @@ See the [Journal guide](docs/JOURNAL_MODE.md) for setup, screenshot permissions,
 Logbook Waypoint currently has three parts:
 
 1. **Browser extension** (`packages/extension/`) — captures and manages visual annotations and builds with WXT.
-2. **Local MCP server** ([package guide](packages/server/README.md)) — persists annotations and exposes them to coding agents on `127.0.0.1:3846`.
+2. **Local server and CLI** ([package guide](packages/server/README.md)) — persists annotations on `127.0.0.1:3846` and gives coding agents the `waypoint` CLI.
 3. **Marketing and documentation website** (`packages/website/`) — explains the workflow and hosts the development-stage product guides.
 
-The extension, server, package, CLI, MCP configuration, storage keys, and Annotation IDs use the canonical identifiers defined in [the product identifier contract](docs/contracts/product-identifiers.md). Waypoint starts with its own empty storage and does not import settings or Annotations from predecessor products.
+The extension, server, package, CLI, storage keys, and Annotation IDs use the canonical identifiers defined in [the product identifier contract](docs/contracts/product-identifiers.md). Waypoint starts with its own empty storage and does not import settings or Annotations from predecessor products.
 
 ## Documentation
 
 - [Documentation map](docs/README.md) — guides, contracts, specifications, architectural decisions, package docs, and release notes
-- [User guide](docs/USER_GUIDE.md) — first Annotation, Queue management, copy/export, MCP setup, Design Actions, and settings
-- [MCP and CLI Watch guide](docs/MCP_GUIDE.md) — normal agent workflow, compact Survey, diagnostic Inspect, and CLI Watch examples
+- [User guide](docs/USER_GUIDE.md) — first Annotation, Queue management, copy/export, agent setup, Design Actions, and settings
+- [Agent CLI guide](docs/CLI_GUIDE.md) — normal agent workflow, compact Survey, diagnostic Inspect, and the command reference
 - [Waypoint agent skill](skills/waypoint/SKILL.md) — repository source for the installable agent workflow
 - [Privacy policy](PRIVACY.md) — local data handling, permissions, retention, and disclosure
 - [Domain language](CONTEXT.md)
@@ -143,27 +143,15 @@ Waypoint runs in the background by default. Use `waypoint status` to check it,
 `waypoint logs` to inspect it, and `waypoint stop` when you are finished. For a
 temporary terminal-attached session, use `waypoint start --foreground`.
 
-### Watch a project
+### Read from an agent
 
-Keep a foreground consumer attached to one loopback project. It prints current Pending and Claimed Annotation IDs at startup and whenever that open-work list changes:
-
-```bash
-waypoint watch http://localhost:3000/
-```
-
-Agent harnesses that can surface background command output can use one complete JSON snapshot per line:
+Waypoint does not watch for new work. Annotate in the browser, then ask your agent to read Waypoint for the project. The skill runs the CLI for you:
 
 ```bash
-waypoint watch http://localhost:3000/ --json
+waypoint read http://localhost:3000/
 ```
 
-Use `--once` to get the current snapshot and exit. Use `read_annotations` with an ID to fetch the selected Annotation's Survey context through MCP. Watch itself is available through the CLI only. For consumers that need the previous detailed change stream, use `--events`; without a cursor, it replays the full Watch history. Its results include a durable cursor:
-
-```bash
-waypoint watch http://localhost:3000/ --json --events --once --cursor '<opaque-cursor>'
-```
-
-The server records activity durably even when no consumer is attached. The CLI retrieves that activity but cannot universally wake an idle coding agent; that final attention step depends on the agent harness.
+Every agent command prints one JSON payload, and the server must be running. See the [Agent CLI guide](docs/CLI_GUIDE.md) for the workflow and every command.
 
 ### Local development
 
@@ -183,92 +171,25 @@ Build the extension from the repository first with `pnpm build`, then:
 3. Choose **Load unpacked**.
 4. Select this repository's `packages/extension/.output/chrome-mv3/` directory.
 
-### MCP connection
+### Connect a coding agent
 
-With Waypoint running, the fastest way to connect supported coding agents is [Add MCP](https://add-mcp.com/):
+Agents use the `waypoint` CLI, guided by the bundled `waypoint` skill. There is no MCP server to configure. The GitHub installer installs the CLI and the skill together, globally for the universal agent target without prompts. It uses `npx --yes skills@latest add` with `--global --agent universal --skill waypoint --yes`. Pass `--skip-skill` to opt out; the installer remembers this for updates. Pass `--yes` to re-enable installation. A skill-install failure leaves the CLI installed and prints a retry command.
 
-```bash
-npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global
-```
-
-Add MCP detects supported agents and guides you through the configurations it will update. The `--global` option makes Waypoint available across projects. Add MCP configures the connection; it does not install or start the Waypoint CLI.
-
-#### Manual configuration
-
-If you prefer to configure an agent yourself, use the HTTP endpoint when it supports streamable HTTP:
-
-```text
-http://127.0.0.1:3846/mcp
-```
-
-For Claude Code:
+To install only the skill, run:
 
 ```bash
-claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp
+npx --yes skills@latest add logbookfordevs/logbook-waypoint --global --agent universal --skill waypoint --yes
 ```
 
-For Codex, add this to `~/.codex/config.toml`:
+To select a specific harness yourself, run `npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global`. If the `waypoint` skill is missing, `waypoint --help` tells agents to ask you before installing it.
 
-```toml
-[mcp_servers.logbook-waypoint]
-url = "http://127.0.0.1:3846/mcp"
-```
+The skill teaches agents to infer the current loopback development URL, read it optimistically even before it contains Annotations, begin with compact Survey context, claim before editing, and finish the lifecycle. An explicit empty project scope returns an empty Queue rather than an error. `waypoint read` accepts either a URL scope or an exact Annotation ID. See the [Agent CLI guide](docs/CLI_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
 
-For Cursor and other JSON-based MCP clients:
+Agents without skill support, or without a shell, can use the extension's copy and paste flow instead.
 
-```json
-{
-  "mcpServers": {
-    "logbook-waypoint": {
-      "url": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
+#### Migrating from MCP
 
-For Windsurf, add this to its MCP settings:
-
-```json
-{
-  "mcpServers": {
-    "logbook-waypoint": {
-      "serverUrl": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
-
-For Pi, first install an MCP extension and then add this to `~/.pi/agent/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "logbook-waypoint": {
-      "url": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
-
-For OpenCode, add this to `~/.config/opencode/opencode.json`:
-
-```json
-{
-  "mcp": {
-    "logbook-waypoint": {
-      "type": "remote",
-      "url": "http://127.0.0.1:3846/mcp",
-      "enabled": true
-    }
-  }
-}
-```
-
-VS Code MCP configuration depends on the AI extension you use. Configure Waypoint as a remote HTTP server with the same `/mcp` URL.
-
-The legacy SSE endpoint remains available at `http://127.0.0.1:3846/sse`.
-
-Through MCP, annotations are user requests. The GitHub installer includes Waypoint's model-invoked workflow skill by default, globally for the universal agent target without prompts. It uses `npx --yes skills@latest add` with `--global --agent universal --skill waypoint --yes`. Pass `--skip-skill` to opt out; the installer remembers this for updates. Pass `--yes` to re-enable installation. A skill-install failure leaves the CLI installed and prints a retry command. To select a specific harness yourself, run `npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global`. That skill teaches agents to infer the current loopback development URL, query it optimistically even before it contains Annotations, begin with compact Survey context, claim before editing, and finish the lifecycle. An explicit empty project scope returns an empty Queue rather than an error. Read accepts either a URL scope or an exact Annotation ID. See the [MCP guide](docs/MCP_GUIDE.md) for the complete workflow and the [Annotation Context contract](docs/contracts/annotation-context.md) for the canonical projection, compatibility, and trust boundaries.
+Earlier releases registered a `logbook-waypoint` MCP server. MCP and `waypoint watch` have been retired because MCP tool definitions cost context in every agent session, even when nobody is annotating. To migrate, run the installer again, which updates the CLI and skill and removes the old MCP registration from global agent configurations (set `WAYPOINT_SKIP_MCP_CLEANUP=1` to opt out). For npm installs, run `waypoint update` and then `waypoint cleanup-mcp`. Remove any project-level `logbook-waypoint` MCP entries yourself.
 
 ### Design Actions setup
 
@@ -279,18 +200,18 @@ See [Use Design Actions](docs/DESIGN_ACTIONS.md) for the complete authoring flow
 Design Actions require [Impeccable](https://github.com/pbakaus/impeccable). Install it through Impeccable's current agent-specific instructions; Waypoint neither installs it nor detects whether it is available.
 
 - **Tested:** no agent-specific Impeccable installation path is certified by Waypoint in this initial integration.
-- **Expected:** paths documented by Impeccable should work when the coding agent can load the installed skill and access Waypoint through MCP.
+- **Expected:** paths documented by Impeccable should work when the coding agent can load the installed skill and run the `waypoint` CLI.
 - **Unknown:** unlisted agents, custom skill locations, and future Impeccable versions remain unverified.
 
 The `Show Design Actions` preference only controls authoring UI for new Annotations. Reopening an Annotation with saved Design Intent always reveals its Design Actions state.
 
 Waypoint owns the Design Actions workflow and Annotation lifecycle; Impeccable supplies the external design discipline, not a second work-state system. An authored Design Intent may include separate Variant Intent. After an agent generates candidates and submits browser-presentable implementations, Waypoint stores and governs the Variant Set, its Active Variant, atomic candidate replacement, and the cleanup decision. The coding agent reconciles temporary source Scaffold after Keep or Cancel.
 
-If the requested workflow is unavailable or execution fails recoverably, the agent releases the Annotation to Pending with a safe Work Notice. Successful Design Actions require and retain a provider-neutral Resolution Record with a short outcome and verification evidence; ordinary Annotations resolve without one. Application routes and repository-relative source paths are valid evidence, while machine-specific absolute paths and provider-internal material are not. Survey keeps Queue context compact, Inspect exposes the complete record for selected Annotations, and Watch keeps delivery concise.
+If the requested workflow is unavailable or execution fails recoverably, the agent releases the Annotation to Pending with a safe Work Notice. Successful Design Actions require and retain a provider-neutral Resolution Record with a short outcome and verification evidence; ordinary Annotations resolve without one. Application routes and repository-relative source paths are valid evidence, while machine-specific absolute paths and provider-internal material are not. Survey keeps Queue context compact, and Inspect exposes the complete record for selected Annotations.
 
 ## Security boundary
 
-The server binds only to IPv4 loopback, validates local Host and Origin headers, enables MCP DNS-rebinding protection, validates Annotation IDs, and labels page-derived MCP output as untrusted. The extension exposes no public page-world automation bridge. See [SECURITY.md](SECURITY.md) for the active boundary.
+The server binds only to IPv4 loopback, validates local Host and Origin headers, validates Annotation IDs, and labels page-derived agent CLI output as untrusted. The extension exposes no public page-world automation bridge. See [SECURITY.md](SECURITY.md) for the active boundary.
 
 ## Project lineage
 

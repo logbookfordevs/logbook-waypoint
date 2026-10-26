@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     default: 'Logbook Waypoint — Pin the point. Chart the change.',
     template: '%s — Logbook Waypoint',
   },
-  description: 'Local-first visual feedback your coding agent can Watch, Claim, and Resolve.',
+  description: 'Local-first visual feedback your coding agent can Read, Claim, and Resolve.',
   authors: [{ name: 'Logbook for Devs', url: 'https://logbookfordevs.com/' }],
   creator: 'Logbook for Devs',
   publisher: 'Logbook for Devs',
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   ...createSocialMetadata({
     title: 'Logbook Waypoint — Pin the point. Chart the change.',
-    description: 'Local-first visual feedback your coding agent can Watch, Claim, and Resolve.',
+    description: 'Local-first visual feedback your coding agent can Read, Claim, and Resolve.',
     url: '/',
   }),
 };

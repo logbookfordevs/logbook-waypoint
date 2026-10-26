@@ -388,12 +388,12 @@ test('documentation and workflow guides opt into the wider reading layout', asyn
   const dropdown = root.querySelector('.waypoint-settings-dropdown');
   assert.equal(dropdown.classList.contains('guidance-open'), true);
 
-  root.querySelector('[data-workflow="agent-mcp"]').click();
+  root.querySelector('[data-workflow="agent-cli"]').click();
   assert.equal(dropdown.classList.contains('guidance-open'), true);
-  assert.match(dropdown.textContent, /Working with an agent through MCP/);
+  assert.match(dropdown.textContent, /Working with an agent through the CLI/);
   assert.match(dropdown.textContent, /Across multiple pages/);
   assert.match(dropdown.textContent, /Read now/);
-  assert.match(dropdown.textContent, /Watch continuously/);
+  assert.match(dropdown.textContent, /waypoint start/);
 });
 
 test('Documentation teaches the multi-Target annotation workflow', async () => {

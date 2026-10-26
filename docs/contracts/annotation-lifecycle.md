@@ -4,7 +4,7 @@ Status: Implemented.
 
 ## Interface
 
-The lifecycle module exposes creation, claiming, release, resolution, discard, and deletion through one consistent interface shared by HTTP, MCP, and extension callers. Callers do not implement state transitions themselves.
+The lifecycle module exposes creation, claiming, release, resolution, discard, and deletion through one consistent interface shared by HTTP, the agent CLI, and extension callers. Callers do not implement state transitions themselves.
 
 ## States
 
@@ -26,7 +26,7 @@ Pending ──claim──▶ Claimed ──resolve──▶ Resolved
 
 ## Invariants
 
-- Reading or watching an Annotation never changes its state.
+- Reading an Annotation never changes its state.
 - At most one active Claim exists for an Annotation.
 - A Claim identifies its owner and expires after a server-defined inactivity period.
 - Expiry or explicit release returns a claimed Annotation to `Pending`.
@@ -34,18 +34,18 @@ Pending ──claim──▶ Claimed ──resolve──▶ Resolved
 - Discard is explicit and retains the Annotation as history.
 - Discarding an Annotation with an unresolved Variant request atomically removes that request and its presentation before retaining the Annotation as `Discarded`; a persistence failure leaves both unchanged.
 - Deletion is explicit permanent removal and is not a completion state.
-- `resolve_annotation` is the agent completion operation.
-- `delete_annotation` remains a separate destructive operation.
-- Every state change updates the Annotation so Watch can distinguish it from an older observation.
+- `waypoint resolve` is the agent completion operation.
+- `waypoint delete` remains a separate destructive operation and requires `--yes`.
+- Every state change is reflected in the next read of the Annotation.
 - Resolving a Pending Annotation requires an explicit Claim first; there is no implicit claim-and-resolve shortcut.
 - The same owner may refresh its Claim. A competing owner is rejected until release or server-defined inactivity expiry.
 
-The server may persist an already-expired Claim as `Pending` immediately before serving a read or Watch request. That is lifecycle expiry maintenance based only on the injected server clock; the read or Watch adapter neither claims nor refreshes the Annotation.
+The server may persist an already-expired Claim as `Pending` immediately before serving a read request. That is lifecycle expiry maintenance based only on the injected server clock; the read adapter neither claims nor refreshes the Annotation.
 
 ## Test surface
 
-Tests exercise the lifecycle interface, including rejected transitions, competing Claims, expiry, retained resolution, retained discard, and permanent deletion. HTTP, MCP, and extension adapters must demonstrate the same observable transitions without duplicating lifecycle rules.
+Tests exercise the lifecycle interface, including rejected transitions, competing Claims, expiry, retained resolution, retained discard, and permanent deletion. HTTP, CLI, and extension adapters must demonstrate the same observable transitions without duplicating lifecycle rules.
 
 ## Implemented adapters
 
-The lifecycle module is the only owner of state transitions and Claim expiry. HTTP exposes `claim`, `release`, `resolve`, and `discard` routes for an Annotation. MCP exposes `claim_annotation`, `release_annotation`, `resolve_annotation`, and `discard_annotation`; `delete_annotation` remains separately described as irreversible removal. Extension storage and sync use the same four canonical states and migrate only legacy Waypoint records created before this contract.
+The lifecycle module is the only owner of state transitions and Claim expiry. HTTP exposes `claim`, `release`, `resolve`, and `discard` routes for an Annotation. The agent CLI exposes `waypoint claim`, `release`, `resolve`, and `discard`; `waypoint delete` remains separately described as irreversible removal. Extension storage and sync use the same four canonical states and migrate only legacy Waypoint records created before this contract.

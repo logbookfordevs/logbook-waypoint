@@ -1,6 +1,6 @@
 # waypoint
 
-Global MCP server for Logbook Waypoint browser extension.
+Local server and agent CLI for the Logbook Waypoint browser extension.
 
 ## Installation
 
@@ -61,179 +61,48 @@ waypoint logs
 waypoint logs -f
 ```
 
-### Watch one project
+## Agent CLI
 
-Run a foreground Watch consumer for a loopback project, Page, or View State:
-
-```bash
-waypoint watch http://localhost:3000/
-```
-
-Use `--json` for one complete open-work snapshot per line and `--once` for an immediate snapshot. Watch is a CLI operation; the MCP tool list no longer includes it. Use `--events` for detailed history, and resume from the cursor of the last event result the downstream consumer actually processed:
+Coding agents use the `waypoint` CLI, guided by the bundled `waypoint` skill. There is no MCP server to configure, and no Watch: ask your agent to read Waypoint when you have annotated, and it runs `waypoint read <url>`. The server must be running (`waypoint start`). Every agent command prints one JSON payload whose `data` field is untrusted page- or user-supplied content.
 
 ```bash
-waypoint watch http://localhost:3000/ --json --events --once --cursor '<opaque-cursor>'
+waypoint read http://localhost:3000/        # survey pending work
+waypoint inspect <id>                       # complete diagnostic context
+waypoint claim <id> --owner <owner>         # before editing source
+waypoint resolve <id> --owner <owner>       # after verification
 ```
 
-The command reconnects with bounded backoff and reads from the existing durable Watch journal. It is a foreground consumer, not another daemon or event store. Whether its output wakes an idle agent remains a capability of the coding-agent harness.
+See the [Agent CLI guide](../../docs/CLI_GUIDE.md) for the workflow and every command. Run `waypoint --help` for the command list.
 
-## AI Coding Agent Integration
-
-After starting the server, connect it to your AI coding agent. The server supports multiple agents via MCP (Model Context Protocol) using both HTTP and SSE transports.
-
-### Recommended: Add MCP
-
-The fastest setup for supported coding agents is [Add MCP](https://add-mcp.com/):
+If the skill is missing, install it:
 
 ```bash
-npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global
+npx --yes skills@latest add logbookfordevs/logbook-waypoint --global --agent universal --skill waypoint --yes
 ```
 
-Add MCP detects supported agents and guides you through the configurations it will update. The `--global` option makes Waypoint available across projects. It configures the MCP connection but does not install or start Waypoint, so run `waypoint start` first.
+Agents without skill support, or without a shell, can use the extension's copy and paste flow.
 
-### Manual configuration
+### Migrating from MCP
 
-#### Claude Code
-
-In your project directory, run:
-
-```bash
-# Recommended (HTTP transport - more stable)
-claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp
-
-# Alternative (SSE transport - for compatibility)
-claude mcp add --transport sse logbook-waypoint http://127.0.0.1:3846/sse
-```
-
-#### Cursor
-
-1. Open Cursor → Settings → Cursor Settings
-2. Go to the Tools & Integrations tab
-3. Click + Add new global MCP server
-4. Enter the following configuration and save:
-
-```json
-{
-  "mcpServers": {
-    "logbook-waypoint": {
-      "url": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
-
-#### Windsurf
-
-1. Navigate to Windsurf → Settings → Advanced Settings
-2. Scroll down to the Cascade section
-3. Click "Add new server" or edit the raw JSON config file
-4. Add the following configuration:
-
-```json
-{
-  "mcpServers": {
-    "logbook-waypoint": {
-      "serverUrl": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
-
-#### Codex
-
-Add to `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.logbook-waypoint]
-url = "http://127.0.0.1:3846/mcp"
-```
-
-#### Pi
-
-Pi uses MCP through an extension. After installing one, add to `~/.pi/agent/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "logbook-waypoint": {
-      "url": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
-
-#### OpenCode
-
-Add to `~/.config/opencode/opencode.json`:
-
-```json
-{
-  "mcp": {
-    "logbook-waypoint": {
-      "type": "remote",
-      "url": "http://127.0.0.1:3846/mcp",
-      "enabled": true
-    }
-  }
-}
-```
-
-#### VS Code
-
-1. Install an AI extension that supports MCP (like GitHub Copilot Chat or Continue)
-2. Go to Code → Settings → Settings or use the shortcut ⌘,
-3. In the search bar, type "MCP"
-4. Look for MCP server configurations in your AI extension settings
-5. Add the following HTTP configuration:
-
-```json
-{
-  "mcpServers": {
-    "logbook-waypoint": {
-      "type": "http",
-      "url": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
-
-**Note:** MCP support varies by AI extension. Check your extension's documentation for specific setup instructions.
-
-#### Other Editors
-
-Other editors and tools can connect when they support MCP over streamable HTTP or legacy SSE. Check the client's documentation for its exact configuration shape. Prefer the HTTP endpoint when both transports are available:
-
-```json
-{
-  "mcpServers": {
-    "logbook-waypoint": {
-      "url": "http://127.0.0.1:3846/mcp"
-    }
-  }
-}
-```
-
-**Note:** The Logbook Waypoint MCP server supports both HTTP and SSE transports. HTTP transport is recommended for better stability. Use the URL: `http://127.0.0.1:3846/mcp` (HTTP) or `http://127.0.0.1:3846/sse` (SSE).
+Earlier releases exposed an MCP server and `waypoint watch`; both are retired. Running the GitHub installer again removes the old `logbook-waypoint` MCP registration from global agent configurations through `npx add-mcp remove` (set `WAYPOINT_SKIP_MCP_CLEANUP=1` to opt out). For npm installs, run `waypoint cleanup-mcp`.
 
 ## Architecture
 
 The server provides:
-- **MCP HTTP Endpoint** (`/mcp`): Recommended streamable HTTP connection for coding agents
-- **SSE Endpoint** (`/sse`): For AI coding agent MCP connections
 - **HTTP API** (`/api/annotations`): For Chrome extension communication
 - **Health Check** (`/health`): For status monitoring
 
-The HTTP API and MCP tools share one Annotation lifecycle: Pending Annotations may be claimed, Claims may be refreshed by the same owner or released, and Claimed Annotations may be resolved. Pending or owner-claimed Annotations may be discarded. Resolved and Discarded records are retained; deletion is a separate permanent operation.
+The HTTP API and agent CLI share one Annotation lifecycle: Pending Annotations may be claimed, Claims may be refreshed by the same owner or released, and Claimed Annotations may be resolved. Pending or owner-claimed Annotations may be discarded. Resolved and Discarded records are retained; deletion is a separate permanent operation.
 
 ### Annotation context workflow
 
-Use `read_annotations` to receive user requests from the Queue. Continue from the scoped read through Claim, implementation, verification, and resolution or safe release unless the user explicitly requests a read-only or observation-only result. Saying “read my annotations” alone still requests the normal implementation workflow. An unfiltered call discovers projects without returning Annotation bodies, even when only one project exists. Select one recommended URL filter and repeat the read. Scoped reads return compact summaries normalized across legacy single-Target and multi-Target records. Compact describes response size, not an incomplete brief: Survey should usually provide enough context to implement the request. The Read call itself is side-effect-free and does not create a Claim.
+Use `waypoint read` to receive user requests from the Queue. Continue from the scoped read through Claim, implementation, verification, and resolution or safe release unless the user explicitly requests a read-only or observation-only result. Saying “read my annotations” alone still requests the normal implementation workflow. An unfiltered call discovers projects without returning Annotation bodies, even when only one project exists. Select one recommended URL filter and repeat the read. Scoped reads return compact summaries normalized across legacy single-Target and multi-Target records. Compact describes response size, not an incomplete brief: Survey should usually provide enough context to implement the request. The Read call itself is side-effect-free and does not create a Claim.
 
-Use `inspect_annotations` with one or more Annotation IDs when selected work needs complete diagnostic context such as computed styles, exact placement, full ancestry, Source Identity hints, or Target relationships. Batch IDs for Annotations being understood or implemented together. Inspection is optional when the compact summary already makes the work clear.
+Use `waypoint inspect` with one or more Annotation IDs when selected work needs complete diagnostic context such as computed styles, exact placement, full ancestry, Source Identity hints, or Target relationships. Batch IDs for Annotations being understood or implemented together. Inspection is optional when the compact summary already makes the work clear.
 
 Survey and Inspect report screenshot and attachment availability without embedding media bytes. Retrieve a screenshot or attachment separately when its evidence is needed. The canonical [Annotation Context contract](../../docs/contracts/annotation-context.md) defines the projection, batching, compatibility, and trust boundaries.
 
-See [Use Waypoint through MCP](../../docs/MCP_GUIDE.md) for the normal workflow, concrete calls, response boundary, and MCP tool reference. Watch uses the CLI.
+See the [Agent CLI guide](../../docs/CLI_GUIDE.md) for the normal workflow, concrete commands, and response boundary.
 
 ### Design Actions workflow
 
@@ -243,7 +112,7 @@ Developers author the request in the browser extension. See [Use Design Actions]
 
 Waypoint owns the workflow and lifecycle. Design Intent records Freeform or one named Design Action on an ordinary Annotation. Variant Intent separately asks an agent to generate alternatives; once complete browser-presentable candidates exist, Waypoint owns the resulting Variant Set, Active Variant, atomic candidate replacement, cancellation, and Finalization decision. The coding agent removes temporary source Scaffold after Keep or Cancel.
 
-An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action requires and retains a provider-neutral Resolution Record with its outcome and verification evidence; ordinary Annotations resolve without one. Application routes and repository-relative source paths are valid evidence, while machine-specific absolute paths and provider-internal material are not. When Variant Intent produced a Variant Set, that set must reach Finalization before resolution. Survey returns compact Queue context, Inspect returns complete selected evidence, and Watch reactively delivers that same Survey-grade context with revision metadata.
+An unavailable workflow or recoverable execution failure returns the Annotation to Pending with the latest safe Work Notice. A successful Design Action requires and retains a provider-neutral Resolution Record with its outcome and verification evidence; ordinary Annotations resolve without one. Application routes and repository-relative source paths are valid evidence, while machine-specific absolute paths and provider-internal material are not. When Variant Intent produced a Variant Set, that set must reach Finalization before resolution. Survey returns compact Queue context, Inspect returns complete selected evidence.
 
 Data is stored in `~/.logbook-waypoint/annotations.json`.
 
@@ -266,6 +135,6 @@ waypoint update
 waypoint restart
 ```
 
-The update command detects npm global installations and GitHub installer installations and updates through the same channel. npm updates also run the Skills CLI to refresh the global universal Waypoint skill; if that step fails, the CLI remains updated and prints a retry command. GitHub updates reinstall the bundled skill unless you saved `--skip-skill`. Older GitHub installs need one rerun of their original installer command to enable detection. Source checkouts and other package managers should use their original update workflow. Reconnect your agent if it launches the MCP server directly. Browser extension updates are separate.
+The update command detects npm global installations and GitHub installer installations and updates through the same channel. npm updates also run the Skills CLI to refresh the global universal Waypoint skill; if that step fails, the CLI remains updated and prints a retry command. GitHub updates reinstall the bundled skill unless you saved `--skip-skill`. Older GitHub installs need one rerun of their original installer command to enable detection. Source checkouts and other package managers should use their original update workflow. Browser extension updates are separate.
 
 An older npm installation may need to run the separate `npx skills@latest add` command above once after its first upgrade to this updater; its old update code cannot refresh the skill retroactively.

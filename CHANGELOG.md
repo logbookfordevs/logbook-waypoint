@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Removed
+- Waypoint no longer ships an MCP server or Watch. Agents now use the `waypoint` CLI (`waypoint read`, `claim`, `resolve`, and the rest), guided by the bundled `waypoint` skill, so no tool definitions load into agent context when nobody is annotating. `waypoint watch`, `--events`, and `--cursor` are gone: ask your agent to read Waypoint after you annotate, and it detects a cancelled Variant Set by re-reading. Agents without skill support or a shell can use the extension's copy and paste flow. The legacy MCP code remains for one release behind `WAYPOINT_ENABLE_MCP=1` as a rollback path only.
+
+### Migration
+- Run the installer again (`curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash`) to update the CLI and skill and remove the old `logbook-waypoint` MCP registration from global agent configurations; set `WAYPOINT_SKIP_MCP_CLEANUP=1` to opt out. For npm installs, run `waypoint update` and then `waypoint cleanup-mcp`. Remove project-level MCP entries yourself, and update the skill if you installed it separately.
+- Replace MCP tool calls with CLI commands. See the [Agent CLI guide](docs/CLI_GUIDE.md) for the mapping.
+
 ### Changed
 - The annotate shortcut now opens a hidden Waypoint toolbar and starts pin mode in one press; when the toolbar is already open, it toggles pin mode. New installs default to ⌃⇧. (Ctrl+Shift+. on Windows and Linux), and ⌃⇧W (Alt+Shift+W) shows or hides Waypoint. Existing installs keep their current bindings; change them at `chrome://extensions/shortcuts`.
 - Waypoint now opens in Agent mode on local development hosts and private network addresses, and in Journal mode on other sites. Each of those two groups remembers your last mode choice, so Agent mode remains one click away for reviewers annotating staging or production. A previously saved global mode is not carried over.

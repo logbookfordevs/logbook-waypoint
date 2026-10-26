@@ -28,14 +28,13 @@ test('public Annotation ID interface accepts only canonical Waypoint identifiers
 test('persisted Queue loading rejects predecessor Annotation IDs', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-id-load-'));
   const annotationsFile = path.join(directory, 'annotations.json');
-  const watchHistoryFile = path.join(directory, 'watch-history.json');
   await writeFile(annotationsFile, JSON.stringify([
     { id: 'vibe_1750000000000_abc123xyz', comment: 'predecessor data', status: 'pending' },
     { id: 'waypoint_1750000000000_abc123xyz', comment: 'Waypoint data', status: 'pending' },
   ]));
 
   try {
-    const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
+    const server = new LocalAnnotationsServer({ annotationsFile });
     const annotations = await server.loadAnnotations();
 
     assert.deepEqual(annotations.map(annotation => annotation.id), [
@@ -49,16 +48,14 @@ test('persisted Queue loading rejects predecessor Annotation IDs', async () => {
 test('Queue persistence rejects predecessor Annotation IDs before writing', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-id-save-'));
   const annotationsFile = path.join(directory, 'annotations.json');
-  const watchHistoryFile = path.join(directory, 'watch-history.json');
 
   try {
-    const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
+    const server = new LocalAnnotationsServer({ annotationsFile });
     await assert.rejects(
       server.saveAnnotations([{ id: 'vibe_1750000000000_abc123xyz' }]),
       /Invalid Waypoint annotation ID/,
     );
     await assert.rejects(access(annotationsFile));
-    await assert.rejects(access(watchHistoryFile));
   } finally {
     await rm(directory, { recursive: true });
   }

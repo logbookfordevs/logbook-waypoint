@@ -1,6 +1,6 @@
 # Use Journal mode
 
-Journal mode leaves personal thoughts and explanations directly on a page. Named journals contain text notes displayed as taped paper, with hand-drawn circles and curved arrows connecting them to the selected elements. Journal notes stay on this device and never enter the Agent Queue or MCP server.
+Journal mode leaves personal thoughts and explanations directly on a page. Named journals contain text notes displayed as taped paper, with hand-drawn circles and curved arrows connecting them to the selected elements. Journal notes stay on this device and never enter the Agent Queue or reach the local server.
 
 Install the [Waypoint extension](https://chromewebstore.google.com/detail/logbook-waypoint/fgondknhkpekdhbbkgodokmpnpadfedo), enable it on your page, and choose Journal. No local server or coding agent is required.
 

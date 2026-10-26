@@ -236,7 +236,7 @@ class WaypointAnnotationsBackground {
             .catch(error => sendResponse({ success: false, error: error.message }));
           break;
           
-        case 'checkMCPStatus':
+        case 'checkServerStatus':
           this.checkAPIConnectionStatus()
             .then(async status => {
               if (status.connected) await this.syncAutomatically();
@@ -282,7 +282,7 @@ class WaypointAnnotationsBackground {
             .catch(error => sendResponse({ success: false, error: error.message }));
           break;
 
-        case 'forceMCPSync':
+        case 'forceServerSync':
           this.forceAPISync()
             .then(result => sendResponse({ success: true, ...result }))
             .catch(error => sendResponse({ success: false, error: error.message }));
@@ -844,9 +844,6 @@ class WaypointAnnotationsBackground {
           
         case 'csv':
           return this.annotationsToCSV(annotations);
-          
-        case 'mcp':
-          return WaypointExportCodec.createExportEnvelope(annotations);
           
         default:
           throw new Error('Unsupported export format');
@@ -1442,7 +1439,6 @@ class WaypointAnnotationsBackground {
           'annotation-validation.js',
           'data-management.js',
           'export-codec.js',
-          'agent-setup-config.js',
           'content/modules/event-bus.js',
           'content/modules/styles.js',
           'content/modules/shadow-host.js',

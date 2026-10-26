@@ -1,7 +1,7 @@
 {
   "name": "@logbookfordevs/waypoint",
   "version": "0.2.1",
-  "description": "Global MCP server for Logbook Waypoint browser extension",
+  "description": "Local server and agent CLI for the Logbook Waypoint browser extension",
   "main": "lib/server.js",
   "type": "module",
   "exports": {
@@ -31,11 +31,11 @@
     "test": "node --test"
   },
   "keywords": [
-    "mcp",
     "logbook",
     "waypoint",
     "annotations",
-    "sse",
+    "cli",
+    "agent-skill",
     "http",
     "claude-code",
     "localhost",

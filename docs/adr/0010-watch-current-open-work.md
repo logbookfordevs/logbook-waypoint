@@ -1,5 +1,7 @@
 # Watch current open work
 
+Superseded by [Retire MCP and Watch](0011-retire-mcp-and-watch.md).
+
 The ordinary CLI Watch session presents a lightweight current-state index for one URL scope. On startup and after a relevant change, it emits Pending and Claimed Annotation IDs, status, URL, and optional claim owner. Changed Pending IDs are included separately so an edit is visible even if its index entry is unchanged. It remains running until stopped. The agent reads a selected ID through the Survey interface before doing the work; Inspect remains diagnostic.
 
 The server's annotation store is the source of truth. Watch journal changes wake the CLI, which rereads the scoped current state instead of applying event bodies to a private list. Starting a CLI session takes a journal position before the first read so a concurrent change can cause an extra refresh but cannot be skipped. Deletion invalidates Watch using the deleted Annotation's former URL scope. Empty long-poll results produce no CLI snapshot.

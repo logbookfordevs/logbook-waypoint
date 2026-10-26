@@ -18,7 +18,7 @@ When you create an Annotation, Waypoint may process and store:
 - image attachments you explicitly add;
 - preferences, Queue state, and Annotation lifecycle history.
 
-Journal mode also stores journal names, note text, original page URLs, target selectors and bounded element context in local extension storage. Journal data is separate from Agent Annotations and is not synchronized to the local MCP server. When you choose the Journal camera button, Waypoint captures the visible page with its notes and drawings and copies a PNG to your system clipboard. It is not uploaded to a Waypoint service. Other applications can receive that image when you paste it.
+Journal mode also stores journal names, note text, original page URLs, target selectors and bounded element context in local extension storage. Journal data is separate from Agent Annotations and is not synchronized to the local server. When you choose the Journal camera button, Waypoint captures the visible page with its notes and drawings and copies a PNG to your system clipboard. It is not uploaded to a Waypoint service. Other applications can receive that image when you paste it.
 
 Waypoint does not require a Logbook account and does not include advertising,
 analytics, or telemetry.
@@ -35,7 +35,7 @@ is designed to listen only on the IPv4 loopback interface.
 
 Waypoint does not send Annotation data, browsing activity, screenshots, or
 attachments to Logbook for Devs or another external server. Coding agents that
-you separately connect to the local Waypoint server may receive Annotation data
+you separately run the Waypoint CLI through may receive Annotation data
 under the terms and privacy practices of those agents and their providers.
 
 Links in the extension may open external websites when you choose them. Merely

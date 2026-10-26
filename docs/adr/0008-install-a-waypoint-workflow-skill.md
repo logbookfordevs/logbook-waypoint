@@ -1,5 +1,7 @@
 # Install a Waypoint workflow skill
 
+Partly superseded by [Retire MCP and Watch](0011-retire-mcp-and-watch.md): the skill remains the owner of workflow guidance, but agents now act through the `waypoint` CLI instead of MCP tools.
+
 Waypoint's MCP tool descriptions remain concise, while the GitHub release installer strongly recommends a model-invoked Waypoint skill. With confirmation, it opens the Skills CLI so the user selects the receiving agent harnesses. The skill owns project URL inference, optimistic empty reads, Survey-before-Inspect guidance, claim-before-edit sequencing, lifecycle completion, and interpretation of Variant cancellation.
 
 We rejected placing the full workflow in always-loaded MCP descriptions because it repeatedly spends context even when the agent is not actively handling Waypoint work. We also rejected a server-side project registry for empty projects: an agent can infer the current loopback development URL and scoped reads already accept it safely with an empty result.

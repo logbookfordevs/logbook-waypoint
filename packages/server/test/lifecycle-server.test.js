@@ -4,7 +4,6 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { once } from 'node:events';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { LocalAnnotationsServer } from '../lib/server.js';
 
@@ -23,7 +22,6 @@ async function fixture(now) {
     directory,
     server: new LocalAnnotationsServer({
       annotationsFile,
-      watchHistoryFile: path.join(directory, 'watch.json'),
       attachmentRoot: path.join(directory, 'attachments'),
       now: () => now.value,
       claimTtlMs: 1_000,
@@ -31,7 +29,7 @@ async function fixture(now) {
   };
 }
 
-test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', async () => {
+test('HTTP, agent operations, and persistence observe the same retained lifecycle', async () => {
   const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
   const { directory, server } = await fixture(now);
   const listener = server.app.listen(0, '127.0.0.1');
@@ -39,7 +37,6 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
   const baseUrl = `http://127.0.0.1:${listener.address().port}`;
 
   try {
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     const claimResponse = await fetch(`${baseUrl}/api/annotations/${id}/claim`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -48,35 +45,17 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
     assert.equal(claimResponse.status, 200);
     assert.equal((await claimResponse.json()).annotation.status, 'claimed');
 
-    const activity = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.equal(activity.changes.at(-1).annotation.status, 'claimed');
-
     const reads = await server.readAnnotations({ status: 'claimed', url: 'http://localhost:3000/*' });
     assert.equal(reads.annotations[0].claim.owner, 'agent-one');
     assert.equal((await server.readAnnotations({ status: 'claimed', url: 'http://localhost:3000/*' })).annotations[0].claim.expires_at, '2026-08-11T12:00:01.000Z');
 
-    let callTool;
-    let listTools;
-    server.setupMCPHandlersForServer({
-      setRequestHandler(schema, handler) {
-        if (schema === CallToolRequestSchema) callTool = handler;
-        if (schema === ListToolsRequestSchema) listTools = handler;
-      },
+    const resolved = await fetch(`${baseUrl}/api/agent/resolve_annotation`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id, owner: 'agent-one', url: 'http://localhost:3000/*' }),
     });
-    const listed = await listTools();
-    assert.deepEqual(
-      ['claim_annotation', 'release_annotation', 'resolve_annotation', 'discard_annotation']
-        .filter(name => !listed.tools.some(tool => tool.name === name)),
-      [],
-    );
-    assert.deepEqual(
-      listed.tools.find(tool => tool.name === 'export_annotations').inputSchema.properties.status.enum,
-      ['pending', 'claimed', 'resolved', 'discarded', 'all'],
-    );
-    const resolved = await callTool({
-      params: { name: 'resolve_annotation', arguments: { id, owner: 'agent-one', url: 'http://localhost:3000/*' } },
-    });
-    const payload = JSON.parse(resolved.content[0].text);
+    const payload = await resolved.json();
+    assert.equal(resolved.status, 200);
     assert.equal(payload.data_trust, 'untrusted');
     assert.equal(payload.data.annotation.status, 'resolved');
 
@@ -91,7 +70,7 @@ test('HTTP, MCP, persistence, and Watch observe the same retained lifecycle', as
     await rm(directory, { recursive: true, force: true });
   }
 });
-test('HTTP release publishes and persists a recoverable Work Notice through Read and Watch', async () => {
+test('HTTP release publishes and persists a recoverable Work Notice through Read', async () => {
   const now = { value: Date.parse('2026-08-19T12:00:00.000Z') };
   const { directory, server } = await fixture(now);
   const listener = server.app.listen(0, '127.0.0.1');
@@ -100,7 +79,6 @@ test('HTTP release publishes and persists a recoverable Work Notice through Read
 
   try {
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     const response = await fetch(`${baseUrl}/api/annotations/${id}/release`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -125,8 +103,6 @@ test('HTTP release publishes and persists a recoverable Work Notice through Read
     const persisted = JSON.parse(await readFile(path.join(directory, 'annotations.json'), 'utf8'))[0];
     assert.deepEqual(persisted.work_notice, released.work_notice);
     assert.deepEqual((await server.readAnnotations({ status: 'pending', url: 'http://localhost:3000/*' })).annotations[0].work_notice, released.work_notice);
-    const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.deepEqual(watched.changes.at(-1).annotation.work_notice, released.work_notice);
   } finally {
     listener.closeAllConnections();
     await new Promise(resolve => listener.close(resolve));
@@ -134,7 +110,7 @@ test('HTTP release publishes and persists a recoverable Work Notice through Read
   }
 });
 
-test('MCP can dismiss a Work Notice without changing Pending status', async () => {
+test('agent operation can dismiss a Work Notice without changing Pending status', async () => {
   const now = { value: Date.parse('2026-08-19T12:00:00.000Z') };
   const { directory, server } = await fixture(now);
 
@@ -146,21 +122,7 @@ test('MCP can dismiss a Work Notice without changing Pending status', async () =
       owner: 'agent-one',
       reason: { code: 'execution_failed', summary: 'The workflow stopped. Claim to retry.' },
     });
-    let callTool;
-    let listTools;
-    server.setupMCPHandlersForServer({
-      setRequestHandler(schema, handler) {
-        if (schema === CallToolRequestSchema) callTool = handler;
-        if (schema === ListToolsRequestSchema) listTools = handler;
-      },
-    });
-
-    const listed = await listTools();
-    assert.ok(listed.tools.some(tool => tool.name === 'dismiss_work_notice'));
-    const dismissed = await callTool({
-      params: { name: 'dismiss_work_notice', arguments: { id } },
-    });
-    const annotation = JSON.parse(dismissed.content[0].text).data.annotation;
+    const { annotation } = await server.runAgentOperation('dismiss_work_notice', { id });
 
     assert.equal(annotation.status, 'pending');
     assert.equal('work_notice' in annotation, false);
@@ -234,7 +196,7 @@ test('terminal Annotation history rejects generic comment and Design Intent upda
   }
 });
 
-test('Design Actions resolve with a retained Resolution Record while Watch stays concise', async () => {
+test('Design Actions resolve with a retained Resolution Record', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-resolution-record-'));
   const annotationsFile = path.join(directory, 'annotations.json');
   await writeFile(annotationsFile, JSON.stringify([{
@@ -246,7 +208,6 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
   }]));
   const server = new LocalAnnotationsServer({
     annotationsFile,
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
   const listener = server.app.listen(0, '127.0.0.1');
@@ -259,7 +220,6 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
 
   try {
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     const response = await fetch(`${baseUrl}/api/annotations/${id}/resolve`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -274,24 +234,8 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
     const read = (await server.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' })).annotations[0];
     assert.deepEqual(read.resolution_record, resolutionRecord);
 
-    let callTool;
-    let listTools;
-    server.setupMCPHandlersForServer({
-      setRequestHandler(schema, handler) {
-        if (schema === CallToolRequestSchema) callTool = handler;
-        if (schema === ListToolsRequestSchema) listTools = handler;
-      },
-    });
-    const resolveTool = (await listTools()).tools.find(tool => tool.name === 'resolve_annotation');
-    assert.match(resolveTool.description, /Design Action.*Resolution Record/i);
-    assert.match(resolveTool.inputSchema.properties.resolution_record.description, /only.*Design Action/i);
-    const mcpRead = await callTool({
-      params: { name: 'read_annotations', arguments: { status: 'resolved', url: 'http://localhost:3000/*' } },
-    });
-    assert.deepEqual(JSON.parse(mcpRead.content[0].text).data.annotations[0].resolution_record, resolutionRecord);
-
-    const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, resolutionRecord);
+    const agentRead = await server.runAgentOperation('read_annotations', { status: 'resolved', url: 'http://localhost:3000/*' });
+    assert.deepEqual(agentRead.annotations[0].resolution_record, resolutionRecord);
 
     for (const synchronized of [
       { ...persisted, resolution_record: undefined },
@@ -314,7 +258,6 @@ test('Design Actions resolve with a retained Resolution Record while Watch stays
 
     const restarted = new LocalAnnotationsServer({
       annotationsFile,
-      watchHistoryFile: path.join(directory, 'watch.json'),
       attachmentRoot: path.join(directory, 'attachments'),
     });
     assert.deepEqual(
@@ -342,7 +285,6 @@ test('expired Variant work can be finalized, reclaimed, verified, and resolved w
     await server.applyAnnotationsUpdate(annotations => {
       Object.assign(annotations[0], { design_intent: designIntent, variant_intent: variantIntent });
     });
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'generator' });
     await server.requestVariants({
       id,
@@ -380,9 +322,6 @@ test('expired Variant work can be finalized, reclaimed, verified, and resolved w
     const read = (await server.readAnnotations({ status: 'resolved', url: 'http://localhost:3000/*' })).annotations[0];
     assert.deepEqual(read.design_intent, designIntent);
     assert.deepEqual(read.resolution_record, resolutionRecord);
-    const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.deepEqual(watched.changes.at(-1).annotation.resolution_record, resolutionRecord);
-    assert.equal('variant_presentation' in watched.changes.at(-1).annotation, false);
     const persisted = JSON.parse(await readFile(path.join(directory, 'annotations.json'), 'utf8'))[0];
     assert.deepEqual(persisted.variant_request.scaffold, []);
   } finally {
@@ -477,7 +416,6 @@ test('legacy resolved Design Actions remain readable without fabricating evidenc
   }]));
   const server = new LocalAnnotationsServer({
     annotationsFile,
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
 
@@ -508,16 +446,15 @@ test('HTTP Queue reads reject non-canonical lifecycle status filters', async () 
   }
 });
 
-test('expired Claims return to Pending and publish Watch without read or Watch refreshing them', async () => {
+test('expired Claims return to Pending without a read refreshing them', async () => {
   const now = { value: Date.parse('2026-08-11T12:00:00.000Z') };
   const { directory, server } = await fixture(now);
   try {
     await server.changeAnnotationLifecycle({ id, operation: 'claim', owner: 'agent-one' });
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     now.value += 1_001;
-    const changes = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.equal(changes.changes.at(-1).annotation.status, 'pending');
-    assert.equal('claim' in changes.changes.at(-1).annotation, false);
+    const [expired] = (await server.readAnnotations({ status: 'all', url: 'http://localhost:3000/*' })).annotations;
+    assert.equal(expired.status, 'pending');
+    assert.equal('claim' in expired, false);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -560,7 +497,6 @@ test('persisted Queue records reject non-canonical lifecycle states', async () =
   }]));
   const server = new LocalAnnotationsServer({
     annotationsFile,
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
 
@@ -590,7 +526,6 @@ test('persisted Queue records reject malformed Work Notices', async () => {
   }]));
   const server = new LocalAnnotationsServer({
     annotationsFile,
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
 
@@ -620,12 +555,11 @@ test('permanent deletion returns 404 for a missing canonical Annotation', async 
   }
 });
 
-test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch without replacing lifecycle', async () => {
+test('Freeform Design Intent crosses HTTP, persistence, and agent Read without replacing lifecycle', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-design-intent-'));
   const annotationsFile = path.join(directory, 'annotations.json');
   const server = new LocalAnnotationsServer({
     annotationsFile,
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
   const listener = server.app.listen(0, '127.0.0.1');
@@ -645,7 +579,6 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
   };
 
   try {
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     const response = await fetch(`${baseUrl}/api/annotations`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -662,21 +595,8 @@ test('Freeform Design Intent crosses HTTP, persistence, MCP Read, and Watch with
     assert.deepEqual(read.annotations[0].design_intent, designIntent);
     assert.equal(read.annotations[0].comment, annotation.comment);
 
-    const watched = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-    assert.deepEqual(watched.changes.at(-1).annotation.design_intent, designIntent);
-    assert.equal(watched.changes.at(-1).annotation.status, 'pending');
-
-    let callTool;
-    server.setupMCPHandlersForServer({
-      setRequestHandler(schema, handler) {
-        if (schema === CallToolRequestSchema) callTool = handler;
-      },
-    });
-    const mcpRead = await callTool({
-      params: { name: 'read_annotations', arguments: { status: 'pending', url: 'http://localhost:3000/*' } },
-    });
-    const payload = JSON.parse(mcpRead.content[0].text);
-    assert.deepEqual(payload.data.annotations[0].design_intent, designIntent);
+    const agentRead = await server.runAgentOperation('read_annotations', { status: 'pending', url: 'http://localhost:3000/*' });
+    assert.deepEqual(agentRead.annotations[0].design_intent, designIntent);
 
     const ordinarySync = await fetch(`${baseUrl}/api/annotations/sync`, {
       method: 'POST',
@@ -713,7 +633,6 @@ test('HTTP rejects malformed Design Intent while ordinary Annotations remain com
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-design-intent-validation-'));
   const server = new LocalAnnotationsServer({
     annotationsFile: path.join(directory, 'annotations.json'),
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
   const listener = server.app.listen(0, '127.0.0.1');
@@ -777,7 +696,7 @@ test('HTTP rejects malformed Design Intent while ordinary Annotations remain com
   }
 });
 
-test('persisted malformed Design Intent is rejected before HTTP, MCP, or Watch can expose it', async () => {
+test('persisted malformed Design Intent is rejected before HTTP or agent Read can expose it', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-design-intent-persisted-invalid-'));
   const annotationsFile = path.join(directory, 'annotations.json');
   await writeFile(annotationsFile, JSON.stringify([{
@@ -789,13 +708,11 @@ test('persisted malformed Design Intent is rejected before HTTP, MCP, or Watch c
   }]));
   const server = new LocalAnnotationsServer({
     annotationsFile,
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
 
   try {
     await assert.rejects(() => server.readAnnotations({ status: 'all', url: 'http://localhost:3000/*' }), /Design Intent workflow/i);
-    await assert.rejects(() => server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 }), /Design Intent workflow/i);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

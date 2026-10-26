@@ -35,14 +35,6 @@ export function assertResolutionRecord(record) {
   return record;
 }
 
-export function assertResolutionRecordSummary(record) {
-  if (!record || typeof record !== 'object' || Array.isArray(record) || Object.keys(record).some(key => key !== 'summary')) {
-    throw new TypeError('Watch Resolution Record must contain only a summary');
-  }
-  assertSafeText(record.summary, 'Resolution Record summary', RESOLUTION_SUMMARY_MAX_LENGTH);
-  return record;
-}
-
 export function assertAnnotationResolutionRecord(annotation) {
   if (annotation.resolution_record !== undefined) {
     if (annotation.design_intent === undefined) {

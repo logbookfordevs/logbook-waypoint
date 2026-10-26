@@ -28,13 +28,13 @@ const chapters = [
     label: 'Queue',
     bearing: '02 · Keep the context',
     title: 'A field note becomes retained work.',
-    copy: 'The local Queue preserves identity and lifecycle. Watch can deliver the work without silently Claiming, resolving, or removing it.',
+    copy: 'The local Queue preserves identity and lifecycle. Reading it never silently Claims, resolves, or removes it.',
   },
   {
     label: 'Agent',
     bearing: '03 · Hand off with trust',
     title: 'Your agent receives a route, not a riddle.',
-    copy: 'Through MCP, the agent reads the Target and brief, Claims the Annotation, changes the source, and reports through Waypoint’s lifecycle.',
+    copy: 'Through the Waypoint CLI, the agent reads the Target and brief, Claims the Annotation, changes the source, and reports through Waypoint’s lifecycle.',
   },
   {
     label: 'Resolution',
@@ -349,19 +349,19 @@ export function RouteJourney() {
               <div className="queue-shot" aria-label="The annotation retained in the local Queue">
                 <div className="queue-shot__heading"><Route aria-hidden="true" /><span><small>Local Queue</small><b>One clear thing to change</b></span><code>01 pending</code></div>
                 <div className="queue-shot__row"><span>1</span><p><b>Tighten this empty state.</b><small>Target · screenshot · viewport · source lead</small></p><strong>Pending</strong></div>
-                <div className="queue-shot__ledger"><span>Watch</span><i /><span>Claim</span><i /><span>Resolve</span></div>
+                <div className="queue-shot__ledger"><span>Read</span><i /><span>Claim</span><i /><span>Resolve</span></div>
                 <p className="queue-shot__boundary"><LockKeyhole aria-hidden="true" /> 127.0.0.1 · retained locally</p>
               </div>
             </article>
 
             <article ref={(node) => { sceneRefs.current[2] = node; }} className="ink-scene ink-scene--agent">
               <div className="ink-scene__copy ink-scene__copy--light"><p>{chapters[2].bearing}</p><h3>{chapters[2].title}</h3><blockquote>{chapters[2].copy}</blockquote></div>
-              <div className="agent-shot" aria-label="A coding agent watching through the CLI, then reading and claiming the annotation">
+              <div className="agent-shot" aria-label="A coding agent reading through the CLI, then claiming the annotation">
                 <div className="agent-shot__radar" aria-hidden="true"><i /><i /><i /><b /></div>
                 <div className="agent-shot__terminal">
-                  <p><span>waypoint CLI</span><code>watch --json</code></p>
+                  <p><span>waypoint CLI</span><code>read --id wp_1842</code></p>
                   <pre><b>→</b> Annotation wp_1842{`\n`}  status  <em>Pending</em>{`\n`}  target  section.empty-state{`\n`}  brief   “Tighten this empty state.”</pre>
-                  <p><span>agent</span><code>claim_annotation</code></p>
+                  <p><span>agent</span><code>claim wp_1842 --owner …</code></p>
                   <div><Radio aria-hidden="true" /><b>Claimed</b><small>Implementation in progress</small></div>
                 </div>
               </div>
@@ -396,7 +396,7 @@ export function RouteJourney() {
           <p>Waypoint keeps Annotation history inspectable on your machine. Your agent gets a narrow working channel—not a public browser control surface.</p>
           <ul>
             <li><LockKeyhole aria-hidden="true" /><span><b>Loopback-first</b><small>Supported server boundary on IPv4 loopback</small></span></li>
-            <li><Radio aria-hidden="true" /><span><b>Non-destructive Watch</b><small>Delivery never silently Claims or removes feedback</small></span></li>
+            <li><Radio aria-hidden="true" /><span><b>Non-destructive reads</b><small>Reading never silently Claims or removes feedback</small></span></li>
             <li><Check aria-hidden="true" /><span><b>Retained evidence</b><small>Resolution remains inspectable until explicit Deletion</small></span></li>
           </ul>
           <div className="ink-payoff__actions">

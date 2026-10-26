@@ -10,8 +10,8 @@ import chalk from 'chalk';
 import { homedir } from 'os';
 import fs from 'fs';
 import { skillUpdateRetryCommand, updateInstallation } from '../lib/update.js';
-import { runWatch } from '../lib/cli-watch.js';
-import { runSnapshotWatch } from '../lib/cli-watch-snapshot.js';
+import { AGENT_HELP, registerAgentCommands } from '../lib/cli-agent.js';
+import { removeLegacyMcpRegistration } from '../lib/legacy-mcp.js';
 import { PRODUCT_IDENTITY } from '../lib/product-identity.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -66,8 +66,9 @@ async function checkPort() {
 // Commands
 program
   .name(PRODUCT_IDENTITY.cliCommand)
-  .description('Global MCP server for Logbook Waypoint browser extension')
-  .version(packageJson.version);
+  .description('Local server and agent CLI for the Logbook Waypoint browser extension')
+  .version(packageJson.version)
+  .addHelpText('after', AGENT_HELP);
 
 program
   .command('start')
@@ -103,7 +104,7 @@ program
       let attempts = 0;
       while (attempts < 10) {
         if (await checkPort()) {
-          console.log(chalk.green('✅ Logbook Waypoint server running on http://127.0.0.1:3846/sse'));
+          console.log(chalk.green(`✅ Logbook Waypoint server running on http://127.0.0.1:${PORT}`));
           console.log(chalk.gray(`   PID: ${child.pid}`));
           console.log(chalk.gray(`   Logs: ${LOG_FILE}`));
           break;
@@ -194,7 +195,7 @@ program
       console.log(chalk.green('✅ Server is running'));
       console.log(chalk.gray(`   PID: ${readFileSync(PID_FILE, 'utf8').trim()}`));
       console.log(chalk.gray(`   Port: ${PORT}`));
-      console.log(chalk.gray(`   URL: http://127.0.0.1:${PORT}/sse`));
+      console.log(chalk.gray(`   URL: http://127.0.0.1:${PORT}`));
     } else if (running && !portAvailable) {
       console.log(chalk.yellow('⚠️  Server process exists but is not responding'));
       console.log(chalk.gray('   Try running: waypoint restart'));
@@ -228,42 +229,18 @@ program
     }
   });
 
-program
-  .command('watch')
-  .description('Show current open Annotation IDs and keep watching for changes')
-  .argument('<url>', 'Loopback project, Page, or View State URL')
-  .option('--json', 'Write each current open-work snapshot as one JSON line')
-  .option('--events', 'Write detailed changes; without --cursor, replay full Watch history')
-  .option('--once', 'Return after the first snapshot (or one result with --events)')
-  .option('--cursor <cursor>', 'Resume a detailed --events stream from a processed cursor')
-  .option('--timeout <milliseconds>', 'Long-poll timeout from 0 to 30000', '25000')
-  .action(async (url, options) => {
-    if (options.cursor && !options.events) {
-      console.error(chalk.red('--cursor requires --events; current snapshots do not need a cursor'));
-      process.exitCode = 1;
-      return;
-    }
-    const timeoutMs = Number(options.timeout);
-    const controller = new AbortController();
-    const stop = () => controller.abort();
-    process.once('SIGINT', stop);
-    process.once('SIGTERM', stop);
+registerAgentCommands(program);
 
+program
+  .command('cleanup-mcp')
+  .description('Remove the retired logbook-waypoint MCP server from global agent configurations')
+  .action(async () => {
     try {
-      await (options.events ? runWatch : runSnapshotWatch)({
-        url,
-        cursor: options.cursor,
-        timeoutMs,
-        json: options.json === true,
-        once: options.once === true,
-        signal: controller.signal,
-      });
+      await removeLegacyMcpRegistration();
+      console.log(chalk.green('Removed the logbook-waypoint MCP registration where add-mcp found one.'));
     } catch (error) {
-      console.error(chalk.red(`Waypoint Watch failed: ${error.message}`));
+      console.error(chalk.red(error.message));
       process.exitCode = 1;
-    } finally {
-      process.removeListener('SIGINT', stop);
-      process.removeListener('SIGTERM', stop);
     }
   });
 
@@ -274,7 +251,6 @@ program
     try {
       const result = await updateInstallation(dirname(__dirname));
       console.log(chalk.green('Waypoint updated. Run waypoint restart to use the new server version.'));
-      console.log(chalk.gray('Reconnect your agent if it launches the MCP server directly.'));
       if (result?.skillUpdated === false) {
         console.log(chalk.yellow(`Waypoint skill update failed: ${result.skillError}`));
         console.log(chalk.gray(`Retry with: ${skillUpdateRetryCommand}`));

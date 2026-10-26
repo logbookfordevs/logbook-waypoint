@@ -20,35 +20,26 @@ test('start exposes foreground as the explicit alternative to background startup
   assert.doesNotMatch(stdout, /--daemon/);
 });
 
-test('watch exposes current snapshots and an explicit detailed event mode', async () => {
-  const { stdout } = await execFileAsync(
-    process.execPath,
-    [path.join(serverRoot, 'bin/cli.js'), 'watch', '--help'],
-  );
+test('help lists agent commands, omits Watch, and tells agents how to install the skill', async () => {
+  const { stdout } = await execFileAsync(process.execPath, [path.join(serverRoot, 'bin/cli.js'), '--help']);
 
-  assert.match(stdout, /--json\s+Write each current open-work snapshot as one JSON/);
-  assert.match(stdout, /--events\s+Write detailed changes; without --cursor, replay\s+full Watch/);
-  assert.match(stdout, /--once\s+Return after the first snapshot/);
-  assert.match(stdout, /--cursor <cursor>\s+Resume a detailed --events stream/);
-  assert.doesNotMatch(stdout, /--daemon/);
+  for (const command of ['read', 'inspect', 'claim', 'release', 'resolve', 'variants', 'cleanup-mcp']) {
+    assert.match(stdout, new RegExp(`^  ${command}\\b`, 'm'));
+  }
+  assert.doesNotMatch(stdout, /^  watch\b/m);
+  assert.match(stdout, /ask the user for\s+permission/);
+  assert.match(stdout, /npx --yes skills@latest add logbookfordevs\/logbook-waypoint/);
 });
 
-test('snapshot Watch rejects a cursor reserved for the detailed event stream', async () => {
+test('watch is no longer a command', async () => {
   await assert.rejects(
-    execFileAsync(process.execPath, [
-      path.join(serverRoot, 'bin/cli.js'),
-      'watch',
-      'http://localhost:3000/',
-      '--cursor',
-      'old-cursor',
-    ]),
+    execFileAsync(process.execPath, [path.join(serverRoot, 'bin/cli.js'), 'watch', 'http://localhost:3000/']),
     error => {
-      assert.match(error.stderr, /--cursor requires --events/);
+      assert.match(error.stderr, /unknown command 'watch'/);
       return true;
     },
   );
 });
-
 
 test('restart starts the default background server without treating node as a command', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-cli-restart-'));

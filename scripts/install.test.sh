@@ -171,6 +171,23 @@ PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_D
 test "$(wc -l < "$FAKE_NPX_LOG")" -gt "$npx_calls"
 test ! -e "$FAKE_AFK_LOG"
 
+# A fresh install has no MCP registration to remove; an upgrade from a pre-CLI-only release removes it once.
+if grep -q 'add-mcp' "$FAKE_NPX_LOG"; then printf 'unexpected MCP cleanup\n' >&2; exit 1; fi
+test -f "$INSTALL_ROOT/.waypoint-mcp-cleanup-done"
+UPGRADE_ROOT="$TEST_DIR/upgrade-install"
+mkdir -p "$UPGRADE_ROOT/releases/v0.1.3"
+PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$UPGRADE_ROOT" WAYPOINT_BIN_DIR="$TEST_DIR/upgrade-bin" \
+  WAYPOINT_SKIP_MCP_CLEANUP=1 bash "$ROOT_DIR/scripts/install.sh" --skip-skill >/dev/null
+if grep -q 'add-mcp' "$FAKE_NPX_LOG"; then printf 'unexpected MCP cleanup\n' >&2; exit 1; fi
+PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$UPGRADE_ROOT" WAYPOINT_BIN_DIR="$TEST_DIR/upgrade-bin" \
+  bash "$ROOT_DIR/scripts/install.sh" --skip-skill >/dev/null
+grep -Fxq -- "--yes add-mcp@latest remove logbook-waypoint --global --yes" "$FAKE_NPX_LOG"
+test -f "$UPGRADE_ROOT/.waypoint-mcp-cleanup-done"
+npx_calls="$(wc -l < "$FAKE_NPX_LOG")"
+PATH="$TEST_PATH" WAYPOINT_INSTALL_ROOT="$UPGRADE_ROOT" WAYPOINT_BIN_DIR="$TEST_DIR/upgrade-bin" \
+  bash "$ROOT_DIR/scripts/install.sh" --skip-skill >/dev/null
+test "$(wc -l < "$FAKE_NPX_LOG")" = "$npx_calls"
+
 printf '0%.0s' {1..64} > "$TEST_DIR/bad-checksum"
 if PATH="$FAKE_BIN:$PATH" \
   FAKE_CHECKSUM="$(cat "$TEST_DIR/bad-checksum")" \

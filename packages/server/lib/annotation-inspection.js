@@ -1,6 +1,6 @@
 import { annotationHasScreenshot } from './annotation-media.js';
 import { annotationTargets } from './annotation-summary.js';
-import { toReadAnnotation } from './watch-queue.js';
+import { toReadAnnotation } from './annotation-projection.js';
 
 function clone(value) {
   return value === undefined ? undefined : structuredClone(value);

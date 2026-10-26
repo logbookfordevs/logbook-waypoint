@@ -9,7 +9,7 @@ The feature uses [Impeccable](https://github.com/pbakaus/impeccable) for its des
 You need:
 
 1. The Waypoint extension and local server running.
-2. Waypoint connected to your coding agent through MCP.
+2. The `waypoint` CLI and skill installed for your coding agent.
 3. Impeccable installed for that agent using its current installation instructions.
 
 Waypoint does not install Impeccable or detect whether your agent can load it. If the executing agent cannot load the skill, it should not silently substitute generic design work: it releases the Annotation to Pending with a `workflow_unavailable` Work Notice explaining the missing setup.
@@ -68,6 +68,6 @@ Turn off **Show Design Actions** in the extension settings to remove the section
 
 ## What Waypoint does—and does not—own
 
-Impeccable supplies the design discipline. Waypoint remains responsible for the Annotation, Queue, lifecycle, Watch delivery, Work Notices, retained results, Variant selection, and cleanup state. The coding agent remains responsible for source changes, including temporary Variant Scaffold.
+Impeccable supplies the design discipline. Waypoint remains responsible for the Annotation, Queue, lifecycle, Work Notices, retained results, Variant selection, and cleanup state. The coding agent remains responsible for source changes, including temporary Variant Scaffold.
 
 Waypoint does not embed Impeccable Live, run its picker or preview protocol, install skills into agent environments, or guess whether an agent is capable. This keeps one authoritative work state and makes failures recoverable through the normal Queue.

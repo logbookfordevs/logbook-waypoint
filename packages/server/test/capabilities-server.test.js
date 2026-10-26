@@ -33,7 +33,6 @@ test('server accepts commentless visual Annotations and rejects empty records', 
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-commentless-'));
   const server = new LocalAnnotationsServer({
     annotationsFile: path.join(directory, 'annotations.json'),
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
 
@@ -74,7 +73,6 @@ test('server rejects URL-less and contentless Annotations at create and sync HTT
   const annotationsFile = path.join(directory, 'annotations.json');
   const server = new LocalAnnotationsServer({
     annotationsFile,
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
   const validAnnotation = {
@@ -132,7 +130,6 @@ test('server accepts non-comment Annotation content at create and sync HTTP seam
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-annotation-content-'));
   const server = new LocalAnnotationsServer({
     annotationsFile: path.join(directory, 'annotations.json'),
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
 
@@ -248,7 +245,6 @@ test('server file-backs screenshots and extension attachments while explicit ret
   const annotationsFile = path.join(directory, 'annotations.json');
   const server = new LocalAnnotationsServer({
     annotationsFile,
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
 
@@ -332,7 +328,6 @@ test('bulk deletion previews and confirms commentless visual Annotations', async
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-commentless-delete-'));
   const server = new LocalAnnotationsServer({
     annotationsFile: path.join(directory, 'annotations.json'),
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
 
@@ -367,7 +362,6 @@ test('HTTP media writes roll back staged files and preserve superseded files unt
   const attachmentRoot = path.join(directory, 'attachments');
   const server = new LocalAnnotationsServer({
     annotationsFile: path.join(directory, 'annotations.json'),
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot,
   });
   const secondId = 'waypoint_1750000000001_abcdefghi';
@@ -475,7 +469,6 @@ test('HTTP attachment references require matching metadata in their canonical An
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-attachment-reference-'));
   const server = new LocalAnnotationsServer({
     annotationsFile: path.join(directory, 'annotations.json'),
-    watchHistoryFile: path.join(directory, 'watch.json'),
     attachmentRoot: path.join(directory, 'attachments'),
   });
   const secondId = 'waypoint_1750000000001_abcdefghi';
@@ -524,7 +517,7 @@ test('HTTP attachment references require matching metadata in their canonical An
 test('ID and URL reads omit unsupported origins from a mixed Queue', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-local-discovery-'));
   const annotationsFile = path.join(directory, 'annotations.json');
-  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile: path.join(directory, 'watch.json') });
+  const server = new LocalAnnotationsServer({ annotationsFile });
   try {
     await writeFile(annotationsFile, JSON.stringify([
       { id, url: 'http://localhost:3002/search?q=*#results', comment: 'Local feedback', status: 'pending' },
@@ -546,7 +539,7 @@ test('ID and URL reads omit unsupported origins from a mixed Queue', async () =>
 test('an ID for a production-only Annotation returns no Survey body', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-production-discovery-'));
   const annotationsFile = path.join(directory, 'annotations.json');
-  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile: path.join(directory, 'watch.json') });
+  const server = new LocalAnnotationsServer({ annotationsFile });
   try {
     await writeFile(annotationsFile, JSON.stringify([
       { id, url: 'https://waypoint.logbookfordevs.com/docs/installation', comment: 'Production feedback', status: 'pending' },

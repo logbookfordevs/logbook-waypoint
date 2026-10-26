@@ -1,6 +1,6 @@
 # Use Logbook Waypoint
 
-Waypoint turns feedback on a running interface into a Queue that a developer or coding agent can act on. You can use it for one quick page without any server, or connect the local MCP server when work spans routes, sessions, or agent workflows.
+Waypoint turns feedback on a running interface into a Queue that a developer or coding agent can act on. You can use it for one quick page without any server, or connect a coding agent to the local server when work spans routes, sessions, or agent workflows.
 
 ## Choose the shortest workflow
 
@@ -9,10 +9,10 @@ Waypoint turns feedback on a running interface into a Queue that a developer or 
 | Personal notes on an interface | Switch to Journal; follow the [Journal guide](JOURNAL_MODE.md). |
 | A few changes on one page | Annotate, **Copy**, and paste into your coding chat. |
 | Feedback that needs to travel as a file | Select Queue items and export Markdown or JSON. |
-| Work across routes or repeated agent sessions | Run the local server and connect your agent through MCP. |
+| Work across routes or repeated agent sessions | Run the local server and connect your agent through the `waypoint` CLI. |
 | A guided visual redesign | Enable Design Actions after installing Impeccable for the agent. |
 
-Copy and export work without MCP. The server becomes useful when the agent should discover, claim, update, and resolve Queue work directly.
+Copy and export work without the server. The server becomes useful when the agent should discover, claim, update, and resolve Queue work directly.
 
 ## Install Waypoint and build the extension
 
@@ -117,7 +117,7 @@ The Queue reports whether local changes are:
 
 Work created while the server is unavailable remains local. **Sync now** stays available so you can restart the server and retry without reopening the Queue. During an outage, Waypoint counts only changes it can prove are locally unsynchronized.
 
-## Send work without MCP
+## Send work without the server
 
 For a short single-page pass, select **Copy all** in the toolbar or copy a Queue selection, then paste the result into your coding chat.
 
@@ -125,15 +125,11 @@ Use **Export annotations** in settings when you need a route- or project-scoped 
 
 If **Clear on copy** is enabled, using toolbar **Copy all** removes that route's Annotations after a successful copy. Leave it disabled when the Queue should remain as a checklist.
 
-## Connect a coding agent through MCP
+## Connect a coding agent through the CLI
 
-The recommended endpoint is:
+Agents use the `waypoint` CLI, guided by the `waypoint` skill. Install both with the [installer](../README.md#cli-installation), then start the server with `waypoint start`. Waypoint does not watch for new work, so annotate first and then ask your agent to read it.
 
-```text
-http://127.0.0.1:3846/mcp
-```
-
-Once connected, a simple request such as “Read my Waypoint annotations and implement them” lets the agent survey Pending work. The normal agent path is:
+A simple request such as “Read my Waypoint annotations and implement them” lets the agent survey Pending work. The normal agent path is:
 
 ```text
 Survey → optional Inspect → Claim → implement → Resolve or Release
@@ -141,7 +137,7 @@ Survey → optional Inspect → Claim → implement → Resolve or Release
 
 Survey returns compact context intended to be sufficient for normal implementation. Inspect is the optional equivalent of opening DevTools when layout, cascade, placement, source identity, or relationships between Targets remain ambiguous.
 
-See [Use Waypoint through MCP](MCP_GUIDE.md) for client examples, concrete calls, lifecycle behavior, and the MCP tool reference. Watch uses the CLI.
+If your agent has no skill support or no shell, use **Copy** and paste into the chat instead. See the [Agent CLI guide](CLI_GUIDE.md) for concrete commands, lifecycle behavior, and the command reference.
 
 ## Use Design Actions when you want guided design work
 

@@ -148,8 +148,8 @@ export function InkMapJourney({ onContinue, onExit, inline = false, entrance = f
     <div className="card-scroll" tabIndex={0}>
       <p className="card-label">Checkpoint 03 · Agent pick</p>
       <h2 id="t3">An agent claims the next bearing.</h2>
-      <p>Your coding agent reads the queue over MCP and claims a note, so no two agents work it twice. It gets the full context: the element, the screenshot and what you asked for.</p>
-      <pre className="code" aria-label="An agent claims a note"><code><span className="dim">&gt;</span>{` claim_annotation
+      <p>Your coding agent reads the queue with the Waypoint CLI and claims a note, so no two agents work it twice. It gets the full context: the element, the screenshot and what you asked for.</p>
+      <pre className="code" aria-label="An agent claims a note"><code><span className="dim">&gt;</span>{` waypoint claim wp_1842 --owner codex
   note:   "Button label wraps"
   status: open → claimed`}</code></pre>
     </div>
