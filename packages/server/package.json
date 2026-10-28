@@ -1,6 +1,6 @@
 {
   "name": "@logbookfordevs/waypoint",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Local server and agent CLI for the Logbook Waypoint browser extension",
   "main": "lib/server.js",
   "type": "module",

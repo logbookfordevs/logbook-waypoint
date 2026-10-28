@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.3.0] - 2026-10-28
+
 ### Removed
 - Waypoint no longer ships an MCP server or Watch. Agents now use the `waypoint` CLI (`waypoint read`, `claim`, `resolve`, and the rest), guided by the bundled `waypoint` skill, so no tool definitions load into agent context when nobody is annotating. `waypoint watch`, `--events`, and `--cursor` are gone: ask your agent to read Waypoint after you annotate, and it detects a cancelled Variant Set by re-reading. Agents without skill support or a shell can use the extension's copy and paste flow.
 

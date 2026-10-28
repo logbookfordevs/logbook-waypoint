@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.3.0] - 2026-10-28
+
 ### Removed
 - The MCP server and its tools are retired. Agents now use the `waypoint` CLI, guided by the bundled `waypoint` skill, so no tool definitions load into agent context when nobody is annotating.
 - `waypoint watch`, `--events`, `--cursor`, the Watch HTTP route, and the Watch journal are removed. Ask the agent to read Waypoint (`waypoint read <url>`); it detects Variant cancellation by re-reading an Annotation that returns to Pending without `variant_request`.
