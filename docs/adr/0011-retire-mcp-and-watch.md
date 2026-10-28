@@ -8,6 +8,6 @@ Without Watch, an agent learns about new work only when the user asks it to read
 
 Agents without skill support, or without a shell, use the extension's copy and paste flow. `waypoint --help` tells agents to ask the user before installing the skill when it is missing.
 
-Migration is handled by the installer, which removes the old `logbook-waypoint` MCP registration from global agent configurations on upgrade (`WAYPOINT_SKIP_MCP_CLEANUP=1` opts out), and by `waypoint cleanup-mcp` for npm installs. The legacy MCP code stays in the server for one release behind `WAYPOINT_ENABLE_MCP=1` as a rollback path only, and is then removed.
+Migration is handled by the installer, which removes the old `logbook-waypoint` MCP registration from global agent configurations on upgrade (`WAYPOINT_SKIP_MCP_CLEANUP=1` opts out), and by `waypoint cleanup-mcp` for npm installs. The MCP server code and its SDK dependency are removed in the same release, because the SDK carried most of the package's dependency advisories; git history is the rollback path.
 
 This supersedes [ADR 0009](0009-foreground-watch-consumer.md) and [ADR 0010](0010-watch-current-open-work.md), and replaces the MCP-description trade-off in [ADR 0008](0008-install-a-waypoint-workflow-skill.md).

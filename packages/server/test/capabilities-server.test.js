@@ -200,7 +200,6 @@ test('server shares strict loopback project scope across read, context, deletion
   assert.deepEqual(read.annotations.map(annotation => annotation.id), [id]);
   assert.equal(JSON.parse(exported.content).routes[0].route, '/app?tab=open#feedback');
   await assert.rejects(server.readAnnotations({ url: 'https://example.com/*' }), /loopback/i);
-  await assert.rejects(server.getProjectContext({ url: 'https://example.com/app' }), /loopback/i);
   await assert.rejects(server.deleteProjectAnnotations({ url_pattern: 'https://example.com/*' }), /loopback/i);
 });
 

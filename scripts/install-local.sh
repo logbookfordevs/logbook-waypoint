@@ -89,7 +89,7 @@ set -euo pipefail
 WAYPOINT_ENTRYPOINT=$escaped_entry_path
 
 if ! command -v node >/dev/null 2>&1; then
-  printf 'waypoint: node >=22.12.0 is required to run Logbook Waypoint.\n' >&2
+  printf 'waypoint: node 22.23.4+, 24.22.1+, or 26.12.1+ is required to run Logbook Waypoint.\n' >&2
   exit 1
 fi
 

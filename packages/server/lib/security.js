@@ -1,9 +1,3 @@
-export const MCP_ALLOWED_ORIGINS = [
-  'http://127.0.0.1:3846',
-  'http://localhost:3846',
-  'http://[::1]:3846'
-];
-
 export function isAllowedHostHeader(value) {
   return typeof value === 'string'
     && /^(localhost|127\.0\.0\.1|\[::1\])(?::[0-9]{1,5})?$/.test(value);
@@ -45,13 +39,4 @@ export function localRequestBoundary(req, res, next) {
   }
 
   next();
-}
-
-export function mcpTransportSecurity(req) {
-  const origin = req.get('origin');
-  return {
-    allowedHosts: [req.get('host')],
-    allowedOrigins: origin ? [origin] : MCP_ALLOWED_ORIGINS,
-    enableDnsRebindingProtection: true
-  };
 }

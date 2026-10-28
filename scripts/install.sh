@@ -94,13 +94,13 @@ done
 
 require_node() {
   if ! command -v node >/dev/null 2>&1; then
-    fail "node >=22.12.0 is required to run Logbook Waypoint"
+    fail "node 22.23.4+, 24.22.1+, or 26.12.1+ is required to run Logbook Waypoint"
   fi
 
   local supported
-  supported="$(node -p '((v) => v[0] > 22 || (v[0] === 22 && v[1] >= 12))(process.versions.node.split(".").map(Number))' 2>/dev/null || true)"
+  supported="$(node -p '((v) => { const min = { 22: [23, 4], 24: [22, 1], 26: [12, 1] }; if (v[0] > 26) return true; const m = min[v[0]]; return Boolean(m) && (v[1] > m[0] || (v[1] === m[0] && v[2] >= m[1])); })(process.versions.node.split(".").map(Number))' 2>/dev/null || true)"
   if [[ "$supported" != "true" ]]; then
-    fail "node >=22.12.0 is required; found $(node --version 2>/dev/null || printf 'unknown')"
+    fail "node 22.23.4+, 24.22.1+, or 26.12.1+ is required (patched for the October 2026 Node.js security release); found $(node --version 2>/dev/null || printf 'unknown')"
   fi
 }
 
@@ -136,7 +136,7 @@ set -euo pipefail
 WAYPOINT_ENTRYPOINT=$escaped_entry_path
 
 if ! command -v node >/dev/null 2>&1; then
-  printf 'waypoint: node >=22.12.0 is required to run Logbook Waypoint.\n' >&2
+  printf 'waypoint: node 22.23.4+, 24.22.1+, or 26.12.1+ is required to run Logbook Waypoint.\n' >&2
   exit 1
 fi
 

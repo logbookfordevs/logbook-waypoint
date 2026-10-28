@@ -102,19 +102,19 @@ tar -czf "$FAKE_ARCHIVE" -C "$PAYLOAD_DIR" .
 FAKE_CHECKSUM="$(shasum -a 256 "$FAKE_ARCHIVE" | awk '{print $1}')"
 export FAKE_ARCHIVE FAKE_CHECKSUM FAKE_CURL_LOG FAKE_NPX_LOG FAKE_AFK_LOG
 
-for unsupported_version in 18.20.8 20.19.0 22.11.0; do
+for unsupported_version in 18.20.8 20.19.0 22.23.3 23.11.0 24.14.0 25.9.0 26.12.0; do
   if PATH="$TEST_PATH" FAKE_NODE_VERSION="$unsupported_version" \
     WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" WAYPOINT_BIN_DIR="$BIN_DIR" \
     bash "$ROOT_DIR/scripts/install.sh" --skip-skill >"$TEST_DIR/node-error" 2>&1; then
     printf 'installer accepted unsupported Node %s\n' "$unsupported_version" >&2
     exit 1
   fi
-  grep -q 'node >=22.12.0 is required' "$TEST_DIR/node-error"
+  grep -q 'node 22.23.4+, 24.22.1+, or 26.12.1+ is required' "$TEST_DIR/node-error"
   test ! -e "$FAKE_CURL_LOG"
 done
 
 install_output="$(
-  PATH="$TEST_PATH" FAKE_NODE_VERSION=22.12.0 \
+  PATH="$TEST_PATH" FAKE_NODE_VERSION=22.23.4 \
   WAYPOINT_INSTALL_ROOT="$INSTALL_ROOT" \
   WAYPOINT_BIN_DIR="$BIN_DIR" \
   WAYPOINT_INSTALL_SKILL=auto \
@@ -122,6 +122,14 @@ install_output="$(
 )"
 
 grep -q 'releases/latest' "$FAKE_CURL_LOG"
+
+# Later runs must not depend on the Node version of the machine running this test.
+export FAKE_NODE_VERSION=24.22.1
+for supported_version in 22.23.4 24.22.1 26.12.1 27.0.0; do
+  FAKE_NODE_VERSION="$supported_version" PATH="$TEST_PATH" \
+    WAYPOINT_INSTALL_ROOT="$TEST_DIR/supported-$supported_version" WAYPOINT_BIN_DIR="$TEST_DIR/supported-bin" \
+    bash "$ROOT_DIR/scripts/install.sh" --skip-skill >/dev/null
+done
 [[ "$install_output" = *"Waypoint v0.1.4 is ready."* ]]
 [[ "$install_output" = *"Get future updates      waypoint update"* ]]
 grep -q 'releases/download/v0.1.4/waypoint-cli.tar.gz' "$FAKE_CURL_LOG"

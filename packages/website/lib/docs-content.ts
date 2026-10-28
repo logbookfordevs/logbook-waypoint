@@ -53,7 +53,7 @@ export const documentationPages: DocumentationPage[] = [
       },
       {
         heading: 'Alternative: install through npm',
-        prerequisite: 'Node.js 22.12+ required. GitHub installs to ~/.local/bin and flags missing PATH setup.',
+        prerequisite: 'Node.js 22.23.4+, 24.22.1+, or 26.12.1+ required. GitHub installs to ~/.local/bin and flags missing PATH setup.',
         paragraphs: [
           'Install the published CLI package globally, then add the Waypoint skill separately with the Skills CLI. Use npx @logbookfordevs/waypoint --help for a temporary first look. Start runs the local server in the background by default.',
         ],

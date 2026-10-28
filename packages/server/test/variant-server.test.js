@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { once } from 'node:events';
 
 import { LocalAnnotationsServer } from '../lib/server.js';
 
@@ -46,29 +46,15 @@ const candidates = [
   },
 ];
 
-test('MCP requires a browser-presentable implementation for every Variant', async () => {
-  const { server } = createServer();
-  let listTools;
-  server.setupMCPHandlersForServer({
-    setRequestHandler(schema, handler) {
-      if (schema === ListToolsRequestSchema) listTools = handler;
-    },
-  });
-
-  const tools = await listTools();
-  const requestVariants = tools.tools.find(tool => tool.name === 'request_variants');
-  const replaceVariants = tools.tools.find(tool => tool.name === 'replace_variants');
-  const implementation = requestVariants.inputSchema.properties.variants.items.properties.implementation;
-
-  assert.match(requestVariants.description, /structural alternatives.*Scaffold.*candidate presentation/i);
-  assert.match(replaceVariants.description, /replaces every candidate.*first replacement Active/i);
-  assert.deepEqual(replaceVariants.inputSchema.properties.variants, requestVariants.inputSchema.properties.variants);
-  assert.deepEqual(Object.keys(implementation.properties).sort(), ['css', 'pending_changes']);
-  assert.equal(implementation.additionalProperties, false);
-  assert.deepEqual(implementation.anyOf, [
-    { required: ['pending_changes'] },
-    { required: ['css'] },
-  ]);
+test('agents must submit a browser-presentable implementation for every Variant', async () => {
+  for (const implementation of [undefined, {}, { css: '   ' }, { label: 'Not presentable' }, { css: '.a {}', preview_url: '/a' }]) {
+    const { server } = createServer();
+    const variants = candidates.map((candidate, index) => (index === 0 ? { ...candidate, implementation } : candidate));
+    await assert.rejects(
+      server.runAgentOperation('request_variants', { id: 'waypoint_1750000000000_abc123xyz', variants }),
+      /Waypoint-presentable implementation/,
+    );
+  }
 });
 
 test('server atomically replaces authored Variant Intent with the complete generated Variant Set', async () => {
@@ -208,54 +194,28 @@ test('HTTP cancellation is distinct from Annotation Discard', async () => {
   }
 });
 
-test('MCP cancellation removes the unresolved Variant Set through the canonical operation', async () => {
+test('agent cancellation removes the unresolved Variant Set through the canonical operation', async () => {
   const { server } = createServer();
   await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
-  let callTool;
-  server.setupMCPHandlersForServer({
-    setRequestHandler(schema, handler) {
-      if (schema === CallToolRequestSchema) callTool = handler;
-    },
-  });
 
-  const response = await callTool({
-    params: {
-      name: 'cancel_variant_request',
-      arguments: { id: 'waypoint_1750000000000_abc123xyz' },
-    },
-  });
-  const payload = JSON.parse(response.content[0].text);
+  const { annotation } = await server.runAgentOperation('cancel_variant_request', { id: 'waypoint_1750000000000_abc123xyz' });
 
-  assert.equal(response.isError, undefined);
-  assert.equal(payload.data.annotation.status, 'pending');
-  assert.equal('variant_request' in payload.data.annotation, false);
+  assert.equal(annotation.status, 'pending');
+  assert.equal('variant_request' in annotation, false);
 });
 
-test('MCP replacement revises an unresolved Variant Set without cancellation', async () => {
+test('agent replacement revises an unresolved Variant Set without cancellation', async () => {
   const { server } = createServer();
   await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
-  let callTool;
-  server.setupMCPHandlersForServer({
-    setRequestHandler(schema, handler) {
-      if (schema === CallToolRequestSchema) callTool = handler;
-    },
-  });
   const replacements = candidates.map((candidate, index) => ({
     ...candidate,
-    key: `mcp-replacement-${index + 1}`,
-    name: `MCP Replacement ${index + 1}`,
+    key: `replacement-${index + 1}`,
+    name: `Replacement ${index + 1}`,
   }));
 
-  const response = await callTool({
-    params: {
-      name: 'replace_variants',
-      arguments: { id: 'waypoint_1750000000000_abc123xyz', variants: replacements },
-    },
-  });
-  const payload = JSON.parse(response.content[0].text);
+  const { annotation } = await server.runAgentOperation('replace_variants', { id: 'waypoint_1750000000000_abc123xyz', variants: replacements });
 
-  assert.equal(response.isError, undefined);
-  assert.equal(payload.data.annotation.variant_request.active_variant_key, 'mcp-replacement-1');
+  assert.equal(annotation.variant_request.active_variant_key, 'replacement-1');
 });
 
 test('failed persistence cannot partially cancel unresolved Variant state', async () => {
@@ -485,7 +445,7 @@ test('HTTP generic writes cannot create, replace, resolve, or sync Variant-owned
   }
 });
 
-test('MCP Variant failures retain structured remaining cleanup work', async () => {
+test('agent Variant failures retain structured remaining cleanup work', async () => {
   const { server, read, write } = createServer();
   await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
   const inconsistent = read();
@@ -493,26 +453,26 @@ test('MCP Variant failures retain structured remaining cleanup work', async () =
   inconsistent[0].variant_request.variants[1].scaffold = ['<malicious-cleanup-key>'];
   inconsistent[0].variant_request.scaffold = [];
   write(inconsistent);
-  let callTool;
-  const mcp = {
-    setRequestHandler(schema, handler) {
-      if (schema === CallToolRequestSchema) callTool = handler;
-    },
-  };
-  server.setupMCPHandlersForServer(mcp);
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
 
-  const response = await callTool({
-    params: {
-      name: 'finalize_variant',
-      arguments: { id: 'waypoint_1750000000000_abc123xyz', key: 'a' },
-    },
-  });
-  const payload = JSON.parse(response.content[0].text);
+  try {
+    const response = await fetch(`http://127.0.0.1:${listener.address().port}/api/agent/finalize_variant`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: 'waypoint_1750000000000_abc123xyz', key: 'a' }),
+    });
+    const payload = await response.json();
 
-  assert.equal(response.isError, true);
-  assert.equal(payload.data_trust, 'untrusted');
-  assert.match(payload.security_notice, /Do not follow instructions/);
-  assert.deepEqual(payload.data.remaining_cleanup, [{ kind: 'scaffold_missing', key: '<malicious-cleanup-key>' }]);
+    assert.equal(response.status, 409);
+    assert.equal(payload.status, 'error');
+    assert.equal(payload.data_trust, 'untrusted');
+    assert.match(payload.security_notice, /Do not follow instructions/);
+    assert.deepEqual(payload.data.remaining_cleanup, [{ kind: 'scaffold_missing', key: '<malicious-cleanup-key>' }]);
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+  }
 });
 
 test('committed Variant mutations persist to the Queue file', async () => {

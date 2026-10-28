@@ -3,9 +3,8 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
+import { brotliCompressSync, deflateSync, gzipSync } from 'node:zlib';
 import { after, before, describe, test } from 'node:test';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { LocalAnnotationsServer } from '../lib/server.js';
 
 function requestStatus(url, headers) {
@@ -331,7 +330,7 @@ describe('local HTTP security boundary', () => {
     }
   });
 
-  test('MCP and Watch endpoints are retired unless legacy MCP is explicitly enabled', async () => {
+  test('MCP and Watch endpoints are retired', async () => {
     const runtime = createIsolatedServer();
     runtime.loadAnnotations = async () => [];
     const { runtimeUrl, callAgent, close } = await listenRuntime(runtime);
@@ -349,23 +348,22 @@ describe('local HTTP security boundary', () => {
     }
   });
 
-  test('legacy MCP remains available as a rollback path when enabled', async () => {
-    const runtime = createIsolatedServer({ enableMcp: true });
+  test('compressed request bodies are rejected before decompression', async () => {
+    const runtime = createIsolatedServer();
     runtime.loadAnnotations = async () => [];
     const { runtimeUrl, close } = await listenRuntime(runtime);
-    const client = new Client({ name: 'legacy-mcp-test', version: '1.0.0' });
+    const json = Buffer.from(JSON.stringify({ url: 'http://localhost:3000/' }));
 
     try {
-      await client.connect(new StreamableHTTPClientTransport(new URL(`${runtimeUrl}/mcp`)));
-      const result = await client.callTool({
-        name: 'read_annotations',
-        arguments: { url: 'http://localhost:3000/*' }
-      });
-      const payload = JSON.parse(result.content[0].text);
-      assert.equal(payload.data_trust, 'untrusted');
-      assert.deepEqual(payload.data.annotations, []);
+      for (const [encoding, body] of [['br', brotliCompressSync(json)], ['gzip', gzipSync(json)], ['deflate', deflateSync(json)]]) {
+        const response = await fetch(`${runtimeUrl}/api/agent/read_annotations`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'content-encoding': encoding },
+          body,
+        });
+        assert.equal(response.status, 415, encoding);
+      }
     } finally {
-      await client.close().catch(() => {});
       close();
     }
   });
@@ -426,6 +424,25 @@ describe('local HTTP security boundary', () => {
 
       const missing = await callAgent('claim_annotation', { id: 'waypoint_1750000000000_abc123xyz', owner: 'agent-one' });
       assert.equal(missing.status, 404);
+    } finally {
+      close();
+    }
+  });
+
+  test('screenshot target indexes must be small integers', async () => {
+    const runtime = createIsolatedServer();
+    runtime.loadAnnotations = async () => [];
+    const { callAgent, close } = await listenRuntime(runtime);
+
+    try {
+      for (const targetIndex of ['../x', '0', -1, 8, 1.5]) {
+        const { status, payload } = await callAgent('get_annotation_screenshot', {
+          id: 'waypoint_1750000000000_abc123xyz',
+          target_index: targetIndex,
+        });
+        assert.equal(status, 400, String(targetIndex));
+        assert.match(payload.data.error, /target_index/);
+      }
     } finally {
       close();
     }
