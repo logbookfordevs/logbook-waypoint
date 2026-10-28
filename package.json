@@ -1,6 +1,6 @@
 {
   "name": "logbook-waypoint",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "Local-first visual feedback for developers and coding agents",
   "author": "Leonardo Reis Dias",
@@ -15,7 +15,7 @@
   },
   "packageManager": "pnpm@11.9.0",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.23.4 <23 || >=24.22.1 <25 || >=26.12.1"
   },
   "scripts": {
     "site:dev": "pnpm --filter @logbookfordevs/waypoint-website dev",

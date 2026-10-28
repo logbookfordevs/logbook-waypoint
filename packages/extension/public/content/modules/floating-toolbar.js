@@ -1,6 +1,6 @@
 // Floating navigation toolbar — always visible, bottom-right by default
 // Draggable, collapsible, position persisted to storage
-// Settings dropdown with theme toggle, MCP status, clear-on-copy
+// Settings dropdown with theme toggle, server status, clear-on-copy
 
 var WaypointToolbar = (() => {
   let toolbarEl = null;
@@ -313,7 +313,7 @@ var WaypointToolbar = (() => {
               ${ICONS.server}
               <div>
                 <span>Agent bridge</span>
-                <div class="waypoint-setting-description">Local MCP server</div>
+                <div class="waypoint-setting-description">Local Waypoint server</div>
               </div>
             </div>
             <div class="waypoint-settings-status">
@@ -794,9 +794,9 @@ var WaypointToolbar = (() => {
         <span>Annotating multiple Targets</span>
         <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
-      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="agent-mcp" type="button">
+      <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="agent-cli" type="button">
         ${ICONS.robot}
-        <span>Working with an agent through MCP</span>
+        <span>Working with an agent through the CLI</span>
         <span style="margin-left:auto;color:var(--waypoint-text-secondary);">${ICONS.chevronRight}</span>
       </button>
       <button class="waypoint-settings-link waypoint-workflow-btn" data-workflow="collaborate" type="button">
@@ -840,7 +840,6 @@ var WaypointToolbar = (() => {
       </button>
     `;
 
-    const agentSetup = globalThis.WaypointAgentSetup;
     body.innerHTML = `
       <div class="waypoint-guide">
         <div class="waypoint-guide-section">
@@ -854,8 +853,8 @@ var WaypointToolbar = (() => {
         </div>
 
         <div class="waypoint-guide-section">
-          <div class="waypoint-guide-label">3. Install MCP server <span style="font-weight:400;color:var(--waypoint-text-secondary);">(optional)</span></div>
-          <p class="waypoint-guide-text">Let your coding agent fetch and resolve annotations automatically.</p>
+          <div class="waypoint-guide-label">3. Connect an agent <span style="font-weight:400;color:var(--waypoint-text-secondary);">(optional)</span></div>
+          <p class="waypoint-guide-text">Install the Waypoint CLI and agent skill so your coding agent can read and resolve annotations.</p>
           <div class="waypoint-guide-cmd" data-cmd="curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash">
             <code>curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
@@ -864,60 +863,10 @@ var WaypointToolbar = (() => {
             <code>waypoint start</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
           </div>
-          <p class="waypoint-guide-text" style="margin-top:8px;">Recommended: let Add MCP detect and configure supported agents:</p>
-          <div class="waypoint-guide-cmd" data-cmd="npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global">
-            <code>npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global</code>
+          <p class="waypoint-guide-text" style="margin-top:8px;">Installed the CLI another way? Add just the skill:</p>
+          <div class="waypoint-guide-cmd" data-cmd="npx --yes skills@latest add logbookfordevs/logbook-waypoint --global --agent universal --skill waypoint --yes">
+            <code>npx --yes skills@latest add logbookfordevs/logbook-waypoint --global --agent universal --skill waypoint --yes</code>
             <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
-          </div>
-          <p class="waypoint-guide-text" style="margin-top:8px;">Or configure your agent manually:</p>
-          <div class="waypoint-guide-tabs">
-            <button class="waypoint-guide-tab active" data-tab="claude">Claude Code</button>
-            <button class="waypoint-guide-tab" data-tab="cursor">Cursor</button>
-            <button class="waypoint-guide-tab" data-tab="windsurf">Windsurf</button>
-            <button class="waypoint-guide-tab" data-tab="codex">Codex</button>
-            <button class="waypoint-guide-tab" data-tab="pi">Pi</button>
-            <button class="waypoint-guide-tab" data-tab="opencode">OpenCode</button>
-          </div>
-          <div class="waypoint-guide-panel active" data-panel="claude">
-            <div class="waypoint-guide-cmd" data-cmd="claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp">
-              <code>claude mcp add --transport http logbook-waypoint http://127.0.0.1:3846/mcp</code>
-              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
-            </div>
-          </div>
-          <div class="waypoint-guide-panel" data-panel="cursor">
-            <p class="waypoint-guide-text">Add to <strong>.cursor/mcp.json</strong>:</p>
-            <div class="waypoint-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}'>
-              <code>{"mcpServers":{"logbook-waypoint":{"url":"http://127.0.0.1:3846/mcp"}}}</code>
-              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
-            </div>
-          </div>
-          <div class="waypoint-guide-panel" data-panel="windsurf">
-            <p class="waypoint-guide-text">Add to Windsurf MCP settings:</p>
-            <div class="waypoint-guide-cmd" data-cmd='{"mcpServers":{"logbook-waypoint":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}'>
-              <code>{"mcpServers":{"logbook-waypoint":{"serverUrl":"http://127.0.0.1:3846/mcp"}}}</code>
-              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
-            </div>
-          </div>
-          <div class="waypoint-guide-panel" data-panel="codex">
-            <p class="waypoint-guide-text">${agentSetup.codex.introduction} <strong>${agentSetup.codex.path}</strong>:</p>
-            <div class="waypoint-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.codex.command)}">
-              <code>${agentSetup.codex.display}</code>
-              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
-            </div>
-          </div>
-          <div class="waypoint-guide-panel" data-panel="pi">
-            <p class="waypoint-guide-text">${agentSetup.pi.introduction} <strong>${agentSetup.pi.path}</strong>:</p>
-            <div class="waypoint-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.pi.command)}">
-              <code>${agentSetup.pi.display}</code>
-              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
-            </div>
-          </div>
-          <div class="waypoint-guide-panel" data-panel="opencode">
-            <p class="waypoint-guide-text">${agentSetup.opencode.introduction} <strong>${agentSetup.opencode.path}</strong>:</p>
-            <div class="waypoint-guide-cmd" data-cmd="${encodeURIComponent(agentSetup.opencode.command)}">
-              <code>${agentSetup.opencode.display}</code>
-              <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
-            </div>
           </div>
         </div>
       </div>
@@ -925,16 +874,6 @@ var WaypointToolbar = (() => {
 
     // Back → return to Documentation
     header.querySelector('.waypoint-guide-back-btn').addEventListener('click', () => showDocumentation());
-
-    // Tab switching
-    body.querySelectorAll('.waypoint-guide-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        body.querySelectorAll('.waypoint-guide-tab').forEach(t => t.classList.remove('active'));
-        body.querySelectorAll('.waypoint-guide-panel').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        body.querySelector(`[data-panel="${tab.dataset.tab}"]`).classList.add('active');
-      });
-    });
 
     // Copy buttons
     body.querySelectorAll('.waypoint-guide-copy').forEach(btn => {
@@ -961,7 +900,7 @@ var WaypointToolbar = (() => {
         content: `
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Best for quick edits</div>
-            <p class="waypoint-guide-text">For a few annotations—on one page or across a small set—<strong>copy &amp; paste</strong> is the fastest option. No server or MCP setup is required.</p>
+            <p class="waypoint-guide-text">For a few annotations—on one page or across a small set—<strong>copy &amp; paste</strong> is the fastest option. No server or CLI setup is required.</p>
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Workflow</div>
@@ -973,7 +912,7 @@ var WaypointToolbar = (() => {
             <div class="waypoint-guide-label">Tips</div>
             <p class="waypoint-guide-text">Enable <strong>Clear on copy</strong> in settings to auto-delete annotations after copying. Keeps things clean between iterations.</p>
             <p class="waypoint-guide-text">Each annotation includes the selector, your comment, element context, and any pending changes. The agent gets everything it needs to locate and edit the right code.</p>
-            <p class="waypoint-guide-text">Choose the MCP workflow when the agent should discover new Queue work without another copy and paste.</p>
+            <p class="waypoint-guide-text">Choose the CLI workflow when the agent should discover new Queue work without another copy and paste.</p>
           </div>
         `
       },
@@ -998,26 +937,28 @@ var WaypointToolbar = (() => {
           </div>
         `
       },
-      'agent-mcp': {
-        title: 'Working with an agent through MCP',
+      'agent-cli': {
+        title: 'Working with an agent through the CLI',
         content: `
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Best for ongoing agent work</div>
-            <p class="waypoint-guide-text">Use MCP when your agent should discover, implement, and resolve Queue work directly—across routes, repeated sessions, or an active feedback loop.</p>
+            <p class="waypoint-guide-text">Use the Waypoint CLI and skill when your agent should discover, implement, and resolve Queue work directly—across routes, repeated sessions, or an active feedback loop.</p>
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Setup</div>
+            <p class="waypoint-guide-text">Installs the CLI and the Waypoint skill globally:</p>
             <div class="waypoint-guide-cmd" data-cmd="curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash">
               <code>curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
+            <p class="waypoint-guide-text" style="margin-top:8px;">Then run the local server:</p>
             <div class="waypoint-guide-cmd" data-cmd="waypoint start">
               <code>waypoint start</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
-            <p class="waypoint-guide-text" style="margin-top:8px;">Then let Add MCP detect and configure supported agents:</p>
-            <div class="waypoint-guide-cmd" data-cmd="npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global">
-              <code>npx add-mcp http://127.0.0.1:3846/mcp --name logbook-waypoint --global</code>
+            <p class="waypoint-guide-text" style="margin-top:8px;">Installed the CLI another way? Add just the skill:</p>
+            <div class="waypoint-guide-cmd" data-cmd="npx --yes skills@latest add logbookfordevs/logbook-waypoint --global --agent universal --skill waypoint --yes">
+              <code>npx --yes skills@latest add logbookfordevs/logbook-waypoint --global --agent universal --skill waypoint --yes</code>
               <button class="waypoint-guide-copy" type="button">${ICONS.clipboard}</button>
             </div>
           </div>
@@ -1027,11 +968,11 @@ var WaypointToolbar = (() => {
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Read now</div>
-            <p class="waypoint-guide-text">Ask your agent: <em>"Read my pending Waypoint annotations and implement them."</em> It surveys the Queue with <strong>read_annotations</strong>, claims work when implementation begins, and resolves completed Annotations as retained history.</p>
+            <p class="waypoint-guide-text">Ask your agent: <em>"Read my pending Waypoint annotations and implement them."</em> It reads the Queue with the <strong>waypoint</strong> CLI, claims work when implementation begins, and resolves completed Annotations as retained history.</p>
           </div>
           <div class="waypoint-guide-section">
-            <div class="waypoint-guide-label">Watch continuously</div>
-            <p class="waypoint-guide-text">During an active review, ask your agent: <em>"Watch Waypoint for new annotations and handle them."</em> The <strong>waypoint watch</strong> CLI shows current open work; the agent reads a selected ID, claims it when implementation begins, and resolves completed work.</p>
+            <div class="waypoint-guide-label">Previously set up MCP?</div>
+            <p class="waypoint-guide-text">Run <strong>waypoint cleanup-mcp</strong> to remove the old registration.</p>
           </div>
         `
       },
@@ -1047,7 +988,7 @@ var WaypointToolbar = (() => {
             <p class="waypoint-guide-text">1. A reviewer annotates the live site (staging, production, or localhost)</p>
             <p class="waypoint-guide-text">2. They click <strong>Export</strong> and share the .json file (Slack, email, etc.)</p>
             <p class="waypoint-guide-text">3. A developer clicks <strong>Import</strong> on their localhost. Annotations, badges, and style previews appear instantly.</p>
-            <p class="waypoint-guide-text">4. The developer copies or uses MCP to send the annotations to their coding agent</p>
+            <p class="waypoint-guide-text">4. The developer copies the annotations, or asks their coding agent to read them through the CLI</p>
           </div>
           <div class="waypoint-guide-section">
             <div class="waypoint-guide-label">Cross-origin remap</div>
@@ -1072,7 +1013,7 @@ var WaypointToolbar = (() => {
     // Back → return to Documentation
     header.querySelector('.waypoint-guide-back-btn').addEventListener('click', () => showDocumentation());
 
-    // Copy buttons (for MCP workflow)
+    // Copy buttons (for CLI workflow)
     body.querySelectorAll('.waypoint-guide-copy').forEach(btn => {
       btn.addEventListener('click', async () => {
         const cmd = btn.closest('.waypoint-guide-cmd').dataset.cmd;

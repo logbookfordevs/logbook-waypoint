@@ -11,7 +11,7 @@ Keep changes focused. A pull request should solve one coherent problem and avoid
 ## Repository map
 
 - `packages/extension/` contains the WXT browser extension and its tests.
-- `packages/server/` contains the local MCP server, HTTP API, persistence, and tests.
+- `packages/server/` contains the local server, `waypoint` agent CLI, HTTP API, persistence, and tests.
 - `packages/website/` contains the Next.js marketing and documentation site.
 - `docs/contracts/` records behavior that extension and server consumers may rely on.
 - `docs/adr/` records architectural decisions and their trade-offs.
@@ -22,7 +22,7 @@ Start with the [documentation map](docs/README.md) when a change touches an unfa
 
 ## Local setup
 
-Waypoint uses pnpm and Node.js 22 or newer.
+Waypoint uses pnpm and Node.js 22.23.4+, 24.22.1+, or 26.12.1+.
 
 ```bash
 pnpm install
@@ -39,7 +39,7 @@ The server test suite opens loopback ports. If your environment restricts local 
 pnpm --filter @logbookfordevs/waypoint start
 ```
 
-The MCP endpoint is `http://127.0.0.1:3846/mcp`.
+The server listens at `http://127.0.0.1:3846`. Exercise agent commands with `node packages/server/bin/cli.js <command>`.
 
 ### Website Development
 
@@ -64,8 +64,8 @@ Build output under `.output/` is generated and should not be committed.
 
 - Preserve the loopback-only server and untrusted-page-content boundaries documented in [SECURITY.md](SECURITY.md).
 - Keep Annotation lifecycle transitions inside the lifecycle interfaces; generic updates and synchronization must not bypass them.
-- Preserve canonical product, storage, package, MCP, and Annotation identifiers.
-- Keep compact MCP survey responses distinct from complete diagnostic inspection.
+- Preserve canonical product, storage, package, and Annotation identifiers.
+- Keep compact `waypoint read` survey responses distinct from complete diagnostic inspection.
 - Treat single-Target and multi-Target records as supported input shapes unless a new contract explicitly replaces that compatibility.
 - Prefer clear names and small, explicit interfaces over comments that narrate implementation history.
 - Add regression tests for meaningful behavior changes and bug fixes.
@@ -78,7 +78,7 @@ The existing code style is the guide for JavaScript. Use two-space indentation a
 Every user-visible capability, behavior change, bug fix, removal, installation change, or contributor/release workflow change needs a concise entry under `Next Release`:
 
 - Use the root [CHANGELOG.md](CHANGELOG.md) for extension UX, cross-product workflows, documentation semantics, and whole-project behavior.
-- Use [packages/server/CHANGELOG.md](packages/server/CHANGELOG.md) for package-specific MCP, HTTP API, persistence, CLI, or server behavior.
+- Use [packages/server/CHANGELOG.md](packages/server/CHANGELOG.md) for package-specific HTTP API, persistence, CLI, or server behavior.
 - When one change materially affects both audiences, add a scoped entry to each changelog instead of copying the same sentence.
 
 Put each entry in exactly one category: `Added` for a new capability, `Changed` for altered behavior or guidance, `Fixed` for a user-visible defect, or `Removed` for an intentionally withdrawn surface. Describe the outcome for users or upgrade reviewers—not helper extraction, test plumbing, refactors, or other implementation receipts.

@@ -21,7 +21,7 @@ const policySections = [
     icon: MapPin,
     paragraphs: [
       'When you create an Annotation, Waypoint processes the annotated page URL, including its path, query, and fragment; the Annotation text you write; and any visual changes you select.',
-      'Journal mode stores journal names, note text, original page URLs, target selectors, and bounded element context in local extension storage. Journals do not synchronize to the MCP server or enter the Agent Queue.',
+      'Journal mode stores journal names, note text, original page URLs, target selectors, and bounded element context in local extension storage. Journals do not synchronize to the local server or enter the Agent Queue.',
       'Waypoint also records context for the selected element. This may include its text, tag, classes, stable attributes used by its selector, computed styles, dimensions and position, viewport size, parent context, selector, available component or source-file identity, and the click or pin offset used to place the Annotation.',
       'If you choose to include them, Waypoint also handles captured screenshots and image attachments. Preferences, enabled sites, Queue state, synchronization state, and retained lifecycle history are stored so the extension can preserve your workflow.',
     ],

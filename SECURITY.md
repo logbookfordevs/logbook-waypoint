@@ -66,12 +66,11 @@ The local server:
 
 - Binds only to `127.0.0.1:3846`.
 - Rejects non-loopback `Host` headers and untrusted browser origins.
-- Enables MCP DNS-rebinding protection for streamable HTTP and legacy SSE transports.
 - Accepts only Annotation IDs matching the canonical `waypoint_<timestamp>_<random>` contract through the shared identifier interface used by the server, extension, imports, and tests.
 - Uses Waypoint-only extension storage keys and does not read, import, or copy predecessor product data or settings.
-- Marks annotation and page-derived MCP data as untrusted content that cannot override agent, repository, or tool instructions.
+- Marks annotation and page-derived agent CLI output as untrusted content that cannot override agent, repository, or tool instructions.
 
-Image attachments and screenshots may be stored behind the server's `AttachmentStore`. Annotation IDs and attachment UUIDs are validated before path construction; resolved paths must remain inside the configured attachment root. Only PNG, JPEG, WebP, and GIF MIME types are accepted, payloads have a configured byte limit, names cannot contain path segments, and metadata is revalidated on reads. Content and metadata are written through exclusive temporary files and atomic renames. Attachment bytes are withheld from ordinary Queue, Watch, and export responses and are returned only by an explicit attachment or screenshot request.
+Image attachments and screenshots may be stored behind the server's `AttachmentStore`. Annotation IDs and attachment UUIDs are validated before path construction; resolved paths must remain inside the configured attachment root. Only PNG, JPEG, WebP, and GIF MIME types are accepted, payloads have a configured byte limit, names cannot contain path segments, and metadata is revalidated on reads. Content and metadata are written through exclusive temporary files and atomic renames. Attachment bytes are withheld from ordinary Queue and export responses and are returned only by an explicit attachment or screenshot request.
 
 The extension exposes no page-world Annotation CRUD, export, or status interface. Source Identity uses a narrow extension-owned read-only probe in the page's MAIN world for the current Target; all framework and build-derived values are bounded and treated as untrusted display hints.
 

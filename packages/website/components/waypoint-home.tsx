@@ -90,7 +90,7 @@ export function WaypointHome() {
             <p>Waypoint keeps Annotation history inspectable on your machine. Your agent gets a narrow working channel—not a public browser control surface.</p>
             <ul>
               <li><LockKeyhole aria-hidden="true" /><span><b>Loopback-first</b><small>Supported server boundary on IPv4 loopback</small></span></li>
-              <li><Radio aria-hidden="true" /><span><b>Non-destructive Watch</b><small>Delivery never silently Claims or removes feedback</small></span></li>
+              <li><Radio aria-hidden="true" /><span><b>Non-destructive reads</b><small>Reading never silently Claims or removes feedback</small></span></li>
               <li><Check aria-hidden="true" /><span><b>Retained evidence</b><small>Resolution remains inspectable until explicit Deletion</small></span></li>
             </ul>
             <div className="ink-payoff__actions">

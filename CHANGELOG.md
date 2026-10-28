@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.3.0] - 2026-10-28
+
+### Removed
+- Waypoint no longer ships an MCP server or Watch. Agents now use the `waypoint` CLI (`waypoint read`, `claim`, `resolve`, and the rest), guided by the bundled `waypoint` skill, so no tool definitions load into agent context when nobody is annotating. `waypoint watch`, `--events`, and `--cursor` are gone: ask your agent to read Waypoint after you annotate, and it detects a cancelled Variant Set by re-reading. Agents without skill support or a shell can use the extension's copy and paste flow.
+
 ### Changed
+- Run the installer again (`curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash`) to update the CLI and skill and remove the old `logbook-waypoint` MCP registration from global agent configurations; set `WAYPOINT_SKIP_MCP_CLEANUP=1` to opt out. For npm installs, run `waypoint update` and then `waypoint cleanup-mcp`. Remove project-level MCP entries yourself, and update the skill if you installed it separately.
+- Replace MCP tool calls with CLI commands. See the [Agent CLI guide](docs/CLI_GUIDE.md) for the mapping.
+- The installer and `waypoint update` now require Node.js 22.23.4+, 24.22.1+, or 26.12.1+, the releases that fix the October 2026 Node.js security advisories. Older Node versions stop with a message naming the versions to install.
 - The annotate shortcut now opens a hidden Waypoint toolbar and starts pin mode in one press; when the toolbar is already open, it toggles pin mode. New installs default to ⌃⇧. (Ctrl+Shift+. on Windows and Linux), and ⌃⇧W (Alt+Shift+W) shows or hides Waypoint. Existing installs keep their current bindings; change them at `chrome://extensions/shortcuts`.
 - Waypoint now opens in Agent mode on local development hosts and private network addresses, and in Journal mode on other sites. Each of those two groups remembers your last mode choice, so Agent mode remains one click away for reviewers annotating staging or production. A previously saved global mode is not carried over.
 - Variants open in a compact dock at the bottom edge of the page instead of a popover beside the element. Every candidate is one click or number key away, the agent's one-line rationale shows above the dock, Keep names the Variant it will keep, and discard, cancel, and hide live in a ⋯ menu.

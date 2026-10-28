@@ -7,13 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+## [0.3.0] - 2026-10-28
+
+### Removed
+- The MCP server and its tools are retired. Agents now use the `waypoint` CLI, guided by the bundled `waypoint` skill, so no tool definitions load into agent context when nobody is annotating.
+- `waypoint watch`, `--events`, `--cursor`, the Watch HTTP route, and the Watch journal are removed. Ask the agent to read Waypoint (`waypoint read <url>`); it detects Variant cancellation by re-reading an Annotation that returns to Pending without `variant_request`.
+- The `@modelcontextprotocol/sdk` dependency is removed with the MCP server.
+
 ### Added
-- `request_variants` and `replace_variants` accept an optional per-candidate `summary` (up to 200 characters) that the extension shows beside the Variant and Survey returns.
+- `waypoint read`, `inspect`, `claim`, `release`, `resolve`, `discard`, `dismiss-notice`, `delete`, `delete-project`, `export`, `screenshot`, `attachment`, `variants`, and `cleanup-mcp` commands for agents; each prints one JSON payload.
+- `waypoint variants request` and `replace` accept an optional per-candidate `summary` (up to 200 characters) that the extension shows beside the Variant and Survey returns.
 
 ### Changed
-- `request_variants` now asks agents to build structural Variants in source with the project's styling system and to use candidate CSS to select between them.
+- Run the installer again, or run `waypoint cleanup-mcp` for npm installs, to remove the old `logbook-waypoint` MCP registration from global agent configurations. The installer skips this with `WAYPOINT_SKIP_MCP_CLEANUP=1`.
+- Update the `waypoint` skill (the installer and `waypoint update` do this). `get_project_context` has no CLI equivalent.
+- `engines` now requires Node.js 22.23.4+, 24.22.1+, or 26.12.1+, the releases that fix the October 2026 Node.js security advisories, including the Brotli decoder out-of-bounds write (CVE-2026-111497).
+- `waypoint variants request` now asks agents to build structural Variants in source with the project's styling system and to use candidate CSS to select between them.
 
 ### Fixed
+- The local server rejects compressed request bodies (`Content-Encoding: br`, `gzip`, or `deflate`) with HTTP 415 instead of decompressing them, so request handling no longer reaches Node's Brotli decoder.
+- Updated `body-parser` to 2.4.0 and `qs` to 6.17.0 for their published denial-of-service fixes.
 - `curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash` now completes after installing the skill, writing the installation metadata that `waypoint update` requires. Previously the Skills CLI consumed the piped script, so `waypoint update` reported "Cannot identify this installation"; re-run the installer once to repair an affected install.
 
 ## [0.2.1] - 2026-10-16

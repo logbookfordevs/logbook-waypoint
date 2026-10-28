@@ -1,6 +1,6 @@
 # Add a foreground Watch consumer
 
-Superseded by [Watch current open work](0010-watch-current-open-work.md), which makes Watch CLI-only.
+Superseded by [Watch current open work](0010-watch-current-open-work.md), which makes Watch CLI-only, and ultimately by [Retire MCP and Watch](0011-retire-mcp-and-watch.md).
 
 Waypoint exposes `waypoint watch <url>` as a foreground consumer of the existing MCP Watch interface and durable journal. Human-readable output supports terminals; `--json` emits complete NDJSON MCP result envelopes; `--once` supports hosts that react only when commands finish; and `--cursor` resumes from an envelope the downstream consumer has actually processed.
 

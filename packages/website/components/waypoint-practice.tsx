@@ -15,7 +15,7 @@ const guidance: Record<Stage, [string, string]> = {
   resolved: ['Check what changed', 'The button now says “Save changes”. The Resolved Annotation stays in the Queue as history.'],
 };
 
-// Deliberately isolated practice state: no extension bridge, storage, or MCP calls.
+// Deliberately isolated practice state: no extension bridge, storage, or agent calls.
 export function WaypointPractice() {
   const [stage, setStage] = useState<Stage>('idle');
   const [comment, setComment] = useState('Change this button label to Save changes. Keep its current size and position.');

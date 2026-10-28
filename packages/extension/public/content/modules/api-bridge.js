@@ -86,7 +86,7 @@ var WaypointAPI = (() => {
 
   async function _checkViaBg() {
     try {
-      const r = await chrome.runtime.sendMessage({ action: 'checkMCPStatus' });
+      const r = await chrome.runtime.sendMessage({ action: 'checkServerStatus' });
       if (!r?.success || !r.status) return { connected: false };
       return r.status;
     } catch {

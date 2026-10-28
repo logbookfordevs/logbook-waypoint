@@ -34,7 +34,7 @@ export default function DocumentationIndex() {
         <span>
           <small>Visual route map</small>
           <strong>Explore the Waypoint Signal Chart</strong>
-          <p>See how work travels from Annotation → Queue → agent, alongside Waypoint’s MCP tools and CLI Watch.</p>
+          <p>See how work travels from Annotation → Queue → agent, alongside the Waypoint CLI and skill.</p>
         </span>
         <ArrowUpRight aria-hidden="true" />
       </a>

@@ -3,7 +3,6 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { LocalAnnotationsServer } from '../lib/server.js';
 
@@ -116,31 +115,7 @@ test('inspect_annotations diagnoses selected IDs with complete captured context'
     status: 'pending',
   }];
 
-  let callTool;
-  let listTools;
-  server.setupMCPHandlersForServer({
-    setRequestHandler(schema, handler) {
-      if (schema === CallToolRequestSchema) callTool = handler;
-      if (schema === ListToolsRequestSchema) listTools = handler;
-    },
-  });
-
-  const tools = await listTools();
-  const readTool = tools.tools.find(tool => tool.name === 'read_annotations');
-  const inspectTool = tools.tools.find(tool => tool.name === 'inspect_annotations');
-  assert.match(readTool.description, /^Survey compact Annotation summaries\b/);
-  assert.match(readTool.description, /empty scope succeeds with an empty list/i);
-  assert.deepEqual(readTool.inputSchema.anyOf, [{ required: ['id'] }, { required: ['url'] }]);
-  assert.match(inspectTool.description, /^Diagnose\b/);
-  assert.equal(inspectTool.inputSchema.properties.ids.maxItems, undefined);
-
-  const response = await callTool({
-    params: {
-      name: 'inspect_annotations',
-      arguments: { ids: [selectedId, missingId] },
-    },
-  });
-  const payload = JSON.parse(response.content[0].text);
+  const payload = { data: await server.runAgentOperation('inspect_annotations', { ids: [selectedId, missingId] }) };
 
   assert.deepEqual(payload.data.annotations.map(annotation => annotation.id), [selectedId]);
   assert.deepEqual(payload.data.missing_ids, [missingId]);
@@ -288,58 +263,4 @@ test('compact surveys preserve stored multi-Target annotations in canonical orde
     selector: '.browser-surface',
     component_name: 'BrowserSurface',
   }]);
-});
-
-test('Watch delivers Survey-grade multi-Target context with event metadata', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-watch-survey-'));
-  const server = new LocalAnnotationsServer({
-    watchHistoryFile: path.join(directory, 'watch-history.json'),
-  });
-  server.loadAnnotations = async () => [{
-    id: 'waypoint_1750000000000_multitarget',
-    url: 'http://localhost:3000/workflow',
-    comment: 'Align these related Targets',
-    status: 'pending',
-    targets: [{
-      selector: '#workflow-title',
-      element_context: {
-        tag: 'h2',
-        text: 'Workflow',
-        styles: { display: 'flex', lineHeight: '40px' },
-        position: { x: 40, y: 80, width: 420.4, height: 40.2 },
-      },
-      parent_chain: [{ tag: 'header', classes: ['workflow-heading', 'stack'] }],
-      component_name: 'WorkflowTitle',
-      source_file_path: 'src/WorkflowTitle.tsx',
-      context_hints: ['React component: WorkflowTitle'],
-      badge_offset: { x: 8, y: -4 },
-    }, {
-      selector: '.browser-surface',
-      element_context: { tag: 'div', text: 'localhost:3000/dashboard' },
-      component_name: 'BrowserSurface',
-    }],
-    design_intent: { schema_version: 1, workflow: 'impeccable', action: 'Polish' },
-  }];
-
-  try {
-    const result = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
-    const [change] = result.changes;
-
-    assert.equal(change.annotation.target_count, 2);
-    assert.deepEqual(change.annotation.targets.map(target => target.selector), [
-      '#workflow-title',
-      '.browser-surface',
-    ]);
-    assert.equal(change.annotation.targets[0].source_identity.component_name, 'WorkflowTitle');
-    assert.deepEqual(change.annotation.design_intent, {
-      schema_version: 1,
-      workflow: 'impeccable',
-      action: 'Polish',
-    });
-    assert.equal(typeof change.revision, 'string');
-    assert.equal(change.dedupe_key, `${change.annotation.id}:${change.revision}`);
-    assert.doesNotMatch(JSON.stringify(change.annotation), /lineHeight|context_hints|badge_offset/);
-  } finally {
-    await rm(directory, { recursive: true, force: true });
-  }
 });

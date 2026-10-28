@@ -118,7 +118,7 @@ test('toolbar exposes synchronized theme, pin color, and clear-on-copy settings'
   assert.match(toolbar, /saveBadgeColor/);
 });
 
-test('screenshot settings distinguish automatic MCP context from manual attachments', async () => {
+test('screenshot settings distinguish automatic agent context from manual attachments', async () => {
   const toolbar = await readFile(new URL('../public/content/modules/floating-toolbar.js', import.meta.url), 'utf8');
 
   assert.match(toolbar, /Add selected Targets to agent context/);

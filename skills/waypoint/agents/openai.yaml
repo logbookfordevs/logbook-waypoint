@@ -1,7 +1,7 @@
 interface:
   display_name: "Waypoint"
   short_description: "Handle Waypoint annotations and variant sets"
-  default_prompt: "Use $waypoint to handle the current Logbook Waypoint annotations or variant sets through MCP."
+  default_prompt: "Use $waypoint to handle the current Logbook Waypoint annotations or variant sets through the waypoint CLI."
 
 policy:
   allow_implicit_invocation: true

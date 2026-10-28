@@ -121,7 +121,7 @@ console.log('[Waypoint] content.js loaded');
           break;
 
         case 'annotationsUpdated':
-          // Server sync detected changes (e.g. MCP deletion) — reload from storage
+          // Server sync detected changes (e.g. agent resolution) — reload from storage
           WaypointAPI.loadAnnotations().then(fresh => {
             annotations = fresh;
             if (WaypointShadowHost.isVisible()) {

@@ -252,7 +252,7 @@ test('background validates attachment payloads before forwarding an annotation t
   assert.match(source, /validateAnnotationAttachments\(annotation\)/);
   assert.match(source, /apiServerUrl}\/api\/annotations/);
   assert.ok(
-    source.indexOf("'annotation-id.js'") < source.indexOf("'agent-setup-config.js'"),
+    source.indexOf("'annotation-id.js'") < source.indexOf("'export-codec.js'"),
     'dynamic site registration must load canonical Annotation IDs before callers',
   );
 });
@@ -273,7 +273,6 @@ test('background only reports site enablement after injection registration and v
   assert.match(source, /await chrome\.scripting\.registerContentScripts/);
   assert.match(source, /Failed to register content scripts:', err\);\s*throw err/s);
   assert.match(source, /return JSON\.stringify\(WaypointExportCodec\.createExportEnvelope\(annotations\), null, 2\)/);
-  assert.match(source, /case 'mcp':\s*return WaypointExportCodec\.createExportEnvelope\(annotations\)/s);
   assert.ok(
     source.indexOf("'export-codec.js'") < source.indexOf("'content/modules/floating-toolbar.js'"),
     'dynamic site registration must load the export codec before callers',

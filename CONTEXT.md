@@ -76,10 +76,6 @@ _Avoid_: cancelled, ignored, deleted
 Explicit permanent removal of an Annotation, separate from completing or discarding it.
 _Avoid_: resolve, close, cleanup
 
-**Watch**:
-Non-destructive delivery of new or changed Queue activity to an agent.
-_Avoid_: poll, read, claim
-
 ## Variants
 
 **Variant Intent**:

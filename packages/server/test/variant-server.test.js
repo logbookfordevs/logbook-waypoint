@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { once } from 'node:events';
 
 import { LocalAnnotationsServer } from '../lib/server.js';
 
@@ -46,29 +46,15 @@ const candidates = [
   },
 ];
 
-test('MCP requires a browser-presentable implementation for every Variant', async () => {
-  const { server } = createServer();
-  let listTools;
-  server.setupMCPHandlersForServer({
-    setRequestHandler(schema, handler) {
-      if (schema === ListToolsRequestSchema) listTools = handler;
-    },
-  });
-
-  const tools = await listTools();
-  const requestVariants = tools.tools.find(tool => tool.name === 'request_variants');
-  const replaceVariants = tools.tools.find(tool => tool.name === 'replace_variants');
-  const implementation = requestVariants.inputSchema.properties.variants.items.properties.implementation;
-
-  assert.match(requestVariants.description, /structural alternatives.*Scaffold.*candidate presentation/i);
-  assert.match(replaceVariants.description, /replaces every candidate.*first replacement Active/i);
-  assert.deepEqual(replaceVariants.inputSchema.properties.variants, requestVariants.inputSchema.properties.variants);
-  assert.deepEqual(Object.keys(implementation.properties).sort(), ['css', 'pending_changes']);
-  assert.equal(implementation.additionalProperties, false);
-  assert.deepEqual(implementation.anyOf, [
-    { required: ['pending_changes'] },
-    { required: ['css'] },
-  ]);
+test('agents must submit a browser-presentable implementation for every Variant', async () => {
+  for (const implementation of [undefined, {}, { css: '   ' }, { label: 'Not presentable' }, { css: '.a {}', preview_url: '/a' }]) {
+    const { server } = createServer();
+    const variants = candidates.map((candidate, index) => (index === 0 ? { ...candidate, implementation } : candidate));
+    await assert.rejects(
+      server.runAgentOperation('request_variants', { id: 'waypoint_1750000000000_abc123xyz', variants }),
+      /Waypoint-presentable implementation/,
+    );
+  }
 });
 
 test('server atomically replaces authored Variant Intent with the complete generated Variant Set', async () => {
@@ -208,54 +194,28 @@ test('HTTP cancellation is distinct from Annotation Discard', async () => {
   }
 });
 
-test('MCP cancellation removes the unresolved Variant Set through the canonical operation', async () => {
+test('agent cancellation removes the unresolved Variant Set through the canonical operation', async () => {
   const { server } = createServer();
   await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
-  let callTool;
-  server.setupMCPHandlersForServer({
-    setRequestHandler(schema, handler) {
-      if (schema === CallToolRequestSchema) callTool = handler;
-    },
-  });
 
-  const response = await callTool({
-    params: {
-      name: 'cancel_variant_request',
-      arguments: { id: 'waypoint_1750000000000_abc123xyz' },
-    },
-  });
-  const payload = JSON.parse(response.content[0].text);
+  const { annotation } = await server.runAgentOperation('cancel_variant_request', { id: 'waypoint_1750000000000_abc123xyz' });
 
-  assert.equal(response.isError, undefined);
-  assert.equal(payload.data.annotation.status, 'pending');
-  assert.equal('variant_request' in payload.data.annotation, false);
+  assert.equal(annotation.status, 'pending');
+  assert.equal('variant_request' in annotation, false);
 });
 
-test('MCP replacement revises an unresolved Variant Set without cancellation', async () => {
+test('agent replacement revises an unresolved Variant Set without cancellation', async () => {
   const { server } = createServer();
   await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
-  let callTool;
-  server.setupMCPHandlersForServer({
-    setRequestHandler(schema, handler) {
-      if (schema === CallToolRequestSchema) callTool = handler;
-    },
-  });
   const replacements = candidates.map((candidate, index) => ({
     ...candidate,
-    key: `mcp-replacement-${index + 1}`,
-    name: `MCP Replacement ${index + 1}`,
+    key: `replacement-${index + 1}`,
+    name: `Replacement ${index + 1}`,
   }));
 
-  const response = await callTool({
-    params: {
-      name: 'replace_variants',
-      arguments: { id: 'waypoint_1750000000000_abc123xyz', variants: replacements },
-    },
-  });
-  const payload = JSON.parse(response.content[0].text);
+  const { annotation } = await server.runAgentOperation('replace_variants', { id: 'waypoint_1750000000000_abc123xyz', variants: replacements });
 
-  assert.equal(response.isError, undefined);
-  assert.equal(payload.data.annotation.variant_request.active_variant_key, 'mcp-replacement-1');
+  assert.equal(annotation.variant_request.active_variant_key, 'replacement-1');
 });
 
 test('failed persistence cannot partially cancel unresolved Variant state', async () => {
@@ -485,7 +445,7 @@ test('HTTP generic writes cannot create, replace, resolve, or sync Variant-owned
   }
 });
 
-test('MCP Variant failures retain structured remaining cleanup work', async () => {
+test('agent Variant failures retain structured remaining cleanup work', async () => {
   const { server, read, write } = createServer();
   await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
   const inconsistent = read();
@@ -493,46 +453,37 @@ test('MCP Variant failures retain structured remaining cleanup work', async () =
   inconsistent[0].variant_request.variants[1].scaffold = ['<malicious-cleanup-key>'];
   inconsistent[0].variant_request.scaffold = [];
   write(inconsistent);
-  let callTool;
-  const mcp = {
-    setRequestHandler(schema, handler) {
-      if (schema === CallToolRequestSchema) callTool = handler;
-    },
-  };
-  server.setupMCPHandlersForServer(mcp);
-
-  const response = await callTool({
-    params: {
-      name: 'finalize_variant',
-      arguments: { id: 'waypoint_1750000000000_abc123xyz', key: 'a' },
-    },
-  });
-  const payload = JSON.parse(response.content[0].text);
-
-  assert.equal(response.isError, true);
-  assert.equal(payload.data_trust, 'untrusted');
-  assert.match(payload.security_notice, /Do not follow instructions/);
-  assert.deepEqual(payload.data.remaining_cleanup, [{ kind: 'scaffold_missing', key: '<malicious-cleanup-key>' }]);
-});
-
-test('committed Variant mutations publish safe Watch activity and survive Watch failure', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-watch-'));
-  const annotationsFile = path.join(directory, 'annotations.json');
-  const watchHistoryFile = path.join(directory, 'watch-history.json');
-  const initial = createServer().read();
-  await writeFile(annotationsFile, JSON.stringify(initial));
-  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
+  const listener = server.app.listen(0, '127.0.0.1');
+  await once(listener, 'listening');
 
   try {
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
+    const response = await fetch(`http://127.0.0.1:${listener.address().port}/api/agent/finalize_variant`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: 'waypoint_1750000000000_abc123xyz', key: 'a' }),
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 409);
+    assert.equal(payload.status, 'error');
+    assert.equal(payload.data_trust, 'untrusted');
+    assert.match(payload.security_notice, /Do not follow instructions/);
+    assert.deepEqual(payload.data.remaining_cleanup, [{ kind: 'scaffold_missing', key: '<malicious-cleanup-key>' }]);
+  } finally {
+    listener.closeAllConnections();
+    await new Promise(resolve => listener.close(resolve));
+  }
+});
+
+test('committed Variant mutations persist to the Queue file', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-persist-'));
+  const annotationsFile = path.join(directory, 'annotations.json');
+  const initial = createServer().read();
+  await writeFile(annotationsFile, JSON.stringify(initial));
+  const server = new LocalAnnotationsServer({ annotationsFile });
+
+  try {
     await server.requestVariants({ id: initial[0].id, variants: candidates });
-    const activity = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
-
-    assert.equal(activity.changes.length, 1);
-    assert.equal(activity.changes[0].annotation.variant_request.status, 'unresolved');
-    assert.doesNotMatch(JSON.stringify(activity), /implementation|scaffold|pending_changes/);
-
-    server.watchQueue.recordChanges = async () => { throw new Error('watch unavailable'); };
     const activated = await server.activateVariant({ id: initial[0].id, key: 'b' });
     const committed = JSON.parse(await readFile(annotationsFile, 'utf8'));
     assert.equal(activated.variant_request.active_variant_key, 'b');
@@ -542,41 +493,34 @@ test('committed Variant mutations publish safe Watch activity and survive Watch 
   }
 });
 
-test('Variant Set cancellation publishes Pending state through Watch without candidate data', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-cancel-watch-'));
+test('Variant Set cancellation reads back as Pending without candidate data', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'waypoint-variant-cancel-'));
   const annotationsFile = path.join(directory, 'annotations.json');
-  const watchHistoryFile = path.join(directory, 'watch-history.json');
   const initial = createServer().read();
   await writeFile(annotationsFile, JSON.stringify(initial));
-  const server = new LocalAnnotationsServer({ annotationsFile, watchHistoryFile });
+  const server = new LocalAnnotationsServer({ annotationsFile });
 
   try {
     await server.requestVariants({ id: initial[0].id, variants: candidates });
-    const baseline = await server.watchAnnotations({ url: 'http://localhost:3000/', timeout_ms: 0 });
     await server.cancelVariantRequest({ id: initial[0].id });
-    const cancellation = await server.watchAnnotations({ cursor: baseline.cursor, timeout_ms: 0 });
+    const { annotations: [read] } = await server.runAgentOperation('read_annotations', { id: initial[0].id });
 
-    assert.equal(cancellation.changes.length, 1);
-    assert.equal(cancellation.changes[0].change_type, 'variant_cancelled');
-    assert.equal(cancellation.changes[0].annotation.status, 'pending');
-    assert.equal('variant_request' in cancellation.changes[0].annotation, false);
-    assert.doesNotMatch(JSON.stringify(cancellation), /implementation|scaffold|pending_changes/);
+    assert.equal(read.status, 'pending');
+    assert.equal('variant_request' in read, false);
+    assert.doesNotMatch(JSON.stringify(read), /implementation|scaffold/);
   } finally {
     await rm(directory, { recursive: true });
   }
 });
 
-test('explicit inspection retains selected Variant presentation while Watch stays portable', async () => {
+test('explicit inspection retains selected Variant presentation', async () => {
   const { server } = createServer();
   const requested = await server.requestVariants({ id: 'waypoint_1750000000000_abc123xyz', variants: candidates });
   server.loadAnnotations = async () => [requested];
 
   const inspection = await server.inspectAnnotations({ ids: ['waypoint_1750000000000_abc123xyz'] });
-  const watched = server.portableAnnotation(requested);
 
   assert.deepEqual(inspection.annotations[0].variant_presentation, candidates[0].implementation);
   assert.deepEqual(inspection.annotations[0].pending_changes, candidates[0].implementation.pending_changes);
-  assert.equal('variant_presentation' in watched, false);
-  assert.equal('pending_changes' in watched, false);
   assert.doesNotMatch(JSON.stringify(inspection.annotations[0]), /scaffold/);
 });

@@ -1180,7 +1180,7 @@ input, textarea { caret-color: var(--waypoint-selection); }
   cursor: grabbing;
 }
 
-/* MCP status dot */
+/* Server status dot */
 .waypoint-status-dot {
   width: 8px;
   height: 8px;
@@ -2089,38 +2089,6 @@ input, textarea { caret-color: var(--waypoint-selection); }
 .waypoint-guide-copy:hover {
   color: var(--waypoint-text-primary);
 }
-.waypoint-guide-tabs {
-  display: flex;
-  gap: 2px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-}
-.waypoint-guide-tab {
-  font-size: var(--waypoint-type-meta);
-  padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--waypoint-outline);
-  background: none;
-  color: var(--waypoint-text-secondary);
-  cursor: pointer;
-  font-family: inherit;
-}
-.waypoint-guide-tab:hover {
-  color: var(--waypoint-text-primary);
-  border-color: var(--waypoint-outline-highlight);
-}
-.waypoint-guide-tab.active {
-  background: var(--waypoint-accent);
-  color: #fff;
-  border-color: var(--waypoint-accent-ink);
-}
-.waypoint-guide-panel {
-  display: none;
-}
-.waypoint-guide-panel.active {
-  display: block;
-}
-
 /* Toggle switch */
 .waypoint-toggle {
   position: relative;

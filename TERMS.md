@@ -15,7 +15,7 @@ Logbook Waypoint is licensed under the MIT License. Subject to your compliance w
 Logbook Waypoint is a developer tool that:
 - Enables visual annotation of local development projects (.local, .test, .localhost, localhost) and local HTML files
 - Operates exclusively on local development environments (localhost, 127.0.0.1, 0.0.0.0, *.local, *.test, *.localhost, file://)
-- Integrates with AI coding agents via Model Context Protocol (MCP)
+- Integrates with AI coding agents through a local command-line interface
 - Stores annotation data locally on your machine
 
 ## 4. Privacy and Data Collection

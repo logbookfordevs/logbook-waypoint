@@ -851,7 +851,7 @@ var WaypointAnnotationPopover = (() => {
       const text = textarea.value.trim();
 
       // Server status is informational only — annotations save to chrome.storage
-      // regardless of MCP server state, so never block the save button.
+      // regardless of server state, so never block the save button.
       if (isEdit) {
         const commentChanged = text !== (existingAnnotation.comment || '');
         const savedPC = existingAnnotation.pending_changes || null;

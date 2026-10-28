@@ -154,7 +154,7 @@ test('manual sync pulls resolved server lifecycle into the local Queue before re
   assert.equal(status.pending_count, 0);
 });
 
-test('connected server health checks automatically reconcile MCP lifecycle changes', async () => {
+test('connected server health checks automatically reconcile agent lifecycle changes', async () => {
   let messageListener;
   let reconciliationCount = 0;
   const context = vm.createContext({
@@ -181,7 +181,7 @@ test('connected server health checks automatically reconcile MCP lifecycle chang
   background.setupMessageListener();
 
   const response = await new Promise(resolve => {
-    messageListener({ action: 'checkMCPStatus' }, {}, resolve);
+    messageListener({ action: 'checkServerStatus' }, {}, resolve);
   });
 
   assert.equal(response.success, true);
@@ -189,14 +189,14 @@ test('connected server health checks automatically reconcile MCP lifecycle chang
   assert.equal(reconciliationCount, 1);
 });
 
-test('health check pulls an MCP resolution into local storage and notifies the open page', async () => {
+test('health check pulls an agent resolution into local storage and notifies the open page', async () => {
   const id = 'waypoint_1750000000000_health';
   const store = {
     waypointAnnotations: [{
       id,
       url: 'http://localhost:3000/account?active=Notifications',
       status: 'pending',
-      comment: 'Resolve through MCP',
+      comment: 'Resolve through the CLI',
       created_at: '2026-08-28T12:43:31.998Z',
       updated_at: '2026-08-28T12:43:32.020Z',
       _synced: true,
@@ -271,7 +271,7 @@ test('health check pulls an MCP resolution into local storage and notifies the o
   background.setupMessageListener();
 
   const response = await new Promise(resolve => {
-    messageListener({ action: 'checkMCPStatus' }, {}, resolve);
+    messageListener({ action: 'checkServerStatus' }, {}, resolve);
   });
 
   assert.equal(response.success, true);

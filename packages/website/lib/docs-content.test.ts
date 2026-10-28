@@ -15,30 +15,36 @@ describe('agent workflow skill documentation', () => {
     expect(update?.code).toContain('waypoint update');
   });
 
-  it('places skill installation before MCP connection and explains their different jobs', () => {
+  it('describes the skill as the working method for the CLI', () => {
     const installation = getDocumentationPage('installation');
-    const agentSetup = getDocumentationPage('agent-setup');
     const skillSection = installation?.sections.find((section) => section.heading === 'Install the agent workflow skill');
-    const skillIndex = agentSetup?.sections.findIndex((section) => section.heading === 'Give your agent the Waypoint workflow');
-    const mcpIndex = agentSetup?.sections.findIndex((section) => section.heading === 'Add Waypoint to supported agents');
 
     expect(skillSection?.code).toBe(
       'npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global',
     );
-    expect(skillSection?.paragraphs.join(' ')).toMatch(/MCP provides access.*skill provides the working method/i);
-    expect(skillIndex).toBeGreaterThanOrEqual(0);
-    expect(mcpIndex).toBeGreaterThan(skillIndex ?? -1);
+    expect(skillSection?.paragraphs.join(' ')).toMatch(/CLI provides access.*skill provides the working method/i);
   });
 
-  it('documents foreground Watch without promising universal agent wake-up', () => {
+  it('puts the skill before verification and documents reading on request instead of Watch', () => {
     const agentSetup = getDocumentationPage('agent-setup');
-    const watchSection = agentSetup?.sections.find((section) => section.heading === 'Keep a foreground Watch');
+    const headings = agentSetup?.sections.map((section) => section.heading) ?? [];
+    const readSection = agentSetup?.sections.find((section) => section.heading === 'Ask the agent to read after you annotate');
 
-    expect(watchSection?.code).toBe('waypoint watch http://localhost:3000/ --json');
-    expect(watchSection?.paragraphs.join(' ')).toMatch(/cannot guarantee.*idle agent wakes up/i);
-    expect(watchSection?.note).toMatch(/--once/);
-    expect(watchSection?.note).toMatch(/--events/);
-    expect(watchSection?.paragraphs.join(' ')).toMatch(/CLI Watch/);
+    expect(headings.indexOf('Give your agent the Waypoint workflow')).toBeGreaterThanOrEqual(0);
+    expect(headings.indexOf('Verify the connection with one request')).toBeGreaterThan(
+      headings.indexOf('Give your agent the Waypoint workflow'),
+    );
+    expect(readSection?.code).toBe('waypoint read http://localhost:3000/');
+    expect(readSection?.paragraphs.join(' ')).toMatch(/does not watch for new work/i);
+  });
+
+  it('documents MCP migration and no longer teaches MCP setup or Watch', () => {
+    const agentSetup = getDocumentationPage('agent-setup');
+    const migration = agentSetup?.sections.find((section) => section.heading === 'Migrating from MCP');
+    const text = JSON.stringify(agentSetup);
+
+    expect(migration?.code).toBe('waypoint cleanup-mcp');
+    expect(text).not.toMatch(/add-mcp|mcp_servers|mcpServers|waypoint watch --|\/mcp\b/);
   });
 });
 

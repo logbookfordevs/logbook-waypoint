@@ -9,6 +9,7 @@ BIN_DIR="${WAYPOINT_BIN_DIR:-$HOME/.local/bin}"
 BIN_PATH="$BIN_DIR/waypoint"
 UNLINK_MODE=0
 SKILL_MODE="${WAYPOINT_INSTALL_SKILL:-auto}"
+MCP_CLEANUP_MARKER=".waypoint-mcp-cleanup-done"
 
 info() {
   printf '\033[1;36m%s\033[0m %s\n' "waypoint" "$1"
@@ -33,6 +34,8 @@ Options:
   --bin-dir <path>        Directory where the waypoint launcher is written.
   --skip-skill            Skip skill installation and remember this preference.
   -y, --yes              Enable skill installation, overriding a saved opt-out.
+                          Upgrades also remove the retired logbook-waypoint MCP
+                          registration once; set WAYPOINT_SKIP_MCP_CLEANUP=1 to keep it.
   --unlink                Remove the launcher written by this installer.
   -h, --help              Show this help and exit.
 
@@ -91,13 +94,13 @@ done
 
 require_node() {
   if ! command -v node >/dev/null 2>&1; then
-    fail "node >=22.12.0 is required to run Logbook Waypoint"
+    fail "node 22.23.4+, 24.22.1+, or 26.12.1+ is required to run Logbook Waypoint"
   fi
 
   local supported
-  supported="$(node -p '((v) => v[0] > 22 || (v[0] === 22 && v[1] >= 12))(process.versions.node.split(".").map(Number))' 2>/dev/null || true)"
+  supported="$(node -p '((v) => { const min = { 22: [23, 4], 24: [22, 1], 26: [12, 1] }; if (v[0] > 26) return true; const m = min[v[0]]; return Boolean(m) && (v[1] > m[0] || (v[1] === m[0] && v[2] >= m[1])); })(process.versions.node.split(".").map(Number))' 2>/dev/null || true)"
   if [[ "$supported" != "true" ]]; then
-    fail "node >=22.12.0 is required; found $(node --version 2>/dev/null || printf 'unknown')"
+    fail "node 22.23.4+, 24.22.1+, or 26.12.1+ is required (patched for the October 2026 Node.js security release); found $(node --version 2>/dev/null || printf 'unknown')"
   fi
 }
 
@@ -133,7 +136,7 @@ set -euo pipefail
 WAYPOINT_ENTRYPOINT=$escaped_entry_path
 
 if ! command -v node >/dev/null 2>&1; then
-  printf 'waypoint: node >=22.12.0 is required to run Logbook Waypoint.\n' >&2
+  printf 'waypoint: node 22.23.4+, 24.22.1+, or 26.12.1+ is required to run Logbook Waypoint.\n' >&2
   exit 1
 fi
 
@@ -188,6 +191,30 @@ install_skill() {
   return 0
 }
 
+# Waypoint no longer serves MCP, so a registration left from an earlier release only produces agent connection errors.
+cleanup_legacy_mcp() {
+  local marker="$INSTALL_ROOT/$MCP_CLEANUP_MARKER"
+
+  if [[ -f "$marker" || "${WAYPOINT_SKIP_MCP_CLEANUP:-0}" = "1" ]]; then
+    return 0
+  fi
+
+  if [[ "$1" -eq 0 ]]; then
+    : > "$marker"
+    return 0
+  fi
+
+  if command -v npx >/dev/null 2>&1; then
+    info "removing the retired logbook-waypoint MCP registration from global agent configs"
+    if npx --yes add-mcp@latest remove logbook-waypoint --global --yes </dev/null; then
+      : > "$marker"
+      return 0
+    fi
+  fi
+  info "could not remove the retired MCP registration automatically. Retry with: waypoint cleanup-mcp"
+  return 0
+}
+
 if [[ "$UNLINK_MODE" -eq 1 ]]; then
   unlink_launcher
   exit 0
@@ -207,6 +234,9 @@ case "$SKILL_MODE" in
   skip|0) SKILL_MODE=skip ;;
   *) SKILL_MODE=yes ;;
 esac
+
+previous_install=0
+[[ -d "$INSTALL_ROOT/releases" ]] && previous_install=1
 
 if [[ "$VERSION" = "latest" ]]; then
   info "fetching latest release"
@@ -240,6 +270,7 @@ mkdir -p "$release_dir"
 tar -xzf "$archive_path" -C "$release_dir"
 write_launcher "$release_dir/bin/cli.js"
 install_skill "$release_dir"
+cleanup_legacy_mcp "$previous_install"
 node --input-type=module - "$release_dir" "$INSTALL_ROOT" "$BIN_DIR" "$REPO" "$ASSET_NAME" "$SKILL_MODE" <<'METADATA'
 import { writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
