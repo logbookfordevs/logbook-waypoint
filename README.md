@@ -127,7 +127,7 @@ Use npm without a permanent installation for a first look:
 npx @logbookfordevs/waypoint --help
 ```
 
-For either installed channel, run `waypoint update` to update the CLI. GitHub installer updates also reinstall its bundled skill; npm updates run the Skills CLI to refresh the skill. Restart the Waypoint server afterward with `waypoint restart`.
+For either installed channel, run `waypoint update` to update the CLI. Both channels also run the Skills CLI to refresh the skill from this repository. Restart the Waypoint server afterward with `waypoint restart`.
 
 If an older npm installation runs `waypoint update` for the first time, its old updater may not refresh the skill during that upgrade. Run the separate `npx skills@latest add` command above once; later updates use the new behavior.
 

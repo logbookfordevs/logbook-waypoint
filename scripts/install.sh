@@ -170,24 +170,19 @@ unlink_launcher() {
 }
 
 install_skill() {
-  local source_dir="$1/skills/waypoint"
-
   if [[ "$SKILL_MODE" = "skip" || "$SKILL_MODE" = "0" ]]; then
     info "skipped Waypoint agent skill"
     return 0
   fi
 
-  if [[ ! -f "$source_dir/SKILL.md" ]]; then
-    info "release has no bundled skill; CLI installed. Retry with: npx --yes skills@latest add logbookfordevs/logbook-waypoint --global --agent universal --skill waypoint --yes"
-    return 0
-  elif command -v npx >/dev/null 2>&1; then
+  if command -v npx >/dev/null 2>&1; then
     info "installing the Waypoint skill globally with the Skills CLI"
-    if npx --yes skills@latest add "$source_dir" --global --agent universal --skill waypoint --yes </dev/null; then
+    if npx --yes skills@latest add "$REPO" --global --agent universal --skill waypoint --yes </dev/null; then
       info "Waypoint skill installed in the shared global library (~/.agents/skills)"
       return 0
     fi
   fi
-  info "CLI installed, but skill installation did not complete. Retry with: npx --yes skills@latest add \"$source_dir\" --global --agent universal --skill waypoint --yes"
+  info "CLI installed, but skill installation did not complete. Retry with: npx --yes skills@latest add $REPO --global --agent universal --skill waypoint --yes"
   return 0
 }
 
@@ -269,7 +264,7 @@ rm -rf "$release_dir"
 mkdir -p "$release_dir"
 tar -xzf "$archive_path" -C "$release_dir"
 write_launcher "$release_dir/bin/cli.js"
-install_skill "$release_dir"
+install_skill
 cleanup_legacy_mcp "$previous_install"
 node --input-type=module - "$release_dir" "$INSTALL_ROOT" "$BIN_DIR" "$REPO" "$ASSET_NAME" "$SKILL_MODE" <<'METADATA'
 import { writeFileSync } from 'node:fs';

@@ -4,7 +4,7 @@ Local server and agent CLI for the Logbook Waypoint browser extension.
 
 ## Installation
 
-Recommended for agent workflows: install the latest checksummed release and its bundled Waypoint skill together:
+Recommended for agent workflows: install the latest checksummed release and the Waypoint skill together:
 
 ```bash
 curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
@@ -135,6 +135,6 @@ waypoint update
 waypoint restart
 ```
 
-The update command detects npm global installations and GitHub installer installations and updates through the same channel. npm updates also run the Skills CLI to refresh the global universal Waypoint skill; if that step fails, the CLI remains updated and prints a retry command. GitHub updates reinstall the bundled skill unless you saved `--skip-skill`. Older GitHub installs need one rerun of their original installer command to enable detection. Source checkouts and other package managers should use their original update workflow. Browser extension updates are separate.
+The update command detects npm global installations and GitHub installer installations and updates through the same channel. npm updates also run the Skills CLI to refresh the global universal Waypoint skill; if that step fails, the CLI remains updated and prints a retry command. GitHub updates reinstall the skill from the repository unless you saved `--skip-skill`. Older GitHub installs need one rerun of their original installer command to enable detection. Source checkouts and other package managers should use their original update workflow. Browser extension updates are separate.
 
 An older npm installation may need to run the separate `npx skills@latest add` command above once after its first upgrade to this updater; its old update code cannot refresh the skill retroactively.

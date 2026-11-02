@@ -46,7 +46,7 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'Recommended: install from a GitHub Release',
         paragraphs: [
-          'Run the public installer to download and verify the latest Waypoint CLI release. It includes Waypoint’s agent workflow skill by default, installing globally for the universal agent target without prompting. It uses AFK when available and otherwise runs the Skills CLI through npx.',
+          'Run the public installer to download and verify the latest Waypoint CLI release. It includes Waypoint’s agent workflow skill by default, installing globally for the universal agent target without prompting. It runs the Skills CLI through npx, which fetches the skill from the Waypoint GitHub repository.',
           'To opt out, pipe the installer into bash -s -- --skip-skill. The installer remembers that choice for future updates. Re-run with --yes to enable skill installation again. If the skill step fails, the CLI still installs and prints a retry command.',
         ],
         code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\nwaypoint start',
@@ -477,7 +477,7 @@ export const documentationPages: DocumentationPage[] = [
       {
         heading: 'CLI releases',
         paragraphs: [
-          'Tagged Waypoint releases publish the local server and CLI through npm and as a checksummed GitHub Release archive. The curl installer is recommended for agent workflows: it verifies the archive and installs the CLI and bundled Waypoint skill together.',
+          'Tagged Waypoint releases publish the local server and CLI through npm and as a checksummed GitHub Release archive. The curl installer is recommended for agent workflows: it verifies the archive and installs the CLI and Waypoint skill together.',
           'npm is an alternative for registry-managed global packages. It installs the CLI only; add the Waypoint skill with the separate Skills CLI command shown in Installation.',
         ],
         code: 'curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash\n# npm alternative: install the CLI and skill separately\nnpm install --global @logbookfordevs/waypoint\nnpx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global',

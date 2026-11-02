@@ -37,7 +37,7 @@ The active documentation and runtime regressions are hermetic. They use no live 
 
 ## Explicit CLI updates
 
-Run `waypoint update` to update the CLI and server to the latest release. npm global installs update through npm using the detected global prefix, then run the Skills CLI to refresh the global universal Waypoint skill. If skill installation fails, the CLI update remains complete and the command prints a retry instruction. GitHub installer installs download `https://waypoint.logbookfordevs.com/install.sh` over HTTPS and run it after the download succeeds. The installer verifies the release checksum, preserves the recorded install root, launcher directory, repository, and asset name, and reinstalls its bundled skill unless `--skip-skill` was saved.
+Run `waypoint update` to update the CLI and server to the latest release. npm global installs update through npm using the detected global prefix, then run the Skills CLI to refresh the global universal Waypoint skill. If skill installation fails, the CLI update remains complete and the command prints a retry instruction. GitHub installer installs download `https://waypoint.logbookfordevs.com/install.sh` over HTTPS and run it after the download succeeds. The installer verifies the release checksum, preserves the recorded install root, launcher directory, repository, and asset name, and reinstalls the skill from that repository through the Skills CLI unless `--skip-skill` was saved.
 
 The installer also removes the retired `logbook-waypoint` MCP registration from global agent configurations through `npx add-mcp remove`; set `WAYPOINT_SKIP_MCP_CLEANUP=1` to skip it. npm installs can run `waypoint cleanup-mcp` once.
 

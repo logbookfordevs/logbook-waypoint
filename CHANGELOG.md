@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Next Release
 
+### Changed
+- The curl installer and GitHub-channel `waypoint update` now install the Waypoint skill from the GitHub repository instead of the copy inside the release archive, matching npm updates. Skill fixes no longer need a new CLI release.
+
 ## [0.3.0] - 2026-10-28
 
 ### Removed

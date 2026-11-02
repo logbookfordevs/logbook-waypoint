@@ -16,7 +16,7 @@ Copy and export work without the server. The server becomes useful when the agen
 
 ## Install Waypoint and build the extension
 
-Recommended for agent workflows: install the latest checksummed CLI release and its bundled Waypoint skill:
+Recommended for agent workflows: install the latest checksummed CLI release and the Waypoint skill:
 
 ```bash
 curl -fsSL https://waypoint.logbookfordevs.com/install.sh | bash
@@ -31,7 +31,7 @@ npx skills@latest add logbookfordevs/logbook-waypoint --skill waypoint --global
 waypoint start
 ```
 
-Use `waypoint update` to keep an installed CLI current, then `waypoint restart` to run the new server version. npm updates also refresh the skill; the curl installer updates its bundled skill unless you opted out.
+Use `waypoint update` to keep an installed CLI current, then `waypoint restart` to run the new server version. npm updates also refresh the skill; the curl installer also refreshes the skill unless you opted out.
 
 Install the published extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/logbook-waypoint/fgondknhkpekdhbbkgodokmpnpadfedo). To work on the extension or use an unpacked development build, build it from the repository root:
 
